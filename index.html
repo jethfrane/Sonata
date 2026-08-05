@@ -1,0 +1,1697 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+  <title>Sonata</title>
+  
+  <!-- Embedded PWA Manifest for Local Installation -->
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Sonata%20Master%22%2C%22short_name%22%3A%22Sonata%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23f6f7f9%22%2C%22theme_color%22%3A%22%231967d2%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI%2BPHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIGZpbGw9IiMxOTY3ZDIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI%2BUnM8L3RleHQ%2BPC9zdmc%2B%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f0f2f5;
+      --surface-3: #e7eaf0;
+      --text: #16181d;
+      --muted: #667085;
+      --subtle: #8792a2;
+      --line: #d8dde6;
+      --accent: #1967d2;
+      --accent-2: #0f766e;
+      --danger: #c24133;
+      --warning: #b45309;
+      --shadow: 0 16px 42px rgba(16, 24, 40, 0.12);
+      --radius: 8px;
+      --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --chart-font: "SFMono-Regular", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+      --app-font-size: 15px;
+      --editor-font: 15px;
+      --preview-font: 14px;
+      --presentation-font: 42px;
+      --editor-line: 1.6;
+      --panel-pad: 16px;
+      --tap-size: 40px;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #111318;
+      --surface: #181b22;
+      --surface-2: #20242d;
+      --surface-3: #2a303b;
+      --text: #f3f5f8;
+      --muted: #a7b0bf;
+      --subtle: #7f8998;
+      --line: #323946;
+      --accent: #73a7ff;
+      --accent-2: #5dd6c9;
+      --danger: #ff897d;
+      --warning: #f7b267;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    }
+    
+    html[data-theme="stage"] {
+      color-scheme: dark;
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --surface-2: #141414;
+      --surface-3: #1f1f1f;
+      --text: #ffffff;
+      --muted: #888888;
+      --subtle: #555555;
+      --line: #222222;
+      --accent: #ffcc00;
+      --accent-2: #ff3366;
+    }
+
+    html[data-accent="teal"] { --accent: #0f766e; --accent-2: #2563eb; }
+    html[data-accent="rose"] { --accent: #c02660; --accent-2: #7c3aed; }
+    html[data-accent="amber"] { --accent: #b45309; --accent-2: #15803d; }
+    html[data-accent="violet"] { --accent: #6d28d9; --accent-2: #0891b2; }
+    html[data-accent="graphite"] { --accent: #475467; --accent-2: #0f766e; }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; height: 100%; margin: 0; }
+
+    body {
+      background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0)) fixed, var(--bg);
+      color: var(--text);
+      font-family: var(--ui-font);
+      font-size: var(--app-font-size);
+      letter-spacing: -0.01em;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html[data-theme="dark"] body, html[data-theme="stage"] body {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)) fixed, var(--bg);
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      min-height: 56px;
+      padding: 10px clamp(12px, 3vw, 20px) calc(10px + env(safe-area-inset-top, 0px));
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-mark {
+      width: 28px; height: 28px; border-radius: 6px; display: grid; place-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; font-weight: 800; font-size: 14px;
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    .brand-text { min-width: 0; }
+    .brand-title { margin: 0; font-size: 1.05rem; line-height: 1.1; font-weight: 760; }
+    .brand-subtitle { margin: 2px 0 0; color: var(--muted); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; }
+
+    .top-actions, .toolbar, .inline-actions, .segmented, .presentation-controls, .export-grid {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+
+    .mobile-view-switcher {
+      display: none; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); gap: 6px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: color-mix(in srgb, var(--surface) 95%, transparent);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--line); z-index: 60;
+    }
+
+    .workspace {
+      display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px;
+      width: 100%; max-width: 1800px; margin: 0 auto;
+      padding: 12px; flex: 1;
+    }
+
+    .panel {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      min-width: 0; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+    }
+
+    .library-panel, .tools-panel { padding: var(--panel-pad); display: flex; flex-direction: column; gap: 14px; }
+    .editor-panel { display: flex; flex-direction: column; min-height: 60vh; overflow: hidden; }
+
+    .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .panel-heading h2, .section-title { margin: 0; font-size: 0.85rem; line-height: 1.15; font-weight: 720; color: var(--text); }
+    .section-title { padding-top: 4px; }
+    .muted { color: var(--muted); }
+
+    .field, .settings-field { display: grid; gap: 5px; }
+    .field label, .settings-field label, .control-label { color: var(--muted); font-size: 0.76rem; font-weight: 650; }
+
+    .input, .select, .textarea {
+      width: 100%; border: 1px solid var(--line); border-radius: 6px;
+      background: var(--surface-2); color: var(--text); outline: none;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+    .input, .select { height: 34px; padding: 0 10px; font-size: 0.85rem; }
+
+    .textarea {
+      min-height: 300px; resize: none; border: 0; border-radius: 0; padding: 16px;
+      background: var(--surface); font-family: var(--chart-font); font-size: var(--editor-font);
+      line-height: var(--editor-line); white-space: pre; overflow: auto; tab-size: 4;
+    }
+
+    .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent); }
+    .textarea:focus { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+    .input:read-only, .textarea:read-only { opacity: 0.85; background: var(--surface-3); cursor: not-allowed; }
+    .song-title-input:read-only { background: var(--surface); cursor: default; }
+
+    .song-title-input {
+      height: auto; min-height: 52px; padding: 14px 16px 4px; border: 0; border-radius: 0;
+      background: var(--surface); color: var(--text); font-size: clamp(1.4rem, 4vw, 2.4rem);
+      line-height: 1.05; font-weight: 780; letter-spacing: -0.02em;
+    }
+    .song-title-input:focus { box-shadow: none; }
+
+    .editor-toolbar {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 8px 14px 10px; border-bottom: 1px solid var(--line); background: var(--surface);
+    }
+    
+    .status-line { min-height: 20px; color: var(--muted); font-size: 0.75rem; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+    .badge { padding: 2px 6px; background: var(--warning); color: #fff; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .button, .icon-button, .tab-button {
+      border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2);
+      color: var(--text); min-height: 32px; padding: 0 10px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 0.82rem; font-weight: 600; text-decoration: none;
+      transition: background 120ms ease, border-color 120ms ease; user-select: none;
+    }
+    .icon-button { width: var(--tap-size); min-height: var(--tap-size); padding: 0; }
+    .icon { width: 16px; height: 16px; flex: 0 0 auto; stroke-width: 2.2; }
+    .button-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .button:hover, .icon-button:hover, .tab-button:hover { background: var(--surface-3); }
+    .button:active, .icon-button:active, .tab-button:active { transform: translateY(1px); }
+
+    .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .button.secondary { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); color: var(--accent); }
+    .button.danger, .icon-button.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 25%, var(--line)); background: color-mix(in srgb, var(--danger) 8%, var(--surface)); }
+    .button.ghost, .icon-button.ghost { background: transparent; border-color: transparent; }
+
+    .segmented { padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+    .tab-button { border: 0; min-height: 28px; padding: 0 10px; background: transparent; color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+    .tab-button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08); }
+
+    .library-list { display: grid; gap: 6px; overflow: auto; max-height: 38vh; padding-right: 2px; }
+    .song-card {
+      border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); padding: 8px 10px;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; cursor: pointer; text-align: left;
+    }
+    .song-card.active { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+    .song-card:hover { background: var(--surface-3); }
+    .song-card-title { margin: 0; font-size: 0.88rem; font-weight: 650; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .song-card-meta { margin: 3px 0 0; color: var(--muted); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .favorite-pill {
+      min-width: 28px; height: 28px; padding: 0; border-radius: 6px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--warning); cursor: pointer;
+    }
+    .favorite-pill.active { background: color-mix(in srgb, var(--warning) 12%, var(--surface)); border-color: color-mix(in srgb, var(--warning) 40%, var(--line)); }
+
+    .empty-state { border: 1px dashed var(--line); border-radius: 6px; padding: 16px; text-align: center; color: var(--muted); background: var(--surface-2); font-size: 0.85rem; }
+
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .metric { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: var(--surface-2); min-width: 0; }
+    .metric span { display: block; color: var(--muted); font-size: 0.7rem; font-weight: 650; margin-bottom: 2px; }
+    .metric strong { display: block; font-size: 0.9rem; font-weight: 700; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .transpose-box { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 6px; align-items: center; }
+    .tool-card { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 6px; padding: 10px; background: var(--surface-2); }
+    .tool-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .tool-card-title { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 0.8rem; font-weight: 700; }
+    .tool-card-value { color: var(--muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .two-col-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(80px, 0.45fr); gap: 6px; align-items: center; }
+    
+    .beat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+    .beat-dot { height: 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); transition: background 90ms ease, transform 90ms ease; }
+    .beat-dot.active { background: var(--accent); border-color: var(--accent); transform: scaleY(1.3); }
+    .beat-dot.downbeat { background: var(--accent-2); border-color: var(--accent-2); }
+    .transpose-box select { text-align: center; }
+
+    .preview-card { display: flex; flex-direction: column; min-height: 220px; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+    .preview-header { padding: 8px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .preview-output { margin: 0; padding: 10px; overflow: auto; flex: 1; color: var(--text); font-family: var(--chart-font); font-size: var(--preview-font); line-height: 1.5; white-space: pre; tab-size: 4; }
+
+    .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .export-grid .button { width: 100%; }
+    .layout-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+    .modal-host { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 14px; }
+    .modal-host[hidden] { display: none; }
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(4, 8, 16, 0.48); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    
+    .modal {
+      position: relative; width: min(580px, 100%); max-height: 100%; display: flex; flex-direction: column;
+      margin: 0; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+      box-shadow: var(--shadow); animation: modalFade 0.2s ease-out;
+    }
+    @keyframes modalFade { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    
+    .modal-header { padding: 16px 20px 10px; flex-shrink: 0; }
+    .modal-header h2 { margin: 0 0 4px; font-size: 1.05rem; line-height: 1.2; font-weight: 760; }
+    .modal-message { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.4; }
+    
+    .modal-fields { padding: 8px 20px 16px; overflow-y: auto; display: grid; gap: 10px; flex: 1; min-height: 0; }
+    .modal-actions {
+      padding: 12px 20px; flex-shrink: 0; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap;
+      border-top: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 95%, transparent);
+      border-radius: 0 0 10px 10px;
+    }
+
+    .range-row { display: grid; grid-template-columns: minmax(0, 1fr) 60px; gap: 8px; align-items: center; }
+    input[type="range"] { accent-color: var(--accent); width: 100%; cursor: pointer; }
+    .range-value { color: var(--muted); font-size: 0.78rem; text-align: right; font-variant-numeric: tabular-nums; }
+    .settings-heading { margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--text); font-size: 0.8rem; font-weight: 760; }
+
+    .toast-host { position: fixed; right: 14px; bottom: max(14px, env(safe-area-inset-bottom)); z-index: 200; display: grid; gap: 8px; width: min(340px, calc(100vw - 28px)); pointer-events: none; }
+    .toast { padding: 10px 12px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--text) 95%, transparent); color: var(--bg); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; transition: all 0.3s ease; }
+
+    .presentation { 
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--bg); color: var(--text); 
+      display: flex; flex-direction: column; 
+    }
+    .presentation[hidden] { display: none; }
+    
+    .presentation-top { 
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; 
+      padding: 10px 12px calc(10px + max(0px, env(safe-area-inset-top))); 
+      background: color-mix(in srgb, var(--surface) 85%, transparent); 
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); 
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    
+    .presentation-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 760; font-size: 1.05rem; }
+    
+    .presentation-stage { 
+      flex: 1; overflow: auto; scroll-behavior: smooth; 
+      padding: clamp(16px, 4vw, 56px); 
+      padding-top: calc(80px + env(safe-area-inset-top)); 
+      padding-bottom: 50vh; 
+    }
+    
+    .presentation-text { 
+      width: min(100%, var(--presentation-width, 920px)); margin: 0 auto; 
+      font-family: var(--chart-font); font-size: var(--presentation-font); 
+      line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; 
+    }
+    
+    .presentation.orientation-landscape { --presentation-width: 1180px; }
+    .presentation.orientation-portrait { --presentation-width: 760px; }
+    
+    .presentation-controls-bottom {
+      position: absolute; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      background: color-mix(in srgb, var(--surface) 80%, transparent); 
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid color-mix(in srgb, var(--line) 50%, transparent); 
+      border-radius: 999px; box-shadow: var(--shadow);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 10;
+    }
+    
+    .presentation-controls-bottom .icon-button { border: none; background: transparent; border-radius: 50%; width: 36px; height: 36px; }
+    .presentation-controls-bottom .icon-button:hover { background: var(--surface-3); }
+
+    .presentation.idle .presentation-top { opacity: 0; transform: translateY(-100%); pointer-events: none; }
+    .presentation.idle .presentation-controls-bottom { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
+
+    .print-area { display: none; }
+    @media print {
+      body { background: #fff; color: #000; }
+      body > :not(.print-area) { display: none !important; }
+      .app-shell, .modal-host, .toast-host { display: none !important; }
+      .print-area { display: block !important; padding: 20px; }
+      .print-area h1 { font-family: sans-serif; font-size: 24px; margin: 0 0 10px; font-weight: bold; }
+      .print-area pre { font-family: monospace; font-size: 12px; white-space: pre-wrap; line-height: 1.5; margin: 0; }
+      .print-area footer { font-family: sans-serif; font-size: 10px; color: #666; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+    }
+
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; white-space: nowrap; }
+
+    @media (min-width: 760px) {
+      .workspace { grid-template-columns: minmax(248px, 0.35fr) minmax(0, 1fr); align-items: stretch; gap: 12px; padding: 12px; }
+      .tools-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; }
+      .tools-panel > .preview-card, .tools-panel > .export-grid, .tools-panel > .layout-row, .tools-panel > .section-title { grid-column: 1 / -1; }
+    }
+
+    @media (min-width: 1180px) {
+      .workspace { grid-template-columns: minmax(240px, 280px) minmax(420px, 1fr) minmax(280px, 340px); height: calc(100vh - 56px); }
+      .tools-panel { grid-column: auto; display: flex; }
+      .library-panel, .tools-panel, .editor-panel { min-height: 0; }
+      .library-list { max-height: none; min-height: 0; }
+      .textarea { min-height: 0; flex: 1; }
+    }
+
+    @media (max-width: 759px) {
+      :root { --panel-pad: 12px; --tap-size: 40px; }
+      .topbar { align-items: center; min-height: 52px; padding: 8px 12px; }
+      .top-actions { justify-content: flex-end; flex-wrap: nowrap; }
+      .top-actions .button:not(.primary) .button-label, .brand-subtitle { display: none; }
+      .mobile-view-switcher { display: grid; }
+      
+      .workspace { padding: 10px 10px calc(70px + env(safe-area-inset-bottom, 0px)); }
+      .workspace[data-mobile-view="library"] .editor-panel, .workspace[data-mobile-view="library"] .tools-panel,
+      .workspace[data-mobile-view="editor"] .library-panel, .workspace[data-mobile-view="editor"] .tools-panel,
+      .workspace[data-mobile-view="tools"] .library-panel, .workspace[data-mobile-view="tools"] .editor-panel { display: none; }
+
+      .library-list { max-height: calc(100dvh - 220px); }
+      .editor-toolbar { padding: 8px; overflow-x: auto; white-space: nowrap; }
+      .toolbar { width: max-content; display: flex; flex-wrap: nowrap; gap: 6px; }
+      .button { min-height: var(--tap-size); padding: 0 10px; }
+      .toolbar .button { padding: 0 8px; }
+      .toolbar .button-label { display: inline-block; }
+      .song-title-input { min-height: 48px; padding: 10px 12px 4px; }
+      .textarea { min-height: calc(100dvh - 210px); padding: 12px; }
+      .metric-grid, .export-grid, .layout-row, .two-col-controls { grid-template-columns: 1fr; }
+      .presentation-top { flex-wrap: wrap; }
+      .presentation-controls { width: 100%; justify-content: space-between; }
+      .modal { max-height: 88vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">S</div>
+        <div class="brand-text">
+          <h1 class="brand-title">Sonata</h1>
+          <p class="brand-subtitle">Offline song editor for working musicians</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button ghost" id="themeToggle" data-icon="moon" type="button" title="Toggle theme" aria-label="Toggle theme">Theme</button>
+        <button class="button ghost" id="settingsButton" data-icon="settings" type="button">Settings</button>
+        <button class="button primary" id="presentationButton" data-icon="presentation" type="button">Present</button>
+      </div>
+    </header>
+
+    <nav class="mobile-view-switcher" aria-label="Workspace sections">
+      <button class="tab-button" type="button" data-mobile-view="library" data-icon="library">Library</button>
+      <button class="tab-button active" type="button" data-mobile-view="editor" data-icon="edit">Editor</button>
+      <button class="tab-button" type="button" data-mobile-view="tools" data-icon="music">Tools</button>
+    </nav>
+
+    <main class="workspace" data-mobile-view="editor">
+      <!-- Library Panel -->
+      <aside class="panel library-panel" aria-label="Song library">
+        <div class="panel-heading">
+          <h2>Library</h2>
+          <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
+        </div>
+        <div class="field">
+          <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics" aria-label="Search songs" autocomplete="off">
+        </div>
+        <div class="segmented" role="tablist" aria-label="Library filter">
+          <button class="tab-button active" type="button" data-library-filter="all">All</button>
+          <button class="tab-button" type="button" data-library-filter="favorites">Favorites</button>
+          <button class="tab-button" type="button" data-library-filter="recent">Recent</button>
+        </div>
+        <div class="library-list" id="libraryList" aria-live="polite"></div>
+      </aside>
+
+      <!-- Editor Panel -->
+      <section class="panel editor-panel" aria-label="Song editor">
+        <label class="visually-hidden" for="songTitle">Song title</label>
+        <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
+        <div class="editor-toolbar">
+          <div class="toolbar">
+            <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save</button>
+            <button class="button primary" id="importSharedButton" data-icon="download" type="button" style="display:none;">Save to Library</button>
+            <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
+            <button class="button" id="duplicateSongButton" data-icon="copy" type="button">Duplicate</button>
+            <button class="button" id="favoriteSongButton" data-icon="star" type="button">Favorite</button>
+            <button class="button danger" id="deleteSongButton" data-icon="trash" type="button">Delete</button>
+            <button class="button" id="exitSharedButton" data-icon="x" type="button" style="display:none;">Close Preview</button>
+          </div>
+          <div class="status-line" id="saveStatus" aria-live="polite">Ready</div>
+        </div>
+        <label class="visually-hidden" for="songBody">Song body</label>
+        <textarea class="textarea" id="songBody" spellcheck="false" placeholder="Paste lyrics and chord charts here..."></textarea>
+      </section>
+
+      <!-- Tools Panel -->
+      <aside class="panel tools-panel" aria-label="Music tools">
+        <div class="panel-heading">
+          <h2>Music Analysis</h2>
+          <span class="muted" id="wordCount">0 lines</span>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric"><span>Detected Key</span><strong id="detectedKey">Unknown</strong></div>
+          <div class="metric"><span>Active Key</span><strong id="activeKey">Auto</strong></div>
+          <div class="metric"><span>Chords</span><strong id="chordCount">0</strong></div>
+          <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
+        </div>
+
+        <div class="field">
+          <label for="keySelect">Key override</label>
+          <select class="select" id="keySelect"></select>
+        </div>
+        
+        <div class="field">
+          <label for="capoSelect">Capo (Plays in)</label>
+          <select class="select" id="capoSelect">
+            <option value="0">No Capo</option>
+            <option value="1">Capo 1</option>
+            <option value="2">Capo 2</option>
+            <option value="3">Capo 3</option>
+            <option value="4">Capo 4</option>
+            <option value="5">Capo 5</option>
+            <option value="6">Capo 6</option>
+            <option value="7">Capo 7</option>
+            <option value="8">Capo 8</option>
+            <option value="9">Capo 9</option>
+            <option value="10">Capo 10</option>
+            <option value="11">Capo 11</option>
+            <option value="12">Capo 12</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="transposeSelect">Transpose semitones</label>
+          <div class="transpose-box">
+            <button class="icon-button" id="transposeDown" data-icon="minus" type="button" title="Transpose down" aria-label="Transpose down">Down</button>
+            <select class="select" id="transposeSelect"></select>
+            <button class="icon-button" id="transposeUp" data-icon="plus" type="button" title="Transpose up" aria-label="Transpose up">Up</button>
+          </div>
+        </div>
+
+        <div class="inline-actions">
+          <button class="button secondary" id="applyTransposeButton" data-icon="wand" type="button">Apply Transpose</button>
+          <button class="button" id="resetTransposeButton" data-icon="rotate" type="button">Reset</button>
+        </div>
+
+        <div class="tool-card" aria-label="Metronome">
+          <div class="tool-card-header">
+            <div class="tool-card-title"><span data-inline-icon="metronome"></span>Metronome</div>
+            <span class="tool-card-value" id="metronomeStatus">Stopped</span>
+          </div>
+          <div class="two-col-controls">
+            <input id="metronomeBpmRange" type="range" min="30" max="500" step="1" value="90" aria-label="Metronome BPM">
+            <input class="input" id="metronomeBpmInput" type="number" min="30" max="500" step="1" value="90" aria-label="Metronome BPM value">
+          </div>
+          <div class="transpose-box">
+            <button class="icon-button" id="metronomeDown" data-icon="minus" type="button" title="Slower" aria-label="Slower">Slower</button>
+            <select class="select" id="metronomeBeats" aria-label="Beats per measure">
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+            </select>
+            <button class="icon-button" id="metronomeUp" data-icon="plus" type="button" title="Faster" aria-label="Faster">Faster</button>
+          </div>
+          <div class="beat-row" id="beatRow" aria-hidden="true"></div>
+          <div class="inline-actions">
+            <button class="button primary" id="metronomeToggle" data-icon="play" type="button">Start</button>
+            <button class="button" id="tapTempoButton" data-icon="tap" type="button">Tap Tempo</button>
+          </div>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="segmented" role="tablist" aria-label="Preview mode">
+              <button class="tab-button active" type="button" data-preview-mode="original">Song</button>
+              <button class="tab-button" type="button" data-preview-mode="transposed">Transposed</button>
+              <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
+              <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
+            </div>
+          </div>
+          <pre class="preview-output" id="previewOutput"></pre>
+        </div>
+
+        <div class="section-title">Export & Layout</div>
+        <div class="layout-row">
+          <div class="field">
+            <select class="select" id="exportOrientation" aria-label="Export Orientation">
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+          <div class="field">
+            <select class="select" id="exportColumns" aria-label="Export Layout Columns">
+              <option value="1">1 Column</option>
+              <option value="2">2 Columns</option>
+              <option value="3">3 Columns</option>
+            </select>
+          </div>
+        </div>
+        <div class="export-grid">
+          <button class="button" id="exportTxtButton" data-icon="file-text" type="button">TXT</button>
+          <button class="button" id="exportPngButton" data-icon="image" type="button">PNG</button>
+          <button class="button" id="exportPdfButton" data-icon="file" type="button">PDF</button>
+          <button class="button" id="printButton" data-icon="print" type="button">Print</button>
+          <button class="button" id="copyButton" data-icon="clipboard" type="button">Copy</button>
+          <button class="button primary" id="shareButton" data-icon="share" type="button">Share</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="modal-host" id="modalHost" hidden>
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle"></h2>
+        <p class="modal-message" id="modalMessage"></p>
+      </div>
+      <div class="modal-fields" id="modalFields"></div>
+      <div class="modal-actions" id="modalActions">
+        <button class="button" id="modalCancel" type="button">Cancel</button>
+        <button class="button primary" id="modalConfirm" type="button">Done</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+  <section class="presentation" id="presentation" hidden aria-label="Presentation mode">
+    <div class="presentation-top">
+      <div class="presentation-title" id="presentationTitle">Sonata</div>
+      <div class="presentation-controls">
+        <button class="button" id="presentationFontDown" data-icon="type-minus" type="button">A-</button>
+        <button class="button" id="presentationFontUp" data-icon="type-plus" type="button">A+</button>
+        <select class="select" id="presentationOrientation" title="Presentation orientation" aria-label="Presentation orientation" style="width: auto;">
+          <option value="auto">Auto</option>
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+        <button class="button danger" id="presentationExit" data-icon="x" type="button">Exit</button>
+      </div>
+    </div>
+    <div class="presentation-stage" id="presentationStage">
+      <pre class="presentation-text" id="presentationText"></pre>
+    </div>
+    <div class="presentation-controls-bottom">
+      <button class="icon-button" id="presThemeToggle" data-icon="moon" type="button" title="Toggle Theme" aria-label="Toggle theme"></button>
+      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" title="Toggle Metronome" aria-label="Toggle metronome"></button>
+      <div class="beat-row" id="presBeatRow" style="width: 60px; margin-left: 8px;"></div>
+    </div>
+  </section>
+
+  <section class="print-area" id="printArea" aria-hidden="true">
+    <h1 id="printTitle"></h1>
+    <pre id="printBody"></pre>
+    <footer id="printFooter"></footer>
+  </section>
+
+  <script>
+    (() => {
+      "use strict";
+
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+      });
+
+      const swCode = `
+        const CACHE = 'sonata-v5';
+        self.addEventListener('install', e => {
+            self.skipWaiting();
+            e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname])));
+        });
+        self.addEventListener('activate', e => {
+            e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null))));
+        });
+        self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+      `;
+      const swBlob = new Blob([swCode], {type: 'application/javascript'});
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+      }
+
+      const STORAGE_KEYS = { songs: "sonata:v5:songs", settings: "sonata:v5:settings", activeSong: "sonata:v5:active-song" };
+
+      // Music Constants
+      const SHARP_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      const FLAT_NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+      const KEY_ROOTS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+      const MINOR_KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+      const NOTE_TO_SEMITONE = Object.freeze({
+        C: 0, "B#": 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6,
+        G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11
+      });
+
+      const ACCENT_THEMES = [
+        { value: "blue", label: "Blue" }, { value: "teal", label: "Teal" }, { value: "rose", label: "Rose" },
+        { value: "amber", label: "Amber" }, { value: "violet", label: "Violet" }, { value: "graphite", label: "Graphite" }
+      ];
+
+      const UI_FONT_OPTIONS = [ { value: "system", label: "System" }, { value: "rounded", label: "Rounded" }, { value: "serif", label: "Serif" }, { value: "mono", label: "Mono" } ];
+      const CHART_FONT_OPTIONS = [ { value: "mono", label: "Mono" }, { value: "system", label: "System" }, { value: "serif", label: "Serif" } ];
+
+      const FONT_STACKS = {
+        system: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        rounded: '"SF Pro Rounded", "Avenir Next", Nunito, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        serif: 'Georgia, "Times New Roman", Times, serif',
+        mono: '"SFMono-Regular", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace'
+      };
+
+      const DEFAULT_SETTINGS = {
+        theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono",
+        appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6,
+        presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto",
+        metronomeBpm: 90, metronomeBeats: 4, uiSounds: false, haptics: true
+      };
+
+      const SAMPLE_BODY = [
+        "Until Then",
+        "",
+        "Intro:",
+        "F#m - E - D (3x) Esus E",
+        "",
+        "Verse:",
+        "A/// - D/// - E/// - A///",
+        "A/// - D/// - A - F#m",
+        "Esus - E - A",
+        "",
+        "Chorus:",
+        "D/ - E/ - A///",
+        "D/ - E/ - C#sus4/ - C#/",
+        "F#m/ - A/ - D/ - Eb",
+        "A - F#m - Esus - E - A"
+      ].join("\n");
+
+      const Util = {
+        uid() { return window.crypto && crypto.randomUUID ? crypto.randomUUID() : "song-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); },
+        now() { return new Date().toISOString(); },
+        clamp(value, min, max) { return Math.min(max, Math.max(min, Number(value) || 0)); },
+        mod(value, size) { return ((value % size) + size) % size; },
+        debounce(fn, delay) { let timer = 0; return (...args) => { window.clearTimeout(timer); timer = window.setTimeout(() => fn(...args), delay); }; },
+        formatDate(iso) { if (!iso) return "Never opened"; const date = new Date(iso); return Number.isNaN(date.getTime()) ? "Recently" : date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); },
+        titleOf(song) { return (song && song.title && song.title.trim()) || "Untitled Song"; },
+        slug(text) { return (text || "sonata-song").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "sonata-song"; },
+        download(name, type, content) {
+          const blob = content instanceof Blob ? content : new Blob([content], { type });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a"); link.href = url; link.download = name;
+          document.body.appendChild(link); link.click(); link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 800);
+        },
+        isIos() { return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase()); },
+        isStandalone() { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone; }
+      };
+
+      const Icon = {
+        paths: {
+          "arrow-up": '<path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path>',
+          clipboard: '<rect x="8" y="4" width="8" height="4" rx="1"></rect><path d="M16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"></path>',
+          copy: '<rect x="9" y="9" width="11" height="11" rx="2"></rect><rect x="4" y="4" width="11" height="11" rx="2"></rect>',
+          download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>',
+          edit: '<path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>',
+          file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path>',
+          "file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h6"></path>',
+          image: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8" cy="10" r="2"></circle><path d="m21 16-5-5L5 19"></path>',
+          info: '<circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path>',
+          library: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"></path>',
+          metronome: '<path d="M5 20h14"></path><path d="M7 20 11 4h2l4 16"></path><path d="m14 9-4 4"></path><path d="M12 4v4"></path>',
+          minus: '<path d="M5 12h14"></path>',
+          moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"></path>',
+          music: '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>',
+          play: '<path d="m8 5 11 7-11 7Z"></path>', pause: '<path d="M8 5v14"></path><path d="M16 5v14"></path>',
+          plus: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
+          presentation: '<path d="M3 4h18v12H3z"></path><path d="M12 16v4"></path><path d="m8 20 4-4 4 4"></path>',
+          print: '<path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path>',
+          rotate: '<path d="M21 12a9 9 0 1 1-2.64-6.36"></path><path d="M21 3v6h-6"></path>',
+          save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path>',
+          scroll: '<path d="M8 21h8"></path><path d="M12 17V3"></path><path d="m7 8 5-5 5 5"></path><path d="m7 12 5 5 5-5"></path>',
+          settings: '<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"></path>',
+          share: '<circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4"></path><path d="m15.4 6.5-6.8 4"></path>',
+          star: '<path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 21l1.1-6.5-4.7-4.6 6.5-.9Z"></path>',
+          "star-filled": '<path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 21l1.1-6.5-4.7-4.6 6.5-.9Z" fill="currentColor"></path>',
+          sun: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.9 4.9 1.4 1.4"></path><path d="m17.7 17.7 1.4 1.4"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m4.9 19.1 1.4-1.4"></path><path d="m17.7 6.3 1.4-1.4"></path>',
+          tap: '<path d="M9 11V6a2 2 0 1 1 4 0v5"></path><path d="M13 10V8a2 2 0 1 1 4 0v6"></path><path d="M17 12a2 2 0 1 1 4 0v2a8 8 0 0 1-16 0v-1"></path>',
+          trash: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 15H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
+          "type-minus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M16 14h6"></path>',
+          "type-plus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M19 11v6"></path><path d="M16 14h6"></path>',
+          wand: '<path d="m15 4 5 5"></path><path d="M14 5 3 16l5 5L19 10Z"></path><path d="M9 6 8 3"></path><path d="M18 14l3 1"></path>',
+          x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
+        },
+        svg(name) { return '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (this.paths[name] || this.paths.file) + '</svg>'; },
+        apply(button, name, label, iconOnly) {
+          const text = label || button.textContent.trim() || button.getAttribute("aria-label") || "Action";
+          button.innerHTML = this.svg(name) + '<span class="' + (iconOnly ? "visually-hidden " : "") + 'button-label">' + text + '</span>';
+          button.dataset.icon = name; button.setAttribute("aria-label", text); button.title = button.title || text;
+        },
+        set(button, name, label, iconOnly) { this.apply(button, name, label, iconOnly); },
+        decorateAll(root) {
+          (root || document).querySelectorAll("[data-icon]").forEach(b => this.apply(b, b.dataset.icon, b.textContent.trim() || b.getAttribute("aria-label"), b.classList.contains("icon-button")));
+          (root || document).querySelectorAll("[data-inline-icon]").forEach(n => { n.innerHTML = this.svg(n.dataset.inlineIcon); });
+        }
+      };
+
+      const FeedbackManager = {
+        ctx: null,
+        init() {
+          if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) this.ctx = new AudioContext();
+          }
+          if (this.ctx && this.ctx.state === "suspended") {
+            this.ctx.resume().catch(() => {});
+          }
+        },
+        play(type) {
+          if (!StateManager.state.settings.uiSounds) return;
+          this.init();
+          if (!this.ctx || this.ctx.state !== "running") return;
+          try {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+      
+              if (type === 'hover') {
+                  osc.type = 'sine';
+                  osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                  gain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+                  osc.start();
+                  osc.stop(this.ctx.currentTime + 0.04);
+              } else if (type === 'click') {
+                  osc.type = 'triangle';
+                  osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                  osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.08);
+                  gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+                  osc.start();
+                  osc.stop(this.ctx.currentTime + 0.08);
+              }
+          } catch(e) {}
+        },
+        vibrate(duration = 10) {
+          if (StateManager.state.settings.haptics && navigator.vibrate) {
+            try { navigator.vibrate(duration); } catch (e) {}
+          }
+        }
+      };
+
+      const StorageManager = {
+        loadSongs() { try { const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.songs) || "[]"); return Array.isArray(p) ? p.map(this.normalizeSong) : []; } catch (e) { return []; } },
+        saveSongs(songs) { localStorage.setItem(STORAGE_KEYS.songs, JSON.stringify(songs)); },
+        loadSettings() { try { const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.settings) || "{}"); return Object.assign({}, DEFAULT_SETTINGS, p || {}); } catch (e) { return Object.assign({}, DEFAULT_SETTINGS); } },
+        saveSettings(settings) { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings)); },
+        loadActiveSongId() { return localStorage.getItem(STORAGE_KEYS.activeSong); },
+        saveActiveSongId(id) { localStorage.setItem(STORAGE_KEYS.activeSong, id); },
+        normalizeSong(song) {
+          const now = Util.now();
+          return { id: song.id || Util.uid(), title: typeof song.title === "string" ? song.title : "Untitled Song", artist: typeof song.artist === "string" ? song.artist : "", reference: typeof song.reference === "string" ? song.reference : "", creator: typeof song.creator === "string" ? song.creator : "", body: typeof song.body === "string" ? song.body : "", favorite: Boolean(song.favorite), manualKey: song.manualKey || "auto", createdAt: song.createdAt || now, updatedAt: song.updatedAt || now, lastOpenedAt: song.lastOpenedAt || song.updatedAt || now };
+        }
+      };
+
+      const StateManager = {
+        state: { songs: [], activeId: null, sharedSong: null, settings: Object.assign({}, DEFAULT_SETTINGS), capo: 0, query: "", libraryFilter: "all", previewMode: "original", transposeDelta: 0, detectedKey: null, dirty: false },
+        init() {
+          this.state.settings = StorageManager.loadSettings();
+          this.state.songs = StorageManager.loadSongs();
+          if (!this.state.songs.length) {
+            const now = Util.now();
+            this.state.songs = [{ id: Util.uid(), title: "Until Then - Study", artist: "Unknown", reference: "", creator: "", body: SAMPLE_BODY, favorite: true, manualKey: "auto", createdAt: now, updatedAt: now, lastOpenedAt: now }];
+            StorageManager.saveSongs(this.state.songs);
+          }
+          const savedActiveId = StorageManager.loadActiveSongId();
+          this.state.activeId = this.state.songs.some(s => s.id === savedActiveId) ? savedActiveId : this.state.songs[0].id;
+        },
+        activeSong() { 
+          if(this.state.activeId === 'shared' && this.state.sharedSong) return this.state.sharedSong;
+          return this.state.songs.find(s => s.id === this.state.activeId) || this.state.songs[0] || null; 
+        },
+        touch(song) { if (!song || song.readonly) return; song.updatedAt = Util.now(); this.state.dirty = true; App.scheduleSave(); },
+        saveNow(message) { 
+          StorageManager.saveSongs(this.state.songs); StorageManager.saveSettings(this.state.settings); 
+          if (this.state.activeId && this.state.activeId !== 'shared') StorageManager.saveActiveSongId(this.state.activeId); 
+          this.state.dirty = false; UIManager.setStatus(message || "Saved"); 
+        },
+        setActive(id) { 
+          if(id === 'shared') return;
+          const song = this.state.songs.find(i => i.id === id); if (!song) return; 
+          this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null;
+          StorageManager.saveActiveSongId(id); this.saveNow("Opened"); 
+        },
+        createSong() { const now = Util.now(); const song = { id: Util.uid(), title: "Untitled Song", artist: "", reference: "", creator: "", body: "", favorite: false, manualKey: "auto", createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(song); this.state.activeId = song.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.saveNow("New song created"); return song; },
+        duplicateActive() { const source = this.activeSong(); if (!source || source.readonly) return null; const now = Util.now(); const song = { id: Util.uid(), title: Util.titleOf(source) + " Copy", artist: source.artist, reference: source.reference, creator: source.creator, body: source.body, favorite: false, manualKey: source.manualKey || "auto", createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(song); this.state.activeId = song.id; this.saveNow("Duplicated"); return song; },
+        deleteActive() { const active = this.activeSong(); if (!active || active.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== active.id); if (!this.state.songs.length) this.createSong(); this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
+        importShared() {
+          if(!this.state.sharedSong) return;
+          const newSong = { ...this.state.sharedSong, id: Util.uid(), readonly: false };
+          this.state.songs.unshift(newSong);
+          this.state.sharedSong = null;
+          this.state.activeId = newSong.id;
+          this.saveNow("Saved to Library");
+          return newSong;
+        },
+        exitShared() {
+          this.state.sharedSong = null;
+          this.state.activeId = this.state.songs[0] ? this.state.songs[0].id : null;
+          if(!this.state.activeId) this.createSong();
+        }
+      };
+
+      const ChordParser = {
+        parse(input) {
+          if (typeof input !== "string") return null; 
+          const text = input.trim(); 
+          if (!text || /\s/.test(text)) return null;
+          
+          const matchRhythm = text.match(/^(.+?)(\/+)$/);
+          let chordPart = text; let trailingSlashes = "";
+          if (matchRhythm) { chordPart = matchRhythm[1]; trailingSlashes = matchRhythm[2]; }
+
+          const slashIndex = chordPart.indexOf("/");
+          const main = slashIndex >= 0 ? chordPart.slice(0, slashIndex) : chordPart;
+          const bass = slashIndex >= 0 ? chordPart.slice(slashIndex + 1) : "";
+
+          const match = main.match(/^([a-gA-G](?:#|b|B)?)(.*)$/);
+          if (!match) return null;
+          
+          let root = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+          if (root.length === 2 && root[1] === 'B') root = root[0] + 'b'; 
+          const quality = match[2] || "";
+
+          if (!Object.prototype.hasOwnProperty.call(NOTE_TO_SEMITONE, root)) return null;
+          
+          let normalizedBass = "";
+          if (bass) { 
+              normalizedBass = bass.charAt(0).toUpperCase() + bass.slice(1).toLowerCase(); 
+              if (normalizedBass.length === 2 && normalizedBass[1] === 'B') normalizedBass = normalizedBass[0] + 'b';
+              if (!this.isNote(normalizedBass)) return null; 
+          }
+          if (!this.isSupportedQuality(quality)) return null;
+
+          return { raw: text, root, quality, bass: normalizedBass || "", rootValue: NOTE_TO_SEMITONE[root], bassValue: normalizedBass ? NOTE_TO_SEMITONE[normalizedBass] : null, trailingSlashes };
+        },
+        isNote(text) { return Object.prototype.hasOwnProperty.call(NOTE_TO_SEMITONE, text); },
+        isSupportedQuality(q) {
+          if (!q) return true; 
+          return /^([mM](?:aj|in)?|dim|aug|sus|add|o|-|\+)?\d*(?:[#b+\-]\d+)*(?:[mM](?:aj|in)?|dim|aug|sus|add)*\d*$/i.test(q);
+        },
+        classify(chord) {
+          const q = (typeof chord === "string" ? chord : chord.quality || "").replace(/\u00b0/g, "dim"); const lower = q.toLowerCase();
+          if (lower.startsWith("dim")) return "diminished"; if (lower.startsWith("aug") || lower === "+") return "augmented";
+          if (lower.startsWith("sus") || lower.includes("sus")) return "suspended"; if (lower === "5") return "power";
+          if (/^(m|min)(?!aj)/.test(lower)) return "minor"; return "major";
+        },
+        unwrapToken(token) {
+          const match = token.match(/^([|()[\]{}<>"'.,;:\-]*)(.*?)([|()[\]{}<>"'.,;:\-]*)$/);
+          if (!match) return { leading: "", core: token, trailing: "" };
+          return { leading: match[1], core: match[2], trailing: match[3] };
+        },
+        parseToken(token) {
+          const parts = this.unwrapToken(token); const chord = this.parse(parts.core);
+          return chord ? Object.assign({ leading: parts.leading, trailing: parts.trailing }, chord) : null;
+        },
+        isChordLine(line) {
+          if (!line.trim()) return false; if (/\[[^\]]+\]/.test(line)) return false;
+          if (/^(verse|chorus|bridge|intro|outro|interlude|tag|v\d|c\d)[:]?$/i.test(line.trim())) return false;
+          const tokens = line.trim().split(/\s+/); let chords = 0, invalid = 0;
+          for (const token of tokens) {
+            const stripped = token.replace(/[|:.,;()[\]{}<>"'\-]/g, ""); if (!stripped) continue;
+            if (/^\d+x$/i.test(stripped) || /^x\d+$/i.test(stripped)) continue; 
+            if (this.parseToken(token)) chords++; else invalid++;
+          }
+          return chords > 0 && invalid === 0;
+        },
+        transformText(text, converter) {
+          return (text || "").split("\n").map(line => {
+            if (/\[[^\]]+\]/.test(line)) { return line.replace(/\[([^\]]+)\]/g, (match, inner) => { const c = this.parse(inner.trim()); return c ? "[" + converter(c, inner) + "]" : match; }); }
+            if (!this.isChordLine(line)) return line;
+            return line.replace(/\S+/g, token => { const p = this.parseToken(token); return p ? p.leading + converter(p, p.core) + p.trailing : token; });
+          }).join("\n");
+        },
+        extractChords(text) {
+          const chords = [];
+          (text || "").split("\n").forEach((line, lineIndex) => {
+            const bracketMatches = Array.from(line.matchAll(/\[([^\]]+)\]/g));
+            if (bracketMatches.length) { bracketMatches.forEach(m => { const p = this.parse(m[1].trim()); if (p) chords.push(Object.assign({ lineIndex }, p)); }); return; }
+            if (this.isChordLine(line)) { line.trim().split(/\s+/).forEach(t => { const p = this.parseToken(t); if (p) chords.push(Object.assign({ lineIndex }, p)); }); }
+          });
+          return chords;
+        }
+      };
+
+      const TransposeEngine = {
+        transposeText(text, steps, key) {
+          const amount = Util.clamp(steps, -24, 24); if (!amount) return text || "";
+          return ChordParser.transformText(text, c => this.transposeChord(c, amount, key));
+        },
+        transposeChord(chord, steps, key) {
+          const flats = this.preferFlats(chord, key);
+          const root = this.transposeNote(chord.rootValue, steps, flats);
+          const bass = chord.bass ? "/" + this.transposeNote(chord.bassValue, steps, flats) : "";
+          return root + chord.quality + bass + (chord.trailingSlashes || "");
+        },
+        transposeNote(value, steps, preferFlats) { return (preferFlats ? FLAT_NOTES : SHARP_NOTES)[Util.mod(value + steps, 12)]; },
+        preferFlats(chord, key) { if (key && key.root) return key.root.includes("b") || ["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"].includes(key.root); return chord.root.includes("b") || (chord.bass && chord.bass.includes("b")); }
+      };
+
+      const KeyDetector = {
+        detect(textOrChords) {
+          const chords = Array.isArray(textOrChords) ? textOrChords : ChordParser.extractChords(textOrChords || "");
+          if (!chords.length) return { root: "C", mode: "major", name: "Unknown", confidence: 0 };
+          const cands = [];
+          for (let tonic = 0; tonic < 12; tonic++) { cands.push(this.scoreCandidate(chords, tonic, "major")); cands.push(this.scoreCandidate(chords, tonic, "minor")); }
+          cands.sort((a, b) => b.score - a.score); const best = cands[0]; const second = cands[1] || { score: 0 };
+          const confidence = Math.round(Util.clamp((best.score - second.score + 1) * 12, 0, 99));
+          return Object.assign(best, { root: this.nameFor(best.tonic, best.mode), name: this.nameFor(best.tonic, best.mode) + " " + best.mode, confidence });
+        },
+        scoreCandidate(chords, tonic, mode) {
+          const mProf = { 0: 3.0, 2: 1.35, 4: 1.2, 5: 1.55, 7: 2.25, 9: 1.45, 11: 0.65, 3: 0.45, 8: 0.35, 10: 0.5 };
+          const minProf = { 0: 3.0, 2: 0.7, 3: 1.75, 5: 1.45, 7: 1.55, 8: 1.45, 10: 1.35, 11: 0.55 };
+          const prof = mode === "major" ? mProf : minProf; let score = 0;
+          chords.forEach((c, index) => {
+            const diff = Util.mod(c.rootValue - tonic, 12); const q = ChordParser.classify(c);
+            let w = 1; if (index === 0) w += 0.45; if (index === chords.length - 1) w += 0.7;
+            score += (prof[diff] || -0.35) * w;
+            if (mode === "major") {
+              if ([0, 5, 7].includes(diff) && ["major", "suspended", "power"].includes(q)) score += 1.05 * w;
+              if ([2, 4, 9].includes(diff) && q === "minor") score += 0.95 * w;
+              if (diff === 11 && q === "diminished") score += 0.8 * w;
+              if ([3, 8, 10].includes(diff) && q === "major") score += 0.35 * w;
+            } else {
+              if ([0, 5].includes(diff) && q === "minor") score += 1.1 * w;
+              if (diff === 7 && ["minor", "major", "suspended", "power"].includes(q)) score += 0.8 * w;
+              if ([3, 8, 10].includes(diff) && q === "major") score += 1.0 * w;
+              if (diff === 2 && q === "diminished") score += 0.7 * w;
+            }
+          });
+          return { tonic, mode, score };
+        },
+        nameFor(s, m) { return m === "minor" ? ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"][s] : KEY_ROOTS[s]; },
+        parseKey(value) { if (!value || value === "auto") return null; const parts = value.split(":"); if (parts.length !== 2 || !Object.prototype.hasOwnProperty.call(NOTE_TO_SEMITONE, parts[0])) return null; return { root: parts[0], mode: parts[1], tonic: NOTE_TO_SEMITONE[parts[0]], name: parts[0] + " " + parts[1] }; },
+        activeKey(song, detected) { return KeyDetector.parseKey(song && song.manualKey) || detected || { root: "C", mode: "major", tonic: 0, name: "C major" }; }
+      };
+
+      const RomanEngine = {
+        majorMap: { 0: "I", 1: "bII", 2: "II", 3: "bIII", 4: "III", 5: "IV", 6: "#IV", 7: "V", 8: "bVI", 9: "VI", 10: "bVII", 11: "VII" },
+        minorMap: { 0: "I", 1: "bII", 2: "II", 3: "III", 4: "#III", 5: "IV", 6: "#IV", 7: "V", 8: "VI", 9: "bVII", 10: "VII", 11: "#VII" },
+        convertText(text, key) { if (!key) return text || ""; return ChordParser.transformText(text, c => this.convertChord(c, key)); },
+        convertChord(c, key) {
+          const diff = Util.mod(c.rootValue - key.tonic, 12); const base = (key.mode === "minor" ? this.minorMap : this.majorMap)[diff] || "?";
+          const q = ChordParser.classify(c); let num = this.applyQualityCase(base, q) + this.suffix(c.quality, q);
+          if (c.bass) { const bd = Util.mod(c.bassValue - key.tonic, 12); num += "/" + ((key.mode === "minor" ? this.minorMap : this.majorMap)[bd] || "?"); }
+          return num + (c.trailingSlashes || "");
+        },
+        applyQualityCase(base, q) { const lower = q === "minor" || q === "diminished"; return base.replace(/[IVX]+/g, m => lower ? m.toLowerCase() : m.toUpperCase()); },
+        suffix(quality, className) {
+          const q = (quality || "").replace(/\u00b0/g, "dim"); const lower = q.toLowerCase();
+          if (!q || lower === "m" || lower === "min" || lower === "maj") return "";
+          if (className === "diminished" && lower === "dim") return "dim";
+          if (className === "augmented" && (lower === "aug" || q === "+")) return "aug";
+          if (/^(m|min)(6|7|9|11|13)/.test(lower)) return lower.replace(/^(m|min)/, "");
+          return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q;
+        }
+      };
+
+      const NashvilleEngine = {
+        majorMap: { 0: "1", 1: "b2", 2: "2", 3: "b3", 4: "3", 5: "4", 6: "#4", 7: "5", 8: "b6", 9: "6", 10: "b7", 11: "7" },
+        minorMap: { 0: "1", 1: "b2", 2: "2", 3: "b3", 4: "3", 5: "4", 6: "#4", 7: "5", 8: "b6", 9: "6", 10: "b7", 11: "7" },
+        convertText(text, key) { if (!key) return text || ""; return ChordParser.transformText(text, c => this.convertChord(c, key)); },
+        convertChord(c, key) {
+          const diff = Util.mod(c.rootValue - key.tonic, 12); let num = (key.mode === "minor" ? this.minorMap : this.majorMap)[diff] || "?"; num += this.suffix(c.quality);
+          if (c.bass) { const bd = Util.mod(c.bassValue - key.tonic, 12); num += "/" + ((key.mode === "minor" ? this.minorMap : this.majorMap)[bd] || "?"); }
+          return num + (c.trailingSlashes || "");
+        },
+        suffix(quality) {
+          const q = (quality || "").replace(/\u00b0/g, "dim"); const lower = q.toLowerCase();
+          if (!q || lower === "maj") return ""; if (lower === "min") return "m";
+          return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q;
+        }
+      };
+
+      const ExportManager = {
+        currentPayload() {
+          const song = StateManager.activeSong();
+          if (!song) return { title: "Untitled", artist: "", reference: "", creator: "", body: "", text: "", bpm: "120", keyInfo: "Unknown", modeName: "Song", capo: 0 };
+          const activeKey = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          
+          const exportBody = UIManager.previewText(song, activeKey); 
+          const capo = StateManager.state.capo;
+          
+          let modeName = "Standard Chart";
+          if (StateManager.state.previewMode === "transposed") modeName = "Transposed Chart";
+          if (StateManager.state.previewMode === "roman") modeName = "Roman Numerals";
+          if (StateManager.state.previewMode === "nashville") modeName = "Nashville Numbers";
+          if (capo > 0) modeName += ` (Capo ${capo})`;
+
+          let textBase = Util.titleOf(song) + (capo > 0 ? ` [Capo ${capo}]` : "") + "\n";
+          if (song.artist) textBase += `By: ${song.artist}\n`;
+          if (song.reference) textBase += `Reference: ${song.reference}\n`;
+          if (song.creator) textBase += `Arranged by: ${song.creator}\n`;
+          textBase += "\n" + exportBody;
+
+          return {
+            title: Util.titleOf(song),
+            artist: song.artist || "",
+            reference: song.reference || "",
+            creator: song.creator || "",
+            body: exportBody,
+            text: textBase,
+            bpm: StateManager.state.settings.metronomeBpm,
+            keyInfo: activeKey.name || "Unknown",
+            modeName: modeName,
+            capo: capo
+          };
+        },
+        exportTxt() { const p = this.currentPayload(); Util.download(Util.slug(p.title) + ".txt", "text/plain;charset=utf-8", p.text); UIManager.toast("TXT exported"); },
+        exportPng() { const p = this.currentPayload(); const blob = this.renderPng(p); Util.download(Util.slug(p.title) + ".png", "image/png", blob); UIManager.toast("PNG exported"); },
+        renderPng(payload) {
+          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
+          const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+          
+          const style = getComputedStyle(document.documentElement);
+          const bgColor = style.getPropertyValue('--bg').trim() || "#f6f7f9";
+          const surfaceColor = style.getPropertyValue('--surface').trim() || "#ffffff";
+          const textColor = style.getPropertyValue('--text').trim() || "#16181d";
+          const mutedColor = style.getPropertyValue('--muted').trim() || "#667085";
+          const lineColor = style.getPropertyValue('--line').trim() || "#d8dde6";
+          
+          const fontFamily = style.getPropertyValue('--chart-font').trim() || "monospace";
+          const uiFont = style.getPropertyValue('--ui-font').trim() || "sans-serif";
+          
+          const textSize = parseInt(StateManager.state.settings.editorFontSize, 10) || 14;
+          const lineHeight = textSize * 1.6;
+          const padding = 48; 
+          
+          const hasArtist = Boolean(payload.artist);
+          const headerHeight = hasArtist ? 144 : 120;
+          const footerHeight = 60;
+          
+          const canvas = document.createElement("canvas"); 
+          const ctx = canvas.getContext("2d");
+          
+          ctx.font = `${textSize}px ${fontFamily}`;
+          const lines = payload.body.split("\n");
+          let maxLineWidth = 0; 
+          lines.forEach(l => { maxLineWidth = Math.max(maxLineWidth, ctx.measureText(l || " ").width); });
+          
+          const columnWidth = Math.max(400, maxLineWidth + 60);
+          const linesPerColumn = Math.ceil(lines.length / columns);
+          
+          const width = (padding * 2) + (columnWidth * columns) - (columns > 1 ? 40 : 0);
+          const height = headerHeight + footerHeight + (linesPerColumn * lineHeight) + padding;
+
+          canvas.width = width * scale; 
+          canvas.height = height * scale; 
+          ctx.scale(scale, scale);
+
+          // Background
+          ctx.fillStyle = bgColor; 
+          ctx.fillRect(0, 0, width, height);
+
+          // Header
+          ctx.fillStyle = surfaceColor;
+          ctx.fillRect(0, 0, width, headerHeight);
+          ctx.fillStyle = lineColor;
+          ctx.fillRect(0, headerHeight, width, 1);
+
+          ctx.fillStyle = textColor; 
+          ctx.font = `700 32px ${uiFont}`; 
+          ctx.fillText(payload.title, padding, 56);
+          
+          let yOffset = 86;
+          if (hasArtist) {
+              ctx.font = `600 16px ${uiFont}`;
+              ctx.fillStyle = mutedColor;
+              ctx.fillText(`By ${payload.artist}`, padding, yOffset);
+              yOffset += 24;
+          }
+
+          ctx.fillStyle = mutedColor; 
+          ctx.font = `600 14px ${uiFont}`; 
+          ctx.fillText(`Key: ${payload.keyInfo}   •   BPM: ${payload.bpm}   •   Layout: ${payload.modeName}`, padding, yOffset);
+
+          // Body
+          ctx.fillStyle = textColor; 
+          ctx.font = `${textSize}px ${fontFamily}`;
+          lines.forEach((line, i) => {
+            const col = Math.floor(i / linesPerColumn);
+            const row = i % linesPerColumn;
+            const x = padding + (col * columnWidth); 
+            const y = headerHeight + padding + (row * lineHeight) + (textSize * 0.8);
+            ctx.fillText(line || "", x, y);
+          });
+
+          // Footer
+          ctx.fillStyle = mutedColor; 
+          ctx.font = `12px ${uiFont}`; 
+          ctx.textAlign = "center"; 
+          let footerText = `Generated with Sonata Master`;
+          if (payload.creator) footerText += `  •  Arranged by: ${payload.creator}`;
+          if (payload.reference) footerText += `  •  Ref: ${payload.reference}`;
+          ctx.fillText(footerText, width / 2, height - 24);
+
+          const dataUrl = canvas.toDataURL("image/png"); 
+          const byteString = atob(dataUrl.split(",")[1]);
+          const bytes = new Uint8Array(byteString.length); 
+          for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+          return new Blob([bytes], { type: "image/png" });
+        },
+        exportPdf() { const p = this.currentPayload(); const pdf = this.createPdf(p); Util.download(Util.slug(p.title) + ".pdf", "application/pdf", pdf); UIManager.toast("PDF exported"); },
+        createPdf(payload) {
+          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
+          const orientation = UIManager.dom.exportOrientation.value;
+          
+          const pageWidth = orientation === "landscape" ? 792 : 612; 
+          const pageHeight = orientation === "landscape" ? 612 : 792; 
+          
+          const margin = 54; const lineHeight = 15;
+          const maxChars = columns === 1 ? (orientation === "landscape" ? 120 : 90) : (columns === 2 ? 50 : (orientation === "landscape" ? 45 : 30));
+          
+          const pages = []; let y = pageHeight - 130; let ops = []; let col = 0;
+          const columnWidth = (pageWidth - margin * 2) / columns;
+
+          const pushPage = () => { pages.push(ops.join("\n")); ops = []; y = pageHeight - 130; col = 0; };
+          const textLine = (text, x, font, size) => { ops.push("BT /" + font + " " + size + " Tf " + x + " " + y + " Td (" + this.pdfEscape(text) + ") Tj ET"); y -= lineHeight; };
+          
+          payload.body.split("\n").forEach(line => {
+            const chunks = this.wrapPdfLine(line, maxChars);
+            chunks.forEach(chunk => {
+              if (y < 76) {
+                col++;
+                if (col >= columns) { pushPage(); } else { y = pageHeight - 130; }
+              }
+              const x = margin + (col * columnWidth);
+              textLine(chunk, x, "F1", 10.5);
+            });
+          });
+          if (ops.length) pushPage();
+
+          const objects = []; const add = value => { objects.push(value); return objects.length; };
+          const catalogId = add("<< /Type /Catalog /Pages 2 0 R >>"); const pagesId = add("");
+          const fontCourierId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>"); const fontBoldId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"); const fontRegularId = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+          const pageIds = []; const generated = new Date().toLocaleDateString();
+          pages.forEach((pageOps, index) => {
+            const chrome = this.pdfChrome(payload, index + 1, pages.length, generated, pageWidth, pageHeight, margin);
+            const content = chrome + "\n0 g\n" + pageOps; 
+            const contentId = add("<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+            pageIds.push(add("<< /Type /Page /Parent " + pagesId + " 0 R /MediaBox [0 0 " + pageWidth + " " + pageHeight + "] /Resources << /Font << /F1 " + fontCourierId + " 0 R /F2 " + fontBoldId + " 0 R /F3 " + fontRegularId + " 0 R >> >> /Contents " + contentId + " 0 R >>"));
+          });
+          objects[pagesId - 1] = "<< /Type /Pages /Count " + pageIds.length + " /Kids [" + pageIds.map(id => id + " 0 R").join(" ") + "] >>";
+          objects[catalogId - 1] = "<< /Type /Catalog /Pages " + pagesId + " 0 R >>";
+          
+          let pdf = "%PDF-1.4\n"; const offsets = [0];
+          objects.forEach((object, index) => { offsets.push(pdf.length); pdf += (index + 1) + " 0 obj\n" + object + "\nendobj\n"; });
+          const xref = pdf.length; pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n";
+          offsets.slice(1).forEach(offset => { pdf += String(offset).padStart(10, "0") + " 00000 n \n"; });
+          pdf += "trailer\n<< /Size " + (objects.length + 1) + " /Root " + catalogId + " 0 R >>\nstartxref\n" + xref + "\n%%EOF";
+          return new Blob([pdf], { type: "application/pdf" });
+        },
+        pdfChrome(payload, page, total, generated, pageWidth, pageHeight, margin) {
+          const safeTitle = this.pdfEscape(this.pdfTruncate(payload.title, 62));
+          const subHeader = this.pdfEscape(`Key: ${payload.keyInfo}  |  BPM: ${payload.bpm}  |  Layout: ${payload.modeName}`);
+          
+          let footerStr = `Page ${page} of ${total}  -  Generated ${generated} by Sonata Master`;
+          if (payload.creator) footerStr += `  |  Arr: ${payload.creator}`;
+          if (payload.reference) footerStr += `  |  Ref: ${payload.reference}`;
+          const footer = this.pdfEscape(this.pdfTruncate(footerStr, 110));
+
+          const ops = [
+            "q 0.96 0.96 0.98 rg 0 " + (pageHeight - 100) + " " + pageWidth + " 100 re f Q",
+            "q 0.88 0.90 0.92 RG 1 w 0 " + (pageHeight - 100) + " m " + pageWidth + " " + (pageHeight - 100) + " l S Q",
+            "0 g BT /F2 20 Tf " + margin + " " + (pageHeight - 56) + " Td (" + safeTitle + ") Tj ET"
+          ];
+
+          if (payload.artist) {
+            ops.push("0.4 0.4 0.44 rg BT /F3 11 Tf " + margin + " " + (pageHeight - 74) + " Td (By: " + this.pdfEscape(payload.artist) + ") Tj ET");
+            ops.push("0.5 0.5 0.55 rg BT /F3 10 Tf " + margin + " " + (pageHeight - 88) + " Td (" + subHeader + ") Tj ET");
+          } else {
+            ops.push("0.4 0.4 0.44 rg BT /F3 10 Tf " + margin + " " + (pageHeight - 78) + " Td (" + subHeader + ") Tj ET");
+          }
+
+          ops.push(
+            "q 0.88 0.90 0.92 RG 1 w " + margin + " 46 m " + (pageWidth - margin) + " 46 l S Q",
+            "0.5 0.5 0.55 rg BT /F3 9 Tf " + margin + " 28 Td (" + footer + ") Tj ET",
+            "0 g"
+          );
+
+          return ops.join("\n");
+        },
+        pdfTruncate(text, max) { const value = String(text || ""); return value.length > max ? value.slice(0, Math.max(0, max - 3)) + "..." : value; },
+        wrapPdfLine(line, maxChars) { if (!line) return [""]; const chunks = []; let rest = line; while (rest.length > maxChars) { chunks.push(rest.slice(0, maxChars)); rest = rest.slice(maxChars); } chunks.push(rest); return chunks; },
+        pdfEscape(text) { return String(text).replace(/[^\x20-\x7E]/g, "?").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); },
+        print() {
+          const p = this.currentPayload(); 
+          UIManager.dom.printTitle.textContent = p.title; 
+          UIManager.dom.printBody.textContent = p.body; 
+          UIManager.dom.printFooter.textContent = `Key: ${p.keyInfo} | BPM: ${p.bpm} | Layout: ${p.modeName} — Generated with Sonata Master`; 
+          
+          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
+          UIManager.dom.printBody.style.columnCount = columns;
+          UIManager.dom.printBody.style.columnGap = "40px";
+          
+          window.setTimeout(() => window.print(), 60);
+        },
+        async copyText(text) { 
+          try {
+              if (navigator.clipboard && navigator.clipboard.writeText) { 
+                  await navigator.clipboard.writeText(text); 
+                  return true; 
+              } 
+          } catch(e) {}
+          
+          try {
+              const helper = document.createElement("textarea"); helper.value = text; helper.style.position = "fixed"; helper.style.opacity = "0"; document.body.appendChild(helper); helper.select(); 
+              const success = document.execCommand("copy"); helper.remove(); 
+              return success;
+          } catch(e) { return false; }
+        },
+        async copy() { 
+          const p = this.currentPayload(); 
+          const success = await this.copyText(p.text); 
+          if(success) UIManager.toast("Copied to clipboard"); 
+          else UIManager.openModal({ title: "Manual Copy Required", message: "Your browser blocked auto-copying. Please copy the text below.", fields: [{ id: "copydata", label: "", type: "textarea", value: p.text }], confirmText: "Close" });
+        },
+        share() { 
+          const song = StateManager.activeSong();
+          if(!song) return;
+          const shareData = { t: song.title, b: song.body, k: song.manualKey, a: song.artist, c: song.creator, r: song.reference };
+          const encoded = btoa(encodeURIComponent(JSON.stringify(shareData)));
+          const url = window.location.origin + window.location.pathname + "?share=" + encoded;
+          const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url);
+
+          const fields = [
+            { id: "shareLink", label: "Share Link", type: "text", value: url },
+            { type: "heading", label: "Scan with Phone" }
+          ];
+
+          UIManager.openModal({
+            title: "Share Song",
+            message: "Scan the QR code or copy the link to collaborate. It opens in a read-only view so it won't mess up their library.",
+            fields: fields,
+            confirmText: "Copy Link & Close",
+            onConfirm: async () => {
+              const s = await this.copyText(url);
+              if(s) UIManager.toast("Share link copied!");
+            }
+          });
+          
+          const qrImg = document.createElement("img");
+          qrImg.src = qrUrl;
+          qrImg.style = "display:block; margin: 10px auto; border-radius: 8px; border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 100%; height: auto;";
+          UIManager.dom.modalFields.appendChild(qrImg);
+        },
+        exportBackup() {
+            const data = { songs: StateManager.state.songs, settings: StateManager.state.settings, exportDate: new Date().toISOString() };
+            Util.download("sonata-backup-" + new Date().toISOString().split('T')[0] + ".json", "application/json", JSON.stringify(data, null, 2));
+        },
+        importBackup(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.songs && Array.isArray(data.songs)) StorageManager.saveSongs(data.songs);
+                    if (data.settings) StorageManager.saveSettings(data.settings);
+                    window.location.reload();
+                } catch(err) { UIManager.toast("Invalid backup file"); }
+            };
+            reader.readAsText(file);
+        }
+      };
+
+      const SongLibrary = {
+        render() {
+          const list = UIManager.dom.libraryList; const songs = this.filteredSongs(); list.textContent = "";
+          if (!songs.length) { const empty = document.createElement("div"); empty.className = "empty-state"; empty.textContent = "No matching songs"; list.appendChild(empty); return; }
+          songs.forEach(song => {
+            const card = document.createElement("div"); card.className = "song-card" + (song.id === StateManager.state.activeId ? " active" : ""); card.tabIndex = 0; card.role = "button"; card.dataset.songId = song.id;
+            const text = document.createElement("div"); const title = document.createElement("p"); title.className = "song-card-title"; title.textContent = Util.titleOf(song);
+            const meta = document.createElement("p"); meta.className = "song-card-meta"; meta.textContent = (song.favorite ? "Favorite - " : "") + "Updated " + Util.formatDate(song.updatedAt);
+            text.append(title, meta);
+            const fav = document.createElement("button"); fav.className = "favorite-pill"; fav.type = "button"; fav.title = song.favorite ? "Remove favorite" : "Add favorite"; fav.setAttribute("aria-label", fav.title); fav.dataset.favoriteId = song.id; fav.classList.toggle("active", song.favorite); Icon.apply(fav, song.favorite ? "star-filled" : "star", fav.title, true);
+            card.append(text, fav); list.appendChild(card);
+          });
+        },
+        filteredSongs() {
+          const state = StateManager.state; const query = state.query.trim().toLowerCase(); let songs = state.songs.slice();
+          if (state.libraryFilter === "favorites") songs = songs.filter(s => s.favorite);
+          if (state.libraryFilter === "recent") songs = songs.sort((a, b) => new Date(b.lastOpenedAt || b.updatedAt) - new Date(a.lastOpenedAt || a.updatedAt)).slice(0, 10); else songs = songs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+          if (query) songs = songs.filter(s => Util.titleOf(s).toLowerCase().includes(query) || (s.body || "").toLowerCase().includes(query)); return songs;
+        },
+        bind() {
+          UIManager.dom.libraryList.addEventListener("click", e => { const fav = e.target.closest("[data-favorite-id]"); if (fav) { e.stopPropagation(); this.toggleFavorite(fav.dataset.favoriteId); return; } const card = e.target.closest("[data-song-id]"); if (card) this.open(card.dataset.songId); });
+          UIManager.dom.libraryList.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.matches("[data-song-id]")) { e.preventDefault(); this.open(e.target.dataset.songId); } });
+        },
+        open(id) { StateManager.setActive(id); Editor.loadActiveSong(); UIManager.renderAll(); },
+        toggleFavorite(id) { const song = StateManager.state.songs.find(i => i.id === id); if (!song) return; song.favorite = !song.favorite; StateManager.touch(song); StateManager.saveNow(song.favorite ? "Favorited" : "Favorite removed"); UIManager.renderAll(); }
+      };
+
+      const Editor = {
+        bind() {
+          UIManager.dom.songTitle.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.title = UIManager.dom.songTitle.value; StateManager.touch(song); UIManager.renderLibrarySoon(); UIManager.updateAnalysis(); });
+          UIManager.dom.songTitle.addEventListener("blur", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; if (!song.title.trim()) song.title = "Untitled Song"; UIManager.dom.songTitle.value = Util.titleOf(song); StateManager.touch(song); UIManager.renderAll(); });
+          UIManager.dom.songBody.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.body = UIManager.dom.songBody.value; StateManager.touch(song); UIManager.updateAnalysisSoon(); });
+        },
+        loadActiveSong() { 
+          const song = StateManager.activeSong(); if (!song) return; 
+          UIManager.dom.songTitle.value = Util.titleOf(song); 
+          UIManager.dom.songBody.value = song.body || ""; 
+          UIManager.dom.keySelect.value = song.manualKey || "auto"; 
+          
+          const isShared = Boolean(song.readonly);
+          UIManager.dom.songTitle.readOnly = isShared;
+          UIManager.dom.songBody.readOnly = isShared;
+          
+          UIManager.dom.saveSongButton.style.display = isShared ? 'none' : '';
+          UIManager.dom.importSharedButton.style.display = isShared ? '' : 'none';
+          UIManager.dom.infoSongButton.style.display = isShared ? 'none' : '';
+          UIManager.dom.duplicateSongButton.style.display = isShared ? 'none' : '';
+          UIManager.dom.deleteSongButton.style.display = isShared ? 'none' : '';
+          UIManager.dom.favoriteSongButton.style.display = isShared ? 'none' : '';
+          UIManager.dom.exitSharedButton.style.display = isShared ? '' : 'none';
+          
+          if(isShared) UIManager.setStatus("Read-only Preview");
+        },
+        applySettings() {
+          const settings = StateManager.state.settings; const uiFont = FONT_STACKS[settings.uiFontFamily] || FONT_STACKS.system; const chartFont = FONT_STACKS[settings.chartFontFamily] || FONT_STACKS.mono;
+          document.documentElement.style.setProperty("--ui-font", uiFont); document.documentElement.style.setProperty("--chart-font", chartFont);
+          document.documentElement.style.setProperty("--app-font-size", Util.clamp(settings.appFontSize, 10, 24) + "px");
+          document.documentElement.style.setProperty("--editor-font", Util.clamp(settings.editorFontSize, 8, 64) + "px");
+          document.documentElement.style.setProperty("--preview-font", Util.clamp(settings.previewFontSize, 8, 48) + "px");
+          document.documentElement.style.setProperty("--editor-line", Util.clamp(settings.editorLineHeight, 1.2, 2.8));
+        }
+      };
+
+      const ThemeManager = {
+        apply() { 
+          const theme = StateManager.state.settings.theme; 
+          document.documentElement.dataset.theme = theme; 
+          document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue"; 
+          Icon.set(UIManager.dom.themeToggle, theme === "dark" || theme === "stage" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true); 
+        },
+        toggle() { StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; this.apply(); StateManager.saveNow("Theme saved"); },
+        cycleTheme() {
+           const themes = ["light", "dark", "stage"];
+           const curr = themes.indexOf(StateManager.state.settings.theme);
+           StateManager.state.settings.theme = themes[(curr + 1) % themes.length];
+           this.apply(); StateManager.saveNow("Theme updated");
+        }
+      };
+
+      const MetronomeManager = {
+        timer: 0, running: false, beatIndex: 0, tapTimes: [],
+        start() { if (this.running) return; this.running = true; this.beatIndex = 0; FeedbackManager.init(); this.tick(); this.timer = window.setInterval(() => this.tick(), this.intervalMs()); this.updateUi(); },
+        stop() { this.running = false; window.clearInterval(this.timer); this.beatIndex = 0; this.updateUi(); },
+        toggle() { this.running ? this.stop() : this.start(); },
+        setBpm(value) { const settings = StateManager.state.settings; settings.metronomeBpm = Util.clamp(value, 30, 500); if (this.running) { window.clearInterval(this.timer); this.timer = window.setInterval(() => this.tick(), this.intervalMs()); } StateManager.saveNow("Metronome saved"); this.updateUi(); },
+        setBeats(value) { StateManager.state.settings.metronomeBeats = Util.clamp(value, 2, 7); this.beatIndex = 0; StateManager.saveNow("Metronome saved"); this.renderBeats(); this.updateUi(); },
+        tap() { const now = performance.now(); this.tapTimes = this.tapTimes.filter(t => now - t < 3000); this.tapTimes.push(now); if (this.tapTimes.length >= 2) { const intervals = []; for (let i = 1; i < this.tapTimes.length; i++) intervals.push(this.tapTimes[i] - this.tapTimes[i - 1]); const avg = intervals.reduce((sum, value) => sum + value, 0) / intervals.length; this.setBpm(Math.round(60000 / avg)); } else { this.flashBeat(0); } },
+        intervalMs() { return 60000 / Util.clamp(StateManager.state.settings.metronomeBpm, 30, 500); },
+        tick() { const beats = Util.clamp(StateManager.state.settings.metronomeBeats, 2, 7); const current = this.beatIndex % beats; this.playClick(current === 0); this.flashBeat(current); this.beatIndex = (this.beatIndex + 1) % beats; },
+        playClick(accent) { 
+            const ctx = FeedbackManager.ctx;
+            if (!ctx) return; 
+            if (ctx.state === "suspended") ctx.resume().catch(() => {}); 
+            const osc = ctx.createOscillator(); const gain = ctx.createGain(); const vol = Util.clamp(StateManager.state.settings.metronomeVolume, 0, 1); 
+            osc.frequency.value = accent ? 1320 : 880; osc.type = "square"; 
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(Math.max(0.001, vol * (accent ? 0.35 : 0.22)), ctx.currentTime + 0.004); 
+            gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.055); 
+            osc.connect(gain); gain.connect(ctx.destination); 
+            osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.065); 
+        },
+        renderBeats() { 
+          const beats = Util.clamp(StateManager.state.settings.metronomeBeats, 2, 7); 
+          [UIManager.dom.beatRow, UIManager.dom.presBeatRow].forEach(row => {
+            if(!row) return;
+            row.textContent = ""; row.style.gridTemplateColumns = "repeat(" + beats + ", minmax(0, 1fr))"; 
+            for (let i = 0; i < beats; i++) { const dot = document.createElement("span"); dot.className = "beat-dot"; row.appendChild(dot); }
+          });
+        },
+        flashBeat(index) { 
+          [UIManager.dom.beatRow, UIManager.dom.presBeatRow].forEach(row => {
+            if(!row) return;
+            const dots = Array.from(row.children || []); dots.forEach((dot, i) => { dot.classList.toggle("active", i === index); dot.classList.toggle("downbeat", i === index && index === 0); }); 
+            window.setTimeout(() => { dots.forEach(dot => { dot.classList.remove("active"); dot.classList.remove("downbeat"); }); }, 105);
+          });
+        },
+        updateUi() { const settings = StateManager.state.settings; UIManager.dom.metronomeBpmRange.value = settings.metronomeBpm; UIManager.dom.metronomeBpmInput.value = settings.metronomeBpm; UIManager.dom.metronomeBeats.value = String(settings.metronomeBeats); UIManager.dom.metronomeStatus.textContent = this.running ? settings.metronomeBpm + " BPM" : "Stopped"; Icon.set(UIManager.dom.metronomeToggle, this.running ? "pause" : "play", this.running ? "Stop" : "Start", false); Icon.set(UIManager.dom.presMetronomeToggle, this.running ? "pause" : "metronome", this.running ? "Stop" : "Metronome", true); }
+      };
+
+      const PresentationManager = {
+        idleTimer: null,
+        open() { 
+            const song = StateManager.activeSong(); if (!song) return; 
+            UIManager.dom.presentationTitle.textContent = Util.titleOf(song); 
+            UIManager.dom.presentationText.textContent = UIManager.previewText(song, KeyDetector.activeKey(song, StateManager.state.detectedKey)); 
+            UIManager.dom.presentation.hidden = false; UIManager.dom.presentationStage.scrollTop = 0; 
+            this.applySettings(); 
+            this.startIdleTimer();
+            const req = UIManager.dom.presentation.requestFullscreen || UIManager.dom.presentation.webkitRequestFullscreen; 
+            if (req) { try { const res = req.call(UIManager.dom.presentation); if (res && typeof res.catch === "function") res.catch(() => {}); } catch (e) {} } 
+        },
+        close() { 
+            UIManager.dom.presentation.hidden = true; 
+            clearTimeout(this.idleTimer);
+            UIManager.dom.presentation.classList.remove("idle");
+            if (document.fullscreenElement && document.exitFullscreen) { document.exitFullscreen().catch(() => {}); } 
+        },
+        changeFont(delta) { const settings = StateManager.state.settings; settings.presentationFontSize = Util.clamp(settings.presentationFontSize + delta, 16, 140); this.applySettings(); StateManager.saveNow("Presentation font saved"); },
+        setOrientation(value) { StateManager.state.settings.presentationOrientation = value; this.applySettings(); StateManager.saveNow("Orientation saved"); },
+        applySettings() { const settings = StateManager.state.settings; document.documentElement.style.setProperty("--presentation-font", settings.presentationFontSize + "px"); UIManager.dom.presentationOrientation.value = settings.presentationOrientation; UIManager.dom.presentation.classList.toggle("orientation-portrait", settings.presentationOrientation === "portrait"); UIManager.dom.presentation.classList.toggle("orientation-landscape", settings.presentationOrientation === "landscape"); },
+        startIdleTimer() {
+            clearTimeout(this.idleTimer);
+            UIManager.dom.presentation.classList.remove("idle");
+            this.idleTimer = setTimeout(() => {
+                UIManager.dom.presentation.classList.add("idle");
+            }, 3000);
+        }
+      };
+
+      const UIManager = {
+        dom: {}, modalAction: null, renderLibrarySoon: Util.debounce(() => SongLibrary.render(), 120), updateAnalysisSoon: Util.debounce(() => UIManager.updateAnalysis(), 130),
+        cache() { ["themeToggle", "settingsButton", "presentationButton", "newSongButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "importSharedButton", "infoSongButton", "duplicateSongButton", "favoriteSongButton", "deleteSongButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "printArea", "printTitle", "printBody", "printFooter"].forEach(id => { this.dom[id] = document.getElementById(id); }); },
+        init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); SongLibrary.bind(); },
+        bind() {
+          this.dom.themeToggle.addEventListener("click", () => ThemeManager.toggle()); this.dom.settingsButton.addEventListener("click", () => this.openSettings()); this.dom.presentationButton.addEventListener("click", () => PresentationManager.open());
+          document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(button => { button.addEventListener("click", () => this.setMobileView(button.dataset.mobileView)); });
+          this.dom.newSongButton.addEventListener("click", () => { StateManager.createSong(); Editor.loadActiveSong(); this.renderAll(); this.toast("New song ready"); });
+          this.dom.saveSongButton.addEventListener("click", () => StateManager.saveNow("Saved")); 
+          this.dom.importSharedButton.addEventListener("click", () => { StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); this.toast("Saved to your Library"); });
+          this.dom.exitSharedButton.addEventListener("click", () => { StateManager.exitShared(); Editor.loadActiveSong(); this.renderAll(); });
+          this.dom.infoSongButton.addEventListener("click", () => this.openSongInfo());
+          this.dom.duplicateSongButton.addEventListener("click", () => { StateManager.duplicateActive(); Editor.loadActiveSong(); this.renderAll(); this.toast("Song duplicated"); });
+          this.dom.favoriteSongButton.addEventListener("click", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.favorite = !song.favorite; StateManager.touch(song); StateManager.saveNow(song.favorite ? "Favorited" : "Favorite removed"); this.renderAll(); });
+          this.dom.deleteSongButton.addEventListener("click", () => this.openDelete());
+          this.dom.songSearch.addEventListener("input", () => { StateManager.state.query = this.dom.songSearch.value; SongLibrary.render(); });
+          document.querySelectorAll("[data-library-filter]").forEach(b => { b.addEventListener("click", () => { StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(item => item.classList.toggle("active", item === b)); SongLibrary.render(); }); });
+          document.querySelectorAll("[data-preview-mode]").forEach(b => { b.addEventListener("click", () => { StateManager.state.previewMode = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(item => item.classList.toggle("active", item === b)); this.updateAnalysis(); }); });
+          this.dom.keySelect.addEventListener("change", () => { const song = StateManager.activeSong(); if (!song || song.readonly) { this.updateAnalysis(); return; } song.manualKey = this.dom.keySelect.value; StateManager.touch(song); StateManager.saveNow("Key saved"); this.updateAnalysis(); });
+          this.dom.capoSelect.addEventListener("change", () => { StateManager.state.capo = parseInt(this.dom.capoSelect.value, 10); this.updateAnalysis(); });
+          this.dom.transposeSelect.addEventListener("change", () => { StateManager.state.transposeDelta = Util.clamp(this.dom.transposeSelect.value, -24, 24); this.updateAnalysis(); });
+          this.dom.transposeDown.addEventListener("click", () => this.bumpTranspose(-1)); this.dom.transposeUp.addEventListener("click", () => this.bumpTranspose(1)); 
+          this.dom.applyTransposeButton.addEventListener("click", () => this.applyTranspose());
+          this.dom.resetTransposeButton.addEventListener("click", () => { StateManager.state.transposeDelta = 0; this.dom.transposeSelect.value = "0"; StateManager.state.capo = 0; this.dom.capoSelect.value = "0"; this.updateAnalysis(); this.toast("Transpose reset"); });
+          this.dom.metronomeBpmRange.addEventListener("input", () => MetronomeManager.setBpm(this.dom.metronomeBpmRange.value)); this.dom.metronomeBpmInput.addEventListener("change", () => MetronomeManager.setBpm(this.dom.metronomeBpmInput.value));
+          this.dom.metronomeDown.addEventListener("click", () => MetronomeManager.setBpm(StateManager.state.settings.metronomeBpm - 5)); this.dom.metronomeUp.addEventListener("click", () => MetronomeManager.setBpm(StateManager.state.settings.metronomeBpm + 5)); this.dom.metronomeBeats.addEventListener("change", () => MetronomeManager.setBeats(this.dom.metronomeBeats.value));
+          this.dom.metronomeToggle.addEventListener("click", () => MetronomeManager.toggle()); this.dom.tapTempoButton.addEventListener("click", () => MetronomeManager.tap());
+          this.dom.exportTxtButton.addEventListener("click", () => ExportManager.exportTxt()); this.dom.exportPngButton.addEventListener("click", () => ExportManager.exportPng()); this.dom.exportPdfButton.addEventListener("click", () => ExportManager.exportPdf()); this.dom.printButton.addEventListener("click", () => ExportManager.print());
+          this.dom.copyButton.addEventListener("click", () => ExportManager.copy()); this.dom.shareButton.addEventListener("click", () => ExportManager.share());
+          this.dom.modalCancel.addEventListener("click", () => this.closeModal()); this.dom.modalBackdrop.addEventListener("click", () => this.closeModal()); this.dom.modalConfirm.addEventListener("click", () => this.confirmModal());
+          this.dom.presentationExit.addEventListener("click", () => PresentationManager.close()); this.dom.presentationFontDown.addEventListener("click", () => PresentationManager.changeFont(-4)); this.dom.presentationFontUp.addEventListener("click", () => PresentationManager.changeFont(4)); this.dom.presentationOrientation.addEventListener("change", () => PresentationManager.setOrientation(this.dom.presentationOrientation.value));
+          this.dom.presThemeToggle.addEventListener("click", () => ThemeManager.cycleTheme()); this.dom.presMetronomeToggle.addEventListener("click", () => MetronomeManager.toggle());
+          
+          this.dom.presentation.addEventListener("mousemove", () => PresentationManager.startIdleTimer());
+          this.dom.presentation.addEventListener("touchstart", () => PresentationManager.startIdleTimer(), {passive: true});
+
+          document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!this.dom.modalHost.hidden) this.closeModal(); if (!this.dom.presentation.hidden) PresentationManager.close(); } });
+
+          // Haptic & Sound Bindings
+          document.body.addEventListener('pointerenter', (e) => {
+            if (e.pointerType === 'mouse' && e.target.closest('button, .tab-button, .song-card, select, input[type="range"]')) {
+              FeedbackManager.play('hover');
+            }
+          }, true);
+          document.body.addEventListener('click', (e) => {
+            if (e.target.closest('button, .tab-button, .song-card, select, input[type="range"]')) {
+              FeedbackManager.play('click');
+              FeedbackManager.vibrate(15);
+            }
+          }, true);
+        },
+        populateKeySelect() { this.dom.keySelect.textContent = ""; const auto = document.createElement("option"); auto.value = "auto"; auto.textContent = "Auto"; this.dom.keySelect.appendChild(auto); [{ mode: "major", roots: KEY_ROOTS }, { mode: "minor", roots: MINOR_KEY_ROOTS }].forEach(group => { group.roots.forEach(root => { const option = document.createElement("option"); option.value = root + ":" + group.mode; option.textContent = root + " " + group.mode; this.dom.keySelect.appendChild(option); }); }); },
+        populateTransposeSelect() { this.dom.transposeSelect.textContent = ""; for (let value = -24; value <= 24; value += 1) { const option = document.createElement("option"); option.value = String(value); option.textContent = value > 0 ? "+" + value : String(value); this.dom.transposeSelect.appendChild(option); } },
+        setMobileView(view) { const next = ["library", "editor", "tools"].includes(view) ? view : "editor"; const workspace = document.querySelector(".workspace"); if (workspace) workspace.dataset.mobileView = next; document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(button => { button.classList.toggle("active", button.dataset.mobileView === next); }); },
+        renderAll() { const song = StateManager.activeSong(); this.dom.keySelect.value = song ? song.manualKey || "auto" : "auto"; this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); this.dom.capoSelect.value = String(StateManager.state.capo); Icon.set(this.dom.favoriteSongButton, song && song.favorite ? "star-filled" : "star", song && song.favorite ? "Unfavorite" : "Favorite", false); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); SongLibrary.render(); this.updateAnalysis(); },
+        updateAnalysis() {
+          const song = StateManager.activeSong(); if (!song) return; const body = song.body || ""; const chords = ChordParser.extractChords(body); const detected = KeyDetector.detect(chords); const active = KeyDetector.activeKey(song, detected); StateManager.state.detectedKey = detected;
+          this.dom.wordCount.textContent = body.split("\n").length + " lines"; this.dom.detectedKey.textContent = detected.name === "Unknown" ? "Unknown" : detected.name + " " + detected.confidence + "%"; this.dom.activeKey.textContent = active.name || "Auto"; this.dom.chordCount.textContent = String(chords.length); const delta = StateManager.state.transposeDelta; this.dom.transposeLabel.textContent = delta > 0 ? "+" + delta : String(delta); this.dom.previewOutput.textContent = this.previewText(song, active);
+        },
+        previewText(song, activeKey) { 
+          const body = song.body || ""; 
+          const effectiveTranspose = StateManager.state.transposeDelta - StateManager.state.capo;
+          if (StateManager.state.previewMode === "transposed" || effectiveTranspose !== 0) return TransposeEngine.transposeText(body, effectiveTranspose, activeKey); 
+          if (StateManager.state.previewMode === "roman") return RomanEngine.convertText(body, activeKey); 
+          if (StateManager.state.previewMode === "nashville") return NashvilleEngine.convertText(body, activeKey); 
+          return body; 
+        },
+        bumpTranspose(delta) { const next = Util.clamp(StateManager.state.transposeDelta + delta, -24, 24); StateManager.state.transposeDelta = next; this.dom.transposeSelect.value = String(next); this.updateAnalysis(); },
+        applyTranspose() { const song = StateManager.activeSong(); if (!song || song.readonly) return; const delta = StateManager.state.transposeDelta; if (!delta) { this.toast("No transpose selected"); return; } const active = KeyDetector.activeKey(song, StateManager.state.detectedKey || KeyDetector.detect(song.body)); song.body = TransposeEngine.transposeText(song.body, delta, active); StateManager.state.transposeDelta = 0; this.dom.transposeSelect.value = "0"; Editor.loadActiveSong(); StateManager.touch(song); StateManager.saveNow("Transposed"); this.renderAll(); this.toast("Chord chart transposed"); },
+        setStatus(message) { this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : message; window.clearTimeout(this.statusTimer); this.statusTimer = window.setTimeout(() => { this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : (StateManager.state.dirty ? "Autosaving" : "Ready"); }, 1800); },
+        openSongInfo() { 
+          const song = StateManager.activeSong(); if (!song || song.readonly) return; 
+          this.openModal({ 
+            title: "Song Details", message: "Update metadata for library tracking and exports.", confirmText: "Save Info", 
+            fields: [
+              { id: "title", label: "Title", type: "text", value: Util.titleOf(song), required: true },
+              { id: "artist", label: "Artist (Optional)", type: "text", value: song.artist || "" },
+              { id: "reference", label: "Reference Link (Optional)", type: "text", value: song.reference || "", placeholder: "e.g., YouTube URL" },
+              { id: "creator", label: "Arranger / Creator (Optional)", type: "text", value: song.creator || "" }
+            ], 
+            onConfirm: values => { 
+              song.title = values.title.trim() || "Untitled Song"; 
+              song.artist = values.artist.trim();
+              song.reference = values.reference.trim();
+              song.creator = values.creator.trim();
+              StateManager.touch(song); StateManager.saveNow("Info saved"); Editor.loadActiveSong(); this.renderAll(); 
+            } 
+          }); 
+        },
+        openDelete() { const song = StateManager.activeSong(); if (!song || song.readonly) return; this.openModal({ title: "Delete Song", message: "Delete \"" + Util.titleOf(song) + "\" from this browser?", confirmText: "Delete", destructive: true, fields: [], onConfirm: () => { StateManager.deleteActive(); Editor.loadActiveSong(); this.renderAll(); this.toast("Song deleted"); } }); },
+        openSettings() {
+          const settings = StateManager.state.settings;
+          this.openModal({
+            title: "Settings & Backup", message: "Tune Sonata for this device.", confirmText: "Save Settings",
+            fields: [
+              { type: "heading", label: "Appearance" },
+              { id: "theme", label: "Theme", type: "select", value: settings.theme, options: [{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }, { value: "stage", label: "Stage (High Contrast)" }] },
+              { id: "accentTheme", label: "Color theme", type: "select", value: settings.accentTheme, options: ACCENT_THEMES },
+              { id: "uiFontFamily", label: "Interface font", type: "select", value: settings.uiFontFamily, options: UI_FONT_OPTIONS },
+              { id: "chartFontFamily", label: "Song chart font", type: "select", value: settings.chartFontFamily, options: CHART_FONT_OPTIONS },
+              { id: "appFontSize", label: "Interface text size", type: "range", value: settings.appFontSize, min: 10, max: 24, step: 1, suffix: "px" },
+              { id: "editorFontSize", label: "Editor text size", type: "range", value: settings.editorFontSize, min: 8, max: 64, step: 1, suffix: "px" },
+              { id: "previewFontSize", label: "Preview text size", type: "range", value: settings.previewFontSize, min: 8, max: 48, step: 1, suffix: "px" },
+              { id: "editorLineHeight", label: "Song line spacing", type: "range", value: settings.editorLineHeight, min: 1.2, max: 2.8, step: 0.02, suffix: "x" },
+              { type: "heading", label: "Music & Interactivity" },
+              { id: "metronomeVolume", label: "Metronome Tick Volume", type: "range", value: Math.round(settings.metronomeVolume * 100), min: 0, max: 100, step: 5, suffix: "%" },
+              { id: "uiSounds", label: "UI Sounds", type: "select", value: settings.uiSounds ? "true" : "false", options: [{ value: "true", label: "On" }, { value: "false", label: "Off" }] },
+              { id: "haptics", label: "Haptic Feedback (Vibration)", type: "select", value: settings.haptics ? "true" : "false", options: [{ value: "true", label: "On" }, { value: "false", label: "Off" }] },
+              { type: "heading", label: "Data & Backup" },
+              { id: "backupInfo", type: "custom", html: `<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="button" id="exportDataBtn" type="button">Export Backup (.json)</button><label class="button" style="margin:0;cursor:pointer;"><input type="file" id="importDataInput" accept=".json" style="display:none;">Import Backup</label></div><p style="margin:6px 0 0;font-size:0.75rem;color:var(--muted);">Backup your library offline, or restore it on another device.</p>` },
+              { id: "installAppContainer", type: "custom", html: `<button class="button primary" id="installAppBtn" style="width:100%;display:none;" type="button">Install App to Device</button><p id="iosInstallTip" style="margin:6px 0 0;font-size:0.75rem;color:var(--muted);display:none;">To install on iOS: Tap Share <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin:0 2px;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg></span> then "Add to Home Screen".</p>` },
+              { id: "restoreDefaultsContainer", type: "custom", html: `<button class="button danger" id="resetSettingsBtn" type="button" style="width:100%; margin-top: 10px;">Restore Default Settings</button>` }
+            ],
+            onConfirm: values => {
+              settings.theme = ["dark", "stage", "light"].includes(values.theme) ? values.theme : "light"; settings.accentTheme = ACCENT_THEMES.some(i => i.value === values.accentTheme) ? values.accentTheme : "blue";
+              settings.uiFontFamily = FONT_STACKS[values.uiFontFamily] ? values.uiFontFamily : "system"; settings.chartFontFamily = FONT_STACKS[values.chartFontFamily] ? values.chartFontFamily : "mono";
+              settings.appFontSize = Util.clamp(values.appFontSize, 10, 24); settings.editorFontSize = Util.clamp(values.editorFontSize, 8, 64);
+              settings.previewFontSize = Util.clamp(values.previewFontSize, 8, 48); settings.editorLineHeight = Util.clamp(values.editorLineHeight, 1.2, 2.8);
+              settings.metronomeVolume = Util.clamp(values.metronomeVolume, 0, 100) / 100;
+              settings.uiSounds = values.uiSounds === "true"; settings.haptics = values.haptics === "true";
+              ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); MetronomeManager.updateUi(); StateManager.saveNow("Settings saved"); this.toast("Settings saved");
+            }
+          });
+
+          // Bind Backup & Install logic within modal
+          const exportBtn = document.getElementById('exportDataBtn');
+          if (exportBtn) exportBtn.onclick = () => ExportManager.exportBackup();
+          
+          const importInput = document.getElementById('importDataInput');
+          if (importInput) importInput.onchange = (e) => { if(e.target.files.length) ExportManager.importBackup(e.target.files[0]); };
+
+          const installBtn = document.getElementById('installAppBtn');
+          const iosTip = document.getElementById('iosInstallTip');
+          if (deferredPrompt && installBtn) {
+            installBtn.style.display = 'inline-flex';
+            installBtn.onclick = () => { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; installBtn.style.display = 'none'; }); };
+          } else if (Util.isIos() && !Util.isStandalone() && iosTip) {
+            iosTip.style.display = 'block';
+          }
+
+          const resetBtn = document.getElementById('resetSettingsBtn');
+          if (resetBtn) {
+            resetBtn.onclick = () => {
+              this.closeModal();
+              this.openModal({
+                title: "Restore Defaults?",
+                message: "This will reset all appearance and playback settings to their original defaults. Your songs will NOT be deleted.",
+                confirmText: "Yes, Reset",
+                destructive: true,
+                onConfirm: () => {
+                  StateManager.state.settings = Object.assign({}, DEFAULT_SETTINGS);
+                  StateManager.saveNow("Settings restored");
+                  ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); MetronomeManager.updateUi();
+                  this.toast("Settings restored to defaults");
+                }
+              });
+            };
+          }
+        },
+        openModal(options) {
+          this.modalAction = options; this.dom.modalTitle.textContent = options.title || ""; this.dom.modalMessage.textContent = options.message || ""; this.dom.modalFields.textContent = "";
+          (options.fields || []).forEach(field => {
+             if(field.type === "textarea") {
+                 const t = document.createElement("textarea"); t.className = "textarea"; t.value = field.value; t.readOnly = true; t.style.minHeight = "150px"; this.dom.modalFields.appendChild(t);
+             } else { this.dom.modalFields.appendChild(this.createModalField(field)); }
+          });
+          this.dom.modalConfirm.textContent = options.confirmText || "Done"; this.dom.modalConfirm.classList.toggle("danger", Boolean(options.destructive)); this.dom.modalConfirm.classList.toggle("primary", !options.destructive);
+          this.dom.modalHost.hidden = false; const focusable = this.dom.modalFields.querySelector("input, select, textarea") || this.dom.modalConfirm; window.setTimeout(() => focusable.focus(), 30);
+        },
+        closeModal() { this.dom.modalHost.hidden = true; this.modalAction = null; },
+        confirmModal() { if (!this.modalAction) return; const values = {}; this.dom.modalFields.querySelectorAll("[data-field-id]").forEach(input => { values[input.dataset.fieldId] = input.value; }); const action = this.modalAction; this.closeModal(); if (typeof action.onConfirm === "function") action.onConfirm(values); },
+        createModalField(field) {
+          if (field.type === "heading") { const heading = document.createElement("div"); heading.className = "settings-heading"; heading.textContent = field.label; return heading; }
+          if (field.type === "custom") { const wrap = document.createElement("div"); wrap.innerHTML = field.html; return wrap; }
+          const wrap = document.createElement("div"); wrap.className = "settings-field"; const label = document.createElement("label"); label.textContent = field.label; label.htmlFor = "modal-" + field.id; wrap.appendChild(label);
+          if (field.type === "select") { const select = document.createElement("select"); select.className = "select"; select.id = "modal-" + field.id; select.dataset.fieldId = field.id; (field.options || []).forEach(option => { const node = document.createElement("option"); node.value = option.value; node.textContent = option.label; select.appendChild(node); }); select.value = field.value; wrap.appendChild(select); return wrap; }
+          if (field.type === "range") { const row = document.createElement("div"); row.className = "range-row"; const input = document.createElement("input"); input.type = "range"; input.id = "modal-" + field.id; input.dataset.fieldId = field.id; input.min = field.min; input.max = field.max; input.step = field.step || 1; input.value = field.value; const output = document.createElement("span"); output.className = "range-value"; const update = () => { output.textContent = input.value + (field.suffix || ""); }; input.addEventListener("input", update); update(); row.append(input, output); wrap.appendChild(row); return wrap; }
+          const input = document.createElement("input"); input.className = "input"; input.id = "modal-" + field.id; input.dataset.fieldId = field.id; input.type = field.type || "text"; input.value = field.value || ""; if (field.placeholder) input.placeholder = field.placeholder; if (field.min !== undefined) input.min = field.min; if (field.max !== undefined) input.max = field.max; if (field.step !== undefined) input.step = field.step; if (field.required) input.required = true; wrap.appendChild(input); return wrap;
+        },
+        toast(message) { const node = document.createElement("div"); node.className = "toast"; node.textContent = message; this.dom.toastHost.appendChild(node); window.setTimeout(() => { node.style.opacity = "0"; node.style.transform = "translateY(8px)"; }, 2200); window.setTimeout(() => node.remove(), 2800); }
+      };
+
+      const App = { 
+        saveDebounced: Util.debounce(() => StateManager.saveNow("Autosaved"), 650), 
+        init() { 
+          StateManager.init(); 
+          this.checkShareUrl();
+          UIManager.init(); 
+          ThemeManager.apply(); 
+          Editor.applySettings(); 
+          PresentationManager.applySettings(); 
+          Editor.bind(); 
+          Editor.loadActiveSong(); 
+          UIManager.renderAll(); 
+          if(StateManager.state.activeId !== 'shared') StateManager.saveNow("Ready"); 
+        }, 
+        scheduleSave() { UIManager.setStatus("Autosaving"); this.saveDebounced(); },
+        checkShareUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const shareParam = params.get("share");
+            if(shareParam) {
+                try {
+                    const data = JSON.parse(decodeURIComponent(atob(shareParam)));
+                    const song = { id: 'shared', title: data.t, artist: data.a || "", creator: data.c || "", reference: data.r || "", body: data.b, manualKey: data.k || "auto", readonly: true, favorite: false };
+                    StateManager.state.sharedSong = song;
+                    StateManager.state.activeId = 'shared';
+                    window.history.replaceState({}, document.title, window.location.pathname); // Clear URL
+                    UIManager.toast("Viewing Shared Song");
+                } catch(e) { console.error("Could not parse share link"); }
+            }
+        }
+      };
+
+      document.addEventListener("DOMContentLoaded", () => App.init());
+    })();
+  </script>
+</body>
+</html>
