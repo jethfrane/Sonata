@@ -8,6 +8,9 @@
   <meta name="theme-color" content="#f6f7f9">
   <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU29uYXRhIE1hc3RlciIsInNob3J0X25hbWUiOiJTb25hdGEiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmNmY3ZjkiLCJ0aGVtZV9jb2xvciI6IiMxOTY3ZDIiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9wbGFjZWhvbGQuY28vMTkyeDE5Mi8xOTY3ZDIvZmZmZmZmP3RleHQ9UyIsInR5cGVzIjoiaW1hZ2UvcG5nIiwic2l6ZXMiOiIxOTJ4MTkyIn0seyJzcmMiOiJodHRwczovL3BsYWNlaG9sZC5jby81MTJ4NTEyLzE5NjdkMi9mZmZmZmY/dGV4dD1TIiwidHlwZXMiOiJpbWFnZS9wbmciLCJzaXplcyI6IjUxMng1MTIifV19">
   <title>Sonata</title>
+  <meta property="og:title" content="Sonata">
+  <meta property="og:description" content="100% Offline App for Church Musicians and Bands">
+  <meta property="og:type" content="website">
   
   <style>
     :root {
@@ -118,6 +121,14 @@
     .presentation[data-pres-theme="light"] { --p-bg: #f6f7f9; --p-text: #16181d; --p-surface: #ffffff; --p-line: #d8dde6; --p-muted: #667085; --p-accent: var(--accent, #1967d2); --p-slash: var(--warning-slash, #e65100); } 
     .presentation[data-pres-theme="dark"] { --p-bg: #0f1115; --p-text: #f1f5f9; --p-surface: #17191f; --p-line: #334155; --p-muted: #94a3b8; --p-accent: var(--accent, #60a5fa); --p-slash: var(--warning-slash, #fbbf24); } 
     .presentation[data-pres-theme="stage"] { --p-bg: #000000; --p-text: #ffffff; --p-surface: #111111; --p-line: #333333; --p-muted: #888888; --p-accent: var(--accent, #3b82f6); --p-slash: var(--warning-slash, #f59e0b); }
+    /* Mobile First responsiveness */
+    @media (max-width: 768px) {
+        .workspace { padding: 8px; gap: 8px; margin-bottom: 60px; }
+        .topbar { padding: 8px 12px calc(8px + env(safe-area-inset-top, 0px)); }
+        .presentation-stage { padding: clamp(12px, 3vw, 24px); padding-top: calc(70px + env(safe-area-inset-top)); }
+        .modal-content { max-width: 95%; margin: 10px; padding: 16px; }
+    }
+
     .presentation { position: fixed; inset: 0; z-index: 500; display: flex; flex-direction: column; background: var(--p-bg); color: var(--p-text); transition: background 0.3s; } .presentation[hidden] { display: none; }
     .presentation-top { position: absolute; top: 0; left: 0; right: 0; z-index: 510; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px calc(10px + max(0px, env(safe-area-inset-top))); background: color-mix(in srgb, var(--p-surface) 85%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid color-mix(in srgb, var(--p-line) 50%, transparent); transition: opacity 0.4s ease, transform 0.4s ease; will-change: opacity, transform; }
     .presentation-title { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 760; font-size: 1.1rem; color: var(--p-text); } .presentation-controls .button { background: var(--p-surface); color: var(--p-text); border-color: var(--p-line); }
@@ -531,7 +542,7 @@ Em -  C    -  G  -  D
       window.AudioEngine = {
         ctx: null,
         init() { if (!this.ctx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) try { this.ctx = new AudioContext(); } catch(e) {} } if (this.ctx && this.ctx.state === "suspended") this.ctx.resume().catch(() => {}); },
-        setupListeners() { const r = () => { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }; document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') r(); }); document.addEventListener('touchstart', r, {passive: true}); document.addEventListener('click', r, {passive: true}); },
+        setupListeners() { const r = () => { if (this.ctx && this.ctx.state !== 'running') { this.ctx.resume().then(() => { if (this.ctx.state !== 'running') { this.ctx.close(); this.ctx = null; this.init(); } }).catch(() => { this.ctx = null; this.init(); }); } }; document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') r(); }); document.addEventListener('touchstart', r, {passive: true}); document.addEventListener('click', r, {passive: true}); },
         midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); },
         playGuitarNote(freq, vol = 0.6) {
           this.init(); if (!this.ctx || this.ctx.state !== "running") return {stop:()=>{}};
@@ -787,18 +798,40 @@ Em -  C    -  G  -  D
           renderPiano() {
               const keyboard = UIManager.dom.pianoKeyboard; if(!keyboard) return; keyboard.innerHTML = ''; 
               const notes = ['C', 'C#<br>Db', 'D', 'D#<br>Eb', 'E', 'F', 'F#<br>Gb', 'G', 'G#<br>Ab', 'A', 'A#<br>Bb', 'B'];
-              for (let octave = 3; octave <= 5; octave++) {
+              const frag = document.createDocumentFragment();
+              // Expanded octaves 2 to 6
+              for (let octave = 2; octave <= 6; octave++) {
                   for (let i = 0; i < 12; i++) {
                       const isBlack = notes[i].includes('#'); const key = document.createElement('div'); key.className = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
                       const label = document.createElement('span'); label.className = 'key-label'; label.innerHTML = notes[i]; key.appendChild(label);
-                      const midi = (octave * 12) + i + 12; let activeNode = null;
-                      const play = (e) => { if (e.type === 'touchstart') e.preventDefault(); key.classList.add('active'); if(activeNode) activeNode.stop(); activeNode = AudioEngine.playPianoNote(AudioEngine.midiToFreq(midi), 0.6); };
-                      const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); key.classList.remove('active'); if(activeNode) { activeNode.stop(); activeNode = null; } };
-                      key.addEventListener('mousedown', play); key.addEventListener('touchstart', play, {passive:false}); key.addEventListener('mouseup', stop); key.addEventListener('mouseleave', stop); key.addEventListener('touchend', stop);
-                      keyboard.appendChild(key);
+                      const midi = (octave * 12) + i + 12;
+                      key.dataset.midi = midi;
+                      frag.appendChild(key);
                   }
               }
-              setTimeout(() => document.querySelector('.piano-container').scrollLeft = 120, 100);
+              keyboard.appendChild(frag);
+              
+              if (!this._pianoDelegated) {
+                  this._pianoDelegated = true;
+                  let activeNode = null; let activeKey = null;
+                  const play = (e) => {
+                      const key = e.target.closest('.piano-key'); if (!key) return;
+                      if (e.type === 'touchstart') e.preventDefault();
+                      key.classList.add('active');
+                      if (activeNode) activeNode.stop();
+                      activeNode = AudioEngine.playPianoNote(AudioEngine.midiToFreq(parseInt(key.dataset.midi)), 0.6);
+                      activeKey = key;
+                  };
+                  const stop = (e) => {
+                      if (e.type === 'touchend' && e.cancelable) e.preventDefault();
+                      if (activeKey) { activeKey.classList.remove('active'); activeKey = null; }
+                      // Note: We deliberately do NOT call activeNode.stop() here to allow the natural envelope to sustain.
+                      activeNode = null;
+                  };
+                  keyboard.addEventListener('mousedown', play); keyboard.addEventListener('touchstart', play, {passive:false});
+                  keyboard.addEventListener('mouseup', stop); keyboard.addEventListener('mouseleave', stop); keyboard.addEventListener('touchend', stop);
+              }
+              setTimeout(() => { const container = document.querySelector('.piano-container'); if (container) container.scrollLeft = 360; }, 100);
           },
           renderFretboard(instrument) {
               const tunings = { 
@@ -816,25 +849,46 @@ Em -  C    -  G  -  D
                       const btn = document.createElement('button'); btn.className = 'button secondary'; btn.type = 'button'; btn.title = note.n; btn.textContent = note.n;
                       let refNode = null;
                       const play = (e) => { if (e.type === 'touchstart') e.preventDefault(); if(refNode) refNode.stop(); refNode = AudioEngine.playGuitarNote(note.f, 0.8); btn.classList.add('active'); };
-                      const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); if(refNode) { refNode.stop(); refNode = null; } btn.classList.remove('active'); };
+                      const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); btn.classList.remove('active'); refNode = null; /* natural sustain */ };
                       btn.addEventListener('mousedown', play); btn.addEventListener('touchstart', play, {passive:false}); btn.addEventListener('mouseup', stop); btn.addEventListener('mouseleave', stop); btn.addEventListener('touchend', stop);
                       refBtns.appendChild(btn);
                   });
               }
 
+              const frag = document.createDocumentFragment();
               strings.forEach((stringData, stringIdx) => {
                   const row = document.createElement('div'); row.className = 'fret-string';
                   for (let fret = 0; fret <= 15; fret++) {
                       const cell = document.createElement('div'); cell.className = 'fret-cell';
                       if (stringIdx === Math.floor(strings.length/2) && [3,5,7,9,15].includes(fret)) { const dot = document.createElement('div'); dot.className = 'fret-dot'; cell.appendChild(dot); } else if (stringIdx === Math.floor(strings.length/2) - 1 && fret === 12) { const dot1 = document.createElement('div'); dot1.className = 'fret-dot'; dot1.style.top = '-10px'; const dot2 = document.createElement('div'); dot2.className = 'fret-dot'; dot2.style.bottom = '-10px'; cell.appendChild(dot1); cell.appendChild(dot2); }
                       const midi = stringData.m + fret; const marker = document.createElement('div'); marker.className = 'fret-note-marker'; marker.textContent = SHARP_NOTES[midi % 12]; cell.appendChild(marker);
-                      let activeNode = null;
-                      const play = (e) => { if (e.type === 'touchstart') e.preventDefault(); if(activeNode) activeNode.stop(); activeNode = AudioEngine.playGuitarNote(AudioEngine.midiToFreq(midi), 0.8); cell.classList.add('active'); };
-                      const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); if(activeNode) { activeNode.stop(); activeNode = null; } cell.classList.remove('active'); };
-                      cell.addEventListener('mousedown', play); cell.addEventListener('touchstart', play, {passive:false}); cell.addEventListener('mouseup', stop); cell.addEventListener('mouseleave', stop); cell.addEventListener('touchend', stop); row.appendChild(cell);
+                      cell.dataset.midi = midi;
+                      row.appendChild(cell);
                   }
-                  grid.appendChild(row);
+                  frag.appendChild(row);
               });
+              grid.appendChild(frag);
+
+              if (!this._fretDelegated) {
+                  this._fretDelegated = true;
+                  let activeNode = null; let activeCell = null;
+                  const play = (e) => {
+                      const cell = e.target.closest('.fret-cell'); if (!cell) return;
+                      if (e.type === 'touchstart') e.preventDefault();
+                      cell.classList.add('active');
+                      if (activeNode) activeNode.stop();
+                      activeNode = AudioEngine.playGuitarNote(AudioEngine.midiToFreq(parseInt(cell.dataset.midi)), 0.8);
+                      activeCell = cell;
+                  };
+                  const stop = (e) => {
+                      if (e.type === 'touchend' && e.cancelable) e.preventDefault();
+                      if (activeCell) { activeCell.classList.remove('active'); activeCell = null; }
+                      // Note: We deliberately do NOT call activeNode.stop() here to allow natural sustain.
+                      activeNode = null;
+                  };
+                  grid.addEventListener('mousedown', play); grid.addEventListener('touchstart', play, {passive:false});
+                  grid.addEventListener('mouseup', stop); grid.addEventListener('mouseleave', stop); grid.addEventListener('touchend', stop);
+              }
           }
       };
 
@@ -912,7 +966,13 @@ Em -  C    -  G  -  D
       };
 
       const ExportManager = {
-        wrapLines(text, cols, isLandscape) { const limits = isLandscape ? { 1: 120, 2: 55, 3: 35 } : { 1: 90, 2: 42, 3: 26 }; const limit = limits[cols] || limits[1]; const result = []; text.split('\n').forEach(line => { if (!line) { result.push(""); return; } let rem = line; while (rem.length > 0) { result.push(rem.substring(0, limit)); rem = rem.substring(limit); } }); return result; },
+        wrapLines(text, cols, isLandscape) { const limits = isLandscape ? { 1: 120, 2: 55, 3: 35 } : { 1: 90, 2: 42, 3: 26 }; const limit = limits[cols] || limits[1]; const result = []; text.split('\n').forEach(line => { if (!line) { result.push(""); return; } let rem = line; while (rem.length > 0) { if (rem.length <= limit) { result.push(rem); rem = ""; }
+                else {
+                    let breakIdx = rem.lastIndexOf(" ", limit);
+                    if (breakIdx === -1) breakIdx = limit; // fallback to char break if no space found
+                    result.push(rem.substring(0, breakIdx));
+                    rem = rem.substring(breakIdx).trimStart();
+                } } }); return result; },
         setlistPayloads() {
             if (StateManager.state.activeSetlist.id) {
                 const set = StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id);
@@ -1075,15 +1135,25 @@ Em -  C    -  G  -  D
           });
           
           try {
-              // Primary shortener
-              const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
-              if (res.ok) { const data = await res.json(); if(data.shorturl) finalUrl = data.shorturl; }
-              else {
-                  // Fallback shortener for reliability
-                  const res2 = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(rawUrl)}`);
-                  if (res2.ok) { finalUrl = await res2.text(); }
+              // Primary shortener via proxy to avoid CORS issues when hosted
+              const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://is.gd/create.php?format=json&url=' + encodeURIComponent(rawUrl))}`);
+              if (res.ok) { 
+                  const data = await res.json(); 
+                  const parsed = JSON.parse(data.contents);
+                  if(parsed.shorturl) finalUrl = parsed.shorturl; 
               }
-          } catch(e) { console.log("Shorteners unavailable, using full url"); }
+          } catch(e) { 
+              console.log("Primary shortener unavailable, trying fallback...");
+              try {
+                  const res2 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(rawUrl))}`);
+                  if (res2.ok) { 
+                      const data2 = await res.json();
+                      if (data2.contents) finalUrl = data2.contents;
+                  }
+              } catch(e2) {
+                  console.log("Shorteners unavailable, using full url");
+              }
+          }
           
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
@@ -1154,7 +1224,7 @@ Em -  C    -  G  -  D
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
-          add(this.dom.themeToggle, "click", () => { AudioEngine.playClick(); StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; StateManager.saveNow("Theme saved"); ThemeManager.apply(); this.toast("Theme updated"); });
+          add(this.dom.themeToggle, "click", () => { AudioEngine.playClick(); StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; StateManager.state.settings.presTheme = StateManager.state.settings.theme === "dark" ? "stage" : "light"; StateManager.saveNow("Theme saved"); ThemeManager.apply(); UIManager.dom.presentation.dataset.presTheme = StateManager.state.settings.presTheme; this.toast("Theme updated"); });
           add(this.dom.settingsButton, "click", () => { AudioEngine.playClick(); this.openSettings(); });
           add(this.dom.helpButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: "About Sonata", confirmText: "Close", fields: [{ type: "custom", html: `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> (/səˈnɑːtə/) comes from Latin <em>sonare</em>, meaning "to sound" or "a piece played."</p><p>Created by <strong>Jethro Frane</strong>, a church musician, Sonata was built to help church musicians and bands collaborate seamlessly and eliminate stage friction.</p><p style="margin-bottom:6px; font-weight:700;">Core Objectives:</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size: 0.85rem;"><li><strong>100% Offline:</strong> Works on stages with zero Wi-Fi or cellular coverage.</li><li><strong>Centralized Hub:</strong> Charts, metronomes, and theory tools in one app.</li><li><strong>Instant Transposition:</strong> Adapt to any vocal range on the fly.</li><li><strong>Number Systems:</strong> Master Nashville Numbers and Roman Numerals effortlessly.</li><li><strong>Zero-Friction Sharing:</strong> Share configurations via QR codes—no accounts.</li><li><strong>Stage Ready:</strong> True-black presentation modes that save battery and reduce glare.</li><li><strong>Robust Exports:</strong> Multi-column PDF and PNG generation.</li><li><strong>Theory Tools:</strong> Interactive Circle of 5ths and Virtual Fretboard.</li><li><strong>Setlists:</strong> Compile songs and share entire sets securely.</li><li><strong>Privacy First:</strong> Your library stays securely local on your device.</li></ul><p style="margin-top:16px; font-style:italic; font-weight:700; text-align:center; color:var(--accent); font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." <br>— 1 Corinthians 10:31 (NIV)</p></div>` }]}); });
           add(this.dom.presentationButton, "click", () => { AudioEngine.playClick(); PresentationManager.open(); });
