@@ -4239,7 +4239,30 @@ Em -  C    -  G  -  D
               try {
                 const d = JSON.parse(await ExportManager.decompressData(shareParam));
                 await this.handleImport(d);
-              } catch (e) { }
+                // Show preview modal with shared content details
+                const isSet = d.type === 'set';
+                const title = d.t || '';
+                const subtitle = !isSet && d.a ? `By: ${d.a}` : '';
+                const arranger = d.cr ? `Arranged by: ${d.cr}` : '';
+                const links = (d.l || []).map(l => `<a href="${l.url}" target="_blank" style="color:var(--accent);">${l.name}</a>`).join(' &middot; ');
+                const description = d.d || '';
+                const bodyHtml = isSet ? `<p>${description}</p>` : `<pre style="white-space:pre-wrap;">${d.b}</pre>`;
+                const previewHtml = `
+                  <div style="font-family:var(--ui-font); color:var(--text);">
+                    <h2 style="margin:0 0 8px;">${title}</h2>
+                    ${subtitle ? `<p style="margin:0 0 4px;">${subtitle}</p>` : ''}
+                    ${arranger ? `<p style="margin:0 0 4px;">${arranger}</p>` : ''}
+                    ${links ? `<p style="margin:0 0 8px;">${links}</p>` : ''}
+                    ${description ? `<p style="margin:0 0 8px;">${description}</p>` : ''}
+                    ${bodyHtml}
+                  </div>`;
+                UIManager.openModal({
+                  title: isSet ? 'Shared Setlist' : 'Shared Song',
+                  fields: [{ type: 'custom', html: previewHtml }],
+                  confirmText: 'Close',
+                  onConfirm: () => {}
+                });
+              } catch (e) { console.error('Share import error', e); }
             } else if (pasteParam) {
               try {
                 const resp = await fetch(`https://dpaste.com/${pasteParam}.txt`);
