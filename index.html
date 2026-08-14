@@ -494,16 +494,16 @@
 
     .song-title-input {
       height: auto;
-      min-height: 56px;
-      padding: 14px 16px 4px;
+      min-height: 42px;
+      padding: 10px 16px 4px;
       border: 0;
       border-radius: 0;
       background: var(--surface);
       color: var(--text);
-      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-size: clamp(1.1rem, 3vw, 1.6rem);
       line-height: 1.1;
-      font-weight: 780;
-      letter-spacing: -0.02em;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
 
     .song-title-input:focus {
@@ -1816,8 +1816,19 @@
             <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
           </div>
         </div>
-        <div class="field"><label class="visually-hidden" for="songSearch">Search</label><input class="input"
-            id="songSearch" type="search" placeholder="Search title or lyrics" autocomplete="off"></div>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <div class="field" style="flex:1; margin:0;"><label class="visually-hidden" for="songSearch">Search</label><input class="input"
+              id="songSearch" type="search" placeholder="Search title/lyrics" autocomplete="off" style="margin:0;"></div>
+          <div class="select-wrapper" style="width:105px;">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 6px;" title="Sort Library">
+              <option value="recent">Recent</option>
+              <option value="title">Title</option>
+              <option value="author">Author</option>
+              <option value="arranger">Arranger</option>
+              <option value="key">Key</option>
+            </select>
+          </div>
+        </div>
         <div class="segmented" role="tablist">
           <button class="tab-button active" type="button" data-library-filter="all">All</button>
           <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
@@ -3087,6 +3098,18 @@ Em -  C    -  G  -  D
         },
         exportPdf() { const payloads = this.setlistPayloads(); const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads)); UIManager.toast("PDF exported"); },
         createPdf(payloads) {
+          const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
+          let r = 0, g = 0.35, b = 0.82;
+          try {
+            let h = accentHex;
+            if (h.startsWith('#')) h = h.substring(1);
+            if (h.length === 3) h = h.split('').map(x => x + x).join('');
+            const num = parseInt(h, 16);
+            r = ((num >> 16) & 255) / 255;
+            g = ((num >> 8) & 255) / 255;
+            b = (num & 255) / 255;
+          } catch(e) {}
+
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
           const orientation = UIManager.dom.exportOrientation.value;
           const pageWidth = orientation === "landscape" ? 792 : 612;
@@ -3217,20 +3240,20 @@ Em -  C    -  G  -  D
                 ops.push(`q 0.86 0.88 0.90 RG 1 w ${colX.toFixed(2)} ${(y + 3).toFixed(2)} m ${(colX + columnWidth).toFixed(2)} ${(y + 3).toFixed(2)} l S Q`);
                 y -= lineHeight;
               } else if (item.type === 'h1') {
-                textLine(item.text, colX, "F3", fontSize + 2, 0, 0.35, 0.82);
+                textLine(item.text, colX, "F3", fontSize + 2, r, g, b);
               } else if (item.type === 'h2') {
                 textLine(item.text, colX, "F3", fontSize + 0.5, 0.15, 0.18, 0.22);
               } else if (item.type === 'comment') {
                 textLine(item.text, colX, "F2", fontSize - 0.5, 0.45, 0.45, 0.5);
               } else if (item.type === 'chord') {
-                textLine(item.text, colX, "F4", fontSize, 0, 0.35, 0.82);
+                textLine(item.text, colX, "F4", fontSize, r, g, b);
               } else if (item.type === 'inlineChord') {
                 const parts = item.text.split(/(\[[^\]]+\])/g);
                 let currentX = colX;
                 parts.forEach(part => {
                   if (!part) return;
                   if (part.startsWith('[') && part.endsWith(']')) {
-                    ops.push(`0 0.35 0.82 rg\nBT /F4 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
+                    ops.push(`${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\nBT /F4 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
                   } else {
                     ops.push(`0 0 0 rg\nBT /F1 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
                   }
@@ -3383,24 +3406,44 @@ Em -  C    -  G  -  D
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
           const ctx = canvas.getContext("2d");
 
+           const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
           ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
-          ctx.fillStyle = "#1967d2"; ctx.fillRect(0, 0, 460, 100);
+          ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
           ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
 
           ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText((isSet ? "SETLIST" : "SONG"), 230, 140);
-          ctx.fillStyle = "#16181d"; ctx.font = "bold 28px sans-serif"; ctx.fillText(this.pdfTruncate(titleText, 25), 230, 175);
+          ctx.fillStyle = "#16181d"; ctx.font = "bold 28px sans-serif"; ctx.fillText(this.pdfTruncate(titleText, 25), 230, 172);
+
+          if (!isSet && shareData.a) {
+            ctx.fillStyle = "#667085"; ctx.font = "italic 16px sans-serif"; ctx.fillText("By " + shareData.a, 230, 195);
+          } else if (isSet) {
+            ctx.fillStyle = "#667085"; ctx.font = "15px sans-serif"; ctx.fillText(`${shareData.s.length} Songs included`, 230, 195);
+          }
 
           try {
             const resp = await fetch(qrUrl); const blob = await resp.blob(); const imgUrl = URL.createObjectURL(blob);
             const qImg = new Image(); 
             qImg.onload = () => { 
               ctx.drawImage(qImg, 80, 210, 300, 300); 
-              ctx.fillStyle = "#667085"; 
-              ctx.font = "16px sans-serif"; 
-              ctx.fillText("Scan to view securely offline", 230, 540); 
-              ctx.fillStyle = "#1967d2";
-              ctx.font = "bold 14px sans-serif";
-              ctx.fillText(finalUrl, 230, 570);
+              
+              if (!isSet) {
+                let detailsStr = `Key: ${shareData.k || 'Auto'}`;
+                if (shareData.c) detailsStr += `  •  Capo: ${shareData.c}`;
+                if (StateManager.state.settings.metronomeBpm) detailsStr += `  •  BPM: ${StateManager.state.settings.metronomeBpm}`;
+                ctx.fillStyle = "#16181d";
+                ctx.font = "bold 14px sans-serif";
+                ctx.fillText(detailsStr, 230, 532);
+              } else {
+                let songNames = shareData.s.map(s => s.t).join("  •  ");
+                if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
+                ctx.fillStyle = "#16181d";
+                ctx.font = "13px sans-serif";
+                ctx.fillText(songNames, 230, 532);
+              }
+              
+              ctx.fillStyle = activeAccent; 
+              ctx.font = "bold 14px sans-serif"; 
+              ctx.fillText("Scan to import securely offline", 230, 565); 
               URL.revokeObjectURL(imgUrl); 
             }; 
             qImg.src = imgUrl;
@@ -3449,7 +3492,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
@@ -3482,6 +3525,7 @@ Em -  C    -  G  -  D
           add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
 
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
+          add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); });
           document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); }));
           add(this.dom.newSongButton, "click", () => { AudioEngine.playClick(); if (StateManager.state.libraryFilter === 'setlists') { this.openSetlistModal(); return; } StateManager.createSong(); Editor.loadActiveSong(); this.renderAll(); this.toast("New song ready"); });
 
@@ -3737,11 +3781,12 @@ Em -  C    -  G  -  D
               const canvas = document.getElementById('bulkShareCanvas');
               if (!canvas) return;
               const ctx = canvas.getContext("2d");
+              const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
               ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
-              ctx.fillStyle = "#1967d2"; ctx.fillRect(0, 0, 460, 100);
+              ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
               ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
               ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText("SHARED SELECTION", 230, 140);
-              ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 175);
+              ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 172);
 
               const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
               try {
@@ -3751,12 +3796,16 @@ Em -  C    -  G  -  D
                 const qImg = new Image();
                 qImg.onload = () => {
                   ctx.drawImage(qImg, 80, 210, 300, 300);
-                  ctx.fillStyle = "#667085";
-                  ctx.font = "16px sans-serif";
-                  ctx.fillText("Scan to import selection", 230, 540);
-                  ctx.fillStyle = "#1967d2";
+                  
+                  let songNames = selectedSongs.map(s => s.title).join("  •  ");
+                  if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
+                  ctx.fillStyle = "#16181d";
+                  ctx.font = "13px sans-serif";
+                  ctx.fillText(songNames, 230, 532);
+
+                  ctx.fillStyle = activeAccent;
                   ctx.font = "bold 14px sans-serif";
-                  ctx.fillText(finalUrl, 230, 570);
+                  ctx.fillText("Scan to import selection", 230, 565);
                   URL.revokeObjectURL(imgUrl);
                 };
                 qImg.src = imgUrl;
@@ -4054,13 +4103,41 @@ Em -  C    -  G  -  D
           }
 
           let songs = state.songs.slice();
-          if (state.libraryFilter === "favorites") songs = songs.filter(s => s.isFavorite); else songs = songs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+          const sortVal = UIManager.dom.librarySortSelect ? UIManager.dom.librarySortSelect.value : 'recent';
+          if (state.libraryFilter === "favorites") {
+            songs = songs.filter(s => s.isFavorite);
+          }
+          if (sortVal === 'title') {
+            songs.sort((a, b) => Util.titleOf(a).localeCompare(Util.titleOf(b)));
+          } else if (sortVal === 'author') {
+            songs.sort((a, b) => (a.artist || "").localeCompare(b.artist || ""));
+          } else if (sortVal === 'arranger') {
+            songs.sort((a, b) => (a.creator || "").localeCompare(b.creator || ""));
+          } else if (sortVal === 'key') {
+            songs.sort((a, b) => {
+              const ka = KeyDetector.activeKey(a, state.detectedKey);
+              const kb = KeyDetector.activeKey(b, state.detectedKey);
+              const stra = ka ? (ka.root + (ka.mode === 'minor' ? 'm' : '')) : '';
+              const strb = kb ? (kb.root + (kb.mode === 'minor' ? 'm' : '')) : '';
+              return stra.localeCompare(strb);
+            });
+          } else {
+            songs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+          }
+
           if (query) songs = songs.filter(s => Util.titleOf(s).toLowerCase().includes(query) || (s.body || "").toLowerCase().includes(query));
 
           if (songs.length === 0) { list.innerHTML = `<div class="empty-state">${query ? 'No matching songs' : 'Library is empty'}</div>`; return; }
           songs.forEach(song => {
             const card = document.createElement('div'); card.className = 'song-card' + (song.id === StateManager.state.activeId ? ' active' : '');
-            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.formatDate(song.updatedAt)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+            let metaText = Util.formatDate(song.updatedAt);
+            if (sortVal === 'author' && song.artist) metaText = `${song.artist} • ${metaText}`;
+            else if (sortVal === 'arranger' && song.creator) metaText = `${song.creator} • ${metaText}`;
+            else if (sortVal === 'key') {
+              const key = KeyDetector.activeKey(song, state.detectedKey);
+              if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
+            }
+            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
             card.addEventListener('click', (e) => {
               const actionBtn = e.target.closest('button[data-action]');
               if (actionBtn) {
