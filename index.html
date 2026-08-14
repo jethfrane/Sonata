@@ -1656,6 +1656,32 @@
         bottom: max(78px, calc(74px + env(safe-area-inset-bottom)));
       }
     }
+
+    @media (max-width: 480px) {
+      .topbar {
+        padding: 8px 10px;
+        gap: 8px;
+      }
+      .brand-mark {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+      }
+      .brand-title {
+        font-size: 1.1rem;
+      }
+      .top-actions {
+        gap: 4px;
+      }
+      .top-actions .button {
+        padding: 0 8px;
+        min-height: 38px;
+      }
+      .top-actions .icon-button {
+        width: 38px;
+        height: 38px;
+      }
+    }
   </style>
 </head>
 
