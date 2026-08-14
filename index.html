@@ -1487,8 +1487,15 @@
 
     @media (min-width: 1024px) {
       .workspace {
-        grid-template-columns: minmax(280px, 340px) minmax(460px, 1fr) minmax(320px, 400px);
+        grid-template-columns: minmax(240px, 340px) minmax(400px, 1fr) minmax(280px, 400px);
         height: calc(100vh - 56px);
+        gap: clamp(8px, 1.5vw, 12px);
+      }
+
+      @media (max-width: 1200px) {
+        .panel {
+          --panel-pad: 12px;
+        }
       }
 
       .editor-panel,
