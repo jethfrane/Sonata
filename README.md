@@ -22,7 +22,10 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 * **Chord Over Lyrics & Inline Chords:** Seamlessly handles traditional spacing (`G C/G G`) and bracketed inline chords (`[G]Amazing [C]grace`).
 * **Rich Markdown Support:** Use `# Header` for large titles, `## Subheader` for sections, `---` for clean dividers, and `> Note` or `// Comment` for notes that will never accidentally transpose.
 * **Metadata & References:** Store your Song Title, Artist, Arranger/Creator, and multiple named Reference Links (such as YouTube tutorial links).
-* **Instant Revert:** Accidentally made a bad change? Instantly restore your sheet to its last saved state with a single tap.
+* **Multi-Step Undo/Redo:** Full undo/redo history stack (up to 50 levels) with keyboard shortcuts (`Ctrl+Z` / `Ctrl+Y`). Never lose an edit again.
+* **Smart Text Wrapping:** Long chord lines wrap cleanly inside the editor instead of overflowing horizontally.
+* **Live Metadata Bar:** Author, Arranger, and detected Key are displayed in a compact bar below the title—always visible without opening dialogs.
+* **Demo Safeguards:** The Demo button is automatically disabled when the editor has content, with confirmation prompts to prevent accidental overwrites.
 
 ### 2. Music Theory & Instruments Engine
 * **Interactive Circle of 5th's:** Click any key to hear a 3-note synthesized chord. Toggle "Auto-Rotate" to spin your active key to the top, and toggle "Highlight Key Family" to dim non-diatonic chords and reveal the 7 chords belonging to your key. Intelligently swaps to relative minor layouts when a minor key is active.
@@ -35,18 +38,24 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 * **Isolated Stage Themes:** Switch between Light, Dark, and Stage (True Black) themes independently from your main editor background.
 * **Built-in Auto-Scroll & Metronome:** Control auto-scroll speed on the fly with floating controls that fade out when idle.
 
-### 4. Zero-Friction Sharing & QR Codes
-* **Deflate Compression:** Compresses entire song payloads into ultra-short URLs.
-* **QR Profile Cards:** Instantly generate and download a gorgeous branded QR Profile Card image complete with app branding, song title, and scan instructions.
-* **Social Sharing:** Built-in sharing links for WhatsApp, Facebook, X, Email, and native device share sheets.
-* **View-Only Import:** When scanning a shared QR code, friends view the chart instantly in a read-only state without cluttering their local browser library.
+### 4. Library Management & Batch Operations
+* **Sort Library:** Sort your song list by Title, Author, Arranger, Key, or Recent—with contextual metadata shown on each card.
+* **Manage Library View:** A full-screen table view of all songs with search, select-all checkboxes, and bulk actions.
+* **Batch Delete & Share:** Select multiple songs and delete or share them as a setlist in one click.
 
-### 5. Professional Export System
-* **Multi-Column Layouts:** Export your charts in 1, 2, or 3-column layouts with dynamic column spacing, custom gutters, and intelligent word & bracket wrapping to ensure chord markers never overflow columns.
-* **Multiple Formats:** Export as pristine vector PDF, high-resolution PNG, plain text TXT, or direct browser Print. PDF exports automatically translate musical accidentals (♯, ♭) cleanly for universal PDF viewer compatibility, inherit active layouts (transposed, Roman, Nashville, lyrics-only), and style song metadata in the header and page counters in the footer.
+### 5. Zero-Friction Sharing & QR Codes
+* **Intelligent Short Links:** Short URLs via `is.gd` for small payloads; for large setlists (4+ songs), compressed data is stored on `dpaste.com` and retrieved via a minimal `?paste=ID` parameter—always scannable.
+* **Theme-Aware QR Cards:** QR Profile Card images use your active accent color, display song metadata (Key, BPM, artist), and song lists for setlists—no raw URLs cluttering the image.
+* **Native & Social Sharing:** Share via device share sheet, WhatsApp, Facebook, X, Email, or copy link.
+* **View-Only Import:** Shared links open in read-only preview without affecting the recipient's library.
 
-### 6. Cloud Backup & Sync (Optional)
-* **Google Drive Sync:** Seamlessly back up and restore your library using Google Identity Services (GIS) and GAPI. Changes are automatically merged based on `updatedAt` timestamps and uploaded to a secure, hidden `appDataFolder` on your personal Google Drive, keeping your staging layout and files synced across laptops, tablets, and phones.
+### 6. Professional Export System
+* **Multi-Column Layouts:** Export in 1, 2, or 3-column layouts with intelligent word & bracket wrapping.
+* **Theme-Aligned Colors:** Exported PNG and PDF files inherit your active accent color for headers, chords, and inline chord brackets—matching your UI theme exactly.
+* **Multiple Formats:** Export as vector PDF, high-resolution PNG, plain text TXT, or direct browser Print with full metadata headers and page footers.
+
+### 7. Cloud Backup & Sync (Optional)
+* **Google Drive Sync:** Back up and restore your library via Google Identity Services and the Drive REST API (`drive.file` scope). Changes auto-merge by timestamp and sync to your private Google Drive, keeping data consistent across all devices.
 
 ## 🛠️ How to Publish on GitHub Pages
 
