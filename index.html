@@ -3426,8 +3426,42 @@ Em -  C    -  G  -  D
               { type: "custom", html: `<button class="button danger" onclick="if(confirm('Reset all appearance settings?')) { StateManager.state.settings = Object.assign({}, DEFAULT_SETTINGS); StateManager.saveNow('Settings restored'); window.location.reload(); }" type="button" style="width:100%; margin-top: 14px;">Restore Default Settings</button>` }
             ], onConfirm: v => { s.theme = v.theme; s.accentTheme = v.accentTheme; s.uiFontFamily = v.uiFontFamily; s.chartFontFamily = v.chartFontFamily; s.appFontSize = v.appFontSize; s.editorFontSize = v.editorFontSize; s.previewFontSize = v.previewFontSize; s.editorLineHeight = v.editorLineHeight; s.metronomeVolume = v.metronomeVolume / 100; s.uiSounds = v.uiSounds === "true"; s.haptics = v.haptics === "true"; ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); MetronomeManager.updateUi(); StateManager.saveNow("Settings saved"); this.toast("Settings saved"); }
           });
-          const installBtn = document.getElementById('installAppBtn'); const iosTip = document.getElementById('iosInstallTip');
-          if (window.__deferredPrompt && installBtn) { installBtn.style.display = 'inline-flex'; installBtn.onclick = () => { window.__deferredPrompt.prompt(); window.__deferredPrompt.userChoice.then(() => { window.__deferredPrompt = null; installBtn.style.display = 'none'; }); }; } else if (/iphone|ipad|ipod|macintosh/.test(window.navigator.userAgent.toLowerCase()) && !window.matchMedia('(display-mode: standalone)').matches && iosTip) { iosTip.style.display = 'block'; }
+          const installBtn = document.getElementById('installAppBtn');
+          const isIOS = /ipad|iphone|ipod/.test(window.navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+          if (installBtn) {
+            if (window.__deferredPrompt) {
+              installBtn.style.display = 'inline-flex';
+              installBtn.onclick = () => {
+                window.__deferredPrompt.prompt();
+                window.__deferredPrompt.userChoice.then(() => {
+                  window.__deferredPrompt = null;
+                  installBtn.style.display = 'none';
+                });
+              };
+            } else if (isIOS && !isStandalone) {
+              installBtn.style.display = 'inline-flex';
+              installBtn.onclick = () => {
+                this.openModal({
+                  title: "Install Sonata on iOS",
+                  confirmText: "Got it",
+                  fields: [{
+                    type: "custom",
+                    html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
+                             <p style="margin-bottom:12px;">To install this app on your iPhone/iPad:</p>
+                             <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
+                               <li>Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.</li>
+                               <li>Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.</li>
+                               <li>Tap <strong>Add</strong> in the top-right corner to finish.</li>
+                             </ol>
+                             <p style="font-size:0.75rem; color:var(--muted);">Note: Web App installation on iOS is only supported via the Safari browser.</p>
+                           </div>`
+                  }]
+                });
+              };
+            }
+          }
         },
         openSetlistModal(editId = null) {
           const set = editId ? StateManager.state.setlists.find(s => s.id === editId) : { title: "", items: [], description: "", links: [] };
@@ -3530,6 +3564,9 @@ Em -  C    -  G  -  D
         saveDebounced: Util.debounce(() => StateManager.saveNow("Autosaved"), 650), scheduleSave() { UIManager.setStatus("Autosaving"); this.saveDebounced(); },
         async init() {
           try {
+            const isIOS = /ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
             if (window.__deferredPrompt) {
               const headerBtn = document.getElementById('headerInstallBtn');
               if (headerBtn) {
@@ -3539,6 +3576,29 @@ Em -  C    -  G  -  D
                   window.__deferredPrompt.userChoice.then(() => {
                     window.__deferredPrompt = null;
                     headerBtn.style.display = 'none';
+                  });
+                };
+              }
+            } else if (isIOS && !isStandalone) {
+              const headerBtn = document.getElementById('headerInstallBtn');
+              if (headerBtn) {
+                headerBtn.style.display = 'inline-flex';
+                headerBtn.onclick = () => {
+                  UIManager.openModal({
+                    title: "Install Sonata on iOS",
+                    confirmText: "Got it",
+                    fields: [{
+                      type: "custom",
+                      html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
+                               <p style="margin-bottom:12px;">To install this app on your iPhone/iPad:</p>
+                               <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
+                                 <li>Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.</li>
+                                 <li>Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.</li>
+                                 <li>Tap <strong>Add</strong> in the top-right corner to finish.</li>
+                               </ol>
+                               <p style="font-size:0.75rem; color:var(--muted);">Note: Web App installation on iOS is only supported via the Safari browser.</p>
+                             </div>`
+                    }]
                   });
                 };
               }
