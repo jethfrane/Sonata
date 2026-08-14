@@ -2305,10 +2305,11 @@ Em -  C    -  G  -  D
 
       const GoogleDriveSync = {
         CLIENT_ID: "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com",
-        SCOPES: "https://www.googleapis.com/auth/drive.appdata",
+        SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
         DISCOVERY_DOC: "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
-        FILENAME: "sonata_cloud_backup.json",
+        FILENAME: "sonata_library.json",
         tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
+        userEmail: null, resolveSignIn: null,
 
         init() {
           const checkLibs = setInterval(() => {
@@ -2329,15 +2330,27 @@ Em -  C    -  G  -  D
                         console.error("Drive auth error:", resp);
                         UIManager.toast("Drive Auth Failed");
                         this.updateUI("Sync Failed", "danger");
+                        if (this.resolveSignIn) {
+                          this.resolveSignIn(false);
+                          this.resolveSignIn = null;
+                        }
                         return;
                       }
                       this.accessToken = resp.access_token;
+                      sessionStorage.setItem('sonata_google_token', resp.access_token);
+                      sessionStorage.setItem('sonata_google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
                       if (window.gapi?.client) {
                         gapi.client.setToken({ access_token: resp.access_token });
                       }
+                      await this.fetchUserInfo();
                       await this.performSync();
+                      if (this.resolveSignIn) {
+                        this.resolveSignIn(true);
+                        this.resolveSignIn = null;
+                      }
                     }
                   });
+                  this.loadCachedToken();
                 } catch (err) {
                   console.error("GIS TokenClient Init Error:", err);
                 }
@@ -2351,14 +2364,73 @@ Em -  C    -  G  -  D
             if (this.accessToken) {
               this.performSync();
             } else {
-              if (this.tokenClient) {
-                this.updateUI("Connecting...", "secondary");
-                this.tokenClient.requestAccessToken({ prompt: '' });
-              } else {
-                UIManager.toast("Google Drive Sync loading...");
-              }
+              this.signIn();
             }
           });
+        },
+
+        loadCachedToken() {
+          const token = sessionStorage.getItem('sonata_google_token');
+          const expiry = Number(sessionStorage.getItem('sonata_google_token_expiry') || '0');
+          if (token && expiry > Date.now()) {
+            this.accessToken = token;
+            if (window.gapi?.client) {
+              gapi.client.setToken({ access_token: token });
+            }
+            this.fetchUserInfo().then(() => {
+              this.updateUI("● Synced", "primary");
+            });
+          }
+        },
+
+        async fetchUserInfo() {
+          if (!this.accessToken) return;
+          try {
+            const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              this.userEmail = data.email;
+            }
+          } catch (e) {
+            console.error("Fetch user info error:", e);
+          }
+        },
+
+        signIn() {
+          return new Promise((resolve) => {
+            if (this.tokenClient) {
+              this.resolveSignIn = resolve;
+              this.updateUI("Connecting...", "secondary");
+              this.tokenClient.requestAccessToken({ prompt: '' });
+            } else {
+              UIManager.toast("Google Identity Services loading...");
+              resolve(false);
+            }
+          });
+        },
+
+        disconnect() {
+          if (this.accessToken) {
+            try {
+              google.accounts.oauth2.revoke(this.accessToken, () => {});
+            } catch (e) {}
+          }
+          this.accessToken = null;
+          this.userEmail = null;
+          this.fileId = null;
+          sessionStorage.removeItem('sonata_google_token');
+          sessionStorage.removeItem('sonata_google_token_expiry');
+          this.updateUI("Drive Sync", "secondary");
+          UIManager.toast("Disconnected from Google Drive");
+        },
+
+        get lastSyncedTime() {
+          return localStorage.getItem('sonata:v12:last_synced') || null;
+        },
+        set lastSyncedTime(val) {
+          localStorage.setItem('sonata:v12:last_synced', val);
         },
 
         updateUI(text, styleClass) {
@@ -2371,7 +2443,7 @@ Em -  C    -  G  -  D
         async performSync() {
           if (this.isSyncing) return;
           if (!this.accessToken) {
-            if (this.tokenClient) this.tokenClient.requestAccessToken({ prompt: '' });
+            await this.signIn();
             return;
           }
           this.isSyncing = true;
@@ -2384,7 +2456,6 @@ Em -  C    -  G  -  D
             }
 
             let resp = await gapi.client.drive.files.list({
-              spaces: 'appDataFolder',
               q: `name='${this.FILENAME}' and trashed=false`,
               fields: 'files(id, name, modifiedTime)'
             });
@@ -2405,6 +2476,7 @@ Em -  C    -  G  -  D
             } else {
               await this.uploadLocalData(true);
             }
+            this.lastSyncedTime = Util.now();
             this.updateUI("● Synced", "primary");
             UIManager.toast("Drive Sync Complete");
           } catch (err) {
@@ -2474,7 +2546,7 @@ Em -  C    -  G  -  D
           };
           const metadata = {
             name: this.FILENAME,
-            parents: (isCreate || !this.fileId) ? ['appDataFolder'] : undefined
+            parents: undefined
           };
 
           const boundary = '-------314159265358979323846';
@@ -2506,10 +2578,35 @@ Em -  C    -  G  -  D
 
             const resData = await resp.json();
             if (resData.id) this.fileId = resData.id;
+            this.lastSyncedTime = Util.now();
             this.updateUI("● Synced", "primary");
           } catch (err) {
             console.error("Upload error:", err);
             this.updateUI("Sync Error", "danger");
+          }
+        },
+
+        renderSettingsUI() {
+          const container = document.getElementById('settingsDriveSyncStatus');
+          if (!container) return;
+          if (this.accessToken) {
+            container.innerHTML = `
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <p style="font-size:0.85rem; color:var(--text); font-weight:600; margin:0;">Signed in as: <span style="color:var(--accent);">${this.userEmail || "Connected"}</span></p>
+                <p style="font-size:0.75rem; color:var(--muted); margin:0;">Last Synced: <strong>${Util.formatDate(this.lastSyncedTime)}</strong></p>
+                <div style="display:flex; gap:8px; margin-top:4px;">
+                  <button class="button primary" onclick="event.preventDefault(); GoogleDriveSync.performSync().then(() => GoogleDriveSync.renderSettingsUI())" type="button" style="flex:1;">Sync Now</button>
+                  <button class="button secondary" onclick="event.preventDefault(); GoogleDriveSync.disconnect(); GoogleDriveSync.renderSettingsUI();" type="button">Disconnect</button>
+                </div>
+              </div>
+            `;
+          } else {
+            container.innerHTML = `
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <p style="font-size:0.85rem; color:var(--muted); margin:0;">Backup and sync your library to Google Drive.</p>
+                <button class="button primary" onclick="event.preventDefault(); GoogleDriveSync.signIn().then(() => GoogleDriveSync.renderSettingsUI())" type="button" style="width:100%;">Sign in with Google</button>
+              </div>
+            `;
           }
         }
       };
@@ -3451,6 +3548,7 @@ Em -  C    -  G  -  D
               { type: "heading", label: "Appearance" }, { id: "theme", label: "Theme", type: "select", value: s.theme, options: [{ value: "light", label: "Light" }, { value: "dark", label: "Dark" }] }, { id: "accentTheme", label: "Color theme", type: "select", value: s.accentTheme, options: ACCENT_THEMES }, { id: "uiFontFamily", label: "Interface font", type: "select", value: s.uiFontFamily, options: UI_FONT_OPTIONS }, { id: "chartFontFamily", label: "Song chart font", type: "select", value: s.chartFontFamily, options: CHART_FONT_OPTIONS }, { id: "appFontSize", label: "Interface text size", type: "range", value: s.appFontSize, min: 10, max: 24, step: 1, suffix: "px" }, { id: "editorFontSize", label: "Editor text size", type: "range", value: s.editorFontSize, min: 8, max: 64, step: 1, suffix: "px" }, { id: "previewFontSize", label: "Preview text size", type: "range", value: s.previewFontSize, min: 8, max: 48, step: 1, suffix: "px" }, { id: "editorLineHeight", label: "Song line spacing", type: "range", value: s.editorLineHeight, min: 1.2, max: 2.8, step: 0.02, suffix: "x" },
               { type: "heading", label: "Music & Interactivity" }, { id: "metronomeVolume", label: "Metronome Tick Volume", type: "range", value: Math.round(s.metronomeVolume * 100), min: 0, max: 100, step: 5, suffix: "%" }, { id: "uiSounds", label: "UI Sounds", type: "select", value: s.uiSounds ? "true" : "false", options: [{ value: "true", label: "On" }, { value: "false", label: "Off" }] }, { id: "haptics", label: "Haptic Feedback", type: "select", value: s.haptics ? "true" : "false", options: [{ value: "true", label: "On" }, { value: "false", label: "Off" }] },
               { type: "heading", label: "Data & Backup" }, { type: "custom", html: `<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="button" onclick="const d = { songs: StateManager.state.songs, setlists: StateManager.state.setlists, settings: StateManager.state.settings }; Util.download('sonata-backup.json', 'application/json', JSON.stringify(d, null, 2)); UIManager.toast('Backup exported');" type="button">Export Backup</button><label class="button" style="margin:0;cursor:pointer;"><input type="file" accept=".json" style="display:none;" onchange="const r = new FileReader(); r.onload = (e) => { try { const d = JSON.parse(e.target.result); if (d.songs) StorageManager.saveSongs(d.songs); if (d.setlists) StorageManager.saveSetlists(d.setlists); if (d.settings) StorageManager.saveSettings(d.settings); UIManager.toast('Backup restored!'); setTimeout(() => window.location.reload(), 1000); } catch(err) { UIManager.toast('Invalid backup file'); } }; if(this.files.length) r.readAsText(this.files[0]);">Import Backup</label></div>` },
+              { type: "heading", label: "Google Drive Sync" }, { type: "custom", html: '<div id="settingsDriveSyncStatus" style="padding: 4px 0;"></div>' },
               { id: "installAppContainer", type: "custom", html: `<button class="button primary" id="installAppBtn" style="width:100%;display:none;" type="button">Install App to Device</button><p id="iosInstallTip" style="margin:6px 0 0;font-size:0.75rem;color:var(--muted);display:none;">To install on iOS/Mac: Tap Share then "Add to Home Screen".</p>` },
               { type: "custom", html: `<button class="button danger" onclick="if(confirm('Reset all appearance settings?')) { StateManager.state.settings = Object.assign({}, DEFAULT_SETTINGS); StateManager.saveNow('Settings restored'); window.location.reload(); }" type="button" style="width:100%; margin-top: 14px;">Restore Default Settings</button>` }
             ], onConfirm: v => { s.theme = v.theme; s.accentTheme = v.accentTheme; s.uiFontFamily = v.uiFontFamily; s.chartFontFamily = v.chartFontFamily; s.appFontSize = v.appFontSize; s.editorFontSize = v.editorFontSize; s.previewFontSize = v.previewFontSize; s.editorLineHeight = v.editorLineHeight; s.metronomeVolume = v.metronomeVolume / 100; s.uiSounds = v.uiSounds === "true"; s.haptics = v.haptics === "true"; ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); MetronomeManager.updateUi(); StateManager.saveNow("Settings saved"); this.toast("Settings saved"); }
@@ -3491,6 +3589,7 @@ Em -  C    -  G  -  D
               };
             }
           }
+          GoogleDriveSync.renderSettingsUI();
         },
         openSetlistModal(editId = null) {
           const set = editId ? StateManager.state.setlists.find(s => s.id === editId) : { title: "", items: [], description: "", links: [] };
