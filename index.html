@@ -10,6 +10,16 @@
   <meta name="theme-color" content="#f6f7f9">
   <link rel="manifest"
     href="data:application/json;base64,eyJuYW1lIjoiU29uYXRhIE1hc3RlciIsInNob3J0X25hbWUiOiJTb25hdGEiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmNmY3ZjkiLCJ0aGVtZV9jb2xvciI6IiMxOTY3ZDIiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9wbGFjZWhvbGQuY28vMTkyeDE5Mi8xOTY3ZDIvZmZmZmZmP3RleHQ9UyIsInR5cGVzIjoiaW1hZ2UvcG5nIiwic2l6ZXMiOiIxOTJ4MTkyIn0seyJzcmMiOiJodHRwczovL3BsYWNlaG9sZC5jby81MTJ4NTEyLzE5NjdkMi9mZmZmZmY/dGV4dD1TIiwidHlwZXMiOiJpbWFnZS9wbmciLCJzaXplcyI6IjUxMng1MTIifV19">
+
+  <meta property="og:title" content="Sonata Master">
+  <meta property="og:description"
+    content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
+  <meta property="og:type" content="website">
+  <meta property="twitter:card" content="summary">
+  <meta property="twitter:title" content="Sonata Master">
+  <meta property="twitter:description"
+    content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
+
   <title>Sonata</title>
 
   <style>
@@ -2157,10 +2167,10 @@ Em -  C    -  G  -  D
             const noiseGain = this.ctx.createGain(); noiseGain.gain.setValueAtTime(vol, t); noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.05); noise.connect(noiseFilter).connect(noiseGain).connect(this.ctx.destination); noise.start(t);
             const osc = this.ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = freq; const osc2 = this.ctx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = freq;
             const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(freq * 6, t); filter.frequency.exponentialRampToValueAtTime(freq, t + 1.5);
-            const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(vol * 0.8, t + 0.02); gain.gain.exponentialRampToValueAtTime(vol * 0.3, t + 0.6); gain.gain.exponentialRampToValueAtTime(0.001, t + 4.0);
+            const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(vol * 0.8, t + 0.02); gain.gain.exponentialRampToValueAtTime(vol * 0.3, t + 0.6); gain.gain.exponentialRampToValueAtTime(0.001, t + 12.0);
             osc.connect(filter); osc2.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc2.start(t);
 
-            return { stop: () => { try { const stopT = this.ctx.currentTime; gain.gain.cancelScheduledValues(stopT); gain.gain.setValueAtTime(gain.gain.value, stopT); gain.gain.exponentialRampToValueAtTime(0.001, stopT + 0.1); osc.stop(stopT + 0.2); osc2.stop(stopT + 0.2); } catch (e) { } } };
+            return { stop: () => { try { const stopT = this.ctx.currentTime; gain.gain.cancelScheduledValues(stopT); gain.gain.setValueAtTime(gain.gain.value, stopT); gain.gain.exponentialRampToValueAtTime(0.001, stopT + 0.8); osc.stop(stopT + 0.9); osc2.stop(stopT + 0.9); } catch (e) { } } };
           } catch (e) { return { stop: () => { } }; }
         },
         playPianoNote(freq, vol = 0.5) {
@@ -2168,10 +2178,10 @@ Em -  C    -  G  -  D
           try {
             const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
             const osc2 = this.ctx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = freq;
-            const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(vol, t + 0.01); gain.gain.exponentialRampToValueAtTime(vol * 0.4, t + 0.5); gain.gain.exponentialRampToValueAtTime(0.001, t + 3.0);
+            const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(vol, t + 0.01); gain.gain.exponentialRampToValueAtTime(vol * 0.4, t + 0.5); gain.gain.exponentialRampToValueAtTime(0.001, t + 10.0);
             osc.connect(gain); osc2.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc2.start(t);
 
-            return { stop: () => { try { const stopT = this.ctx.currentTime; gain.gain.cancelScheduledValues(stopT); gain.gain.setValueAtTime(gain.gain.value, stopT); gain.gain.exponentialRampToValueAtTime(0.001, stopT + 0.1); osc.stop(stopT + 0.2); osc2.stop(stopT + 0.2); } catch (e) { } } };
+            return { stop: () => { try { const stopT = this.ctx.currentTime; gain.gain.cancelScheduledValues(stopT); gain.gain.setValueAtTime(gain.gain.value, stopT); gain.gain.exponentialRampToValueAtTime(0.001, stopT + 0.6); osc.stop(stopT + 0.7); osc2.stop(stopT + 0.7); } catch (e) { } } };
           } catch (e) { return { stop: () => { } }; }
         },
         playChord(midiBase, quality = 'major') { const root = this.midiToFreq(midiBase); let third = this.midiToFreq(midiBase + (quality === 'minor' || quality === 'diminished' ? 3 : 4)); let fifth = this.midiToFreq(midiBase + (quality === 'diminished' ? 6 : 7)); const n1 = this.playPianoNote(root, 0.4); const n2 = this.playPianoNote(third, 0.3); const n3 = this.playPianoNote(fifth, 0.3); return { stop: () => { n1.stop(); n2.stop(); n3.stop(); } }; },
@@ -2455,7 +2465,7 @@ Em -  C    -  G  -  D
       };
 
       const Tuner = {
-        active: false, stream: null, timer: null,
+        active: false, stream: null, timer: null, smoothedCents: null,
         async toggle() {
           if (this.active) { this.stop(); return; }
           try {
@@ -2472,6 +2482,7 @@ Em -  C    -  G  -  D
         },
         stop() {
           this.active = false; cancelAnimationFrame(this.timer); if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+          this.smoothedCents = null;
           UIManager.dom.micTunerBtn.innerHTML = '<span data-inline-icon="music" style="margin-right:6px;"></span> Start Microphone Tuner'; UIManager.dom.micTunerBtn.classList.replace("danger", "secondary"); UIManager.dom.tunerDisplay.style.display = "none"; Icon.decorateAll(UIManager.dom.micTunerBtn);
         },
         autoCorrelate(buf, sampleRate) {
@@ -2485,8 +2496,10 @@ Em -  C    -  G  -  D
           return sampleRate / T0;
         },
         updateUI(pitch) {
-          if (pitch === -1) { UIManager.dom.tunerNote.textContent = "--"; UIManager.dom.tunerCents.textContent = "Waiting..."; return; }
-          const noteNum = 12 * (Math.log(pitch / 440) / Math.log(2)); const midi = Math.round(noteNum) + 69; const expectedFreq = 440 * Math.pow(2, (midi - 69) / 12); const cents = Math.floor(1200 * Math.log(pitch / expectedFreq) / Math.log(2));
+          if (pitch === -1) { this.smoothedCents = null; UIManager.dom.tunerNote.textContent = "--"; UIManager.dom.tunerCents.textContent = "Waiting..."; return; }
+          const noteNum = 12 * (Math.log(pitch / 440) / Math.log(2)); const midi = Math.round(noteNum) + 69; const expectedFreq = 440 * Math.pow(2, (midi - 69) / 12); const rawCents = 1200 * Math.log(pitch / expectedFreq) / Math.log(2);
+          if (this.smoothedCents === null) this.smoothedCents = rawCents; else this.smoothedCents = this.smoothedCents * 0.85 + rawCents * 0.15;
+          const cents = Math.round(this.smoothedCents);
           UIManager.dom.tunerNote.textContent = SHARP_NOTES[midi % 12];
           UIManager.dom.tunerCents.textContent = `${cents} cents (${cents < -5 ? 'Flat' : cents > 5 ? 'Sharp' : 'In Tune'})`;
           UIManager.dom.tunerNeedle.style.left = `calc(50% + ${Util.clamp(cents, -50, 50)}%)`; UIManager.dom.tunerNeedle.style.backgroundColor = Math.abs(cents) < 5 ? "var(--accent-2)" : "var(--accent)";
