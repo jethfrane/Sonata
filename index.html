@@ -2178,41 +2178,57 @@ Em -  C    -  G  -  D
 
         init() {
           const checkLibs = setInterval(() => {
-            if (window.gapi && window.google) {
+            if (window.gapi && window.google?.accounts?.oauth2) {
               clearInterval(checkLibs);
               gapi.load('client', async () => {
-                await gapi.client.init({ discoveryDocs: [this.DISCOVERY_DOC] });
-                this.tokenClient = google.accounts.oauth2.initTokenClient({
-                  client_id: this.CLIENT_ID,
-                  scope: this.SCOPES,
-                  callback: (resp) => {
-                    if (resp.error !== undefined) {
-                      UIManager.toast("Drive Auth Failed");
-                      this.updateUI("Sync Failed", "danger");
-                      return;
+                try {
+                  await gapi.client.init({ discoveryDocs: [this.DISCOVERY_DOC] });
+                } catch (e) {
+                  console.warn("GAPI discovery init warning", e);
+                }
+                try {
+                  this.tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: this.CLIENT_ID,
+                    scope: this.SCOPES,
+                    callback: async (resp) => {
+                      if (resp.error !== undefined) {
+                        console.error("Drive auth error:", resp);
+                        UIManager.toast("Drive Auth Failed");
+                        this.updateUI("Sync Failed", "danger");
+                        return;
+                      }
+                      this.accessToken = resp.access_token;
+                      if (window.gapi?.client) {
+                        gapi.client.setToken({ access_token: resp.access_token });
+                      }
+                      await this.performSync();
                     }
-                    this.accessToken = resp.access_token;
-                    this.performSync();
-                  }
-                });
+                  });
+                } catch (err) {
+                  console.error("GIS TokenClient Init Error:", err);
+                }
               });
             }
           }, 200);
 
-          UIManager.dom.googleSyncButton?.addEventListener('click', () => {
+          const btn = document.getElementById('googleSyncButton');
+          btn?.addEventListener('click', () => {
             AudioEngine.playClick();
-            if (this.accessToken) { this.performSync(); }
-            else {
+            if (this.accessToken) {
+              this.performSync();
+            } else {
               if (this.tokenClient) {
                 this.updateUI("Connecting...", "secondary");
                 this.tokenClient.requestAccessToken({ prompt: '' });
-              } else { UIManager.toast("Google Sync loading..."); }
+              } else {
+                UIManager.toast("Google Drive Sync loading...");
+              }
             }
           });
         },
 
         updateUI(text, styleClass) {
-          const btn = UIManager.dom.googleSyncButton;
+          const btn = UIManager.dom.googleSyncButton || document.getElementById('googleSyncButton');
           if (!btn) return;
           btn.className = `button ${styleClass}`;
           Icon.set(btn, "cloud", text, false);
@@ -2220,20 +2236,38 @@ Em -  C    -  G  -  D
 
         async performSync() {
           if (this.isSyncing) return;
+          if (!this.accessToken) {
+            if (this.tokenClient) this.tokenClient.requestAccessToken({ prompt: '' });
+            return;
+          }
           this.isSyncing = true;
           this.updateUI("Syncing...", "secondary");
           UIManager.toast("Syncing with Google Drive...");
 
           try {
-            let resp = await gapi.client.drive.files.list({ spaces: 'appDataFolder', q: `name='${this.FILENAME}'`, fields: 'files(id, modifiedTime)' });
-            let files = resp.result.files;
+            if (window.gapi?.client) {
+              gapi.client.setToken({ access_token: this.accessToken });
+            }
 
-            if (files && files.length > 0) {
+            let resp = await gapi.client.drive.files.list({
+              spaces: 'appDataFolder',
+              q: `name='${this.FILENAME}' and trashed=false`,
+              fields: 'files(id, name, modifiedTime)'
+            });
+            let files = resp.result?.files || [];
+
+            if (files.length > 0) {
               this.fileId = files[0].id;
               let fileResp = await gapi.client.drive.files.get({ fileId: this.fileId, alt: 'media' });
-              let cloudData = fileResp.result;
-              if (typeof cloudData === 'string') cloudData = JSON.parse(cloudData);
-              this.mergeAndSave(cloudData);
+              let cloudData = fileResp.result || fileResp.body;
+              if (typeof cloudData === 'string') {
+                try { cloudData = JSON.parse(cloudData); } catch (e) { cloudData = null; }
+              }
+              if (cloudData && typeof cloudData === 'object') {
+                this.mergeAndSave(cloudData);
+              } else {
+                await this.uploadLocalData(false);
+              }
             } else {
               await this.uploadLocalData(true);
             }
@@ -2241,35 +2275,47 @@ Em -  C    -  G  -  D
             UIManager.toast("Drive Sync Complete");
           } catch (err) {
             console.error("Sync error:", err);
+            if (err?.status === 401 || err?.result?.error?.code === 401) {
+              this.accessToken = null;
+            }
             UIManager.toast("Drive Sync Failed");
             this.updateUI("Sync Failed", "danger");
-          } finally { this.isSyncing = false; }
+          } finally {
+            this.isSyncing = false;
+          }
         },
 
         mergeAndSave(cloudData) {
           const mergeArrays = (localArr, cloudArr, timeKey) => {
             const map = new Map();
-            cloudArr.forEach(item => map.set(item.id, item));
-            localArr.forEach(item => {
+            (cloudArr || []).forEach(item => { if (item && item.id) map.set(item.id, item); });
+            (localArr || []).forEach(item => {
+              if (!item || !item.id) return;
               const cloudItem = map.get(item.id);
               if (cloudItem) {
-                const localTime = new Date(item[timeKey] || 0).getTime();
-                const cloudTime = new Date(cloudItem[timeKey] || 0).getTime();
-                if (localTime >= cloudTime) map.set(item.id, item);
-              } else { map.set(item.id, item); }
+                const localTime = new Date(item[timeKey] || item.updatedAt || item.createdAt || 0).getTime();
+                const cloudTime = new Date(cloudItem[timeKey] || cloudItem.updatedAt || cloudItem.createdAt || 0).getTime();
+                if (localTime >= cloudTime) {
+                  map.set(item.id, item);
+                }
+              } else {
+                map.set(item.id, item);
+              }
             });
             return Array.from(map.values());
           };
 
           const mergedSongs = mergeArrays(StateManager.state.songs, cloudData.songs || [], 'updatedAt');
-          const mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'date');
+          const mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'updatedAt');
 
-          StateManager.state.songs = mergedSongs;
+          StateManager.state.songs = mergedSongs.map(s => StorageManager.normalizeSong(s));
           StateManager.state.setlists = mergedSets;
-          StateManager.state.settings = { ...cloudData.settings, ...StateManager.state.settings };
+          if (cloudData.settings) {
+            StateManager.state.settings = { ...cloudData.settings, ...StateManager.state.settings };
+          }
 
-          StorageManager.saveSongs(mergedSongs);
-          StorageManager.saveSetlists(mergedSets);
+          StorageManager.saveSongs(StateManager.state.songs);
+          StorageManager.saveSetlists(StateManager.state.setlists);
           StorageManager.saveSettings(StateManager.state.settings);
 
           Editor.loadActiveSong();
@@ -2280,35 +2326,55 @@ Em -  C    -  G  -  D
         scheduleUpload() {
           if (this.uploadTimer) clearTimeout(this.uploadTimer);
           this.uploadTimer = setTimeout(() => {
-            if (this.accessToken && this.fileId) this.uploadLocalData(false);
-          }, 3000);
+            if (this.accessToken) this.uploadLocalData(false);
+          }, 2500);
         },
 
         async uploadLocalData(isCreate = false) {
           if (!this.accessToken) return;
-          const data = { songs: StateManager.state.songs, setlists: StateManager.state.setlists, settings: StateManager.state.settings, lastSynced: Util.now() };
-          const metadata = { name: this.FILENAME, parents: isCreate ? ['appDataFolder'] : undefined };
+          const data = {
+            songs: StateManager.state.songs,
+            setlists: StateManager.state.setlists,
+            settings: StateManager.state.settings,
+            lastSynced: Util.now()
+          };
+          const metadata = {
+            name: this.FILENAME,
+            parents: (isCreate || !this.fileId) ? ['appDataFolder'] : undefined
+          };
 
           const boundary = '-------314159265358979323846';
-          const delimiter = "\\r\\n--" + boundary + "\\r\\n";
-          const close_delim = "\\r\\n--" + boundary + "--";
+          const delimiter = "\r\n--" + boundary + "\r\n";
+          const close_delim = "\r\n--" + boundary + "--";
 
           const multipartRequestBody =
-            delimiter + 'Content-Type: application/json\\r\\n\\r\\n' + JSON.stringify(metadata) +
-            delimiter + 'Content-Type: application/json\\r\\n\\r\\n' + JSON.stringify(data) + close_delim;
+            delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(metadata) +
+            delimiter + 'Content-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(data) + close_delim;
 
           try {
-            let req = await gapi.client.request({
-              'path': '/upload/drive/v3/files' + (!isCreate && this.fileId ? '/' + this.fileId : ''),
-              'method': (!isCreate && this.fileId) ? 'PATCH' : 'POST',
-              'params': { 'uploadType': 'multipart' },
-              'headers': { 'Content-Type': 'multipart/related; boundary=' + boundary + '' },
-              'body': multipartRequestBody
+            const isPost = isCreate || !this.fileId;
+            const url = isPost
+              ? 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart'
+              : `https://www.googleapis.com/upload/drive/v3/files/${this.fileId}?uploadType=multipart`;
+
+            const resp = await fetch(url, {
+              method: isPost ? 'POST' : 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Content-Type': `multipart/related; boundary=${boundary}`
+              },
+              body: multipartRequestBody
             });
-            if (isCreate && req.result && req.result.id) this.fileId = req.result.id;
+
+            if (!resp.ok) {
+              throw new Error(`HTTP ${resp.status}`);
+            }
+
+            const resData = await resp.json();
+            if (resData.id) this.fileId = resData.id;
             this.updateUI("● Synced", "primary");
           } catch (err) {
-            console.error("Upload error", err);
+            console.error("Upload error:", err);
             this.updateUI("Sync Error", "danger");
           }
         }
@@ -2781,66 +2847,232 @@ Em -  C    -  G  -  D
         },
         exportPdf() { const payloads = this.setlistPayloads(); const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads)); UIManager.toast("PDF exported"); },
         createPdf(payloads) {
-          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1; const orientation = UIManager.dom.exportOrientation.value; const pageWidth = orientation === "landscape" ? 792 : 612; const pageHeight = orientation === "landscape" ? 612 : 792; const margin = 54; const lineHeight = 15; const columnWidth = (pageWidth - margin * 2) / columns;
+          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
+          const orientation = UIManager.dom.exportOrientation.value;
+          const pageWidth = orientation === "landscape" ? 792 : 612;
+          const pageHeight = orientation === "landscape" ? 612 : 792;
+          const margin = 44;
+          const colGap = columns > 1 ? 20 : 0;
+          const usableWidth = pageWidth - (margin * 2) - ((columns - 1) * colGap);
+          const columnWidth = usableWidth / columns;
 
-          const pages = []; const pageHeaderData = []; let currentPayload = null; let y = pageHeight - 130; let ops = []; let col = 0;
-          const pushPage = () => { pages.push(ops.join("\n")); pageHeaderData.push(currentPayload); ops = []; y = pageHeight - 130; col = 0; };
-          const textLine = (text, x, font, size, isColor) => { if (isColor) ops.push("0 0.3 0.8 rg"); else ops.push("0 g"); ops.push("BT /" + font + " " + size + " Tf " + x + " " + y + " Td (" + this.pdfEscape(text) + ") Tj ET"); y -= lineHeight; };
+          const fontSize = columns === 3 ? 9 : 10;
+          const charWidth = fontSize * 0.6;
+          const lineHeight = fontSize + 4.5;
+          const maxChars = Math.max(12, Math.floor(columnWidth / charWidth));
+
+          const pages = [];
+          const pageHeaderData = [];
+          let currentPayload = null;
+          let ops = [];
+          let col = 0;
+
+          const startY = (p) => pageHeight - (p && p.artist ? 104 : 88);
+          const bottomY = 58;
+          let y = startY(payloads[0]);
+
+          const pushPage = () => {
+            pages.push(ops.join("\n"));
+            pageHeaderData.push(currentPayload);
+            ops = [];
+            col = 0;
+            y = startY(currentPayload);
+          };
+
+          const textLine = (text, x, font, size, r, g, b) => {
+            ops.push(`${r} ${g} ${b} rg\nBT /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(text)}) Tj ET`);
+            y -= lineHeight;
+          };
+
+          const wrapText = (text, limit) => {
+            if (!text || text.length <= limit) return [text || ""];
+            const res = [];
+            let cur = "";
+            const tokens = text.split(/(\s+|\[[^\]]+\]|[^\s\[]+)/g).filter(Boolean);
+            for (const token of tokens) {
+              if ((cur + token).length <= limit) {
+                cur += token;
+              } else {
+                if (cur.length > 0) {
+                  res.push(cur);
+                  cur = "";
+                }
+                if (token.length > limit) {
+                  let rem = token;
+                  while (rem.length > limit) {
+                    res.push(rem.substring(0, limit));
+                    rem = rem.substring(limit);
+                  }
+                  cur = rem;
+                } else {
+                  cur = token.trimStart();
+                }
+              }
+            }
+            if (cur.length > 0) res.push(cur);
+            return res.length ? res : [""];
+          };
 
           payloads.forEach((payload, index) => {
-            if (index > 0 && (ops.length > 0 || col > 0)) pushPage();
+            if (index > 0 && (ops.length > 0 || col > 0)) {
+              pushPage();
+            }
             currentPayload = payload;
+            y = startY(currentPayload);
+            col = 0;
 
-            let wrappedLines = []; let originIndexMap = [];
-            payload.body.split('\n').forEach((line, origIdx) => { const limits = orientation === 'landscape' ? { 1: 120, 2: 55, 3: 35 } : { 1: 90, 2: 42, 3: 26 }; const limit = limits[columns] || limits[1]; if (!line) { wrappedLines.push(""); originIndexMap.push(origIdx); return; } let rem = line; while (rem.length > 0) { wrappedLines.push(rem.substring(0, limit)); originIndexMap.push(origIdx); rem = rem.substring(limit); } });
+            const lines = (payload.body || "").split('\n');
+            const processedLines = [];
 
-            wrappedLines.forEach((line, i) => {
-              if (y < 76) { col++; if (col >= columns) { pushPage(); currentPayload = payload; } else { y = pageHeight - 130; } }
-              const x = margin + (col * columnWidth);
-              if (line.startsWith('---')) { ops.push("q 0.88 0.90 0.92 RG 1 w " + x + " " + (y + 4) + " m " + (x + columnWidth - 20) + " " + (y + 4) + " l S Q"); y -= lineHeight; }
-              else if (line.startsWith('# ')) { textLine(line.substring(2), x, "F3", 14, true); }
-              else if (line.startsWith('## ')) { textLine(line.substring(3), x, "F3", 11, false); }
-              else if (line.startsWith('> ') || line.startsWith('// ')) { ops.push("0.4 0.4 0.44 rg"); textLine(line.substring(2), x, "F2", 9, false); }
-              else if (payload.chordLineIndices.has(originIndexMap[i]) && StateManager.state.previewMode !== 'lyrics') { textLine(line, x, "F4", 10.5, true); }
-              else if (line.includes('[') && line.includes(']') && StateManager.state.previewMode !== 'lyrics') {
-                const parts = line.split(/(\[[^\]]+\])/g);
-                let currentX = x; const charWidth = 10.5 * 0.6; // Standard Courier width
+            lines.forEach((line, origIdx) => {
+              const isChord = payload.chordLineIndices?.has(origIdx) && StateManager.state.previewMode !== 'lyrics';
+              const isHeader1 = line.startsWith('# ');
+              const isHeader2 = line.startsWith('## ');
+              const isDivider = line.startsWith('---');
+              const isComment = line.startsWith('> ') || line.startsWith('// ');
+
+              if (!line) {
+                processedLines.push({ type: 'empty', text: '', origIdx });
+                return;
+              }
+
+              if (isDivider) {
+                processedLines.push({ type: 'divider', text: line, origIdx });
+                return;
+              }
+
+              const wrapped = wrapText(line, maxChars);
+              wrapped.forEach(wLine => {
+                if (isHeader1) {
+                  processedLines.push({ type: 'h1', text: wLine.replace(/^#\s*/, ''), origIdx });
+                } else if (isHeader2) {
+                  processedLines.push({ type: 'h2', text: wLine.replace(/^##\s*/, ''), origIdx });
+                } else if (isComment) {
+                  processedLines.push({ type: 'comment', text: wLine.replace(/^[>/]{1,2}\s*/, ''), origIdx });
+                } else if (isChord) {
+                  processedLines.push({ type: 'chord', text: wLine, origIdx });
+                } else if (wLine.includes('[') && wLine.includes(']') && StateManager.state.previewMode !== 'lyrics') {
+                  processedLines.push({ type: 'inlineChord', text: wLine, origIdx });
+                } else {
+                  processedLines.push({ type: 'lyric', text: wLine, origIdx });
+                }
+              });
+            });
+
+            processedLines.forEach(item => {
+              if (y < bottomY) {
+                col++;
+                if (col >= columns) {
+                  pushPage();
+                } else {
+                  y = startY(payload);
+                }
+              }
+
+              const colX = margin + (col * (columnWidth + colGap));
+
+              if (item.type === 'empty') {
+                y -= (lineHeight * 0.75);
+              } else if (item.type === 'divider') {
+                ops.push(`q 0.86 0.88 0.90 RG 1 w ${colX.toFixed(2)} ${(y + 3).toFixed(2)} m ${(colX + columnWidth).toFixed(2)} ${(y + 3).toFixed(2)} l S Q`);
+                y -= lineHeight;
+              } else if (item.type === 'h1') {
+                textLine(item.text, colX, "F3", fontSize + 2, 0, 0.35, 0.82);
+              } else if (item.type === 'h2') {
+                textLine(item.text, colX, "F3", fontSize + 0.5, 0.15, 0.18, 0.22);
+              } else if (item.type === 'comment') {
+                textLine(item.text, colX, "F2", fontSize - 0.5, 0.45, 0.45, 0.5);
+              } else if (item.type === 'chord') {
+                textLine(item.text, colX, "F4", fontSize, 0, 0.35, 0.82);
+              } else if (item.type === 'inlineChord') {
+                const parts = item.text.split(/(\[[^\]]+\])/g);
+                let currentX = colX;
                 parts.forEach(part => {
                   if (!part) return;
                   if (part.startsWith('[') && part.endsWith(']')) {
-                    ops.push(`0 0.3 0.8 rg\nBT /F4 10.5 Tf ${currentX} ${y} Td (${this.pdfEscape(part)}) Tj ET`);
+                    ops.push(`0 0.35 0.82 rg\nBT /F4 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
                   } else {
-                    ops.push(`0 g\nBT /F1 10.5 Tf ${currentX} ${y} Td (${this.pdfEscape(part)}) Tj ET`);
+                    ops.push(`0 0 0 rg\nBT /F1 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
                   }
                   currentX += part.length * charWidth;
                 });
                 y -= lineHeight;
+              } else {
+                textLine(item.text, colX, "F1", fontSize, 0, 0, 0);
               }
-              else { textLine(line, x, "F1", 10.5, false); }
             });
           });
-          if (ops.length || col > 0) pushPage();
 
-          const objects = []; const add = value => { objects.push(value); return objects.length; };
-          const catalogId = add("<< /Type /Catalog /Pages 2 0 R >>"); const pagesId = add("");
+          if (ops.length > 0 || pages.length === 0) {
+            pushPage();
+          }
+
+          const objects = [];
+          const add = value => { objects.push(value); return objects.length; };
+          const catalogId = add("<< /Type /Catalog /Pages 2 0 R >>");
+          const pagesId = add("");
           const fontIds = `<< /F1 ${add("<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")} 0 R /F2 ${add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")} 0 R /F3 ${add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")} 0 R /F4 ${add("<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")} 0 R >>`;
-          const pageIds = []; const generated = new Date().toLocaleDateString();
+          const pageIds = [];
+          const generated = new Date().toLocaleDateString();
 
           pages.forEach((pageOps, index) => {
-            const p = pageHeaderData[index];
-            let footerStr = `Page ${index + 1} of ${pages.length}  -  Generated ${generated} by Sonata`; if (p.creator) footerStr += `  |  Arr: ${p.creator}`; if (p.links?.length) footerStr += `  |  Ref: ${p.links[0].url}`;
-            const chrome = `q 0.96 0.96 0.98 rg 0 ${pageHeight - 100} ${pageWidth} 100 re f Q\nq 0.88 0.90 0.92 RG 1 w 0 ${pageHeight - 100} m ${pageWidth} ${pageHeight - 100} l S Q\n0 g BT /F3 20 Tf ${margin} ${pageHeight - 56} Td (${this.pdfEscape(this.pdfTruncate(p.title, 62))}) Tj ET\n` + (p.artist ? `0.4 0.4 0.44 rg BT /F2 11 Tf ${margin} ${pageHeight - 74} Td (By: ${this.pdfEscape(p.artist)}) Tj ET\n0.5 0.5 0.55 rg BT /F2 10 Tf ${margin} ${pageHeight - 88} Td (Key: ${p.keyInfo}  |  BPM: ${p.bpm}  |  Layout: ${p.modeName}) Tj ET\n` : `0.4 0.4 0.44 rg BT /F2 10 Tf ${margin} ${pageHeight - 78} Td (Key: ${p.keyInfo}  |  BPM: ${p.bpm}  |  Layout: ${p.modeName}) Tj ET\n`) + `q 0.88 0.90 0.92 RG 1 w ${margin} 46 m ${pageWidth - margin} 46 l S Q\n0.5 0.5 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 120))}) Tj ET\n0 g`;
-            const content = chrome + "\n0 g\n" + pageOps; const contentId = add("<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+            const p = pageHeaderData[index] || payloads[0] || { title: "Chart", keyInfo: "Unknown", bpm: "120", modeName: "Standard" };
+            let footerStr = `Page ${index + 1} of ${pages.length}  •  Generated ${generated} by Sonata`;
+            if (p.creator) footerStr += `  |  Arr: ${p.creator}`;
+            if (p.links?.length) footerStr += `  |  Ref: ${p.links[0].url}`;
+
+            const headerHeight = p.artist ? 88 : 74;
+            const headerY = pageHeight - headerHeight;
+
+            let chrome = `q 0.96 0.96 0.98 rg 0 ${headerY} ${pageWidth} ${headerHeight} re f Q\n` +
+                         `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
+                         `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
+            if (p.artist) {
+              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 60))}) Tj ET\n` +
+                        `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+            } else {
+              chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+            }
+            chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
+                      `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
+
+            const content = chrome + "\n0 g\n" + pageOps;
+            const contentId = add("<< /Length " + content.length + " >>\nstream\r\n" + content + "\r\nendstream");
             pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font ${fontIds} >> /Contents ${contentId} 0 R >>`));
           });
 
-          objects[pagesId - 1] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map(id => id + " 0 R").join(" ")}] >>`; objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
-          let pdf = "%PDF-1.4\n"; const offsets = [0]; objects.forEach((object, index) => { offsets.push(pdf.length); pdf += (index + 1) + " 0obj\n" + object + "\nendobj\n"; });
-          const xref = pdf.length; pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n"; offsets.slice(1).forEach(offset => { pdf += String(offset).padStart(10, "0") + " 00000 n \n"; });
-          pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`; return new Blob([pdf], { type: "application/pdf" });
+          objects[pagesId - 1] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map(id => id + " 0 R").join(" ")}] >>`;
+          objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+
+          let pdf = "%PDF-1.4\r\n";
+          const offsets = [0];
+          objects.forEach((object, index) => {
+            offsets.push(pdf.length);
+            pdf += (index + 1) + " 0 obj\r\n" + object + "\r\nendobj\r\n";
+          });
+          const xref = pdf.length;
+          pdf += "xref\r\n0 " + (objects.length + 1) + "\r\n0000000000 65535 f \r\n";
+          offsets.slice(1).forEach(offset => {
+            pdf += String(offset).padStart(10, "0") + " 00000 n \r\n";
+          });
+          pdf += `trailer\r\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\r\nstartxref\r\n${xref}\r\n%%EOF`;
+          return new Blob([pdf], { type: "application/pdf" });
         },
         pdfTruncate(text, max) { const value = String(text || ""); return value.length > max ? value.slice(0, Math.max(0, max - 3)) + "..." : value; },
-        pdfEscape(text) { return String(text).replace(/[^\x20-\x7E]/g, "?").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)"); },
+        pdfEscape(text) {
+          if (text === null || text === undefined) return "";
+          let str = String(text)
+            .replace(/♯/g, "#")
+            .replace(/♭/g, "b")
+            .replace(/[“”]/g, '"')
+            .replace(/[‘’]/g, "'")
+            .replace(/[–—]/g, "-")
+            .replace(/•/g, "*")
+            .replace(/…/g, "...")
+            .replace(/[\r\n\t]/g, " ")
+            .replace(/[^\x20-\x7E]/g, " ");
+          return str.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+        },
         print() { const p = this.setlistPayloads()[0]; UIManager.dom.printTitle.textContent = p.title; UIManager.dom.printBody.innerHTML = p.body.replace(/\n/g, '<br>'); UIManager.dom.printFooter.textContent = `Key: ${p.keyInfo} | BPM: ${p.bpm} | Layout: ${p.modeName}`; UIManager.dom.printBody.style.columnCount = parseInt(UIManager.dom.exportColumns.value, 10) || 1; UIManager.dom.printBody.style.columnGap = "40px"; window.setTimeout(() => window.print(), 60); UIManager.toast("Print dialog opened"); },
         async copyText(text) { try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; } } catch (e) { } try { const helper = document.createElement("textarea"); helper.value = text; helper.style.position = "fixed"; helper.style.opacity = "0"; document.body.appendChild(helper); helper.select(); const success = document.execCommand("copy"); helper.remove(); return success; } catch (e) { return false; } },
         async copy() { const success = await this.copyText(UIManager.dom.previewOutput.innerText || UIManager.dom.previewOutput.textContent); if (success) UIManager.toast("Copied visible chart"); },
@@ -2951,7 +3183,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "revertSongButton", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "revertSongButton", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
