@@ -30,7 +30,7 @@
   <title>Sonata</title>
 
   <script async defer src="https://accounts.google.com/gsi/client"></script>
-  <script async defer src="https://apis.google.com/js/api.js"></script>
+
 
   <style>
     :root {
@@ -234,7 +234,7 @@
       display: grid;
       gap: 12px;
       width: 100%;
-      max-width: 1800px;
+      max-width: 100%;
       margin: 0 auto;
       padding: 12px;
       flex: 1;
@@ -386,7 +386,7 @@
       font-family: var(--chart-font);
       font-size: var(--editor-font);
       line-height: var(--editor-line);
-      white-space: pre;
+      white-space: pre-wrap;
       overflow: auto;
       tab-size: 4;
       z-index: 2;
@@ -494,16 +494,16 @@
 
     .song-title-input {
       height: auto;
-      min-height: 56px;
-      padding: 14px 16px 4px;
+      min-height: 42px;
+      padding: 10px 16px 4px;
       border: 0;
       border-radius: 0;
       background: var(--surface);
       color: var(--text);
-      font-size: clamp(1.4rem, 4vw, 2.4rem);
+      font-size: clamp(1.1rem, 3vw, 1.6rem);
       line-height: 1.1;
-      font-weight: 780;
-      letter-spacing: -0.02em;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
 
     .song-title-input:focus {
@@ -1669,21 +1669,26 @@
         padding: 8px 10px;
         gap: 8px;
       }
+
       .brand-mark {
         width: 24px;
         height: 24px;
         font-size: 12px;
       }
+
       .brand-title {
         font-size: 1.1rem;
       }
+
       .top-actions {
         gap: 4px;
       }
+
       .top-actions .button {
         padding: 0 8px;
         min-height: 38px;
       }
+
       .top-actions .icon-button {
         width: 38px;
         height: 38px;
@@ -1694,36 +1699,46 @@
       .presentation-text {
         font-size: calc(var(--presentation-font) * 0.55) !important;
       }
+
       .presentation-stage {
         padding: 16px;
         padding-top: calc(90px + env(safe-area-inset-top));
         padding-bottom: 30vh;
       }
+
       .presentation-top {
         padding: 8px 10px;
         flex-direction: column;
         gap: 6px;
       }
+
       .presentation-controls {
         display: flex;
         justify-content: center;
         gap: 4px;
         width: 100%;
       }
+
       .presentation-controls .button {
         font-size: 0.75rem;
         padding: 0 8px;
         min-height: 32px;
       }
+
       .presentation-controls-bottom {
         padding: 4px 8px;
         gap: 4px;
         bottom: 12px;
       }
+
       .presentation-controls-bottom .icon-button {
         width: 36px;
         height: 36px;
       }
+    }
+
+    .manage-song-row:hover {
+      background: color-mix(in srgb, var(--accent) 6%, var(--surface)) !important;
     }
 
     @media (max-width: 400px) {
@@ -1731,10 +1746,12 @@
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
         gap: 2px;
       }
+
       .mobile-view-switcher .tab-button {
         padding: 4px 2px;
         font-size: 0.7rem;
       }
+
       .mobile-view-switcher .tab-button .icon {
         width: 16px;
         height: 16px;
@@ -1745,10 +1762,12 @@
       .top-actions .button-label {
         display: none !important;
       }
+
       .topbar {
         padding: 8px 12px;
         gap: 12px;
       }
+
       .top-actions {
         gap: 6px;
       }
@@ -1758,12 +1777,14 @@
       .mobile-view-switcher .tab-button .button-label {
         display: none !important;
       }
+
       .mobile-view-switcher .tab-button {
         min-height: 44px;
         justify-content: center;
         align-items: center;
         gap: 0;
       }
+
       .mobile-view-switcher {
         padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
         gap: 4px;
@@ -1785,7 +1806,8 @@
       <div class="top-actions">
         <!-- Google Drive Sync Button -->
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button"
+          style="display:none;">Install App</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
         <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
           aria-label="Toggle theme"></button>
@@ -1807,10 +1829,27 @@
       <aside class="panel library-panel" aria-label="Song library">
         <div class="panel-heading">
           <h2>Library <button class="help-icon" data-help="library" type="button">?</button></h2>
-          <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
+          <div style="display:flex; gap:6px;">
+            <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
+              title="Manage Library">Manage</button>
+            <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
+          </div>
         </div>
-        <div class="field"><label class="visually-hidden" for="songSearch">Search</label><input class="input"
-            id="songSearch" type="search" placeholder="Search title or lyrics" autocomplete="off"></div>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <div class="field" style="flex:1; margin:0;"><label class="visually-hidden"
+              for="songSearch">Search</label><input class="input" id="songSearch" type="search"
+              placeholder="Search title/lyrics" autocomplete="off" style="margin:0;"></div>
+          <div class="select-wrapper" style="width:105px;">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 6px;"
+              title="Sort Library">
+              <option value="recent">Recent</option>
+              <option value="title">Title</option>
+              <option value="author">Author</option>
+              <option value="arranger">Arranger</option>
+              <option value="key">Key</option>
+            </select>
+          </div>
+        </div>
         <div class="segmented" role="tablist">
           <button class="tab-button active" type="button" data-library-filter="all">All</button>
           <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
@@ -1822,10 +1861,16 @@
       <section class="panel editor-panel" aria-label="Song editor">
         <label class="visually-hidden" for="songTitle">Song title</label>
         <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
+        <div id="editorMetadataBar"
+          style="padding: 6px 14px; font-size: 0.75rem; color: var(--muted); display: none; gap: 12px; flex-wrap: wrap; background: var(--surface-2); border-bottom: 1px solid var(--line); align-items:center;">
+        </div>
         <div class="editor-toolbar">
           <div class="toolbar">
             <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save</button>
-            <button class="button" id="revertSongButton" data-icon="rotate-ccw" type="button">Revert</button>
+            <button class="button" id="undoSongButton" data-icon="rotate-ccw" type="button"
+              title="Undo (Ctrl+Z)">Undo</button>
+            <button class="button" id="redoSongButton" data-icon="rotate" type="button"
+              title="Redo (Ctrl+Y)">Redo</button>
             <button class="button primary" id="importSharedButton" data-icon="download" type="button"
               style="display:none;">Save to Library</button>
             <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
@@ -2306,55 +2351,45 @@ Em -  C    -  G  -  D
       const GoogleDriveSync = {
         CLIENT_ID: "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com",
         SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
-        DISCOVERY_DOC: "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+
         FILENAME: "sonata_library.json",
         tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
         userEmail: null, resolveSignIn: null,
 
         init() {
           const checkLibs = setInterval(() => {
-            if (window.gapi && window.google?.accounts?.oauth2) {
+            if (window.google?.accounts?.oauth2) {
               clearInterval(checkLibs);
-              gapi.load('client', async () => {
-                try {
-                  await gapi.client.init({ discoveryDocs: [this.DISCOVERY_DOC] });
-                } catch (e) {
-                  console.warn("GAPI discovery init warning", e);
-                }
-                try {
-                  this.tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: this.CLIENT_ID,
-                    scope: this.SCOPES,
-                    callback: async (resp) => {
-                      if (resp.error !== undefined) {
-                        console.error("Drive auth error:", resp);
-                        UIManager.toast("Drive Auth Failed");
-                        this.updateUI("Sync Failed", "danger");
-                        if (this.resolveSignIn) {
-                          this.resolveSignIn(false);
-                          this.resolveSignIn = null;
-                        }
-                        return;
-                      }
-                      this.accessToken = resp.access_token;
-                      sessionStorage.setItem('sonata_google_token', resp.access_token);
-                      sessionStorage.setItem('sonata_google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
-                      if (window.gapi?.client) {
-                        gapi.client.setToken({ access_token: resp.access_token });
-                      }
-                      await this.fetchUserInfo();
-                      await this.performSync();
+              try {
+                this.tokenClient = google.accounts.oauth2.initTokenClient({
+                  client_id: this.CLIENT_ID,
+                  scope: this.SCOPES,
+                  callback: async (resp) => {
+                    if (resp.error !== undefined) {
+                      console.error("Drive auth error:", resp);
+                      UIManager.toast("Drive Auth Failed: " + (resp.error_description || resp.error));
+                      this.updateUI("Sync Failed", "danger");
                       if (this.resolveSignIn) {
-                        this.resolveSignIn(true);
+                        this.resolveSignIn(false);
                         this.resolveSignIn = null;
                       }
+                      return;
                     }
-                  });
-                  this.loadCachedToken();
-                } catch (err) {
-                  console.error("GIS TokenClient Init Error:", err);
-                }
-              });
+                    this.accessToken = resp.access_token;
+                    sessionStorage.setItem('sonata_google_token', resp.access_token);
+                    sessionStorage.setItem('sonata_google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
+                    await this.fetchUserInfo();
+                    await this.performSync();
+                    if (this.resolveSignIn) {
+                      this.resolveSignIn(true);
+                      this.resolveSignIn = null;
+                    }
+                  }
+                });
+                this.loadCachedToken();
+              } catch (err) {
+                console.error("GIS TokenClient Init Error:", err);
+              }
             }
           }, 200);
 
@@ -2374,9 +2409,6 @@ Em -  C    -  G  -  D
           const expiry = Number(sessionStorage.getItem('sonata_google_token_expiry') || '0');
           if (token && expiry > Date.now()) {
             this.accessToken = token;
-            if (window.gapi?.client) {
-              gapi.client.setToken({ access_token: token });
-            }
             this.fetchUserInfo().then(() => {
               this.updateUI("● Synced", "primary");
             });
@@ -2414,8 +2446,8 @@ Em -  C    -  G  -  D
         disconnect() {
           if (this.accessToken) {
             try {
-              google.accounts.oauth2.revoke(this.accessToken, () => {});
-            } catch (e) {}
+              google.accounts.oauth2.revoke(this.accessToken, () => { });
+            } catch (e) { }
           }
           this.accessToken = null;
           this.userEmail = null;
@@ -2451,23 +2483,31 @@ Em -  C    -  G  -  D
           UIManager.toast("Syncing with Google Drive...");
 
           try {
-            if (window.gapi?.client) {
-              gapi.client.setToken({ access_token: this.accessToken });
-            }
+            // Use direct fetch instead of gapi.client.drive (discovery doc can fail silently)
+            const headers = { 'Authorization': `Bearer ${this.accessToken}` };
 
-            let resp = await gapi.client.drive.files.list({
-              q: `name='${this.FILENAME}' and trashed=false`,
-              fields: 'files(id, name, modifiedTime)'
-            });
-            let files = resp.result?.files || [];
+            // Search for existing file
+            const listUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${this.FILENAME}' and trashed=false`)}&fields=files(id,name,modifiedTime)&spaces=drive`;
+            const listResp = await fetch(listUrl, { headers });
+
+            if (listResp.status === 401) {
+              this.accessToken = null;
+              sessionStorage.removeItem('sonata_google_token');
+              UIManager.toast("Session expired. Please sync again.");
+              this.updateUI("Drive Sync", "secondary");
+              this.isSyncing = false;
+              return;
+            }
+            if (!listResp.ok) throw new Error(`List files HTTP ${listResp.status}`);
+
+            const listData = await listResp.json();
+            const files = listData.files || [];
 
             if (files.length > 0) {
               this.fileId = files[0].id;
-              let fileResp = await gapi.client.drive.files.get({ fileId: this.fileId, alt: 'media' });
-              let cloudData = fileResp.result || fileResp.body;
-              if (typeof cloudData === 'string') {
-                try { cloudData = JSON.parse(cloudData); } catch (e) { cloudData = null; }
-              }
+              const getResp = await fetch(`https://www.googleapis.com/drive/v3/files/${this.fileId}?alt=media`, { headers });
+              if (!getResp.ok) throw new Error(`Get file HTTP ${getResp.status}`);
+              let cloudData = await getResp.json();
               if (cloudData && typeof cloudData === 'object') {
                 this.mergeAndSave(cloudData);
               } else {
@@ -2481,10 +2521,7 @@ Em -  C    -  G  -  D
             UIManager.toast("Drive Sync Complete");
           } catch (err) {
             console.error("Sync error:", err);
-            if (err?.status === 401 || err?.result?.error?.code === 401) {
-              this.accessToken = null;
-            }
-            UIManager.toast("Drive Sync Failed");
+            UIManager.toast("Drive Sync Failed: " + (err.message || "Unknown error"));
             this.updateUI("Sync Failed", "danger");
           } finally {
             this.isSyncing = false;
@@ -3078,6 +3115,18 @@ Em -  C    -  G  -  D
         },
         exportPdf() { const payloads = this.setlistPayloads(); const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads)); UIManager.toast("PDF exported"); },
         createPdf(payloads) {
+          const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
+          let r = 0, g = 0.35, b = 0.82;
+          try {
+            let h = accentHex;
+            if (h.startsWith('#')) h = h.substring(1);
+            if (h.length === 3) h = h.split('').map(x => x + x).join('');
+            const num = parseInt(h, 16);
+            r = ((num >> 16) & 255) / 255;
+            g = ((num >> 8) & 255) / 255;
+            b = (num & 255) / 255;
+          } catch (e) { }
+
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
           const orientation = UIManager.dom.exportOrientation.value;
           const pageWidth = orientation === "landscape" ? 792 : 612;
@@ -3208,20 +3257,20 @@ Em -  C    -  G  -  D
                 ops.push(`q 0.86 0.88 0.90 RG 1 w ${colX.toFixed(2)} ${(y + 3).toFixed(2)} m ${(colX + columnWidth).toFixed(2)} ${(y + 3).toFixed(2)} l S Q`);
                 y -= lineHeight;
               } else if (item.type === 'h1') {
-                textLine(item.text, colX, "F3", fontSize + 2, 0, 0.35, 0.82);
+                textLine(item.text, colX, "F3", fontSize + 2, r, g, b);
               } else if (item.type === 'h2') {
                 textLine(item.text, colX, "F3", fontSize + 0.5, 0.15, 0.18, 0.22);
               } else if (item.type === 'comment') {
                 textLine(item.text, colX, "F2", fontSize - 0.5, 0.45, 0.45, 0.5);
               } else if (item.type === 'chord') {
-                textLine(item.text, colX, "F4", fontSize, 0, 0.35, 0.82);
+                textLine(item.text, colX, "F4", fontSize, r, g, b);
               } else if (item.type === 'inlineChord') {
                 const parts = item.text.split(/(\[[^\]]+\])/g);
                 let currentX = colX;
                 parts.forEach(part => {
                   if (!part) return;
                   if (part.startsWith('[') && part.endsWith(']')) {
-                    ops.push(`0 0.35 0.82 rg\nBT /F4 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
+                    ops.push(`${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\nBT /F4 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
                   } else {
                     ops.push(`0 0 0 rg\nBT /F1 ${fontSize} Tf ${currentX.toFixed(2)} ${y.toFixed(2)} Td (${this.pdfEscape(part)}) Tj ET`);
                   }
@@ -3256,16 +3305,16 @@ Em -  C    -  G  -  D
             const headerY = pageHeight - headerHeight;
 
             let chrome = `q 0.96 0.96 0.98 rg 0 ${headerY} ${pageWidth} ${headerHeight} re f Q\n` +
-                         `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
-                         `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
+              `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
+              `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
             if (p.artist) {
               chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 60))}) Tj ET\n` +
-                        `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+                `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             } else {
               chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             }
             chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
-                      `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
+              `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
 
             const content = chrome + "\n0 g\n" + pageOps;
             const contentId = add("<< /Length " + content.length + " >>\nstream\r\n" + content + "\r\nendstream");
@@ -3339,36 +3388,82 @@ Em -  C    -  G  -  D
           });
 
           try {
-            // Primary shortener
-            const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
-            if (res.ok) { const data = await res.json(); if (data.shorturl) finalUrl = data.shorturl; }
-            else {
-              // Fallback shortener for reliability
-              const res2 = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(rawUrl)}`);
-              if (res2.ok) { finalUrl = await res2.text(); }
+            if (rawUrl.length > 200) {
+              const formBody = new URLSearchParams();
+              formBody.append('content', await this.compressData(shareData));
+              formBody.append('format', 'url');
+
+              const dpasteRes = await fetch('https://dpaste.com/api/', {
+                method: 'POST',
+                body: formBody,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+              });
+
+              if (dpasteRes.ok) {
+                const dpasteUrl = (await dpasteRes.text()).trim();
+                const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
+                finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
+              } else {
+                throw new Error("dpaste failed");
+              }
+            } else {
+              const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
+              if (res.ok) { const data = await res.json(); if (data.shorturl) finalUrl = data.shorturl; }
             }
-          } catch (e) { console.log("Shorteners unavailable, using full url"); }
+          } catch (e) {
+            console.log("Shorteners unavailable, using full url");
+          }
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
           wrapper.innerHTML = '';
           const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
 
-          // Build the live QR Card Preview Canvas in the modal
           const canvas = document.createElement("canvas"); canvas.width = 460; canvas.height = 600;
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
           const ctx = canvas.getContext("2d");
 
+          const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
           ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
-          ctx.fillStyle = "#1967d2"; ctx.fillRect(0, 0, 460, 100);
+          ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
           ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
 
           ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText((isSet ? "SETLIST" : "SONG"), 230, 140);
-          ctx.fillStyle = "#16181d"; ctx.font = "bold 28px sans-serif"; ctx.fillText(this.pdfTruncate(titleText, 25), 230, 175);
+          ctx.fillStyle = "#16181d"; ctx.font = "bold 28px sans-serif"; ctx.fillText(this.pdfTruncate(titleText, 25), 230, 172);
+
+          if (!isSet && shareData.a) {
+            ctx.fillStyle = "#667085"; ctx.font = "italic 16px sans-serif"; ctx.fillText("By " + shareData.a, 230, 195);
+          } else if (isSet) {
+            ctx.fillStyle = "#667085"; ctx.font = "15px sans-serif"; ctx.fillText(`${shareData.s.length} Songs included`, 230, 195);
+          }
 
           try {
             const resp = await fetch(qrUrl); const blob = await resp.blob(); const imgUrl = URL.createObjectURL(blob);
-            const qImg = new Image(); qImg.onload = () => { ctx.drawImage(qImg, 80, 210, 300, 300); ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("Scan to view securely offline", 230, 560); URL.revokeObjectURL(imgUrl); }; qImg.src = imgUrl;
+            const qImg = new Image();
+            qImg.onload = () => {
+              ctx.drawImage(qImg, 80, 210, 300, 300);
+
+              if (!isSet) {
+                let detailsStr = `Key: ${shareData.k || 'Auto'}`;
+                if (shareData.c) detailsStr += `  •  Capo: ${shareData.c}`;
+                if (StateManager.state.settings.metronomeBpm) detailsStr += `  •  BPM: ${StateManager.state.settings.metronomeBpm}`;
+                ctx.fillStyle = "#16181d";
+                ctx.font = "bold 14px sans-serif";
+                ctx.fillText(detailsStr, 230, 532);
+              } else {
+                let songNames = shareData.s.map(s => s.t).join("  •  ");
+                if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
+                ctx.fillStyle = "#16181d";
+                ctx.font = "13px sans-serif";
+                ctx.fillText(songNames, 230, 532);
+              }
+
+              ctx.fillStyle = activeAccent;
+              ctx.font = "bold 14px sans-serif";
+              ctx.fillText("Scan to import securely offline", 230, 565);
+              URL.revokeObjectURL(imgUrl);
+            };
+            qImg.src = imgUrl;
           } catch (e) { ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Preview Unavailable ]", 230, 360); }
 
           const downloadBtn = document.createElement('button'); downloadBtn.className = 'button secondary'; downloadBtn.type = 'button'; downloadBtn.style.cssText = "width:100%; margin-bottom:12px;"; downloadBtn.innerHTML = `<span data-inline-icon="image" style="width:16px;height:16px;margin-right:6px;"></span>Download QR Card`;
@@ -3414,7 +3509,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "revertSongButton", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
@@ -3426,13 +3521,28 @@ Em -  C    -  G  -  D
           document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.desktopRight = b.dataset.desktopTab; document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(i => i.classList.toggle("active", i === b)); }));
 
           add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); });
-          add(this.dom.revertSongButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: "Revert Changes", message: "Discard all recent edits?", confirmText: "Revert", destructive: true, onConfirm: () => { StateManager.revertActive(); this.toast("Reverted"); } }); });
+          add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); });
+          add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); });
           add(this.dom.importSharedButton, "click", () => { AudioEngine.playClick(); StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); this.toast("Saved to Library"); });
           add(this.dom.exitSharedButton, "click", () => { AudioEngine.playClick(); StateManager.exitShared(); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.infoSongButton, "click", () => { AudioEngine.playClick(); this.openSongInfo(); });
-          add(this.dom.loadDemoButton, "click", () => { AudioEngine.playClick(); StateManager.loadDemo(); Editor.loadActiveSong(); this.renderAll(); });
+          add(this.dom.loadDemoButton, "click", () => {
+            AudioEngine.playClick();
+            this.openModal({
+              title: "Load Demo",
+              message: "Load demo song? This will replace your current song content.",
+              confirmText: "Load Demo",
+              onConfirm: () => {
+                StateManager.loadDemo();
+                Editor.loadActiveSong();
+                this.renderAll();
+              }
+            });
+          });
+          add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
 
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
+          add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); });
           document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); }));
           add(this.dom.newSongButton, "click", () => { AudioEngine.playClick(); if (StateManager.state.libraryFilter === 'setlists') { this.openSetlistModal(); return; } StateManager.createSong(); Editor.loadActiveSong(); this.renderAll(); this.toast("New song ready"); });
 
@@ -3516,6 +3626,212 @@ Em -  C    -  G  -  D
         },
         bumpTranspose(delta) { const next = Util.clamp(StateManager.state.transposeDelta + delta, -24, 24); StateManager.state.transposeDelta = next; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(next); this.updateAnalysis(); },
         setStatus(message) { if (!this.dom.saveStatus) return; this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : message; window.clearTimeout(this.statusTimer); this.statusTimer = window.setTimeout(() => { if (this.dom.saveStatus) this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : (StateManager.state.dirty ? "Autosaving" : "Ready"); }, 1800); },
+
+        openManageLibrary() {
+          const songs = StateManager.state.songs;
+          let tableRows = '';
+          songs.forEach(song => {
+            const key = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+            const keyStr = key ? (key.root + (key.mode === 'minor' ? 'm' : '')) : '-';
+            tableRows += `
+              <tr class="manage-song-row" data-song-id="${song.id}" style="border-bottom:1px solid var(--line);">
+                <td style="padding:10px; text-align:center;"><input type="checkbox" class="manage-song-checkbox" value="${song.id}" style="width:16px; height:16px; cursor:pointer;"></td>
+                <td style="padding:10px; font-weight:600; color:var(--text);">${Util.escapeHtml(Util.titleOf(song))}</td>
+                <td style="padding:10px; color:var(--muted);">${Util.escapeHtml(song.artist || '-')}</td>
+                <td style="padding:10px; color:var(--muted);">${Util.escapeHtml(song.creator || '-')}</td>
+                <td style="padding:10px; font-weight:600; color:var(--accent);">${keyStr}</td>
+                <td style="padding:10px; color:var(--muted);">${Util.formatDate(song.updatedAt)}</td>
+              </tr>
+            `;
+          });
+
+          this.openModal({
+            title: "Manage Library",
+            confirmText: "Close",
+            fields: [{
+              type: "custom",
+              html: `
+                <div style="display:flex; flex-direction:column; gap:12px; width:100%; min-width:320px; max-width:800px; max-height:70vh; overflow:hidden;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+                    <div style="display:flex; gap:8px;">
+                      <button class="button danger" id="bulkDeleteBtn" type="button" disabled style="padding: 0 12px; min-height:34px;">Delete Selected</button>
+                      <button class="button primary" id="bulkShareBtn" type="button" disabled style="padding: 0 12px; min-height:34px;">Share Selected</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex:1; justify-content:flex-end;">
+                      <input class="input" type="search" id="manageLibSearch" placeholder="Filter songs..." style="max-width:200px; height:34px; margin:0;">
+                      <span id="selectedCountLabel" style="font-size:0.8rem; color:var(--muted); font-weight:600; white-space:nowrap;">0 selected</span>
+                    </div>
+                  </div>
+                  <div style="overflow-y:auto; flex:1; border:1px solid var(--line); border-radius:6px; background:var(--surface-2);">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem; background:var(--surface);">
+                      <thead>
+                        <tr style="background:var(--surface-2); border-bottom:1px solid var(--line); font-weight:600; color:var(--muted); position:sticky; top:0; z-index:1;">
+                          <th style="padding:10px; width:40px; text-align:center;"><input type="checkbox" id="selectAllSongsCheckbox" style="width:16px; height:16px; cursor:pointer;"></th>
+                          <th style="padding:10px;">Title</th>
+                          <th style="padding:10px;">Author</th>
+                          <th style="padding:10px;">Arranger</th>
+                          <th style="padding:10px; width:70px;">Key</th>
+                          <th style="padding:10px; width:110px;">Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody id="manageLibTableBody">
+                        ${tableRows || '<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--muted);">No songs in library.</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              `
+            }],
+            onConfirm: () => { }
+          });
+
+          const selectAll = document.getElementById('selectAllSongsCheckbox');
+          const checkboxes = document.querySelectorAll('.manage-song-checkbox');
+          const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+          const bulkShareBtn = document.getElementById('bulkShareBtn');
+          const selectedLabel = document.getElementById('selectedCountLabel');
+          const searchInput = document.getElementById('manageLibSearch');
+
+          const updateActions = () => {
+            const checked = document.querySelectorAll('.manage-song-checkbox:checked');
+            if (bulkDeleteBtn) bulkDeleteBtn.disabled = checked.length === 0;
+            if (bulkShareBtn) bulkShareBtn.disabled = checked.length === 0;
+            if (selectedLabel) selectedLabel.textContent = `${checked.length} selected`;
+          };
+
+          selectAll?.addEventListener('change', () => {
+            checkboxes.forEach(cb => {
+              if (cb.closest('tr').style.display !== 'none') {
+                cb.checked = selectAll.checked;
+              }
+            });
+            updateActions();
+          });
+
+          checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+              updateActions();
+            });
+          });
+
+          searchInput?.addEventListener('keyup', () => {
+            const q = searchInput.value.toLowerCase();
+            document.querySelectorAll('#manageLibTableBody tr').forEach(tr => {
+              const text = tr.textContent.toLowerCase();
+              tr.style.display = text.includes(q) ? '' : 'none';
+            });
+          });
+
+          bulkDeleteBtn?.addEventListener('click', () => {
+            const checkedIds = Array.from(document.querySelectorAll('.manage-song-checkbox:checked')).map(cb => cb.value);
+            if (checkedIds.length === 0) return;
+            this.openModal({
+              title: "Confirm Bulk Deletion",
+              message: `Are you sure you want to delete the ${checkedIds.length} selected songs? This action cannot be undone.`,
+              confirmText: "Delete Songs",
+              destructive: true,
+              onConfirm: () => {
+                StateManager.state.songs = StateManager.state.songs.filter(s => !checkedIds.includes(s.id));
+                if (!StateManager.state.songs.length) StateManager.createSong();
+                else if (checkedIds.includes(StateManager.state.activeId)) StateManager.state.activeId = StateManager.state.songs[0].id;
+                StateManager.saveNow("Bulk Deleted");
+                this.toast(`Deleted ${checkedIds.length} songs`);
+                this.closeModal();
+                this.openManageLibrary();
+                this.renderAll();
+              }
+            });
+          });
+
+          bulkShareBtn?.addEventListener('click', async () => {
+            const checkedIds = Array.from(document.querySelectorAll('.manage-song-checkbox:checked')).map(cb => cb.value);
+            if (checkedIds.length === 0) return;
+
+            const selectedSongs = StateManager.state.songs.filter(s => checkedIds.includes(s.id));
+            const shareData = { type: 'set', t: "Shared Library Selection", d: "Custom setlist shared from Sonata", l: [], s: [] };
+
+            selectedSongs.forEach(song => {
+              const sData = { t: song.title, b: song.body };
+              if (song.manualKey && song.manualKey !== "auto") sData.k = song.manualKey;
+              if (song.artist) sData.a = song.artist;
+              if (song.creator) sData.cr = song.creator;
+              shareData.s.push(sData);
+            });
+
+            const rawUrl = window.location.origin + window.location.pathname + "?share=" + await ExportManager.compressData(shareData);
+            let finalUrl = rawUrl;
+
+            try {
+              if (rawUrl.length > 200) {
+                const formBody = new URLSearchParams();
+                formBody.append('content', await ExportManager.compressData(shareData));
+                formBody.append('format', 'url');
+
+                const dpasteRes = await fetch('https://dpaste.com/api/', {
+                  method: 'POST',
+                  body: formBody,
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+
+                if (dpasteRes.ok) {
+                  const dpasteUrl = (await dpasteRes.text()).trim();
+                  const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
+                  finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
+                }
+              }
+            } catch (e) {
+              console.warn("dpaste failed, fallback");
+            }
+
+            this.closeModal();
+
+            this.openModal({
+              title: "Share Selected Songs",
+              confirmText: "Copy Link & Close",
+              fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><canvas id="bulkShareCanvas" width="460" height="600" style="display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;"></canvas><input class="input" readOnly id="bulkShareUrl" value="${finalUrl}" style="margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);"></div>` }],
+              onConfirm: async () => {
+                if (await ExportManager.copyText(finalUrl)) UIManager.toast("Share link copied!");
+              }
+            });
+
+            setTimeout(async () => {
+              const canvas = document.getElementById('bulkShareCanvas');
+              if (!canvas) return;
+              const ctx = canvas.getContext("2d");
+              const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
+              ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
+              ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
+              ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
+              ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText("SHARED SELECTION", 230, 140);
+              ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 172);
+
+              const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
+              try {
+                const resp = await fetch(qrUrl);
+                const blob = await resp.blob();
+                const imgUrl = URL.createObjectURL(blob);
+                const qImg = new Image();
+                qImg.onload = () => {
+                  ctx.drawImage(qImg, 80, 210, 300, 300);
+
+                  let songNames = selectedSongs.map(s => s.title).join("  •  ");
+                  if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
+                  ctx.fillStyle = "#16181d";
+                  ctx.font = "13px sans-serif";
+                  ctx.fillText(songNames, 230, 532);
+
+                  ctx.fillStyle = activeAccent;
+                  ctx.font = "bold 14px sans-serif";
+                  ctx.fillText("Scan to import selection", 230, 565);
+                  URL.revokeObjectURL(imgUrl);
+                };
+                qImg.src = imgUrl;
+              } catch (e) {
+                ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Unavailable ]", 230, 360);
+              }
+            }, 100);
+          });
+        },
 
         openSongInfo() {
           const song = StateManager.activeSong(); if (!song || song.readonly) return;
@@ -3629,12 +3945,150 @@ Em -  C    -  G  -  D
       };
 
       const Editor = {
+        undoStack: [],
+        redoStack: [],
+        lastValue: "",
+        historyDebounced: null,
+
+        initHistory() {
+          this.undoStack = [];
+          this.redoStack = [];
+          this.lastValue = UIManager.dom.songBody ? UIManager.dom.songBody.value : "";
+          this.updateUndoRedoButtons();
+        },
+
+        pushHistory(val) {
+          if (val === this.lastValue) return;
+          this.undoStack.push(this.lastValue);
+          this.redoStack = [];
+          this.lastValue = val;
+          if (this.undoStack.length > 50) this.undoStack.shift();
+          this.updateUndoRedoButtons();
+        },
+
+        scheduleHistory(val) {
+          if (this.historyDebounced) clearTimeout(this.historyDebounced);
+          this.historyDebounced = setTimeout(() => {
+            this.pushHistory(val);
+          }, 400);
+        },
+
+        undo() {
+          if (this.undoStack.length === 0) return;
+          const val = this.undoStack.pop();
+          this.redoStack.push(this.lastValue);
+          this.lastValue = val;
+
+          const song = StateManager.activeSong();
+          if (song && !song.readonly) {
+            song.body = val;
+            UIManager.dom.songBody.value = val;
+            StateManager.touch(song);
+            UIManager.updateAnalysisSoon();
+            this.updateDemoButtonState();
+          }
+          this.updateUndoRedoButtons();
+        },
+
+        redo() {
+          if (this.redoStack.length === 0) return;
+          const val = this.redoStack.pop();
+          this.undoStack.push(this.lastValue);
+          this.lastValue = val;
+
+          const song = StateManager.activeSong();
+          if (song && !song.readonly) {
+            song.body = val;
+            UIManager.dom.songBody.value = val;
+            StateManager.touch(song);
+            UIManager.updateAnalysisSoon();
+            this.updateDemoButtonState();
+          }
+          this.updateUndoRedoButtons();
+        },
+
+        updateUndoRedoButtons() {
+          if (UIManager.dom.undoSongButton) {
+            UIManager.dom.undoSongButton.disabled = this.undoStack.length === 0;
+            UIManager.dom.undoSongButton.style.opacity = this.undoStack.length === 0 ? '0.5' : '1';
+          }
+          if (UIManager.dom.redoSongButton) {
+            UIManager.dom.redoSongButton.disabled = this.redoStack.length === 0;
+            UIManager.dom.redoSongButton.style.opacity = this.redoStack.length === 0 ? '0.5' : '1';
+          }
+        },
+
+        updateMetadataBar() {
+          const song = StateManager.activeSong();
+          const bar = document.getElementById('editorMetadataBar');
+          if (!bar) return;
+          if (!song) { bar.style.display = 'none'; return; }
+          const parts = [];
+          if (song.artist) parts.push(`<strong>Author:</strong> ${Util.escapeHtml(song.artist)}`);
+          if (song.creator) parts.push(`<strong>Arranger:</strong> ${Util.escapeHtml(song.creator)}`);
+
+          const key = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          if (key) {
+            let keyStr = key.root + (key.mode === 'minor' ? 'm' : '');
+            if (StateManager.state.capo) {
+              keyStr += ` (Capo ${StateManager.state.capo})`;
+            }
+            parts.push(`<strong>Key:</strong> ${keyStr}`);
+          }
+
+          if (parts.length > 0) {
+            bar.innerHTML = parts.join('  •  ');
+            bar.style.display = 'flex';
+          } else {
+            bar.style.display = 'none';
+          }
+        },
+
+        updateDemoButtonState() {
+          const song = StateManager.activeSong();
+          const demoBtn = UIManager.dom.loadDemoButton || document.getElementById('loadDemoButton');
+          if (demoBtn) {
+            const hasContent = song && song.body && song.body.trim().length > 0;
+            demoBtn.disabled = hasContent;
+            demoBtn.style.opacity = hasContent ? '0.5' : '1';
+            demoBtn.style.pointerEvents = hasContent ? 'none' : 'auto';
+          }
+        },
+
         bind() {
           UIManager.dom.songTitle?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.title = UIManager.dom.songTitle.value; StateManager.touch(song); UIManager.renderLibrarySoon(); UIManager.updateAnalysis(); });
           UIManager.dom.songTitle?.addEventListener("blur", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; if (!song.title.trim()) song.title = "Untitled Song"; UIManager.dom.songTitle.value = Util.titleOf(song); StateManager.touch(song); UIManager.renderAll(); });
-          UIManager.dom.songBody?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.body = UIManager.dom.songBody.value; StateManager.touch(song); UIManager.updateAnalysisSoon(); });
+          UIManager.dom.songBody?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.body = UIManager.dom.songBody.value; StateManager.touch(song); UIManager.updateAnalysisSoon(); this.updateDemoButtonState(); this.scheduleHistory(UIManager.dom.songBody.value); });
+          UIManager.dom.songBody?.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+              e.preventDefault();
+              if (e.shiftKey) this.redo(); else this.undo();
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+              e.preventDefault();
+              this.redo();
+            }
+          });
         },
-        loadActiveSong() { const song = StateManager.activeSong(); if (!song) return; if (UIManager.dom.songTitle) UIManager.dom.songTitle.value = Util.titleOf(song); if (UIManager.dom.songBody) UIManager.dom.songBody.value = song.body || ""; if (UIManager.dom.keySelect) UIManager.dom.keySelect.value = song.manualKey || "auto"; const isShared = Boolean(song.readonly); if (UIManager.dom.songTitle) UIManager.dom.songTitle.readOnly = isShared; if (UIManager.dom.songBody) UIManager.dom.songBody.readOnly = isShared; if (UIManager.dom.saveSongButton) UIManager.dom.saveSongButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.revertSongButton) UIManager.dom.revertSongButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.importSharedButton) UIManager.dom.importSharedButton.style.display = isShared ? '' : 'none'; if (UIManager.dom.infoSongButton) UIManager.dom.infoSongButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.loadDemoButton) UIManager.dom.loadDemoButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.exitSharedButton) UIManager.dom.exitSharedButton.style.display = isShared ? '' : 'none'; if (isShared) UIManager.setStatus("Read-only Preview"); },
+        loadActiveSong() {
+          const song = StateManager.activeSong(); if (!song) return;
+          if (UIManager.dom.songTitle) UIManager.dom.songTitle.value = Util.titleOf(song);
+          if (UIManager.dom.songBody) UIManager.dom.songBody.value = song.body || "";
+          if (UIManager.dom.keySelect) UIManager.dom.keySelect.value = song.manualKey || "auto";
+          const isShared = Boolean(song.readonly);
+          if (UIManager.dom.songTitle) UIManager.dom.songTitle.readOnly = isShared;
+          if (UIManager.dom.songBody) UIManager.dom.songBody.readOnly = isShared;
+          if (UIManager.dom.saveSongButton) UIManager.dom.saveSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.undoSongButton) UIManager.dom.undoSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.redoSongButton) UIManager.dom.redoSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.importSharedButton) UIManager.dom.importSharedButton.style.display = isShared ? '' : 'none';
+          if (UIManager.dom.infoSongButton) UIManager.dom.infoSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.loadDemoButton) UIManager.dom.loadDemoButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.exitSharedButton) UIManager.dom.exitSharedButton.style.display = isShared ? '' : 'none';
+          if (isShared) UIManager.setStatus("Read-only Preview");
+          this.initHistory();
+          this.updateMetadataBar();
+          this.updateDemoButtonState();
+        },
         applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--ui-font", FONT_STACKS[s.uiFontFamily] || FONT_STACKS.system); document.documentElement.style.setProperty("--chart-font", FONT_STACKS[s.chartFontFamily] || FONT_STACKS.mono); document.documentElement.style.setProperty("--app-font-size", Util.clamp(s.appFontSize, 10, 24) + "px"); document.documentElement.style.setProperty("--editor-font", Util.clamp(s.editorFontSize, 8, 64) + "px"); document.documentElement.style.setProperty("--preview-font", Util.clamp(s.previewFontSize, 8, 48) + "px"); document.documentElement.style.setProperty("--editor-line", Util.clamp(s.editorLineHeight, 1.2, 2.8)); }
       };
 
@@ -3666,13 +4120,41 @@ Em -  C    -  G  -  D
           }
 
           let songs = state.songs.slice();
-          if (state.libraryFilter === "favorites") songs = songs.filter(s => s.isFavorite); else songs = songs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+          const sortVal = UIManager.dom.librarySortSelect ? UIManager.dom.librarySortSelect.value : 'recent';
+          if (state.libraryFilter === "favorites") {
+            songs = songs.filter(s => s.isFavorite);
+          }
+          if (sortVal === 'title') {
+            songs.sort((a, b) => Util.titleOf(a).localeCompare(Util.titleOf(b)));
+          } else if (sortVal === 'author') {
+            songs.sort((a, b) => (a.artist || "").localeCompare(b.artist || ""));
+          } else if (sortVal === 'arranger') {
+            songs.sort((a, b) => (a.creator || "").localeCompare(b.creator || ""));
+          } else if (sortVal === 'key') {
+            songs.sort((a, b) => {
+              const ka = KeyDetector.activeKey(a, state.detectedKey);
+              const kb = KeyDetector.activeKey(b, state.detectedKey);
+              const stra = ka ? (ka.root + (ka.mode === 'minor' ? 'm' : '')) : '';
+              const strb = kb ? (kb.root + (kb.mode === 'minor' ? 'm' : '')) : '';
+              return stra.localeCompare(strb);
+            });
+          } else {
+            songs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+          }
+
           if (query) songs = songs.filter(s => Util.titleOf(s).toLowerCase().includes(query) || (s.body || "").toLowerCase().includes(query));
 
           if (songs.length === 0) { list.innerHTML = `<div class="empty-state">${query ? 'No matching songs' : 'Library is empty'}</div>`; return; }
           songs.forEach(song => {
             const card = document.createElement('div'); card.className = 'song-card' + (song.id === StateManager.state.activeId ? ' active' : '');
-            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.formatDate(song.updatedAt)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+            let metaText = Util.formatDate(song.updatedAt);
+            if (sortVal === 'author' && song.artist) metaText = `${song.artist} • ${metaText}`;
+            else if (sortVal === 'arranger' && song.creator) metaText = `${song.creator} • ${metaText}`;
+            else if (sortVal === 'key') {
+              const key = KeyDetector.activeKey(song, state.detectedKey);
+              if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
+            }
+            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
             card.addEventListener('click', (e) => {
               const actionBtn = e.target.closest('button[data-action]');
               if (actionBtn) {
@@ -3690,6 +4172,22 @@ Em -  C    -  G  -  D
 
       const App = {
         saveDebounced: Util.debounce(() => StateManager.saveNow("Autosaved"), 650), scheduleSave() { UIManager.setStatus("Autosaving"); this.saveDebounced(); },
+        async handleImport(d) {
+          if (d.type === 'set') {
+            const newItems = [];
+            d.s.forEach(sData => {
+              const existing = StateManager.state.songs.find(s => s.title === sData.t); let sId = existing ? existing.id : Util.uid();
+              if (!existing) { StateManager.state.songs.unshift({ id: sId, title: sData.t, artist: sData.a || "", creator: sData.cr || "", links: sData.l || [], description: sData.d || "", body: sData.b, manualKey: sData.k || "auto", isFavorite: false }); }
+              newItems.push({ songId: sId });
+            });
+            const setlistId = Util.uid(); StateManager.state.setlists.unshift({ id: setlistId, title: d.t, description: d.d || "", links: d.l || [], date: Util.now(), items: newItems }); StateManager.state.libraryFilter = 'setlists'; StateManager.playSetlist(setlistId);
+            setTimeout(() => UIManager.toast("Setlist Imported!"), 500);
+          } else {
+            StateManager.state.sharedSong = { id: 'shared', title: d.t, artist: d.a || "", creator: d.cr || "", links: d.l || [], description: d.d || "", body: d.b, manualKey: d.k || "auto", readonly: true, isFavorite: false };
+            StateManager.state.activeId = 'shared'; setTimeout(() => UIManager.toast("Viewing Shared Song"), 500);
+          }
+          window.history.replaceState({}, document.title, window.location.pathname);
+        },
         async init() {
           try {
             const isIOS = /ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -3733,24 +4231,23 @@ Em -  C    -  G  -  D
             }
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v3'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).then(res => { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }).catch(() => caches.match(e.request))); });"], { type: 'application/javascript' }))).catch(() => { });
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
-            const params = new URLSearchParams(window.location.search); const shareParam = params.get("share");
+
+            const params = new URLSearchParams(window.location.search);
+            const shareParam = params.get("share");
+            const pasteParam = params.get("paste");
             if (shareParam) {
               try {
                 const d = JSON.parse(await ExportManager.decompressData(shareParam));
-                if (d.type === 'set') {
-                  const newItems = [];
-                  d.s.forEach(sData => {
-                    const existing = StateManager.state.songs.find(s => s.title === sData.t); let sId = existing ? existing.id : Util.uid();
-                    if (!existing) { StateManager.state.songs.unshift({ id: sId, title: sData.t, artist: sData.a || "", creator: sData.cr || "", links: sData.l || [], description: sData.d || "", body: sData.b, manualKey: sData.k || "auto", isFavorite: false }); }
-                    newItems.push({ songId: sId });
-                  });
-                  const setlistId = Util.uid(); StateManager.state.setlists.unshift({ id: setlistId, title: d.t, description: d.d || "", links: d.l || [], date: Util.now(), items: newItems }); StateManager.state.libraryFilter = 'setlists'; StateManager.playSetlist(setlistId);
-                  setTimeout(() => UIManager.toast("Setlist Imported!"), 500);
-                } else {
-                  StateManager.state.sharedSong = { id: 'shared', title: d.t, artist: d.a || "", creator: d.cr || "", links: d.l || [], description: d.d || "", body: d.b, manualKey: d.k || "auto", readonly: true, isFavorite: false };
-                  StateManager.state.activeId = 'shared'; setTimeout(() => UIManager.toast("Viewing Shared Song"), 500);
+                await this.handleImport(d);
+              } catch (e) { }
+            } else if (pasteParam) {
+              try {
+                const resp = await fetch(`https://dpaste.com/${pasteParam}.txt`);
+                if (resp.ok) {
+                  const rawBase64 = await resp.text();
+                  const d = JSON.parse(await ExportManager.decompressData(rawBase64.trim()));
+                  await this.handleImport(d);
                 }
-                window.history.replaceState({}, document.title, window.location.pathname);
               } catch (e) { }
             }
             if (!StateManager.state.activeId && StateManager.state.songs.length === 0) StateManager.createSong();
