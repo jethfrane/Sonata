@@ -30,7 +30,7 @@
   <title>Sonata</title>
 
   <script async defer src="https://accounts.google.com/gsi/client"></script>
-  <script async defer src="https://apis.google.com/js/api.js"></script>
+
 
   <style>
     :root {
@@ -2326,55 +2326,45 @@ Em -  C    -  G  -  D
       const GoogleDriveSync = {
         CLIENT_ID: "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com",
         SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
-        DISCOVERY_DOC: "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+
         FILENAME: "sonata_library.json",
         tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
         userEmail: null, resolveSignIn: null,
 
         init() {
           const checkLibs = setInterval(() => {
-            if (window.gapi && window.google?.accounts?.oauth2) {
+            if (window.google?.accounts?.oauth2) {
               clearInterval(checkLibs);
-              gapi.load('client', async () => {
-                try {
-                  await gapi.client.init({ discoveryDocs: [this.DISCOVERY_DOC] });
-                } catch (e) {
-                  console.warn("GAPI discovery init warning", e);
-                }
-                try {
-                  this.tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: this.CLIENT_ID,
-                    scope: this.SCOPES,
-                    callback: async (resp) => {
-                      if (resp.error !== undefined) {
-                        console.error("Drive auth error:", resp);
-                        UIManager.toast("Drive Auth Failed");
-                        this.updateUI("Sync Failed", "danger");
-                        if (this.resolveSignIn) {
-                          this.resolveSignIn(false);
-                          this.resolveSignIn = null;
-                        }
-                        return;
-                      }
-                      this.accessToken = resp.access_token;
-                      sessionStorage.setItem('sonata_google_token', resp.access_token);
-                      sessionStorage.setItem('sonata_google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
-                      if (window.gapi?.client) {
-                        gapi.client.setToken({ access_token: resp.access_token });
-                      }
-                      await this.fetchUserInfo();
-                      await this.performSync();
+              try {
+                this.tokenClient = google.accounts.oauth2.initTokenClient({
+                  client_id: this.CLIENT_ID,
+                  scope: this.SCOPES,
+                  callback: async (resp) => {
+                    if (resp.error !== undefined) {
+                      console.error("Drive auth error:", resp);
+                      UIManager.toast("Drive Auth Failed: " + (resp.error_description || resp.error));
+                      this.updateUI("Sync Failed", "danger");
                       if (this.resolveSignIn) {
-                        this.resolveSignIn(true);
+                        this.resolveSignIn(false);
                         this.resolveSignIn = null;
                       }
+                      return;
                     }
-                  });
-                  this.loadCachedToken();
-                } catch (err) {
-                  console.error("GIS TokenClient Init Error:", err);
-                }
-              });
+                    this.accessToken = resp.access_token;
+                    sessionStorage.setItem('sonata_google_token', resp.access_token);
+                    sessionStorage.setItem('sonata_google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
+                    await this.fetchUserInfo();
+                    await this.performSync();
+                    if (this.resolveSignIn) {
+                      this.resolveSignIn(true);
+                      this.resolveSignIn = null;
+                    }
+                  }
+                });
+                this.loadCachedToken();
+              } catch (err) {
+                console.error("GIS TokenClient Init Error:", err);
+              }
             }
           }, 200);
 
@@ -2394,9 +2384,6 @@ Em -  C    -  G  -  D
           const expiry = Number(sessionStorage.getItem('sonata_google_token_expiry') || '0');
           if (token && expiry > Date.now()) {
             this.accessToken = token;
-            if (window.gapi?.client) {
-              gapi.client.setToken({ access_token: token });
-            }
             this.fetchUserInfo().then(() => {
               this.updateUI("● Synced", "primary");
             });
@@ -2471,23 +2458,31 @@ Em -  C    -  G  -  D
           UIManager.toast("Syncing with Google Drive...");
 
           try {
-            if (window.gapi?.client) {
-              gapi.client.setToken({ access_token: this.accessToken });
-            }
+            // Use direct fetch instead of gapi.client.drive (discovery doc can fail silently)
+            const headers = { 'Authorization': `Bearer ${this.accessToken}` };
 
-            let resp = await gapi.client.drive.files.list({
-              q: `name='${this.FILENAME}' and trashed=false`,
-              fields: 'files(id, name, modifiedTime)'
-            });
-            let files = resp.result?.files || [];
+            // Search for existing file
+            const listUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${this.FILENAME}' and trashed=false`)}&fields=files(id,name,modifiedTime)&spaces=drive`;
+            const listResp = await fetch(listUrl, { headers });
+
+            if (listResp.status === 401) {
+              this.accessToken = null;
+              sessionStorage.removeItem('sonata_google_token');
+              UIManager.toast("Session expired. Please sync again.");
+              this.updateUI("Drive Sync", "secondary");
+              this.isSyncing = false;
+              return;
+            }
+            if (!listResp.ok) throw new Error(`List files HTTP ${listResp.status}`);
+
+            const listData = await listResp.json();
+            const files = listData.files || [];
 
             if (files.length > 0) {
               this.fileId = files[0].id;
-              let fileResp = await gapi.client.drive.files.get({ fileId: this.fileId, alt: 'media' });
-              let cloudData = fileResp.result || fileResp.body;
-              if (typeof cloudData === 'string') {
-                try { cloudData = JSON.parse(cloudData); } catch (e) { cloudData = null; }
-              }
+              const getResp = await fetch(`https://www.googleapis.com/drive/v3/files/${this.fileId}?alt=media`, { headers });
+              if (!getResp.ok) throw new Error(`Get file HTTP ${getResp.status}`);
+              let cloudData = await getResp.json();
               if (cloudData && typeof cloudData === 'object') {
                 this.mergeAndSave(cloudData);
               } else {
@@ -2501,10 +2496,7 @@ Em -  C    -  G  -  D
             UIManager.toast("Drive Sync Complete");
           } catch (err) {
             console.error("Sync error:", err);
-            if (err?.status === 401 || err?.result?.error?.code === 401) {
-              this.accessToken = null;
-            }
-            UIManager.toast("Drive Sync Failed");
+            UIManager.toast("Drive Sync Failed: " + (err.message || "Unknown error"));
             this.updateUI("Sync Failed", "danger");
           } finally {
             this.isSyncing = false;
