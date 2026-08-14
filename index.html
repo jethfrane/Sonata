@@ -1740,6 +1740,35 @@
         height: 16px;
       }
     }
+
+    @media (max-width: 767px) {
+      .top-actions .button-label {
+        display: none !important;
+      }
+      .topbar {
+        padding: 8px 12px;
+        gap: 12px;
+      }
+      .top-actions {
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .mobile-view-switcher .tab-button .button-label {
+        display: none !important;
+      }
+      .mobile-view-switcher .tab-button {
+        min-height: 44px;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+      }
+      .mobile-view-switcher {
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+        gap: 4px;
+      }
+    }
   </style>
 </head>
 
