@@ -1669,21 +1669,26 @@
         padding: 8px 10px;
         gap: 8px;
       }
+
       .brand-mark {
         width: 24px;
         height: 24px;
         font-size: 12px;
       }
+
       .brand-title {
         font-size: 1.1rem;
       }
+
       .top-actions {
         gap: 4px;
       }
+
       .top-actions .button {
         padding: 0 8px;
         min-height: 38px;
       }
+
       .top-actions .icon-button {
         width: 38px;
         height: 38px;
@@ -1694,32 +1699,38 @@
       .presentation-text {
         font-size: calc(var(--presentation-font) * 0.55) !important;
       }
+
       .presentation-stage {
         padding: 16px;
         padding-top: calc(90px + env(safe-area-inset-top));
         padding-bottom: 30vh;
       }
+
       .presentation-top {
         padding: 8px 10px;
         flex-direction: column;
         gap: 6px;
       }
+
       .presentation-controls {
         display: flex;
         justify-content: center;
         gap: 4px;
         width: 100%;
       }
+
       .presentation-controls .button {
         font-size: 0.75rem;
         padding: 0 8px;
         min-height: 32px;
       }
+
       .presentation-controls-bottom {
         padding: 4px 8px;
         gap: 4px;
         bottom: 12px;
       }
+
       .presentation-controls-bottom .icon-button {
         width: 36px;
         height: 36px;
@@ -1735,10 +1746,12 @@
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
         gap: 2px;
       }
+
       .mobile-view-switcher .tab-button {
         padding: 4px 2px;
         font-size: 0.7rem;
       }
+
       .mobile-view-switcher .tab-button .icon {
         width: 16px;
         height: 16px;
@@ -1749,10 +1762,12 @@
       .top-actions .button-label {
         display: none !important;
       }
+
       .topbar {
         padding: 8px 12px;
         gap: 12px;
       }
+
       .top-actions {
         gap: 6px;
       }
@@ -1762,12 +1777,14 @@
       .mobile-view-switcher .tab-button .button-label {
         display: none !important;
       }
+
       .mobile-view-switcher .tab-button {
         min-height: 44px;
         justify-content: center;
         align-items: center;
         gap: 0;
       }
+
       .mobile-view-switcher {
         padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
         gap: 4px;
@@ -1789,7 +1806,8 @@
       <div class="top-actions">
         <!-- Google Drive Sync Button -->
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button"
+          style="display:none;">Install App</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
         <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
           aria-label="Toggle theme"></button>
@@ -1812,15 +1830,18 @@
         <div class="panel-heading">
           <h2>Library <button class="help-icon" data-help="library" type="button">?</button></h2>
           <div style="display:flex; gap:6px;">
-            <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button" title="Manage Library">Manage</button>
+            <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
+              title="Manage Library">Manage</button>
             <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
           </div>
         </div>
         <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div class="field" style="flex:1; margin:0;"><label class="visually-hidden" for="songSearch">Search</label><input class="input"
-              id="songSearch" type="search" placeholder="Search title/lyrics" autocomplete="off" style="margin:0;"></div>
+          <div class="field" style="flex:1; margin:0;"><label class="visually-hidden"
+              for="songSearch">Search</label><input class="input" id="songSearch" type="search"
+              placeholder="Search title/lyrics" autocomplete="off" style="margin:0;"></div>
           <div class="select-wrapper" style="width:105px;">
-            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 6px;" title="Sort Library">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 6px;"
+              title="Sort Library">
               <option value="recent">Recent</option>
               <option value="title">Title</option>
               <option value="author">Author</option>
@@ -1840,12 +1861,16 @@
       <section class="panel editor-panel" aria-label="Song editor">
         <label class="visually-hidden" for="songTitle">Song title</label>
         <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
-        <div id="editorMetadataBar" style="padding: 6px 14px; font-size: 0.75rem; color: var(--muted); display: none; gap: 12px; flex-wrap: wrap; background: var(--surface-2); border-bottom: 1px solid var(--line); align-items:center;"></div>
+        <div id="editorMetadataBar"
+          style="padding: 6px 14px; font-size: 0.75rem; color: var(--muted); display: none; gap: 12px; flex-wrap: wrap; background: var(--surface-2); border-bottom: 1px solid var(--line); align-items:center;">
+        </div>
         <div class="editor-toolbar">
           <div class="toolbar">
             <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save</button>
-            <button class="button" id="undoSongButton" data-icon="rotate-ccw" type="button" title="Undo (Ctrl+Z)">Undo</button>
-            <button class="button" id="redoSongButton" data-icon="rotate" type="button" title="Redo (Ctrl+Y)">Redo</button>
+            <button class="button" id="undoSongButton" data-icon="rotate-ccw" type="button"
+              title="Undo (Ctrl+Z)">Undo</button>
+            <button class="button" id="redoSongButton" data-icon="rotate" type="button"
+              title="Redo (Ctrl+Y)">Redo</button>
             <button class="button primary" id="importSharedButton" data-icon="download" type="button"
               style="display:none;">Save to Library</button>
             <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
@@ -2421,8 +2446,8 @@ Em -  C    -  G  -  D
         disconnect() {
           if (this.accessToken) {
             try {
-              google.accounts.oauth2.revoke(this.accessToken, () => {});
-            } catch (e) {}
+              google.accounts.oauth2.revoke(this.accessToken, () => { });
+            } catch (e) { }
           }
           this.accessToken = null;
           this.userEmail = null;
@@ -3100,7 +3125,7 @@ Em -  C    -  G  -  D
             r = ((num >> 16) & 255) / 255;
             g = ((num >> 8) & 255) / 255;
             b = (num & 255) / 255;
-          } catch(e) {}
+          } catch (e) { }
 
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
           const orientation = UIManager.dom.exportOrientation.value;
@@ -3280,16 +3305,16 @@ Em -  C    -  G  -  D
             const headerY = pageHeight - headerHeight;
 
             let chrome = `q 0.96 0.96 0.98 rg 0 ${headerY} ${pageWidth} ${headerHeight} re f Q\n` +
-                         `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
-                         `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
+              `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
+              `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
             if (p.artist) {
               chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 60))}) Tj ET\n` +
-                        `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+                `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             } else {
               chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             }
             chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
-                      `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
+              `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
 
             const content = chrome + "\n0 g\n" + pageOps;
             const contentId = add("<< /Length " + content.length + " >>\nstream\r\n" + content + "\r\nendstream");
@@ -3367,13 +3392,13 @@ Em -  C    -  G  -  D
               const formBody = new URLSearchParams();
               formBody.append('content', await this.compressData(shareData));
               formBody.append('format', 'url');
-              
+
               const dpasteRes = await fetch('https://dpaste.com/api/', {
                 method: 'POST',
                 body: formBody,
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
               });
-              
+
               if (dpasteRes.ok) {
                 const dpasteUrl = (await dpasteRes.text()).trim();
                 const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
@@ -3398,7 +3423,7 @@ Em -  C    -  G  -  D
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
           const ctx = canvas.getContext("2d");
 
-           const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
+          const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
           ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
           ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
           ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
@@ -3414,10 +3439,10 @@ Em -  C    -  G  -  D
 
           try {
             const resp = await fetch(qrUrl); const blob = await resp.blob(); const imgUrl = URL.createObjectURL(blob);
-            const qImg = new Image(); 
-            qImg.onload = () => { 
-              ctx.drawImage(qImg, 80, 210, 300, 300); 
-              
+            const qImg = new Image();
+            qImg.onload = () => {
+              ctx.drawImage(qImg, 80, 210, 300, 300);
+
               if (!isSet) {
                 let detailsStr = `Key: ${shareData.k || 'Auto'}`;
                 if (shareData.c) detailsStr += `  •  Capo: ${shareData.c}`;
@@ -3432,12 +3457,12 @@ Em -  C    -  G  -  D
                 ctx.font = "13px sans-serif";
                 ctx.fillText(songNames, 230, 532);
               }
-              
-              ctx.fillStyle = activeAccent; 
-              ctx.font = "bold 14px sans-serif"; 
-              ctx.fillText("Scan to import securely offline", 230, 565); 
-              URL.revokeObjectURL(imgUrl); 
-            }; 
+
+              ctx.fillStyle = activeAccent;
+              ctx.font = "bold 14px sans-serif";
+              ctx.fillText("Scan to import securely offline", 230, 565);
+              URL.revokeObjectURL(imgUrl);
+            };
             qImg.src = imgUrl;
           } catch (e) { ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Preview Unavailable ]", 230, 360); }
 
@@ -3495,7 +3520,7 @@ Em -  C    -  G  -  D
           document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.mobileView = b.dataset.mobileView; document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(i => i.classList.toggle("active", i === b)); }));
           document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.desktopRight = b.dataset.desktopTab; document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(i => i.classList.toggle("active", i === b)); }));
 
-           add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); });
+          add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); });
           add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); });
           add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); });
           add(this.dom.importSharedButton, "click", () => { AudioEngine.playClick(); StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); this.toast("Saved to Library"); });
@@ -3657,7 +3682,7 @@ Em -  C    -  G  -  D
                 </div>
               `
             }],
-            onConfirm: () => {}
+            onConfirm: () => { }
           });
 
           const selectAll = document.getElementById('selectAllSongsCheckbox');
@@ -3721,10 +3746,10 @@ Em -  C    -  G  -  D
           bulkShareBtn?.addEventListener('click', async () => {
             const checkedIds = Array.from(document.querySelectorAll('.manage-song-checkbox:checked')).map(cb => cb.value);
             if (checkedIds.length === 0) return;
-            
+
             const selectedSongs = StateManager.state.songs.filter(s => checkedIds.includes(s.id));
             const shareData = { type: 'set', t: "Shared Library Selection", d: "Custom setlist shared from Sonata", l: [], s: [] };
-            
+
             selectedSongs.forEach(song => {
               const sData = { t: song.title, b: song.body };
               if (song.manualKey && song.manualKey !== "auto") sData.k = song.manualKey;
@@ -3741,13 +3766,13 @@ Em -  C    -  G  -  D
                 const formBody = new URLSearchParams();
                 formBody.append('content', await ExportManager.compressData(shareData));
                 formBody.append('format', 'url');
-                
+
                 const dpasteRes = await fetch('https://dpaste.com/api/', {
                   method: 'POST',
                   body: formBody,
                   headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
                 });
-                
+
                 if (dpasteRes.ok) {
                   const dpasteUrl = (await dpasteRes.text()).trim();
                   const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
@@ -3759,7 +3784,7 @@ Em -  C    -  G  -  D
             }
 
             this.closeModal();
-            
+
             this.openModal({
               title: "Share Selected Songs",
               confirmText: "Copy Link & Close",
@@ -3788,7 +3813,7 @@ Em -  C    -  G  -  D
                 const qImg = new Image();
                 qImg.onload = () => {
                   ctx.drawImage(qImg, 80, 210, 300, 300);
-                  
+
                   let songNames = selectedSongs.map(s => s.title).join("  •  ");
                   if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
                   ctx.fillStyle = "#16181d";
@@ -3953,7 +3978,7 @@ Em -  C    -  G  -  D
           const val = this.undoStack.pop();
           this.redoStack.push(this.lastValue);
           this.lastValue = val;
-          
+
           const song = StateManager.activeSong();
           if (song && !song.readonly) {
             song.body = val;
@@ -3970,7 +3995,7 @@ Em -  C    -  G  -  D
           const val = this.redoStack.pop();
           this.undoStack.push(this.lastValue);
           this.lastValue = val;
-          
+
           const song = StateManager.activeSong();
           if (song && !song.readonly) {
             song.body = val;
@@ -4001,7 +4026,7 @@ Em -  C    -  G  -  D
           const parts = [];
           if (song.artist) parts.push(`<strong>Author:</strong> ${Util.escapeHtml(song.artist)}`);
           if (song.creator) parts.push(`<strong>Arranger:</strong> ${Util.escapeHtml(song.creator)}`);
-          
+
           const key = KeyDetector.activeKey(song, StateManager.state.detectedKey);
           if (key) {
             let keyStr = key.root + (key.mode === 'minor' ? 'm' : '');
@@ -4010,7 +4035,7 @@ Em -  C    -  G  -  D
             }
             parts.push(`<strong>Key:</strong> ${keyStr}`);
           }
-          
+
           if (parts.length > 0) {
             bar.innerHTML = parts.join('  •  ');
             bar.style.display = 'flex';
@@ -4206,7 +4231,7 @@ Em -  C    -  G  -  D
             }
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v3'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).then(res => { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }).catch(() => caches.match(e.request))); });"], { type: 'application/javascript' }))).catch(() => { });
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
-            
+
             const params = new URLSearchParams(window.location.search);
             const shareParam = params.get("share");
             const pasteParam = params.get("paste");
