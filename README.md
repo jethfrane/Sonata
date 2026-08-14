@@ -42,8 +42,11 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 * **View-Only Import:** When scanning a shared QR code, friends view the chart instantly in a read-only state without cluttering their local browser library.
 
 ### 5. Professional Export System
-* **Multi-Column Layouts:** Export your charts in 1, 2, or 3-column layouts with intelligent text hard-wrapping to ensure chords never overlap.
-* **Multiple Formats:** Export as pristine PDF, high-resolution PNG, plain text TXT, or direct browser Print. PDF and PNG exports automatically inherit your active layout mode (Roman, Nashville, Lyrics Only) and include metadata like Artist and Reference links in the footer.
+* **Multi-Column Layouts:** Export your charts in 1, 2, or 3-column layouts with dynamic column spacing, custom gutters, and intelligent word & bracket wrapping to ensure chord markers never overflow columns.
+* **Multiple Formats:** Export as pristine vector PDF, high-resolution PNG, plain text TXT, or direct browser Print. PDF exports automatically translate musical accidentals (♯, ♭) cleanly for universal PDF viewer compatibility, inherit active layouts (transposed, Roman, Nashville, lyrics-only), and style song metadata in the header and page counters in the footer.
+
+### 6. Cloud Backup & Sync (Optional)
+* **Google Drive Sync:** Seamlessly back up and restore your library using Google Identity Services (GIS) and GAPI. Changes are automatically merged based on `updatedAt` timestamps and uploaded to a secure, hidden `appDataFolder` on your personal Google Drive, keeping your staging layout and files synced across laptops, tablets, and phones.
 
 ## 🛠️ How to Publish on GitHub Pages
 
@@ -58,6 +61,6 @@ Because Sonata is a single-file static app, publishing it takes less than 60 sec
 
 ## 📦 Data Privacy & Backup
 
-Sonata stores all songs and settings securely in your browser's `localStorage`. Your data never leaves your device. To back up your library or transfer songs to another device, simply go to Settings and click **Export Backup (.json)**. You can restore it anytime using **Import Backup**.
+Sonata stores all songs and settings securely in your browser's `localStorage` and optionally syncs with Google Drive's private app folder. Your data never leaves your device or your personal storage. To back up your library manually, simply go to Settings and click **Export Backup (.json)**. You can restore it anytime using **Import Backup**.
 
 Created with ❤️ by Jeth Frane for musicians everywhere.
