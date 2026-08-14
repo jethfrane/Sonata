@@ -1725,6 +1725,21 @@
         height: 36px;
       }
     }
+
+    @media (max-width: 400px) {
+      .mobile-view-switcher {
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+        gap: 2px;
+      }
+      .mobile-view-switcher .tab-button {
+        padding: 4px 2px;
+        font-size: 0.7rem;
+      }
+      .mobile-view-switcher .tab-button .icon {
+        width: 16px;
+        height: 16px;
+      }
+    }
   </style>
 </head>
 
