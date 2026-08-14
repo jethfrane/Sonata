@@ -1689,6 +1689,42 @@
         height: 38px;
       }
     }
+
+    @media (max-width: 767px) {
+      .presentation-text {
+        font-size: calc(var(--presentation-font) * 0.55) !important;
+      }
+      .presentation-stage {
+        padding: 16px;
+        padding-top: calc(90px + env(safe-area-inset-top));
+        padding-bottom: 30vh;
+      }
+      .presentation-top {
+        padding: 8px 10px;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .presentation-controls {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        width: 100%;
+      }
+      .presentation-controls .button {
+        font-size: 0.75rem;
+        padding: 0 8px;
+        min-height: 32px;
+      }
+      .presentation-controls-bottom {
+        padding: 4px 8px;
+        gap: 4px;
+        bottom: 12px;
+      }
+      .presentation-controls-bottom .icon-button {
+        width: 36px;
+        height: 36px;
+      }
+    }
   </style>
 </head>
 
@@ -1705,6 +1741,7 @@
       <div class="top-actions">
         <!-- Google Drive Sync Button -->
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
         <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
           aria-label="Toggle theme"></button>
@@ -2050,6 +2087,26 @@
   </section>
 
   <script>
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.__deferredPrompt = e;
+      const headerBtn = document.getElementById('headerInstallBtn');
+      if (headerBtn) {
+        headerBtn.style.display = 'inline-flex';
+        headerBtn.onclick = () => {
+          e.prompt();
+          e.userChoice.then(() => {
+            window.__deferredPrompt = null;
+            headerBtn.style.display = 'none';
+          });
+        };
+      }
+      const settingsBtn = document.getElementById('installAppBtn');
+      if (settingsBtn) {
+        settingsBtn.style.display = 'inline-flex';
+      }
+    });
+
     let UI_FONT_OPTIONS = [], CHART_FONT_OPTIONS = [], ACCENT_THEMES = [], DEFAULT_SETTINGS = {}, FONT_STACKS = {}, STORAGE_KEYS = {};
 
     (() => {
@@ -3216,7 +3273,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "revertSongButton", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "revertSongButton", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
@@ -3458,7 +3515,19 @@ Em -  C    -  G  -  D
         saveDebounced: Util.debounce(() => StateManager.saveNow("Autosaved"), 650), scheduleSave() { UIManager.setStatus("Autosaving"); this.saveDebounced(); },
         async init() {
           try {
-            window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__deferredPrompt = e; });
+            if (window.__deferredPrompt) {
+              const headerBtn = document.getElementById('headerInstallBtn');
+              if (headerBtn) {
+                headerBtn.style.display = 'inline-flex';
+                headerBtn.onclick = () => {
+                  window.__deferredPrompt.prompt();
+                  window.__deferredPrompt.userChoice.then(() => {
+                    window.__deferredPrompt = null;
+                    headerBtn.style.display = 'none';
+                  });
+                };
+              }
+            }
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v3'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).then(res => { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }).catch(() => caches.match(e.request))); });"], { type: 'application/javascript' }))).catch(() => { });
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
             const params = new URLSearchParams(window.location.search); const shareParam = params.get("share");
