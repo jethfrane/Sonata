@@ -234,7 +234,7 @@
       display: grid;
       gap: 12px;
       width: 100%;
-      max-width: 1800px;
+      max-width: 100%;
       margin: 0 auto;
       padding: 12px;
       flex: 1;
@@ -386,7 +386,7 @@
       font-family: var(--chart-font);
       font-size: var(--editor-font);
       line-height: var(--editor-line);
-      white-space: pre;
+      white-space: pre-wrap;
       overflow: auto;
       tab-size: 4;
       z-index: 2;
@@ -1726,6 +1726,10 @@
       }
     }
 
+    .manage-song-row:hover {
+      background: color-mix(in srgb, var(--accent) 6%, var(--surface)) !important;
+    }
+
     @media (max-width: 400px) {
       .mobile-view-switcher {
         padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
@@ -1807,7 +1811,10 @@
       <aside class="panel library-panel" aria-label="Song library">
         <div class="panel-heading">
           <h2>Library <button class="help-icon" data-help="library" type="button">?</button></h2>
-          <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
+          <div style="display:flex; gap:6px;">
+            <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button" title="Manage Library">Manage</button>
+            <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
+          </div>
         </div>
         <div class="field"><label class="visually-hidden" for="songSearch">Search</label><input class="input"
             id="songSearch" type="search" placeholder="Search title or lyrics" autocomplete="off"></div>
@@ -1822,10 +1829,12 @@
       <section class="panel editor-panel" aria-label="Song editor">
         <label class="visually-hidden" for="songTitle">Song title</label>
         <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
+        <div id="editorMetadataBar" style="padding: 6px 14px; font-size: 0.75rem; color: var(--muted); display: none; gap: 12px; flex-wrap: wrap; background: var(--surface-2); border-bottom: 1px solid var(--line); align-items:center;"></div>
         <div class="editor-toolbar">
           <div class="toolbar">
             <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save</button>
-            <button class="button" id="revertSongButton" data-icon="rotate-ccw" type="button">Revert</button>
+            <button class="button" id="undoSongButton" data-icon="rotate-ccw" type="button" title="Undo (Ctrl+Z)">Undo</button>
+            <button class="button" id="redoSongButton" data-icon="rotate" type="button" title="Redo (Ctrl+Y)">Redo</button>
             <button class="button primary" id="importSharedButton" data-icon="download" type="button"
               style="display:none;">Save to Library</button>
             <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
@@ -3339,22 +3348,37 @@ Em -  C    -  G  -  D
           });
 
           try {
-            // Primary shortener
-            const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
-            if (res.ok) { const data = await res.json(); if (data.shorturl) finalUrl = data.shorturl; }
-            else {
-              // Fallback shortener for reliability
-              const res2 = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(rawUrl)}`);
-              if (res2.ok) { finalUrl = await res2.text(); }
+            if (rawUrl.length > 200) {
+              const formBody = new URLSearchParams();
+              formBody.append('content', await this.compressData(shareData));
+              formBody.append('format', 'url');
+              
+              const dpasteRes = await fetch('https://dpaste.com/api/', {
+                method: 'POST',
+                body: formBody,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+              });
+              
+              if (dpasteRes.ok) {
+                const dpasteUrl = (await dpasteRes.text()).trim();
+                const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
+                finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
+              } else {
+                throw new Error("dpaste failed");
+              }
+            } else {
+              const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
+              if (res.ok) { const data = await res.json(); if (data.shorturl) finalUrl = data.shorturl; }
             }
-          } catch (e) { console.log("Shorteners unavailable, using full url"); }
+          } catch (e) {
+            console.log("Shorteners unavailable, using full url");
+          }
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
           wrapper.innerHTML = '';
           const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
 
-          // Build the live QR Card Preview Canvas in the modal
           const canvas = document.createElement("canvas"); canvas.width = 460; canvas.height = 600;
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
           const ctx = canvas.getContext("2d");
@@ -3368,7 +3392,18 @@ Em -  C    -  G  -  D
 
           try {
             const resp = await fetch(qrUrl); const blob = await resp.blob(); const imgUrl = URL.createObjectURL(blob);
-            const qImg = new Image(); qImg.onload = () => { ctx.drawImage(qImg, 80, 210, 300, 300); ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("Scan to view securely offline", 230, 560); URL.revokeObjectURL(imgUrl); }; qImg.src = imgUrl;
+            const qImg = new Image(); 
+            qImg.onload = () => { 
+              ctx.drawImage(qImg, 80, 210, 300, 300); 
+              ctx.fillStyle = "#667085"; 
+              ctx.font = "16px sans-serif"; 
+              ctx.fillText("Scan to view securely offline", 230, 540); 
+              ctx.fillStyle = "#1967d2";
+              ctx.font = "bold 14px sans-serif";
+              ctx.fillText(finalUrl, 230, 570);
+              URL.revokeObjectURL(imgUrl); 
+            }; 
+            qImg.src = imgUrl;
           } catch (e) { ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Preview Unavailable ]", 230, 360); }
 
           const downloadBtn = document.createElement('button'); downloadBtn.className = 'button secondary'; downloadBtn.type = 'button'; downloadBtn.style.cssText = "width:100%; margin-bottom:12px;"; downloadBtn.innerHTML = `<span data-inline-icon="image" style="width:16px;height:16px;margin-right:6px;"></span>Download QR Card`;
@@ -3414,7 +3449,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "revertSongButton", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
@@ -3425,12 +3460,26 @@ Em -  C    -  G  -  D
           document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.mobileView = b.dataset.mobileView; document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(i => i.classList.toggle("active", i === b)); }));
           document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.desktopRight = b.dataset.desktopTab; document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(i => i.classList.toggle("active", i === b)); }));
 
-          add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); });
-          add(this.dom.revertSongButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: "Revert Changes", message: "Discard all recent edits?", confirmText: "Revert", destructive: true, onConfirm: () => { StateManager.revertActive(); this.toast("Reverted"); } }); });
+           add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); });
+          add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); });
+          add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); });
           add(this.dom.importSharedButton, "click", () => { AudioEngine.playClick(); StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); this.toast("Saved to Library"); });
           add(this.dom.exitSharedButton, "click", () => { AudioEngine.playClick(); StateManager.exitShared(); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.infoSongButton, "click", () => { AudioEngine.playClick(); this.openSongInfo(); });
-          add(this.dom.loadDemoButton, "click", () => { AudioEngine.playClick(); StateManager.loadDemo(); Editor.loadActiveSong(); this.renderAll(); });
+          add(this.dom.loadDemoButton, "click", () => {
+            AudioEngine.playClick();
+            this.openModal({
+              title: "Load Demo",
+              message: "Load demo song? This will replace your current song content.",
+              confirmText: "Load Demo",
+              onConfirm: () => {
+                StateManager.loadDemo();
+                Editor.loadActiveSong();
+                this.renderAll();
+              }
+            });
+          });
+          add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
 
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
           document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); }));
@@ -3516,6 +3565,207 @@ Em -  C    -  G  -  D
         },
         bumpTranspose(delta) { const next = Util.clamp(StateManager.state.transposeDelta + delta, -24, 24); StateManager.state.transposeDelta = next; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(next); this.updateAnalysis(); },
         setStatus(message) { if (!this.dom.saveStatus) return; this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : message; window.clearTimeout(this.statusTimer); this.statusTimer = window.setTimeout(() => { if (this.dom.saveStatus) this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : (StateManager.state.dirty ? "Autosaving" : "Ready"); }, 1800); },
+
+        openManageLibrary() {
+          const songs = StateManager.state.songs;
+          let tableRows = '';
+          songs.forEach(song => {
+            const key = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+            const keyStr = key ? (key.root + (key.mode === 'minor' ? 'm' : '')) : '-';
+            tableRows += `
+              <tr class="manage-song-row" data-song-id="${song.id}" style="border-bottom:1px solid var(--line);">
+                <td style="padding:10px; text-align:center;"><input type="checkbox" class="manage-song-checkbox" value="${song.id}" style="width:16px; height:16px; cursor:pointer;"></td>
+                <td style="padding:10px; font-weight:600; color:var(--text);">${Util.escapeHtml(Util.titleOf(song))}</td>
+                <td style="padding:10px; color:var(--muted);">${Util.escapeHtml(song.artist || '-')}</td>
+                <td style="padding:10px; color:var(--muted);">${Util.escapeHtml(song.creator || '-')}</td>
+                <td style="padding:10px; font-weight:600; color:var(--accent);">${keyStr}</td>
+                <td style="padding:10px; color:var(--muted);">${Util.formatDate(song.updatedAt)}</td>
+              </tr>
+            `;
+          });
+
+          this.openModal({
+            title: "Manage Library",
+            confirmText: "Close",
+            fields: [{
+              type: "custom",
+              html: `
+                <div style="display:flex; flex-direction:column; gap:12px; width:100%; min-width:320px; max-width:800px; max-height:70vh; overflow:hidden;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--line); padding-bottom:10px;">
+                    <div style="display:flex; gap:8px;">
+                      <button class="button danger" id="bulkDeleteBtn" type="button" disabled style="padding: 0 12px; min-height:34px;">Delete Selected</button>
+                      <button class="button primary" id="bulkShareBtn" type="button" disabled style="padding: 0 12px; min-height:34px;">Share Selected</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex:1; justify-content:flex-end;">
+                      <input class="input" type="search" id="manageLibSearch" placeholder="Filter songs..." style="max-width:200px; height:34px; margin:0;">
+                      <span id="selectedCountLabel" style="font-size:0.8rem; color:var(--muted); font-weight:600; white-space:nowrap;">0 selected</span>
+                    </div>
+                  </div>
+                  <div style="overflow-y:auto; flex:1; border:1px solid var(--line); border-radius:6px; background:var(--surface-2);">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem; background:var(--surface);">
+                      <thead>
+                        <tr style="background:var(--surface-2); border-bottom:1px solid var(--line); font-weight:600; color:var(--muted); position:sticky; top:0; z-index:1;">
+                          <th style="padding:10px; width:40px; text-align:center;"><input type="checkbox" id="selectAllSongsCheckbox" style="width:16px; height:16px; cursor:pointer;"></th>
+                          <th style="padding:10px;">Title</th>
+                          <th style="padding:10px;">Author</th>
+                          <th style="padding:10px;">Arranger</th>
+                          <th style="padding:10px; width:70px;">Key</th>
+                          <th style="padding:10px; width:110px;">Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody id="manageLibTableBody">
+                        ${tableRows || '<tr><td colspan="6" style="padding:20px; text-align:center; color:var(--muted);">No songs in library.</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              `
+            }],
+            onConfirm: () => {}
+          });
+
+          const selectAll = document.getElementById('selectAllSongsCheckbox');
+          const checkboxes = document.querySelectorAll('.manage-song-checkbox');
+          const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+          const bulkShareBtn = document.getElementById('bulkShareBtn');
+          const selectedLabel = document.getElementById('selectedCountLabel');
+          const searchInput = document.getElementById('manageLibSearch');
+
+          const updateActions = () => {
+            const checked = document.querySelectorAll('.manage-song-checkbox:checked');
+            if (bulkDeleteBtn) bulkDeleteBtn.disabled = checked.length === 0;
+            if (bulkShareBtn) bulkShareBtn.disabled = checked.length === 0;
+            if (selectedLabel) selectedLabel.textContent = `${checked.length} selected`;
+          };
+
+          selectAll?.addEventListener('change', () => {
+            checkboxes.forEach(cb => {
+              if (cb.closest('tr').style.display !== 'none') {
+                cb.checked = selectAll.checked;
+              }
+            });
+            updateActions();
+          });
+
+          checkboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+              updateActions();
+            });
+          });
+
+          searchInput?.addEventListener('keyup', () => {
+            const q = searchInput.value.toLowerCase();
+            document.querySelectorAll('#manageLibTableBody tr').forEach(tr => {
+              const text = tr.textContent.toLowerCase();
+              tr.style.display = text.includes(q) ? '' : 'none';
+            });
+          });
+
+          bulkDeleteBtn?.addEventListener('click', () => {
+            const checkedIds = Array.from(document.querySelectorAll('.manage-song-checkbox:checked')).map(cb => cb.value);
+            if (checkedIds.length === 0) return;
+            this.openModal({
+              title: "Confirm Bulk Deletion",
+              message: `Are you sure you want to delete the ${checkedIds.length} selected songs? This action cannot be undone.`,
+              confirmText: "Delete Songs",
+              destructive: true,
+              onConfirm: () => {
+                StateManager.state.songs = StateManager.state.songs.filter(s => !checkedIds.includes(s.id));
+                if (!StateManager.state.songs.length) StateManager.createSong();
+                else if (checkedIds.includes(StateManager.state.activeId)) StateManager.state.activeId = StateManager.state.songs[0].id;
+                StateManager.saveNow("Bulk Deleted");
+                this.toast(`Deleted ${checkedIds.length} songs`);
+                this.closeModal();
+                this.openManageLibrary();
+                this.renderAll();
+              }
+            });
+          });
+
+          bulkShareBtn?.addEventListener('click', async () => {
+            const checkedIds = Array.from(document.querySelectorAll('.manage-song-checkbox:checked')).map(cb => cb.value);
+            if (checkedIds.length === 0) return;
+            
+            const selectedSongs = StateManager.state.songs.filter(s => checkedIds.includes(s.id));
+            const shareData = { type: 'set', t: "Shared Library Selection", d: "Custom setlist shared from Sonata", l: [], s: [] };
+            
+            selectedSongs.forEach(song => {
+              const sData = { t: song.title, b: song.body };
+              if (song.manualKey && song.manualKey !== "auto") sData.k = song.manualKey;
+              if (song.artist) sData.a = song.artist;
+              if (song.creator) sData.cr = song.creator;
+              shareData.s.push(sData);
+            });
+
+            const rawUrl = window.location.origin + window.location.pathname + "?share=" + await ExportManager.compressData(shareData);
+            let finalUrl = rawUrl;
+
+            try {
+              if (rawUrl.length > 200) {
+                const formBody = new URLSearchParams();
+                formBody.append('content', await ExportManager.compressData(shareData));
+                formBody.append('format', 'url');
+                
+                const dpasteRes = await fetch('https://dpaste.com/api/', {
+                  method: 'POST',
+                  body: formBody,
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+                
+                if (dpasteRes.ok) {
+                  const dpasteUrl = (await dpasteRes.text()).trim();
+                  const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
+                  finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
+                }
+              }
+            } catch (e) {
+              console.warn("dpaste failed, fallback");
+            }
+
+            this.closeModal();
+            
+            this.openModal({
+              title: "Share Selected Songs",
+              confirmText: "Copy Link & Close",
+              fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><canvas id="bulkShareCanvas" width="460" height="600" style="display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;"></canvas><input class="input" readOnly id="bulkShareUrl" value="${finalUrl}" style="margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);"></div>` }],
+              onConfirm: async () => {
+                if (await ExportManager.copyText(finalUrl)) UIManager.toast("Share link copied!");
+              }
+            });
+
+            setTimeout(async () => {
+              const canvas = document.getElementById('bulkShareCanvas');
+              if (!canvas) return;
+              const ctx = canvas.getContext("2d");
+              ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
+              ctx.fillStyle = "#1967d2"; ctx.fillRect(0, 0, 460, 100);
+              ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
+              ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText("SHARED SELECTION", 230, 140);
+              ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 175);
+
+              const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
+              try {
+                const resp = await fetch(qrUrl);
+                const blob = await resp.blob();
+                const imgUrl = URL.createObjectURL(blob);
+                const qImg = new Image();
+                qImg.onload = () => {
+                  ctx.drawImage(qImg, 80, 210, 300, 300);
+                  ctx.fillStyle = "#667085";
+                  ctx.font = "16px sans-serif";
+                  ctx.fillText("Scan to import selection", 230, 540);
+                  ctx.fillStyle = "#1967d2";
+                  ctx.font = "bold 14px sans-serif";
+                  ctx.fillText(finalUrl, 230, 570);
+                  URL.revokeObjectURL(imgUrl);
+                };
+                qImg.src = imgUrl;
+              } catch (e) {
+                ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Unavailable ]", 230, 360);
+              }
+            }, 100);
+          });
+        },
 
         openSongInfo() {
           const song = StateManager.activeSong(); if (!song || song.readonly) return;
@@ -3629,12 +3879,150 @@ Em -  C    -  G  -  D
       };
 
       const Editor = {
+        undoStack: [],
+        redoStack: [],
+        lastValue: "",
+        historyDebounced: null,
+
+        initHistory() {
+          this.undoStack = [];
+          this.redoStack = [];
+          this.lastValue = UIManager.dom.songBody ? UIManager.dom.songBody.value : "";
+          this.updateUndoRedoButtons();
+        },
+
+        pushHistory(val) {
+          if (val === this.lastValue) return;
+          this.undoStack.push(this.lastValue);
+          this.redoStack = [];
+          this.lastValue = val;
+          if (this.undoStack.length > 50) this.undoStack.shift();
+          this.updateUndoRedoButtons();
+        },
+
+        scheduleHistory(val) {
+          if (this.historyDebounced) clearTimeout(this.historyDebounced);
+          this.historyDebounced = setTimeout(() => {
+            this.pushHistory(val);
+          }, 400);
+        },
+
+        undo() {
+          if (this.undoStack.length === 0) return;
+          const val = this.undoStack.pop();
+          this.redoStack.push(this.lastValue);
+          this.lastValue = val;
+          
+          const song = StateManager.activeSong();
+          if (song && !song.readonly) {
+            song.body = val;
+            UIManager.dom.songBody.value = val;
+            StateManager.touch(song);
+            UIManager.updateAnalysisSoon();
+            this.updateDemoButtonState();
+          }
+          this.updateUndoRedoButtons();
+        },
+
+        redo() {
+          if (this.redoStack.length === 0) return;
+          const val = this.redoStack.pop();
+          this.undoStack.push(this.lastValue);
+          this.lastValue = val;
+          
+          const song = StateManager.activeSong();
+          if (song && !song.readonly) {
+            song.body = val;
+            UIManager.dom.songBody.value = val;
+            StateManager.touch(song);
+            UIManager.updateAnalysisSoon();
+            this.updateDemoButtonState();
+          }
+          this.updateUndoRedoButtons();
+        },
+
+        updateUndoRedoButtons() {
+          if (UIManager.dom.undoSongButton) {
+            UIManager.dom.undoSongButton.disabled = this.undoStack.length === 0;
+            UIManager.dom.undoSongButton.style.opacity = this.undoStack.length === 0 ? '0.5' : '1';
+          }
+          if (UIManager.dom.redoSongButton) {
+            UIManager.dom.redoSongButton.disabled = this.redoStack.length === 0;
+            UIManager.dom.redoSongButton.style.opacity = this.redoStack.length === 0 ? '0.5' : '1';
+          }
+        },
+
+        updateMetadataBar() {
+          const song = StateManager.activeSong();
+          const bar = document.getElementById('editorMetadataBar');
+          if (!bar) return;
+          if (!song) { bar.style.display = 'none'; return; }
+          const parts = [];
+          if (song.artist) parts.push(`<strong>Author:</strong> ${Util.escapeHtml(song.artist)}`);
+          if (song.creator) parts.push(`<strong>Arranger:</strong> ${Util.escapeHtml(song.creator)}`);
+          
+          const key = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          if (key) {
+            let keyStr = key.root + (key.mode === 'minor' ? 'm' : '');
+            if (StateManager.state.capo) {
+              keyStr += ` (Capo ${StateManager.state.capo})`;
+            }
+            parts.push(`<strong>Key:</strong> ${keyStr}`);
+          }
+          
+          if (parts.length > 0) {
+            bar.innerHTML = parts.join('  •  ');
+            bar.style.display = 'flex';
+          } else {
+            bar.style.display = 'none';
+          }
+        },
+
+        updateDemoButtonState() {
+          const song = StateManager.activeSong();
+          const demoBtn = UIManager.dom.loadDemoButton || document.getElementById('loadDemoButton');
+          if (demoBtn) {
+            const hasContent = song && song.body && song.body.trim().length > 0;
+            demoBtn.disabled = hasContent;
+            demoBtn.style.opacity = hasContent ? '0.5' : '1';
+            demoBtn.style.pointerEvents = hasContent ? 'none' : 'auto';
+          }
+        },
+
         bind() {
           UIManager.dom.songTitle?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.title = UIManager.dom.songTitle.value; StateManager.touch(song); UIManager.renderLibrarySoon(); UIManager.updateAnalysis(); });
           UIManager.dom.songTitle?.addEventListener("blur", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; if (!song.title.trim()) song.title = "Untitled Song"; UIManager.dom.songTitle.value = Util.titleOf(song); StateManager.touch(song); UIManager.renderAll(); });
-          UIManager.dom.songBody?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.body = UIManager.dom.songBody.value; StateManager.touch(song); UIManager.updateAnalysisSoon(); });
+          UIManager.dom.songBody?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.body = UIManager.dom.songBody.value; StateManager.touch(song); UIManager.updateAnalysisSoon(); this.updateDemoButtonState(); this.scheduleHistory(UIManager.dom.songBody.value); });
+          UIManager.dom.songBody?.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+              e.preventDefault();
+              if (e.shiftKey) this.redo(); else this.undo();
+            } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+              e.preventDefault();
+              this.redo();
+            }
+          });
         },
-        loadActiveSong() { const song = StateManager.activeSong(); if (!song) return; if (UIManager.dom.songTitle) UIManager.dom.songTitle.value = Util.titleOf(song); if (UIManager.dom.songBody) UIManager.dom.songBody.value = song.body || ""; if (UIManager.dom.keySelect) UIManager.dom.keySelect.value = song.manualKey || "auto"; const isShared = Boolean(song.readonly); if (UIManager.dom.songTitle) UIManager.dom.songTitle.readOnly = isShared; if (UIManager.dom.songBody) UIManager.dom.songBody.readOnly = isShared; if (UIManager.dom.saveSongButton) UIManager.dom.saveSongButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.revertSongButton) UIManager.dom.revertSongButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.importSharedButton) UIManager.dom.importSharedButton.style.display = isShared ? '' : 'none'; if (UIManager.dom.infoSongButton) UIManager.dom.infoSongButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.loadDemoButton) UIManager.dom.loadDemoButton.style.display = isShared ? 'none' : ''; if (UIManager.dom.exitSharedButton) UIManager.dom.exitSharedButton.style.display = isShared ? '' : 'none'; if (isShared) UIManager.setStatus("Read-only Preview"); },
+        loadActiveSong() {
+          const song = StateManager.activeSong(); if (!song) return;
+          if (UIManager.dom.songTitle) UIManager.dom.songTitle.value = Util.titleOf(song);
+          if (UIManager.dom.songBody) UIManager.dom.songBody.value = song.body || "";
+          if (UIManager.dom.keySelect) UIManager.dom.keySelect.value = song.manualKey || "auto";
+          const isShared = Boolean(song.readonly);
+          if (UIManager.dom.songTitle) UIManager.dom.songTitle.readOnly = isShared;
+          if (UIManager.dom.songBody) UIManager.dom.songBody.readOnly = isShared;
+          if (UIManager.dom.saveSongButton) UIManager.dom.saveSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.undoSongButton) UIManager.dom.undoSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.redoSongButton) UIManager.dom.redoSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.importSharedButton) UIManager.dom.importSharedButton.style.display = isShared ? '' : 'none';
+          if (UIManager.dom.infoSongButton) UIManager.dom.infoSongButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.loadDemoButton) UIManager.dom.loadDemoButton.style.display = isShared ? 'none' : '';
+          if (UIManager.dom.exitSharedButton) UIManager.dom.exitSharedButton.style.display = isShared ? '' : 'none';
+          if (isShared) UIManager.setStatus("Read-only Preview");
+          this.initHistory();
+          this.updateMetadataBar();
+          this.updateDemoButtonState();
+        },
         applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--ui-font", FONT_STACKS[s.uiFontFamily] || FONT_STACKS.system); document.documentElement.style.setProperty("--chart-font", FONT_STACKS[s.chartFontFamily] || FONT_STACKS.mono); document.documentElement.style.setProperty("--app-font-size", Util.clamp(s.appFontSize, 10, 24) + "px"); document.documentElement.style.setProperty("--editor-font", Util.clamp(s.editorFontSize, 8, 64) + "px"); document.documentElement.style.setProperty("--preview-font", Util.clamp(s.previewFontSize, 8, 48) + "px"); document.documentElement.style.setProperty("--editor-line", Util.clamp(s.editorLineHeight, 1.2, 2.8)); }
       };
 
@@ -3690,6 +4078,22 @@ Em -  C    -  G  -  D
 
       const App = {
         saveDebounced: Util.debounce(() => StateManager.saveNow("Autosaved"), 650), scheduleSave() { UIManager.setStatus("Autosaving"); this.saveDebounced(); },
+        async handleImport(d) {
+          if (d.type === 'set') {
+            const newItems = [];
+            d.s.forEach(sData => {
+              const existing = StateManager.state.songs.find(s => s.title === sData.t); let sId = existing ? existing.id : Util.uid();
+              if (!existing) { StateManager.state.songs.unshift({ id: sId, title: sData.t, artist: sData.a || "", creator: sData.cr || "", links: sData.l || [], description: sData.d || "", body: sData.b, manualKey: sData.k || "auto", isFavorite: false }); }
+              newItems.push({ songId: sId });
+            });
+            const setlistId = Util.uid(); StateManager.state.setlists.unshift({ id: setlistId, title: d.t, description: d.d || "", links: d.l || [], date: Util.now(), items: newItems }); StateManager.state.libraryFilter = 'setlists'; StateManager.playSetlist(setlistId);
+            setTimeout(() => UIManager.toast("Setlist Imported!"), 500);
+          } else {
+            StateManager.state.sharedSong = { id: 'shared', title: d.t, artist: d.a || "", creator: d.cr || "", links: d.l || [], description: d.d || "", body: d.b, manualKey: d.k || "auto", readonly: true, isFavorite: false };
+            StateManager.state.activeId = 'shared'; setTimeout(() => UIManager.toast("Viewing Shared Song"), 500);
+          }
+          window.history.replaceState({}, document.title, window.location.pathname);
+        },
         async init() {
           try {
             const isIOS = /ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -3733,24 +4137,23 @@ Em -  C    -  G  -  D
             }
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v3'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).then(res => { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }).catch(() => caches.match(e.request))); });"], { type: 'application/javascript' }))).catch(() => { });
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
-            const params = new URLSearchParams(window.location.search); const shareParam = params.get("share");
+            
+            const params = new URLSearchParams(window.location.search);
+            const shareParam = params.get("share");
+            const pasteParam = params.get("paste");
             if (shareParam) {
               try {
                 const d = JSON.parse(await ExportManager.decompressData(shareParam));
-                if (d.type === 'set') {
-                  const newItems = [];
-                  d.s.forEach(sData => {
-                    const existing = StateManager.state.songs.find(s => s.title === sData.t); let sId = existing ? existing.id : Util.uid();
-                    if (!existing) { StateManager.state.songs.unshift({ id: sId, title: sData.t, artist: sData.a || "", creator: sData.cr || "", links: sData.l || [], description: sData.d || "", body: sData.b, manualKey: sData.k || "auto", isFavorite: false }); }
-                    newItems.push({ songId: sId });
-                  });
-                  const setlistId = Util.uid(); StateManager.state.setlists.unshift({ id: setlistId, title: d.t, description: d.d || "", links: d.l || [], date: Util.now(), items: newItems }); StateManager.state.libraryFilter = 'setlists'; StateManager.playSetlist(setlistId);
-                  setTimeout(() => UIManager.toast("Setlist Imported!"), 500);
-                } else {
-                  StateManager.state.sharedSong = { id: 'shared', title: d.t, artist: d.a || "", creator: d.cr || "", links: d.l || [], description: d.d || "", body: d.b, manualKey: d.k || "auto", readonly: true, isFavorite: false };
-                  StateManager.state.activeId = 'shared'; setTimeout(() => UIManager.toast("Viewing Shared Song"), 500);
+                await this.handleImport(d);
+              } catch (e) { }
+            } else if (pasteParam) {
+              try {
+                const resp = await fetch(`https://dpaste.com/${pasteParam}.txt`);
+                if (resp.ok) {
+                  const rawBase64 = await resp.text();
+                  const d = JSON.parse(await ExportManager.decompressData(rawBase64.trim()));
+                  await this.handleImport(d);
                 }
-                window.history.replaceState({}, document.title, window.location.pathname);
               } catch (e) { }
             }
             if (!StateManager.state.activeId && StateManager.state.songs.length === 0) StateManager.createSong();
