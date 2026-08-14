@@ -11,6 +11,13 @@
   <link rel="manifest"
     href="data:application/json;base64,eyJuYW1lIjoiU29uYXRhIE1hc3RlciIsInNob3J0X25hbWUiOiJTb25hdGEiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmNmY3ZjkiLCJ0aGVtZV9jb2xvciI6IiMxOTY3ZDIiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9wbGFjZWhvbGQuY28vMTkyeDE5Mi8xOTY3ZDIvZmZmZmZmP3RleHQ9UyIsInR5cGVzIjoiaW1hZ2UvcG5nIiwic2l6ZXMiOiIxOTJ4MTkyIn0seyJzcmMiOiJodHRwczovL3BsYWNlaG9sZC5jby81MTJ4NTEyLzE5NjdkMi9mZmZmZmY/dGV4dD1TIiwidHlwZXMiOiJpbWFnZS9wbmciLCJzaXplcyI6IjUxMng1MTIifV19">
 
+  <!-- Standard Favicon for Browser Tabs -->
+  <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+
+  <!-- Apple Touch Icon (for iOS / Safari Home Screen) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+
   <meta property="og:title" content="Sonata Master">
   <meta property="og:description"
     content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
@@ -21,6 +28,9 @@
     content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
 
   <title>Sonata</title>
+
+  <script async defer src="https://accounts.google.com/gsi/client"></script>
+  <script async defer src="https://apis.google.com/js/api.js"></script>
 
   <style>
     :root {
@@ -1660,6 +1670,8 @@
         </div>
       </div>
       <div class="top-actions">
+        <!-- Google Drive Sync Button -->
+        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
         <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
           aria-label="Toggle theme"></button>
@@ -1877,12 +1889,14 @@
           <div class="field"
             style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 8px;">
             <label for="circleRotateToggle">Auto-Rotate to Key</label><input type="checkbox" id="circleRotateToggle"
-              checked style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;"></div>
+              checked style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
+          </div>
           <div class="field"
             style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 16px;">
             <label for="circleHighlightToggle">Highlight Key Family</label><input type="checkbox"
               id="circleHighlightToggle" checked
-              style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;"></div>
+              style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
+          </div>
           <div class="circle-container" id="circleContainer"></div>
           <div class="explanation-text"><strong>How it works:</strong> The Circle organizes keys mathematically. Toggle
             'Highlight Key Family' to instantly reveal the 7 diatonic chords (I, ii, iii, IV, V, vi, vii°) that
@@ -2102,6 +2116,7 @@ Em -  C    -  G  -  D
 
       const Icon = {
         paths: {
+          "cloud": '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>',
           "arrow-up": '<path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path>',
           "arrow-left": '<path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path>',
           "arrow-right": '<path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>',
@@ -2152,6 +2167,151 @@ Em -  C    -  G  -  D
         apply(button, name, label, iconOnly) { if (!button) return; const text = label || button.textContent.trim() || button.getAttribute("aria-label") || "Action"; button.innerHTML = this.svg(name) + '<span class="' + (iconOnly ? "visually-hidden " : "") + 'button-label">' + text + '</span>'; button.dataset.icon = name; button.setAttribute("aria-label", text); button.title = button.title || text; },
         set(button, name, label, iconOnly) { this.apply(button, name, label, iconOnly); },
         decorateAll(root) { (root || document).querySelectorAll("[data-icon]").forEach(b => this.apply(b, b.dataset.icon, b.textContent.trim() || b.getAttribute("aria-label"), b.classList.contains("icon-button"))); (root || document).querySelectorAll("[data-inline-icon]").forEach(n => { n.innerHTML = this.svg(n.dataset.inlineIcon); }); }
+      };
+
+      const GoogleDriveSync = {
+        CLIENT_ID: "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com",
+        SCOPES: "https://www.googleapis.com/auth/drive.appdata",
+        DISCOVERY_DOC: "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+        FILENAME: "sonata_cloud_backup.json",
+        tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
+
+        init() {
+          const checkLibs = setInterval(() => {
+            if (window.gapi && window.google) {
+              clearInterval(checkLibs);
+              gapi.load('client', async () => {
+                await gapi.client.init({ discoveryDocs: [this.DISCOVERY_DOC] });
+                this.tokenClient = google.accounts.oauth2.initTokenClient({
+                  client_id: this.CLIENT_ID,
+                  scope: this.SCOPES,
+                  callback: (resp) => {
+                    if (resp.error !== undefined) {
+                      UIManager.toast("Drive Auth Failed");
+                      this.updateUI("Sync Failed", "danger");
+                      return;
+                    }
+                    this.accessToken = resp.access_token;
+                    this.performSync();
+                  }
+                });
+              });
+            }
+          }, 200);
+
+          UIManager.dom.googleSyncButton?.addEventListener('click', () => {
+            AudioEngine.playClick();
+            if (this.accessToken) { this.performSync(); }
+            else {
+              if (this.tokenClient) {
+                this.updateUI("Connecting...", "secondary");
+                this.tokenClient.requestAccessToken({ prompt: '' });
+              } else { UIManager.toast("Google Sync loading..."); }
+            }
+          });
+        },
+
+        updateUI(text, styleClass) {
+          const btn = UIManager.dom.googleSyncButton;
+          if (!btn) return;
+          btn.className = `button ${styleClass}`;
+          Icon.set(btn, "cloud", text, false);
+        },
+
+        async performSync() {
+          if (this.isSyncing) return;
+          this.isSyncing = true;
+          this.updateUI("Syncing...", "secondary");
+          UIManager.toast("Syncing with Google Drive...");
+
+          try {
+            let resp = await gapi.client.drive.files.list({ spaces: 'appDataFolder', q: `name='${this.FILENAME}'`, fields: 'files(id, modifiedTime)' });
+            let files = resp.result.files;
+
+            if (files && files.length > 0) {
+              this.fileId = files[0].id;
+              let fileResp = await gapi.client.drive.files.get({ fileId: this.fileId, alt: 'media' });
+              let cloudData = fileResp.result;
+              if (typeof cloudData === 'string') cloudData = JSON.parse(cloudData);
+              this.mergeAndSave(cloudData);
+            } else {
+              await this.uploadLocalData(true);
+            }
+            this.updateUI("● Synced", "primary");
+            UIManager.toast("Drive Sync Complete");
+          } catch (err) {
+            console.error("Sync error:", err);
+            UIManager.toast("Drive Sync Failed");
+            this.updateUI("Sync Failed", "danger");
+          } finally { this.isSyncing = false; }
+        },
+
+        mergeAndSave(cloudData) {
+          const mergeArrays = (localArr, cloudArr, timeKey) => {
+            const map = new Map();
+            cloudArr.forEach(item => map.set(item.id, item));
+            localArr.forEach(item => {
+              const cloudItem = map.get(item.id);
+              if (cloudItem) {
+                const localTime = new Date(item[timeKey] || 0).getTime();
+                const cloudTime = new Date(cloudItem[timeKey] || 0).getTime();
+                if (localTime >= cloudTime) map.set(item.id, item);
+              } else { map.set(item.id, item); }
+            });
+            return Array.from(map.values());
+          };
+
+          const mergedSongs = mergeArrays(StateManager.state.songs, cloudData.songs || [], 'updatedAt');
+          const mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'date');
+
+          StateManager.state.songs = mergedSongs;
+          StateManager.state.setlists = mergedSets;
+          StateManager.state.settings = { ...cloudData.settings, ...StateManager.state.settings };
+
+          StorageManager.saveSongs(mergedSongs);
+          StorageManager.saveSetlists(mergedSets);
+          StorageManager.saveSettings(StateManager.state.settings);
+
+          Editor.loadActiveSong();
+          UIManager.renderAll();
+          this.uploadLocalData(false);
+        },
+
+        scheduleUpload() {
+          if (this.uploadTimer) clearTimeout(this.uploadTimer);
+          this.uploadTimer = setTimeout(() => {
+            if (this.accessToken && this.fileId) this.uploadLocalData(false);
+          }, 3000);
+        },
+
+        async uploadLocalData(isCreate = false) {
+          if (!this.accessToken) return;
+          const data = { songs: StateManager.state.songs, setlists: StateManager.state.setlists, settings: StateManager.state.settings, lastSynced: Util.now() };
+          const metadata = { name: this.FILENAME, parents: isCreate ? ['appDataFolder'] : undefined };
+
+          const boundary = '-------314159265358979323846';
+          const delimiter = "\\r\\n--" + boundary + "\\r\\n";
+          const close_delim = "\\r\\n--" + boundary + "--";
+
+          const multipartRequestBody =
+            delimiter + 'Content-Type: application/json\\r\\n\\r\\n' + JSON.stringify(metadata) +
+            delimiter + 'Content-Type: application/json\\r\\n\\r\\n' + JSON.stringify(data) + close_delim;
+
+          try {
+            let req = await gapi.client.request({
+              'path': '/upload/drive/v3/files' + (!isCreate && this.fileId ? '/' + this.fileId : ''),
+              'method': (!isCreate && this.fileId) ? 'PATCH' : 'POST',
+              'params': { 'uploadType': 'multipart' },
+              'headers': { 'Content-Type': 'multipart/related; boundary=' + boundary + '' },
+              'body': multipartRequestBody
+            });
+            if (isCreate && req.result && req.result.id) this.fileId = req.result.id;
+            this.updateUI("● Synced", "primary");
+          } catch (err) {
+            console.error("Upload error", err);
+            this.updateUI("Sync Error", "danger");
+          }
+        }
       };
 
       window.AudioEngine = {
@@ -2207,7 +2367,19 @@ Em -  C    -  G  -  D
         init() { this.state.settings = StorageManager.loadSettings(); this.state.songs = StorageManager.loadSongs(); this.state.setlists = StorageManager.loadSetlists(); const sId = StorageManager.loadActiveId(); this.state.activeId = this.state.songs.some(s => s.id === sId) ? sId : (this.state.songs[0]?.id || null); },
         activeSong() { return this.state.activeId === 'shared' && this.state.sharedSong ? this.state.sharedSong : (this.state.songs.find(s => s.id === this.state.activeId) || this.state.songs[0] || null); },
         touch(song) { if (!song || song.readonly) return; song.updatedAt = Util.now(); this.state.dirty = true; App.scheduleSave(); },
-        saveNow(msg) { const a = this.activeSong(); if (a && !a.readonly) a.savedSnapshot = a.body; StorageManager.saveSongs(this.state.songs); StorageManager.saveSetlists(this.state.setlists); StorageManager.saveSettings(this.state.settings); if (this.state.activeId && this.state.activeId !== 'shared') StorageManager.saveActiveId(this.state.activeId); this.state.dirty = false; UIManager.setStatus(msg || "Saved"); },
+        saveNow(msg) {
+          const a = this.activeSong();
+          if (a && !a.readonly) a.savedSnapshot = a.body;
+          StorageManager.saveSongs(this.state.songs);
+          StorageManager.saveSetlists(this.state.setlists);
+          StorageManager.saveSettings(this.state.settings);
+          if (this.state.activeId && this.state.activeId !== 'shared') StorageManager.saveActiveId(this.state.activeId);
+          this.state.dirty = false;
+          UIManager.setStatus(msg || "Saved");
+          if (typeof GoogleDriveSync !== 'undefined' && GoogleDriveSync.accessToken) {
+            GoogleDriveSync.scheduleUpload();
+          }
+        },
         setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
         createSong() { const now = Util.now(); const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: "", body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
         loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.touch(s); this.saveNow("Demo loaded"); return s; },
@@ -2663,7 +2835,7 @@ Em -  C    -  G  -  D
           });
 
           objects[pagesId - 1] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map(id => id + " 0 R").join(" ")}] >>`; objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
-          let pdf = "%PDF-1.4\n"; const offsets = [0]; objects.forEach((object, index) => { offsets.push(pdf.length); pdf += (index + 1) + " 0 obj\n" + object + "\nendobj\n"; });
+          let pdf = "%PDF-1.4\n"; const offsets = [0]; objects.forEach((object, index) => { offsets.push(pdf.length); pdf += (index + 1) + " 0obj\n" + object + "\nendobj\n"; });
           const xref = pdf.length; pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n"; offsets.slice(1).forEach(offset => { pdf += String(offset).padStart(10, "0") + " 00000 n \n"; });
           pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`; return new Blob([pdf], { type: "application/pdf" });
         },
@@ -3023,8 +3195,7 @@ Em -  C    -  G  -  D
           try {
             window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__deferredPrompt = e; });
             if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v2'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));"], { type: 'application/javascript' }))).catch(() => { });
-            UIManager.cache(); StateManager.init(); AudioEngine.setupListeners();
-
+            UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
             const params = new URLSearchParams(window.location.search); const shareParam = params.get("share");
             if (shareParam) {
               try {
