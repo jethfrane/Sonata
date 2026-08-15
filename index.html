@@ -841,34 +841,53 @@
 
     .library-list {
       display: grid;
-      gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-auto-rows: max-content;
+      gap: 12px;
       overflow-y: auto;
       overflow-x: hidden;
-      max-height: 40vh;
-      padding-right: 4px;
+      flex: 1;
+      align-content: start;
+      align-items: start;
+      min-height: 320px;
+      padding: 4px 2px 24px;
     }
 
     .song-card {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--surface-2);
-      padding: 12px;
+      border-radius: 10px;
+      background: var(--surface);
+      padding: 14px 16px;
+      min-height: 68px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
+      gap: 12px;
+      align-items: center;
       cursor: pointer;
       text-align: left;
-      transition: border-color 0.1s;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .song-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .song-card:active {
+      transform: scale(0.98);
     }
 
     .song-card.active {
-      border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 18%, transparent);
     }
 
     .song-card-title {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: 0.92rem;
       font-weight: 700;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -876,12 +895,13 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      color: var(--text);
     }
 
     .song-card-meta {
       margin: 4px 0 0;
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1062,18 +1082,18 @@
       border-left: 3px solid var(--accent);
     }
 
-    .piano-container,
-    .fretboard-container {
+    .piano-container {
       width: 100%;
       overflow-x: auto;
-      padding: 12px 0 16px;
+      padding: 14px 16px 20px;
       -webkit-overflow-scrolling: touch;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
       background: var(--surface-2);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       scrollbar-width: thin;
       scrollbar-color: var(--subtle) var(--surface-3);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
     }
 
     .piano-container::-webkit-scrollbar,
@@ -1098,94 +1118,132 @@
 
     .piano-scroll {
       display: flex;
-      height: 130px;
-      padding: 0 12px;
-      width: max-content;
+      height: 175px;
+      padding: 0 8px;
+      width: 100%;
+      min-width: max-content;
+      justify-content: center;
+      background: #141414;
+      border-radius: 8px 8px 10px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+      border: 3px solid #222;
     }
 
     .piano-key {
       position: relative;
-      border: 1px solid var(--line);
-      border-radius: 0 0 5px 5px;
+      border-radius: 0 0 6px 6px;
       cursor: pointer;
       user-select: none;
-      transition: background 0.1s;
+      transition: all 0.08s ease;
     }
 
     .piano-key-white {
-      background: #fff;
-      width: 40px;
+      background: linear-gradient(to bottom, #fcfcfc 0%, #f4f4f4 80%, #ebebeb 100%);
+      border: 1px solid #d0d0d0;
+      border-top: none;
+      width: clamp(48px, 4.5vw, 64px);
       height: 100%;
       z-index: 1;
       margin-right: -1px;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding-bottom: 8px;
-      box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.05);
+      padding-bottom: 12px;
+      box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.08), 0 2px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    .piano-key-white:hover {
+      background: linear-gradient(to bottom, #ffffff 0%, #f9f9f9 80%, #f0f0f0 100%);
     }
 
     .piano-key-white .key-label {
-      font-size: 0.7rem;
-      color: #444;
-      font-weight: 600;
+      font-size: 0.85rem;
+      color: #333;
+      font-weight: 750;
       pointer-events: none;
+      font-family: var(--ui-font);
     }
 
     .piano-key-black {
-      background: #1a1a1a;
-      width: 26px;
+      background: linear-gradient(to bottom, #2d2d2d 0%, #1a1a1a 75%, #0d0d0d 100%);
+      width: clamp(30px, 2.8vw, 40px);
       height: 60%;
       z-index: 2;
-      margin-left: -13px;
-      margin-right: -13px;
-      border-color: #111;
+      margin-left: clamp(-15px, -1.4vw, -20px);
+      margin-right: clamp(-15px, -1.4vw, -20px);
+      border: 1px solid #000;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding-bottom: 8px;
-      box-shadow: inset 0 -4px 6px rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.25), inset 0 -3px 4px rgba(0, 0, 0, 0.8);
     }
 
     .piano-key-black .key-label {
-      font-size: 0.6rem;
-      color: #ccc;
-      font-weight: 600;
+      font-size: 0.72rem;
+      color: #eee;
+      font-weight: 700;
       pointer-events: none;
       text-align: center;
       line-height: 1.1;
+      font-family: var(--ui-font);
     }
 
-    .piano-key:active,
-    .piano-key.active {
-      background: var(--accent) !important;
+    .piano-key-white:active,
+    .piano-key-white.active {
+      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+      transform: translateY(2px);
+    }
+
+    .piano-key-white:active .key-label,
+    .piano-key-white.active .key-label {
+      color: #fff !important;
     }
 
     .piano-key-black:active,
     .piano-key-black.active {
-      background: var(--accent-2) !important;
+      background: linear-gradient(to bottom, var(--accent-2) 0%, color-mix(in srgb, var(--accent-2) 75%, black) 100%) !important;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+      transform: translateY(2px);
+    }
+
+    .fretboard-container {
+      width: 100%;
+      overflow-x: auto;
+      padding: 14px 16px 20px;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-2);
+      margin-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--subtle) var(--surface-3);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
     }
 
     .fretboard {
       display: flex;
       flex-direction: column;
-      width: max-content;
-      padding: 0 12px;
-      background: #3e2723;
-      border-radius: 4px;
-      border: 2px solid #2e1713;
+      width: 100%;
+      min-width: 860px;
+      padding: 0;
+      background: linear-gradient(180deg, #20110a 0%, #351c12 30%, #402317 50%, #351c12 70%, #20110a 100%);
+      border-radius: 6px;
+      border: 3px solid #1a0b06;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 0 16px rgba(0, 0, 0, 0.7);
+      position: relative;
+      user-select: none;
     }
 
     .fret-string {
       display: flex;
       position: relative;
-      height: 30px;
+      height: 38px;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    }
-
-    .fret-string:last-child {
-      border-bottom: none;
+      width: 100%;
     }
 
     .fret-string::before {
@@ -1193,56 +1251,67 @@
       position: absolute;
       left: 0;
       right: 0;
-      height: 2px;
-      background: linear-gradient(to bottom, #e0e0e0, #888);
-      z-index: 1;
+      height: var(--string-gauge, 2px);
+      background: var(--string-color, linear-gradient(to bottom, #f0f0f0, #888));
+      z-index: 2;
       pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
     }
 
     .fret-cell {
-      width: 56px;
       height: 100%;
-      border-right: 2px solid #a0a0a0;
+      border-right: 3px solid #8d98a5;
+      box-shadow: inset -1px 0 1px rgba(255, 255, 255, 0.4), 1px 0 2px rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .fret-cell:hover {
+      background: rgba(255, 255, 255, 0.06);
     }
 
     .fret-cell:first-child {
-      width: 34px;
-      border-right: 4px solid #fff;
-      background: #2a1a17;
+      flex: 0 0 44px !important;
+      width: 44px !important;
+      background: linear-gradient(to right, #e8e4db 0%, #dcd6c8 70%, #c4bcae 100%);
+      border-right: 6px solid #b0a696;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.5);
     }
 
     .fret-dot {
       position: absolute;
-      width: 12px;
-      height: 12px;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.5);
+      background: radial-gradient(circle, #ffffff 20%, #e0e4e8 70%, #a8b0b8 100%);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.8);
       pointer-events: none;
+      z-index: 1;
+      opacity: 0.85;
     }
 
     .fret-note-marker {
       position: relative;
-      z-index: 2;
-      width: 24px;
-      height: 24px;
+      z-index: 3;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: var(--accent);
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.65rem;
-      font-weight: bold;
+      font-size: 0.75rem;
+      font-weight: 800;
       opacity: 0;
-      transform: scale(0.8);
-      transition: all 0.1s;
+      transform: scale(0.7);
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       pointer-events: none;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.4);
     }
 
     .fret-cell:active .fret-note-marker,
@@ -3099,19 +3168,43 @@ Em -  C    -  G  -  D
         },
         renderPiano() {
           const keyboard = UIManager.dom.pianoKeyboard; if (!keyboard) return; keyboard.innerHTML = '';
-          const notes = ['C', 'C#<br>Db', 'D', 'D#<br>Eb', 'E', 'F', 'F#<br>Gb', 'G', 'G#<br>Ab', 'A', 'A#<br>Bb', 'B'];
+          const notes = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
           for (let octave = 3; octave <= 5; octave++) {
             for (let i = 0; i < 12; i++) {
-              const isBlack = notes[i].includes('#'); const key = document.createElement('div'); key.className = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
-              const label = document.createElement('span'); label.className = 'key-label'; label.innerHTML = notes[i]; key.appendChild(label);
-              const midi = (octave * 12) + i + 12; let activeNode = null;
-              const play = (e) => { if (e.type === 'touchstart') e.preventDefault(); key.classList.add('active'); if (activeNode) activeNode.stop(); activeNode = AudioEngine.playPianoNote(AudioEngine.midiToFreq(midi), 0.6); };
-              const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); key.classList.remove('active'); if (activeNode) { activeNode.stop(); activeNode = null; } };
-              key.addEventListener('mousedown', play); key.addEventListener('touchstart', play, { passive: false }); key.addEventListener('mouseup', stop); key.addEventListener('mouseleave', stop); key.addEventListener('touchend', stop);
+              const isBlack = notes[i].includes('#') || notes[i].includes('b');
+              const key = document.createElement('div');
+              key.className = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
+              const label = document.createElement('span');
+              label.className = 'key-label';
+              label.textContent = notes[i];
+              key.appendChild(label);
+              const midi = (octave * 12) + i + 12;
+              let activeNode = null;
+              const play = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
+                key.classList.add('active');
+                if (activeNode) activeNode.stop();
+                activeNode = AudioEngine.playPianoNote(AudioEngine.midiToFreq(midi), 0.6);
+              };
+              const stop = (e) => {
+                if (e.type === 'touchend') e.preventDefault();
+                key.classList.remove('active');
+                if (activeNode) { activeNode.stop(); activeNode = null; }
+              };
+              key.addEventListener('mousedown', play);
+              key.addEventListener('touchstart', play, { passive: false });
+              key.addEventListener('mouseup', stop);
+              key.addEventListener('mouseleave', stop);
+              key.addEventListener('touchend', stop);
               keyboard.appendChild(key);
             }
           }
-          setTimeout(() => document.querySelector('.piano-container').scrollLeft = 120, 100);
+          setTimeout(() => {
+            const container = document.querySelector('.piano-container');
+            if (container && keyboard.scrollWidth > container.clientWidth) {
+              container.scrollLeft = (keyboard.scrollWidth - container.clientWidth) / 2;
+            }
+          }, 80);
         },
         renderFretboard(instrument) {
           const tunings = {
@@ -3120,31 +3213,99 @@ Em -  C    -  G  -  D
             bass5: [{ n: 'G', f: 98.00, m: 43 }, { n: 'D', f: 73.42, m: 38 }, { n: 'A', f: 55.00, m: 33 }, { n: 'E', f: 41.20, m: 28 }, { n: 'B', f: 30.87, m: 23 }],
             ukulele: [{ n: 'A', f: 440.00, m: 69 }, { n: 'E', f: 329.63, m: 64 }, { n: 'C', f: 261.63, m: 60 }, { n: 'G', f: 392.00, m: 67 }]
           };
-          const grid = UIManager.dom.fretboardGrid; if (!grid) return; grid.innerHTML = ''; const strings = tunings[instrument] || tunings.guitar;
+          const grid = UIManager.dom.fretboardGrid; if (!grid) return; grid.innerHTML = '';
+          const strings = tunings[instrument] || tunings.guitar;
+          const totalStrings = strings.length;
+          const midRow = Math.floor((totalStrings - 1) / 2);
 
           const refBtns = UIManager.dom.tunerReferenceButtons;
           if (refBtns) {
             refBtns.innerHTML = '';
             [...strings].reverse().forEach(note => {
-              const btn = document.createElement('button'); btn.className = 'button secondary'; btn.type = 'button'; btn.title = note.n; btn.textContent = note.n;
+              const btn = document.createElement('button');
+              btn.className = 'button secondary';
+              btn.type = 'button';
+              btn.title = note.n;
+              btn.textContent = note.n;
               let refNode = null;
-              const play = (e) => { if (e.type === 'touchstart') e.preventDefault(); if (refNode) refNode.stop(); refNode = AudioEngine.playGuitarNote(note.f, 0.8); btn.classList.add('active'); };
-              const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); if (refNode) { refNode.stop(); refNode = null; } btn.classList.remove('active'); };
-              btn.addEventListener('mousedown', play); btn.addEventListener('touchstart', play, { passive: false }); btn.addEventListener('mouseup', stop); btn.addEventListener('mouseleave', stop); btn.addEventListener('touchend', stop);
+              const play = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
+                if (refNode) refNode.stop();
+                refNode = AudioEngine.playGuitarNote(note.f, 0.8);
+                btn.classList.add('active');
+              };
+              const stop = (e) => {
+                if (e.type === 'touchend') e.preventDefault();
+                if (refNode) { refNode.stop(); refNode = null; }
+                btn.classList.remove('active');
+              };
+              btn.addEventListener('mousedown', play);
+              btn.addEventListener('touchstart', play, { passive: false });
+              btn.addEventListener('mouseup', stop);
+              btn.addEventListener('mouseleave', stop);
+              btn.addEventListener('touchend', stop);
               refBtns.appendChild(btn);
             });
           }
 
           strings.forEach((stringData, stringIdx) => {
-            const row = document.createElement('div'); row.className = 'fret-string';
+            const row = document.createElement('div');
+            row.className = 'fret-string';
+            const gauge = (1.2 + ((totalStrings - 1 - stringIdx) * 0.55)).toFixed(1);
+            const isWound = (totalStrings - 1 - stringIdx) >= 2;
+            row.style.setProperty('--string-gauge', gauge + 'px');
+            row.style.setProperty('--string-color', isWound ? 'linear-gradient(to bottom, #d8ba72, #9a803c, #5c4c1e)' : 'linear-gradient(to bottom, #fcfcfc, #c0c0c0, #727272)');
+
             for (let fret = 0; fret <= 15; fret++) {
-              const cell = document.createElement('div'); cell.className = 'fret-cell';
-              if (stringIdx === Math.floor(strings.length / 2) && [3, 5, 7, 9, 15].includes(fret)) { const dot = document.createElement('div'); dot.className = 'fret-dot'; cell.appendChild(dot); } else if (stringIdx === Math.floor(strings.length / 2) - 1 && fret === 12) { const dot1 = document.createElement('div'); dot1.className = 'fret-dot'; dot1.style.top = '-10px'; const dot2 = document.createElement('div'); dot2.className = 'fret-dot'; dot2.style.bottom = '-10px'; cell.appendChild(dot1); cell.appendChild(dot2); }
-              const midi = stringData.m + fret; const marker = document.createElement('div'); marker.className = 'fret-note-marker'; marker.textContent = SHARP_NOTES[midi % 12]; cell.appendChild(marker);
+              const cell = document.createElement('div');
+              cell.className = 'fret-cell';
+              if (fret === 0) {
+                cell.style.flex = "0 0 44px";
+                cell.style.width = "44px";
+              } else {
+                const ratio = Math.pow(0.944, fret - 1).toFixed(4);
+                cell.style.flex = `${ratio} 1 0px`;
+              }
+
+              if (stringIdx === midRow && [3, 5, 7, 9, 15].includes(fret)) {
+                const dot = document.createElement('div');
+                dot.className = 'fret-dot';
+                cell.appendChild(dot);
+              } else if (stringIdx === midRow && fret === 12) {
+                const dot1 = document.createElement('div');
+                dot1.className = 'fret-dot';
+                dot1.style.top = '-9px';
+                const dot2 = document.createElement('div');
+                dot2.className = 'fret-dot';
+                dot2.style.bottom = '-9px';
+                cell.appendChild(dot1);
+                cell.appendChild(dot2);
+              }
+
+              const midi = stringData.m + fret;
+              const marker = document.createElement('div');
+              marker.className = 'fret-note-marker';
+              marker.textContent = FLAT_NOTES[midi % 12];
+              cell.appendChild(marker);
+
               let activeNode = null;
-              const play = (e) => { if (e.type === 'touchstart') e.preventDefault(); if (activeNode) activeNode.stop(); activeNode = AudioEngine.playGuitarNote(AudioEngine.midiToFreq(midi), 0.8); cell.classList.add('active'); };
-              const stop = (e) => { if (e.type === 'touchend') e.preventDefault(); if (activeNode) { activeNode.stop(); activeNode = null; } cell.classList.remove('active'); };
-              cell.addEventListener('mousedown', play); cell.addEventListener('touchstart', play, { passive: false }); cell.addEventListener('mouseup', stop); cell.addEventListener('mouseleave', stop); cell.addEventListener('touchend', stop); row.appendChild(cell);
+              const play = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
+                if (activeNode) activeNode.stop();
+                activeNode = AudioEngine.playGuitarNote(AudioEngine.midiToFreq(midi), 0.8);
+                cell.classList.add('active');
+              };
+              const stop = (e) => {
+                if (e.type === 'touchend') e.preventDefault();
+                if (activeNode) { activeNode.stop(); activeNode = null; }
+                cell.classList.remove('active');
+              };
+              cell.addEventListener('mousedown', play);
+              cell.addEventListener('touchstart', play, { passive: false });
+              cell.addEventListener('mouseup', stop);
+              cell.addEventListener('mouseleave', stop);
+              cell.addEventListener('touchend', stop);
+              row.appendChild(cell);
             }
             grid.appendChild(row);
           });
@@ -3945,7 +4106,7 @@ Em -  C    -  G  -  D
             if (checkedIds.length === 0) return;
 
             const selectedSongs = StateManager.state.songs.filter(s => checkedIds.includes(s.id));
-            const shareData = { type: 'set', t: "Shared Library Selection", d: "Custom setlist shared from Sonata", l: [], s: [] };
+            const shareData = { type: 'set', t: "Shared Library Selection", d: "Custom selection shared from Sonata", l: [], s: [] };
 
             selectedSongs.forEach(song => {
               const sData = { t: song.title, b: song.body };
@@ -3955,13 +4116,29 @@ Em -  C    -  G  -  D
               shareData.s.push(sData);
             });
 
-            const rawUrl = window.location.origin + window.location.pathname + "?share=" + await ExportManager.compressData(shareData);
+            this.openModal({
+              title: `Share ${selectedSongs.length} Songs`,
+              confirmText: "Copy Link & Close",
+              fields: [{
+                type: "custom",
+                id: "share-content",
+                html: `<div id="bulkShareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:20px 0;">Generating secure share link...</p></div>`
+              }],
+              onConfirm: async () => {
+                const urlInput = document.getElementById('bulkShareUrl');
+                const urlToCopy = urlInput ? urlInput.value : finalUrl;
+                if (await ExportManager.copyText(urlToCopy)) UIManager.toast("Share link copied!");
+              }
+            });
+
+            const compressed = await ExportManager.compressData(shareData);
+            const rawUrl = window.location.origin + window.location.pathname + "?share=" + compressed;
             let finalUrl = rawUrl;
 
             try {
               if (rawUrl.length > 200) {
                 const formBody = new URLSearchParams();
-                formBody.append('content', await ExportManager.compressData(shareData));
+                formBody.append('content', compressed);
                 formBody.append('format', 'url');
 
                 const dpasteRes = await fetch('https://dpaste.com/api/', {
@@ -3975,58 +4152,103 @@ Em -  C    -  G  -  D
                   const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
                   finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
                 }
+              } else {
+                const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.shorturl) finalUrl = data.shorturl;
+                }
               }
             } catch (e) {
-              console.warn("dpaste failed, fallback");
+              console.warn("Shortener failed, using full URL");
             }
 
-            this.closeModal();
+            const wrapper = document.getElementById('bulkShareWrapper');
+            if (!wrapper) return;
+            wrapper.innerHTML = '';
 
-            this.openModal({
-              title: "Share Selected Songs",
-              confirmText: "Copy Link & Close",
-              fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><canvas id="bulkShareCanvas" width="460" height="600" style="display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;"></canvas><input class="input" readOnly id="bulkShareUrl" value="${finalUrl}" style="margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);"></div>` }],
-              onConfirm: async () => {
-                if (await ExportManager.copyText(finalUrl)) UIManager.toast("Share link copied!");
-              }
+            const canvas = document.createElement("canvas");
+            canvas.width = 460;
+            canvas.height = 600;
+            canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
+            const ctx = canvas.getContext("2d");
+
+            const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
+            ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
+
+            ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText("SHARED SELECTION", 230, 140);
+            ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 172);
+
+            const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
+            try {
+              const resp = await fetch(qrUrl);
+              const blob = await resp.blob();
+              const imgUrl = URL.createObjectURL(blob);
+              const qImg = new Image();
+              qImg.onload = () => {
+                ctx.drawImage(qImg, 80, 210, 300, 300);
+
+                let songNames = selectedSongs.map(s => s.title).join("  •  ");
+                if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
+                ctx.fillStyle = "#16181d";
+                ctx.font = "13px sans-serif";
+                ctx.fillText(songNames, 230, 532);
+
+                ctx.fillStyle = activeAccent;
+                ctx.font = "bold 14px sans-serif";
+                ctx.fillText("Scan to import selection offline", 230, 565);
+                URL.revokeObjectURL(imgUrl);
+              };
+              qImg.src = imgUrl;
+            } catch (e) {
+              ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Unavailable ]", 230, 360);
+            }
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'button secondary';
+            downloadBtn.type = 'button';
+            downloadBtn.style.cssText = "width:100%; margin-bottom:12px;";
+            downloadBtn.innerHTML = `<span data-inline-icon="image" style="width:16px;height:16px;margin-right:6px;"></span>Download QR Card`;
+            downloadBtn.addEventListener('click', () => {
+              canvas.toBlob(b => Util.download('Sonata-Selection-' + selectedSongs.length + '-Songs.png', 'image/png', b));
+              UIManager.toast("Profile Card Downloaded!");
             });
 
-            setTimeout(async () => {
-              const canvas = document.getElementById('bulkShareCanvas');
-              if (!canvas) return;
-              const ctx = canvas.getContext("2d");
-              const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
-              ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
-              ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
-              ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
-              ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText("SHARED SELECTION", 230, 140);
-              ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 172);
+            const urlInput = document.createElement('input');
+            urlInput.className = 'input';
+            urlInput.id = 'bulkShareUrl';
+            urlInput.readOnly = true;
+            urlInput.value = finalUrl;
+            urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
+            urlInput.addEventListener('click', () => urlInput.select());
 
-              const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'button primary';
+            shareBtn.type = 'button';
+            shareBtn.style.cssText = "width: 100%; margin-bottom:12px;";
+            shareBtn.innerHTML = `<span data-inline-icon="share-native" style="width:18px; height:18px; margin-right:6px;"></span> Share via Messaging / App`;
+            shareBtn.addEventListener('click', async () => {
               try {
-                const resp = await fetch(qrUrl);
-                const blob = await resp.blob();
-                const imgUrl = URL.createObjectURL(blob);
-                const qImg = new Image();
-                qImg.onload = () => {
-                  ctx.drawImage(qImg, 80, 210, 300, 300);
+                if (navigator.share) {
+                  await navigator.share({
+                    title: `Sonata: ${selectedSongs.length} Songs Shared`,
+                    text: `Import ${selectedSongs.length} songs in Sonata:`,
+                    url: finalUrl
+                  });
+                } else {
+                  UIManager.toast("Native sharing not supported on this browser.");
+                }
+              } catch (e) { }
+            });
 
-                  let songNames = selectedSongs.map(s => s.title).join("  •  ");
-                  if (songNames.length > 50) songNames = songNames.substring(0, 47) + "...";
-                  ctx.fillStyle = "#16181d";
-                  ctx.font = "13px sans-serif";
-                  ctx.fillText(songNames, 230, 532);
+            const noteText = document.createElement('p');
+            noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;";
+            noteText.textContent = "Data is securely compressed into this short link. Works entirely offline.";
 
-                  ctx.fillStyle = activeAccent;
-                  ctx.font = "bold 14px sans-serif";
-                  ctx.fillText("Scan to import selection", 230, 565);
-                  URL.revokeObjectURL(imgUrl);
-                };
-                qImg.src = imgUrl;
-              } catch (e) {
-                ctx.fillStyle = "#667085"; ctx.font = "16px sans-serif"; ctx.fillText("[ QR Code Unavailable ]", 230, 360);
-              }
-            }, 100);
+            wrapper.append(canvas, downloadBtn, urlInput, shareBtn, noteText);
+            Icon.decorateAll(wrapper);
           });
         },
 
@@ -4042,10 +4264,12 @@ Em -  C    -  G  -  D
               { type: "heading", label: "Description / Notes" },
               { type: "custom", html: `<textarea id="modal-description" class="textarea" style="min-height:120px; font-family:var(--ui-font); font-size:0.85rem; z-index:2; position:relative;" placeholder="Add setlist notes">${Util.escapeHtml(song.description || "")}</textarea>` }
             ],
-            onConfirm: values => {
-              song.title = values.title.trim() || "Untitled Song"; song.artist = values.artist.trim(); song.creator = values.creator.trim();
-              song.links = window.__songLinkManager.getLinks(); song.description = document.getElementById("modal-description").value.trim();
-              StateManager.touch(song); StateManager.saveNow("Info saved"); Editor.loadActiveSong(); this.renderAll(); delete window.__songLinkManager; this.toast("Song details updated");
+            onConfirm: (values) => {
+              song.title = values.title; song.artist = values.artist; song.creator = values.creator;
+              if (window.__songLinkManager) song.links = window.__songLinkManager.getLinks();
+              const descEl = document.getElementById('modal-description');
+              if (descEl) song.description = descEl.value;
+              StateManager.touch(song); StateManager.saveNow("Info Saved"); delete window.__songLinkManager; this.renderAll();
             }
           });
 
@@ -4053,7 +4277,6 @@ Em -  C    -  G  -  D
           window.__songLinkManager.render();
           document.getElementById('songAddLinkBtn').addEventListener('click', window.__songLinkManager.addLink);
         },
-
         openSettings() {
           const s = StateManager.state.settings;
           this.openModal({
@@ -4091,10 +4314,10 @@ Em -  C    -  G  -  D
                     html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
                              <p style="margin-bottom:12px;">To install this app on your iPhone/iPad:</p>
                              <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
-                               <li>Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.</li>
-                               <li>Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.</li>
-                               <li>Tap <strong>Add</strong> in the top-right corner to finish.</li>
-                             </ol>
+                                <li>Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.</li>
+                                <li>Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.</li>
+                                <li>Tap <strong>Add</strong> in the top-right corner to finish.</li>
+                              </ol>
                              <p style="font-size:0.75rem; color:var(--muted);">Note: Web App installation on iOS is only supported via the Safari browser.</p>
                            </div>`
                   }]
@@ -4136,6 +4359,10 @@ Em -  C    -  G  -  D
           window.__setLinkManager = createLinkManager('setLinksArea', set.links);
           window.__setLinkManager.render();
           document.getElementById('setAddLinkBtn').addEventListener('click', window.__setLinkManager.addLink);
+        },
+        closeModal() {
+          if (this.dom.modalHost) this.dom.modalHost.hidden = true;
+          this.modalAction = null;
         },
         openModal(options) { this.modalAction = options; this.dom.modalTitle.textContent = options.title || ""; this.dom.modalMessage.textContent = options.message || ""; this.dom.modalFields.innerHTML = ""; (options.fields || []).forEach(f => { if (f.type === "custom") { const w = document.createElement("div"); w.innerHTML = f.html; this.dom.modalFields.appendChild(w); return; } if (f.type === "heading") { const h = document.createElement("div"); h.className = "settings-heading"; h.textContent = f.label; this.dom.modalFields.appendChild(h); return; } const w = document.createElement("div"); w.className = "settings-field"; if (f.label) { const l = document.createElement("label"); l.textContent = f.label; l.htmlFor = "modal-" + f.id; w.appendChild(l); } if (f.type === "select") { const s = document.createElement("select"); s.className = "select"; s.id = "modal-" + f.id; s.dataset.fieldId = f.id; (f.options || []).forEach(o => { const node = document.createElement("option"); node.value = o.value; node.textContent = o.label; s.appendChild(node); }); s.value = f.value; w.appendChild(s); } else if (f.type === "range") { const r = document.createElement("div"); r.className = "range-row"; const i = document.createElement("input"); i.type = "range"; i.id = "modal-" + f.id; i.dataset.fieldId = f.id; i.min = f.min; i.max = f.max; i.step = f.step || 1; i.value = f.value; const o = document.createElement("span"); o.className = "range-value"; const update = () => { o.textContent = i.value + (f.suffix || ""); }; i.addEventListener("input", update); update(); r.append(i, o); w.appendChild(r); } else { const i = document.createElement("input"); i.className = "input"; i.id = "modal-" + f.id; i.dataset.fieldId = f.id; i.type = f.type || "text"; i.value = f.value || ""; w.appendChild(i); } this.dom.modalFields.appendChild(w); }); this.dom.modalConfirm.textContent = options.confirmText || "Done"; this.dom.modalConfirm.classList.toggle("danger", Boolean(options.destructive)); this.dom.modalConfirm.classList.toggle("primary", !options.destructive); this.dom.modalHost.hidden = false; const focusable = this.dom.modalFields.querySelector("input, select, textarea") || this.dom.modalConfirm; setTimeout(() => focusable.focus(), 30); },
         toast(message) { const node = document.createElement("div"); node.className = "toast"; node.textContent = message; this.dom.toastHost.appendChild(node); setTimeout(() => { node.style.opacity = "0"; node.style.transform = "translateY(8px)"; }, 2200); setTimeout(() => node.remove(), 2800); }
