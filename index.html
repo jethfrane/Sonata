@@ -3394,7 +3394,7 @@ Em -  C    -  G  -  D
           container.querySelectorAll('.slice').forEach(s => {
             let activeNode = null;
             const play = (e) => { e.preventDefault(); AudioEngine.vibrate(10); if (activeNode) activeNode.stop(); activeNode = AudioEngine.playChord(parseInt(s.dataset.midi, 10), s.dataset.quality); };
-            const stop = (e) => { e.preventDefault(); if (activeNode) { activeNode.stop(); activeNode = null; } };
+            const stop = (e) => { e.preventDefault(); };
             s.addEventListener('mousedown', play); s.addEventListener('touchstart', play, { passive: false }); s.addEventListener('mouseup', stop); s.addEventListener('mouseleave', stop); s.addEventListener('touchend', stop);
           });
         },
