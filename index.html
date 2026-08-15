@@ -158,7 +158,7 @@
       padding-bottom: 10px;
       padding-left: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-left, 0px));
       padding-right: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-right, 0px));
-      background: color-mix(in srgb, var(--surface) 85%, transparent);
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
       border-bottom: 1px solid var(--line);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -202,7 +202,51 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 40vw;
+      max-width: 30vw;
+    }
+
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .top-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      min-height: 32px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+
+    .top-nav-btn:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface) 60%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .top-nav-btn:active {
+      transform: scale(0.96);
+    }
+
+    .top-nav-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 750;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .top-actions,
@@ -234,13 +278,15 @@
     }
 
     .workspace {
-      display: grid;
+      display: flex;
+      flex-direction: column;
       gap: 12px;
       width: 100%;
-      max-width: 100%;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 12px;
+      padding: 14px clamp(12px, 2vw, 24px);
       flex: 1;
+      min-height: 0;
     }
 
     .panel {
@@ -248,9 +294,31 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       min-width: 0;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-      display: flex;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      display: none;
       flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      animation: viewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes viewFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .workspace[data-view="editor"] > .editor-panel,
+    .workspace[data-view="library"] > .library-panel,
+    .workspace[data-view="tools"] > .tools-panel,
+    .workspace[data-view="theory"] > .theory-panel,
+    .workspace[data-view="instruments"] > .instrument-panel {
+      display: flex !important;
     }
 
     .library-panel,
@@ -264,6 +332,85 @@
     .editor-panel {
       min-height: 60vh;
       overflow: hidden;
+    }
+
+    .editor-split-container {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.25fr);
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+      padding: 12px 14px;
+      background: var(--surface);
+    }
+
+    .editor-pane-left,
+    .editor-pane-right {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .pane-tag {
+      font-size: 0.72rem;
+      font-weight: 750;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .editor-pane-left .editor-container {
+      flex: 1;
+      min-height: 0;
+      background: var(--surface-2);
+    }
+
+    .editor-pane-left .textarea {
+      flex: 1;
+      height: 100%;
+      min-height: 0;
+      background: transparent;
+      padding: 14px 18px;
+    }
+
+    .editor-pane-right .preview-output {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px 20px;
+      font-size: var(--preview-font);
+      line-height: 1.55;
+      white-space: pre;
+      background: var(--surface-2);
+    }
+
+    .tools-grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .tool-dashboard-card {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
 
     .panel-heading {
@@ -497,14 +644,14 @@
 
     .song-title-input {
       height: auto;
-      min-height: 42px;
-      padding: 10px 16px 4px;
+      min-height: 46px;
+      padding: 12px 18px 6px;
       border: 0;
       border-radius: 0;
       background: var(--surface);
       color: var(--text);
-      font-size: clamp(1.1rem, 3vw, 1.6rem);
-      line-height: 1.1;
+      font-size: clamp(1.15rem, 2.5vw, 1.65rem);
+      line-height: 1.25;
       font-weight: 700;
       letter-spacing: -0.01em;
     }
@@ -571,8 +718,21 @@
       font-size: 0.85rem;
       font-weight: 600;
       text-decoration: none;
-      transition: background 120ms ease, border-color 120ms ease;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
+    }
+
+    .button:hover,
+    .icon-button:hover {
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .button:active,
+    .icon-button:active,
+    .tab-button:active {
+      transform: scale(0.96) translateY(0);
     }
 
     .icon-button {
@@ -599,12 +759,23 @@
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    .button.primary:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+      transform: translateY(-1px);
     }
 
     .button.secondary {
       background: color-mix(in srgb, var(--accent) 8%, var(--surface));
       border-color: color-mix(in srgb, var(--accent) 25%, var(--line));
       color: var(--accent);
+    }
+
+    .button.secondary:hover {
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface));
     }
 
     .button.danger,
@@ -614,10 +785,23 @@
       background: color-mix(in srgb, var(--danger) 8%, var(--surface));
     }
 
+    .button.danger:hover,
+    .icon-button.danger:hover {
+      background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+      border-color: var(--danger);
+    }
+
     .button.ghost,
     .icon-button.ghost {
       background: transparent;
       border-color: transparent;
+      box-shadow: none;
+    }
+
+    .button.ghost:hover,
+    .icon-button.ghost:hover {
+      background: var(--surface-2);
+      border-color: var(--line);
     }
 
     .segmented {
@@ -625,6 +809,8 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--surface-2);
+      display: inline-flex;
+      gap: 2px;
     }
 
     .tab-button {
@@ -638,17 +824,19 @@
       flex-direction: column;
       gap: 2px;
       border-radius: 6px;
+      box-shadow: none;
     }
 
-    .tab-button .icon {
-      width: 18px;
-      height: 18px;
+    .tab-button:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface) 60%, transparent);
     }
 
     .tab-button.active {
       background: var(--surface);
-      color: var(--text);
-      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+      color: var(--accent);
+      font-weight: 750;
+      box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
     }
 
     .library-list {
@@ -1488,108 +1676,28 @@
       color: var(--p-slash);
     }
 
-    @media (min-width: 1024px) {
-      .workspace {
-        grid-template-columns: 240px minmax(480px, 1fr) 280px;
-        height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
-        gap: clamp(10px, 1.2vw, 16px);
-        padding: 12px clamp(12px, 1.5vw, 18px);
-      }
-
-      @media (min-width: 1300px) {
-        .workspace {
-          grid-template-columns: 260px minmax(600px, 1fr) 300px;
-          gap: 16px;
-        }
-      }
-
-      @media (min-width: 1600px) {
-        .workspace {
-          grid-template-columns: 280px minmax(800px, 1fr) 320px;
-          gap: 20px;
-        }
-      }
-
-      @media (max-width: 1200px) {
-        .panel {
-          --panel-pad: 12px;
-        }
-      }
-
-      .editor-panel,
-      .library-panel {
-        min-height: 0;
+    @media (min-width: 768px) {
+      .top-nav {
         display: flex;
-        flex-direction: column;
-        height: 100%;
       }
 
-      .editor-panel {
-        flex: 1;
-      }
-
-      .editor-container {
-        flex: 1;
-        min-height: 0;
-      }
-
-      .editor-panel .textarea {
-        flex: 1;
-        height: 100%;
-        min-height: 0;
-        padding: 18px 20px;
-      }
-
-      .right-column {
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        height: 100%;
-      }
-
-      .right-column>aside {
-        display: none;
-      }
-
-      .workspace[data-desktop-right="tools"] .right-column>.tools-panel,
-      .workspace[data-desktop-right="theory"] .right-column>.theory-panel,
-      .workspace[data-desktop-right="instruments"] .right-column>.instrument-panel {
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-      }
-
-      .desktop-tabs {
-        display: flex;
-        border-bottom: 1px solid var(--line);
-        margin-bottom: 12px;
-        flex-shrink: 0;
-      }
-
-      .desktop-tabs .tab-button {
-        flex: 1;
-        border-radius: 8px 8px 0 0;
-        border: none;
-        border-bottom: 2px solid transparent;
-        min-height: 38px;
-        flex-direction: row;
-      }
-
-      .desktop-tabs .tab-button .icon {
-        display: none;
-      }
-
-      .desktop-tabs .tab-button.active {
-        border-bottom-color: var(--accent);
-        background: var(--surface-2);
-        box-shadow: none;
+      .mobile-view-switcher {
+        display: none !important;
       }
     }
 
-    @media (max-width: 1023px) {
+    @media (max-width: 767px) {
       :root {
         --panel-pad: 12px;
         --tap-size: 44px;
+      }
+
+      .top-nav {
+        display: none;
+      }
+
+      .mobile-view-switcher {
+        display: grid;
       }
 
       .topbar {
@@ -1599,11 +1707,13 @@
         padding-bottom: 8px;
         padding-left: calc(12px + env(safe-area-inset-left, 0px));
         padding-right: calc(12px + env(safe-area-inset-right, 0px));
+        gap: 8px;
       }
 
       .top-actions {
         justify-content: flex-end;
         flex-wrap: nowrap;
+        gap: 4px;
       }
 
       .top-actions .button:not(.primary) .button-label,
@@ -1611,35 +1721,26 @@
         display: none;
       }
 
-      .mobile-view-switcher {
-        display: grid;
+      .workspace {
+        padding: 10px 10px calc(80px + env(safe-area-inset-bottom, 0px));
       }
 
-      .desktop-tabs {
+      .editor-split-container {
+        grid-template-columns: 1fr;
+        padding: 8px;
+        gap: 10px;
+      }
+
+      .editor-pane-right {
         display: none;
       }
 
-      .right-column {
-        display: contents;
-      }
-
-      .workspace {
-        padding: 10px 10px calc(80px + env(safe-area-inset-bottom, 0px));
+      .library-list {
         grid-template-columns: 1fr;
       }
 
-      .workspace>aside,
-      .workspace>section,
-      .workspace>.right-column>aside {
-        display: none;
-      }
-
-      .workspace[data-mobile-view="library"]>.library-panel,
-      .workspace[data-mobile-view="editor"]>.editor-panel,
-      .workspace[data-mobile-view="tools"]>.right-column>.tools-panel,
-      .workspace[data-mobile-view="theory"]>.right-column>.theory-panel,
-      .workspace[data-mobile-view="instruments"]>.right-column>.instrument-panel {
-        display: flex !important;
+      .tools-grid-layout {
+        grid-template-columns: 1fr;
       }
 
       .editor-toolbar {
@@ -1670,13 +1771,13 @@
       }
 
       .song-title-input {
-        min-height: 52px;
-        padding: 12px 14px 4px;
+        min-height: 48px;
+        padding: 10px 12px 4px;
       }
 
       .textarea {
-        min-height: calc(100dvh - 220px);
-        padding: 14px;
+        min-height: calc(100dvh - 240px);
+        padding: 12px;
       }
 
       .metric-grid,
@@ -1709,7 +1810,7 @@
         padding-bottom: 8px;
         padding-left: calc(10px + env(safe-area-inset-left, 0px));
         padding-right: calc(10px + env(safe-area-inset-right, 0px));
-        gap: 8px;
+        gap: 6px;
       }
 
       .brand-mark {
@@ -1719,21 +1820,17 @@
       }
 
       .brand-title {
-        font-size: 1.1rem;
-      }
-
-      .top-actions {
-        gap: 4px;
+        font-size: 1.05rem;
       }
 
       .top-actions .button {
         padding: 0 8px;
-        min-height: 38px;
+        min-height: 36px;
       }
 
       .top-actions .icon-button {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
       }
     }
 
@@ -1848,6 +1945,15 @@
           <p class="brand-subtitle">Offline tool for musicians</p>
         </div>
       </div>
+
+      <nav class="top-nav" role="tablist" aria-label="Main navigation">
+        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
+        <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
+        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools & Export</span></button>
+        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
+        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
+      </nav>
+
       <div class="top-actions">
         <!-- Google Drive Sync Button -->
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
@@ -1861,32 +1967,33 @@
       </div>
     </header>
 
-    <nav class="mobile-view-switcher" aria-label="Workspace sections">
-      <button class="tab-button" type="button" data-mobile-view="library" data-icon="library">Library</button>
-      <button class="tab-button active" type="button" data-mobile-view="editor" data-icon="edit">Editor</button>
-      <button class="tab-button" type="button" data-mobile-view="tools" data-icon="sliders">Tools</button>
-      <button class="tab-button" type="button" data-mobile-view="theory" data-icon="aperture">Theory</button>
-      <button class="tab-button" type="button" data-mobile-view="instruments" data-icon="music">Play</button>
+    <nav class="mobile-view-switcher" aria-label="Mobile navigation">
+      <button class="tab-button active" type="button" data-view="editor" data-icon="edit">Editor</button>
+      <button class="tab-button" type="button" data-view="library" data-icon="library">Library</button>
+      <button class="tab-button" type="button" data-view="tools" data-icon="sliders">Tools</button>
+      <button class="tab-button" type="button" data-view="theory" data-icon="aperture">Theory</button>
+      <button class="tab-button" type="button" data-view="instruments" data-icon="music">Play</button>
     </nav>
 
-    <main class="workspace" data-mobile-view="editor" data-desktop-right="tools">
+    <main class="workspace" data-view="editor">
 
+      <!-- 1. LIBRARY PAGE -->
       <aside class="panel library-panel" aria-label="Song library">
         <div class="panel-heading">
-          <h2>Library <button class="help-icon" data-help="library" type="button">?</button></h2>
+          <h2>Song Library <button class="help-icon" data-help="library" type="button">?</button></h2>
           <div style="display:flex; gap:6px;">
             <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
               title="Manage Library">Manage</button>
-            <button class="button primary" id="newSongButton" data-icon="plus" type="button">New</button>
+            <button class="button primary" id="newSongButton" data-icon="plus" type="button">New Song</button>
           </div>
         </div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div class="field" style="flex:1; margin:0;"><label class="visually-hidden"
-              for="songSearch">Search</label><input class="input" id="songSearch" type="search"
-              placeholder="Search title/lyrics" autocomplete="off" style="margin:0;"></div>
-          <div class="select-wrapper" style="width:105px;">
-            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 6px;"
-              title="Sort Library">
+        <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+          <div class="field" style="flex:1; min-width:180px; margin:0;">
+            <label class="visually-hidden" for="songSearch">Search</label>
+            <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics..." autocomplete="off" style="margin:0;">
+          </div>
+          <div class="select-wrapper" style="width:120px;">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;" title="Sort Library">
               <option value="recent">Recent</option>
               <option value="title">Title</option>
               <option value="author">Author</option>
@@ -1894,15 +2001,16 @@
               <option value="key">Key</option>
             </select>
           </div>
-        </div>
-        <div class="segmented" role="tablist">
-          <button class="tab-button active" type="button" data-library-filter="all">All</button>
-          <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
-          <button class="tab-button" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
+          <div class="segmented" role="tablist">
+            <button class="tab-button active" type="button" data-library-filter="all">All</button>
+            <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
+            <button class="tab-button" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
+          </div>
         </div>
         <div class="library-list" id="libraryList" aria-live="polite"></div>
       </aside>
 
+      <!-- 2. EDITOR PAGE (SPLIT VIEW ON DESKTOP) -->
       <section class="panel editor-panel" aria-label="Song editor">
         <label class="visually-hidden" for="songTitle">Song title</label>
         <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
@@ -1923,7 +2031,16 @@
             <button class="button" id="exitSharedButton" data-icon="x" type="button" style="display:none;">Close
               Preview</button>
           </div>
-          <div class="status-line" id="saveStatus" aria-live="polite">Ready</div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div class="segmented" role="tablist">
+              <button class="tab-button active" type="button" data-preview-mode="original">Song</button>
+              <button class="tab-button" type="button" data-preview-mode="transposed">Transposed</button>
+              <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
+              <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
+              <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
+            </div>
+            <div class="status-line" id="saveStatus" aria-live="polite">Ready</div>
+          </div>
         </div>
 
         <div class="setlist-nav" id="setlistNav">
@@ -1936,77 +2053,94 @@
           </div>
         </div>
 
-        <div class="editor-container">
-          <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body" placeholder=" "></textarea>
-          <div class="editor-placeholder">
-            <h3>Welcome to Sonata!</h3>
-            <p>Type your chords and lyrics below, or click <strong>Demo</strong> above to instantly load a fully
-              formatted example.</p>
-            <ul>
-              <li><code># </code> Header (e.g., # Verse 1)</li>
-              <li><code>## </code> Subheader (e.g., ## Build)</li>
-              <li><code>---</code> Creates a solid divider line</li>
-              <li><code>[G]</code> Creates inline chords</li>
-              <li><code>> </code> Creates a safe comment/note</li>
-            </ul>
+        <div class="editor-split-container">
+          <div class="editor-pane-left">
+            <div class="pane-header">
+              <span class="pane-tag">CHORD &amp; LYRIC EDITOR</span>
+              <span class="muted" style="font-size:0.72rem;"># Section &bull; [Chord] inline</span>
+            </div>
+            <div class="editor-container">
+              <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body" placeholder=" "></textarea>
+              <div class="editor-placeholder">
+                <h3>Welcome to Sonata!</h3>
+                <p>Type your chords and lyrics below, or click <strong>Demo</strong> above to instantly load a fully
+                  formatted example.</p>
+                <ul>
+                  <li><code># </code> Header (e.g., # Verse 1)</li>
+                  <li><code>## </code> Subheader (e.g., ## Build)</li>
+                  <li><code>---</code> Creates a solid divider line</li>
+                  <li><code>[G]</code> Creates inline chords</li>
+                  <li><code>&gt; </code> Creates a safe comment/note</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="editor-pane-right">
+            <div class="pane-header">
+              <span class="pane-tag">LIVE CHART PREVIEW</span>
+              <div style="display:flex; gap:4px; align-items:center;">
+                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
+                <button class="help-icon" data-help="formats" type="button">?</button>
+              </div>
+            </div>
+            <div class="preview-output" id="previewOutput"></div>
           </div>
         </div>
       </section>
 
-      <div class="right-column">
-        <div class="desktop-tabs" role="tablist">
-          <button class="tab-button active" type="button" data-desktop-tab="tools" data-icon="sliders">Tools &
-            Export</button>
-          <button class="tab-button" type="button" data-desktop-tab="theory" data-icon="aperture">Theory</button>
-          <button class="tab-button" type="button" data-desktop-tab="instruments" data-icon="music">Play</button>
-        </div>
+      <!-- 3. TOOLS & EXPORT PAGE -->
+      <aside class="panel tools-panel" aria-label="Music tools">
+        <div class="tools-grid-layout">
+          <!-- Card 1: Music Analysis & Transposition -->
+          <div class="tool-dashboard-card">
+            <div class="panel-heading">
+              <h2>Music Analysis &amp; Transposition</h2>
+              <span class="muted" id="wordCount">0 lines</span>
+            </div>
+            <div class="metric-grid">
+              <div class="metric"><span>Detected Key</span><strong id="detectedKey">Unknown</strong></div>
+              <div class="metric"><span>Active Key</span><strong id="activeKey">Auto</strong></div>
+              <div class="metric"><span>Chords</span><strong id="chordCount">0</strong></div>
+              <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
+            </div>
+            <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
+                  type="button">?</button></label><select class="select" id="keySelect"></select></div>
+            <div class="field">
+              <label for="capoSelect">Capo (Plays in) <button class="help-icon" data-help="capo"
+                  type="button">?</button></label>
+              <select class="select" id="capoSelect">
+                <option value="0">No Capo</option>
+                <option value="1">Capo 1</option>
+                <option value="2">Capo 2</option>
+                <option value="3">Capo 3</option>
+                <option value="4">Capo 4</option>
+                <option value="5">Capo 5</option>
+                <option value="6">Capo 6</option>
+                <option value="7">Capo 7</option>
+                <option value="8">Capo 8</option>
+                <option value="9">Capo 9</option>
+                <option value="10">Capo 10</option>
+                <option value="11">Capo 11</option>
+                <option value="12">Capo 12</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="transposeSelect">Transpose semitones <button class="help-icon" data-help="transpose"
+                  type="button">?</button></label>
+              <div class="transpose-box"
+                style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
+                  class="icon-button" id="transposeDown" data-icon="minus" type="button"
+                  aria-label="Transpose down"></button><select class="select" id="transposeSelect"
+                  style="text-align:center; font-weight: 600;"></select><button class="icon-button" id="transposeUp"
+                  data-icon="plus" type="button" aria-label="Transpose up"></button></div>
+            </div>
+            <div class="inline-actions"><button class="button secondary" id="applyTransposeButton" data-icon="wand"
+                type="button">Apply Transpose</button><button class="button" id="resetTransposeButton"
+                data-icon="rotate-ccw" type="button">Reset</button></div>
+          </div>
 
-        <aside class="panel tools-panel" aria-label="Music tools">
-          <div class="panel-heading">
-            <h2>Music Analysis</h2><span class="muted" id="wordCount">0 lines</span>
-          </div>
-          <div class="metric-grid">
-            <div class="metric"><span>Detected Key</span><strong id="detectedKey">Unknown</strong></div>
-            <div class="metric"><span>Active Key</span><strong id="activeKey">Auto</strong></div>
-            <div class="metric"><span>Chords</span><strong id="chordCount">0</strong></div>
-            <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
-          </div>
-          <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
-                type="button">?</button></label><select class="select" id="keySelect"></select></div>
-          <div class="field">
-            <label for="capoSelect">Capo (Plays in) <button class="help-icon" data-help="capo"
-                type="button">?</button></label>
-            <select class="select" id="capoSelect">
-              <option value="0">No Capo</option>
-              <option value="1">Capo 1</option>
-              <option value="2">Capo 2</option>
-              <option value="3">Capo 3</option>
-              <option value="4">Capo 4</option>
-              <option value="5">Capo 5</option>
-              <option value="6">Capo 6</option>
-              <option value="7">Capo 7</option>
-              <option value="8">Capo 8</option>
-              <option value="9">Capo 9</option>
-              <option value="10">Capo 10</option>
-              <option value="11">Capo 11</option>
-              <option value="12">Capo 12</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="transposeSelect">Transpose semitones <button class="help-icon" data-help="transpose"
-                type="button">?</button></label>
-            <div class="transpose-box"
-              style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
-                class="icon-button" id="transposeDown" data-icon="minus" type="button"
-                aria-label="Transpose down"></button><select class="select" id="transposeSelect"
-                style="text-align:center; font-weight: 600;"></select><button class="icon-button" id="transposeUp"
-                data-icon="plus" type="button" aria-label="Transpose up"></button></div>
-          </div>
-          <div class="inline-actions"><button class="button secondary" id="applyTransposeButton" data-icon="wand"
-              type="button">Apply Transpose</button><button class="button" id="resetTransposeButton"
-              data-icon="rotate-ccw" type="button">Reset</button></div>
-
-          <div class="tool-card" aria-label="Metronome">
+          <!-- Card 2: Metronome -->
+          <div class="tool-dashboard-card">
             <div class="tool-card-header">
               <div class="tool-card-title"><span data-inline-icon="metronome"></span>Metronome</div><span
                 class="tool-card-value" id="metronomeStatus">Stopped</span>
@@ -2035,130 +2169,123 @@
                 Tempo</button></div>
           </div>
 
-          <div class="preview-card">
-            <div class="preview-header">
-              <div class="segmented" role="tablist" style="flex-wrap: wrap;">
-                <button class="tab-button active" type="button" data-preview-mode="original">Song</button>
-                <button class="tab-button" type="button" data-preview-mode="transposed">Transposed</button>
-                <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
-                <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
-                <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
+          <!-- Card 3: Export & Layout -->
+          <div class="tool-dashboard-card">
+            <div class="panel-heading">
+              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button">?</button></h2>
+            </div>
+            <div class="layout-row">
+              <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select" id="exportOrientation" aria-label="Orientation">
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select></div>
+              <div class="field"><label for="exportColumns">Columns</label><select class="select" id="exportColumns" aria-label="Columns">
+                  <option value="1">1 Column</option>
+                  <option value="2">2 Columns</option>
+                  <option value="3">3 Columns</option>
+                </select></div>
+            </div>
+            <div class="export-grid">
+              <button class="button" id="exportTxtButton" data-icon="file-text" type="button">Export TXT</button><button
+                class="button" id="exportPngButton" data-icon="image" type="button">Export PNG</button><button class="button"
+                id="exportPdfButton" data-icon="pdf" type="button">Export PDF</button><button class="button" id="printButton"
+                data-icon="print" type="button">Print Chart</button><button class="button" id="copyButton" data-icon="copy"
+                type="button">Copy Text</button><button class="button primary" id="shareButton" data-icon="share"
+                type="button">Share Link / QR</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 4. THEORY PAGE -->
+      <aside class="panel theory-panel" aria-label="Music Theory">
+        <div class="panel-heading">
+          <h2>Circle of 5th's</h2>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div class="segmented" style="padding:2px; display:inline-flex;">
+              <button class="tab-button active" type="button" data-circle-format="roman"
+                style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
+              <button class="tab-button" type="button" data-circle-format="nashville"
+                style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
+            </div><button class="help-icon" data-help="circle" type="button">?</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom: 12px;"><label for="theoryKeyInput"
+            style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
+              class="help-icon" data-help="theoryKey" type="button"
+              style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
+            id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor"
+            autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
+        <div class="field"
+          style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+          <label for="circleRotateToggle">Auto-Rotate to Key</label><input type="checkbox" id="circleRotateToggle"
+            checked style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
+        </div>
+        <div class="field"
+          style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+          <label for="circleHighlightToggle">Highlight Key Family</label><input type="checkbox"
+            id="circleHighlightToggle" checked
+            style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
+        </div>
+        <div class="circle-container" id="circleContainer"></div>
+        <div class="explanation-text"><strong>How it works:</strong> The Circle organizes keys mathematically. Toggle
+          'Highlight Key Family' to instantly reveal the 7 diatonic chords (I, ii, iii, IV, V, vi, vii°) that
+          naturally belong in your active song.</div>
+      </aside>
+
+      <!-- 5. PLAY / INSTRUMENTS PAGE -->
+      <aside class="panel instrument-panel" aria-label="Instruments">
+        <div class="panel-heading">
+          <h2>Virtual Piano</h2><button class="help-icon" data-help="piano" type="button">?</button>
+        </div>
+        <div class="piano-container">
+          <div class="piano-scroll" id="pianoKeyboard"></div>
+        </div>
+        <div class="explanation-text" style="margin-top:0;">Scroll horizontally to view more octaves. Touch and hold
+          keys to sustain the note.</div>
+
+        <div class="panel-heading" style="margin-top:24px;">
+          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button">?</button></h2>
+          <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;">
+            <option value="guitar">Guitar (EADGBE)</option>
+            <option value="bass">4-Str Bass (EADG)</option>
+            <option value="bass5">5-Str Bass (BEADG)</option>
+            <option value="ukulele">Ukulele (GCEA)</option>
+          </select>
+        </div>
+        <div class="fretboard-container">
+          <div class="fretboard" id="fretboardGrid"></div>
+        </div>
+        <div class="explanation-text" style="margin-top:0;">The leftmost column is the open string (nut). Touch and
+          hold frets to sustain the note.</div>
+
+        <div class="panel-heading" style="margin-top:24px;">
+          <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button">?</button>
+        </div>
+        <div class="tool-card">
+          <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); text-align: center;">Click to hear
+            reference pitch</p>
+          <div id="tunerReferenceButtons"
+            style="display:flex; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;"></div>
+          <button id="micTunerBtn" class="button secondary" type="button" style="width:100%;"><span
+              data-inline-icon="music" style="margin-right:6px;"></span> Start Microphone Tuner</button>
+          <div id="tunerDisplay"
+            style="display:none; text-align:center; padding:16px 10px 10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; margin-top:8px;">
+            <div id="tunerNote" style="font-size: 3rem; font-weight: 800; color:var(--text); line-height: 1;">--</div>
+            <div id="tunerCents" style="color: var(--muted); font-size:0.9rem; font-weight:600; margin:8px 0 16px;">0
+              cents</div>
+            <div
+              style="width:100%; height:14px; background:var(--surface-3); border-radius:7px; position:relative; overflow:hidden;">
+              <div style="position:absolute; width:2px; height:100%; background:var(--line); left:50%; z-index: 1;">
               </div>
-              <button class="help-icon" data-help="formats" type="button" style="margin-left: 4px;">?</button>
-            </div>
-            <div class="preview-output" id="previewOutput"></div>
-          </div>
-
-          <div class="section-title">Export & Layout <button class="help-icon" data-help="export"
-              type="button">?</button></div>
-          <div class="layout-row">
-            <div class="field"><select class="select" id="exportOrientation" aria-label="Orientation">
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
-              </select></div>
-            <div class="field"><select class="select" id="exportColumns" aria-label="Columns">
-                <option value="1">1 Column</option>
-                <option value="2">2 Columns</option>
-                <option value="3">3 Columns</option>
-              </select></div>
-          </div>
-          <div class="export-grid">
-            <button class="button" id="exportTxtButton" data-icon="file-text" type="button">TXT</button><button
-              class="button" id="exportPngButton" data-icon="image" type="button">PNG</button><button class="button"
-              id="exportPdfButton" data-icon="pdf" type="button">PDF</button><button class="button" id="printButton"
-              data-icon="print" type="button">Print</button><button class="button" id="copyButton" data-icon="copy"
-              type="button">Copy</button><button class="button primary" id="shareButton" data-icon="share"
-              type="button">Share</button>
-          </div>
-        </aside>
-
-        <aside class="panel theory-panel" aria-label="Music Theory">
-          <div class="panel-heading">
-            <h2>Circle of 5th's</h2>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <div class="segmented" style="padding:2px; display:inline-flex;">
-                <button class="tab-button active" type="button" data-circle-format="roman"
-                  style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
-                <button class="tab-button" type="button" data-circle-format="nashville"
-                  style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
-              </div><button class="help-icon" data-help="circle" type="button">?</button>
-            </div>
-          </div>
-          <div class="field" style="margin-bottom: 12px;"><label for="theoryKeyInput"
-              style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
-                class="help-icon" data-help="theoryKey" type="button"
-                style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
-              id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor"
-              autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
-          <div class="field"
-            style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-            <label for="circleRotateToggle">Auto-Rotate to Key</label><input type="checkbox" id="circleRotateToggle"
-              checked style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
-          </div>
-          <div class="field"
-            style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 16px;">
-            <label for="circleHighlightToggle">Highlight Key Family</label><input type="checkbox"
-              id="circleHighlightToggle" checked
-              style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
-          </div>
-          <div class="circle-container" id="circleContainer"></div>
-          <div class="explanation-text"><strong>How it works:</strong> The Circle organizes keys mathematically. Toggle
-            'Highlight Key Family' to instantly reveal the 7 diatonic chords (I, ii, iii, IV, V, vi, vii°) that
-            naturally belong in your active song.</div>
-        </aside>
-
-        <aside class="panel instrument-panel" aria-label="Instruments">
-          <div class="panel-heading">
-            <h2>Virtual Piano</h2><button class="help-icon" data-help="piano" type="button">?</button>
-          </div>
-          <div class="piano-container">
-            <div class="piano-scroll" id="pianoKeyboard"></div>
-          </div>
-          <div class="explanation-text" style="margin-top:0;">Scroll horizontally to view more octaves. Touch and hold
-            keys to sustain the note.</div>
-
-          <div class="panel-heading" style="margin-top:24px;">
-            <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button">?</button></h2>
-            <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;">
-              <option value="guitar">Guitar (EADGBE)</option>
-              <option value="bass">4-Str Bass (EADG)</option>
-              <option value="bass5">5-Str Bass (BEADG)</option>
-              <option value="ukulele">Ukulele (GCEA)</option>
-            </select>
-          </div>
-          <div class="fretboard-container">
-            <div class="fretboard" id="fretboardGrid"></div>
-          </div>
-          <div class="explanation-text" style="margin-top:0;">The leftmost column is the open string (nut). Touch and
-            hold frets to sustain the note.</div>
-
-          <div class="panel-heading" style="margin-top:24px;">
-            <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button">?</button>
-          </div>
-          <div class="tool-card">
-            <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); text-align: center;">Click to hear
-              reference pitch</p>
-            <div id="tunerReferenceButtons"
-              style="display:flex; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;"></div>
-            <button id="micTunerBtn" class="button secondary" type="button" style="width:100%;"><span
-                data-inline-icon="music" style="margin-right:6px;"></span> Start Microphone Tuner</button>
-            <div id="tunerDisplay"
-              style="display:none; text-align:center; padding:16px 10px 10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; margin-top:8px;">
-              <div id="tunerNote" style="font-size: 3rem; font-weight: 800; color:var(--text); line-height: 1;">--</div>
-              <div id="tunerCents" style="color: var(--muted); font-size:0.9rem; font-weight:600; margin:8px 0 16px;">0
-                cents</div>
-              <div
-                style="width:100%; height:14px; background:var(--surface-3); border-radius:7px; position:relative; overflow:hidden;">
-                <div style="position:absolute; width:2px; height:100%; background:var(--line); left:50%; z-index: 1;">
-                </div>
-                <div id="tunerNeedle"
-                  style="position:absolute; width:10px; height:14px; border-radius:5px; background:var(--accent); top:0; left:50%; transform:translateX(-50%); transition: left 0.1s ease-out; z-index: 2;">
-                </div>
+              <div id="tunerNeedle"
+                style="position:absolute; width:10px; height:14px; border-radius:5px; background:var(--accent); top:0; left:50%; transform:translateX(-50%); transition: left 0.1s ease-out; z-index: 2;">
               </div>
             </div>
           </div>
-        </aside>
-      </div>
+        </div>
+      </aside>
+
     </main>
   </div>
 
@@ -3076,12 +3203,12 @@ Em -  C    -  G  -  D
 
       const MetronomeManager = {
         timer: 0, running: false, beatIndex: 0, tapTimes: [],
-        start() { if (this.running) return; this.running = true; this.beatIndex = 0; this.tick(); this.timer = window.setInterval(() => this.tick(), this.intervalMs()); this.updateUi(); },
-        stop() { this.running = false; window.clearInterval(this.timer); this.beatIndex = 0; this.updateUi(); },
+        start() { if (this.running) return; this.running = true; this.beatIndex = 0; this.tick(); this.timer = window.setInterval(() => this.tick(), this.intervalMs()); this.updateUi(); UIManager.toast("Metronome started (" + StateManager.state.settings.metronomeBpm + " BPM)"); },
+        stop() { this.running = false; window.clearInterval(this.timer); this.beatIndex = 0; this.updateUi(); UIManager.toast("Metronome stopped"); },
         toggle() { this.running ? this.stop() : this.start(); },
         setBpm(value) { StateManager.state.settings.metronomeBpm = Util.clamp(value, 30, 500); if (this.running) { window.clearInterval(this.timer); this.timer = window.setInterval(() => this.tick(), this.intervalMs()); } StateManager.saveNow("Metronome saved"); this.updateUi(); },
-        setBeats(value) { StateManager.state.settings.metronomeBeats = Util.clamp(value, 2, 7); this.beatIndex = 0; StateManager.saveNow("Metronome saved"); this.renderBeats(); this.updateUi(); },
-        tap() { const now = performance.now(); this.tapTimes = this.tapTimes.filter(t => now - t < 3000); this.tapTimes.push(now); if (this.tapTimes.length >= 2) { const intervals = []; for (let i = 1; i < this.tapTimes.length; i++) intervals.push(this.tapTimes[i] - this.tapTimes[i - 1]); const avg = intervals.reduce((sum, value) => sum + value, 0) / intervals.length; this.setBpm(Math.round(60000 / avg)); } else this.flashBeat(0); },
+        setBeats(value) { StateManager.state.settings.metronomeBeats = Util.clamp(value, 2, 7); this.beatIndex = 0; StateManager.saveNow("Metronome saved"); this.renderBeats(); this.updateUi(); UIManager.toast(value + "/4 Time Signature"); },
+        tap() { const now = performance.now(); this.tapTimes = this.tapTimes.filter(t => now - t < 3000); this.tapTimes.push(now); if (this.tapTimes.length >= 2) { const intervals = []; for (let i = 1; i < this.tapTimes.length; i++) intervals.push(this.tapTimes[i] - this.tapTimes[i - 1]); const avg = intervals.reduce((sum, value) => sum + value, 0) / intervals.length; const newBpm = Math.round(60000 / avg); this.setBpm(newBpm); UIManager.toast("Tap Tempo: " + newBpm + " BPM"); } else this.flashBeat(0); },
         intervalMs() { return 60000 / Util.clamp(StateManager.state.settings.metronomeBpm, 30, 500); },
         tick() { const beats = Util.clamp(StateManager.state.settings.metronomeBeats, 2, 7); const current = this.beatIndex % beats; AudioEngine.playMetronome(current === 0); this.flashBeat(current); this.beatIndex = (this.beatIndex + 1) % beats; },
         renderBeats() { const beats = Util.clamp(StateManager.state.settings.metronomeBeats, 2, 7);[UIManager.dom.beatRow, UIManager.dom.presBeatRow].forEach(row => { if (!row) return; row.textContent = ""; row.style.gridTemplateColumns = "repeat(" + beats + ", minmax(0, 1fr))"; for (let i = 0; i < beats; i++) row.appendChild(Object.assign(document.createElement("span"), { className: "beat-dot" })); }); },
@@ -3563,20 +3690,35 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); },
+        switchView(viewName) {
+          const workspace = document.querySelector(".workspace");
+          if (workspace) workspace.dataset.view = viewName;
+          document.querySelectorAll("[data-view]").forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.view === viewName);
+          });
+          if (viewName === "theory") InstrumentManager.renderCircle();
+          if (viewName === "instruments") {
+            InstrumentManager.renderPiano();
+            InstrumentManager.renderFretboard(document.getElementById("fretboardTuning")?.value || "guitar");
+          }
+          const viewLabels = { editor: "Editor", library: "Library", tools: "Tools & Export", theory: "Theory Studio", instruments: "Virtual Instruments" };
+          if (viewLabels[viewName]) this.toast("Switched to " + viewLabels[viewName]);
+        },
         bind() {
           const add = (el, type, fn) => el?.addEventListener(type, fn);
-          add(this.dom.themeToggle, "click", () => { AudioEngine.playClick(); StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; StateManager.saveNow("Theme saved"); ThemeManager.apply(); this.toast("Theme updated"); });
+          add(this.dom.themeToggle, "click", () => { AudioEngine.playClick(); StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; StateManager.saveNow("Theme saved"); ThemeManager.apply(); this.toast("Theme updated: " + StateManager.state.settings.theme); });
           add(this.dom.settingsButton, "click", () => { AudioEngine.playClick(); this.openSettings(); });
           add(this.dom.helpButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: "About Sonata", confirmText: "Close", fields: [{ type: "custom", html: `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> (/səˈnɑːtə/) comes from Latin <em>sonare</em>, meaning "to sound" or "a piece played."</p><p>Created by <strong>Jethro Frane</strong>, a church musician, Sonata was built to help church musicians and bands collaborate seamlessly and eliminate stage friction.</p><p style="margin-bottom:6px; font-weight:700;">Core Objectives:</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size: 0.85rem;"><li><strong>100% Offline:</strong> Works on stages with zero Wi-Fi or cellular coverage.</li><li><strong>Centralized Hub:</strong> Charts, metronomes, and theory tools in one app.</li><li><strong>Instant Transposition:</strong> Adapt to any vocal range on the fly.</li><li><strong>Number Systems:</strong> Master Nashville Numbers and Roman Numerals effortlessly.</li><li><strong>Zero-Friction Sharing:</strong> Share configurations via QR codes—no accounts.</li><li><strong>Stage Ready:</strong> True-black presentation modes that save battery and reduce glare.</li><li><strong>Robust Exports:</strong> Multi-column PDF and PNG generation.</li><li><strong>Theory Tools:</strong> Interactive Circle of 5ths and Virtual Fretboard.</li><li><strong>Setlists:</strong> Compile songs and share entire sets securely.</li><li><strong>Privacy First:</strong> Your library stays securely local on your device.</li></ul><p style="margin-top:16px; font-style:italic; font-weight:700; text-align:center; color:var(--accent); font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." <br>— 1 Corinthians 10:31 (NIV)</p></div>` }] }); });
           add(this.dom.presentationButton, "click", () => { AudioEngine.playClick(); PresentationManager.open(); });
-          document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.mobileView = b.dataset.mobileView; document.querySelectorAll(".mobile-view-switcher [data-mobile-view]").forEach(i => i.classList.toggle("active", i === b)); }));
-          document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); document.querySelector(".workspace").dataset.desktopRight = b.dataset.desktopTab; document.querySelectorAll(".desktop-tabs [data-desktop-tab]").forEach(i => i.classList.toggle("active", i === b)); }));
+          
+          document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); this.switchView(b.dataset.view); }));
+          add(this.dom.copyLiveChartBtn, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
 
-          add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); });
-          add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); });
-          add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); });
+          add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow("Saved"); this.toast("Song saved to Library"); });
+          add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); this.toast("Undo"); });
+          add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); this.toast("Redo"); });
           add(this.dom.importSharedButton, "click", () => { AudioEngine.playClick(); StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); this.toast("Saved to Library"); });
           add(this.dom.exitSharedButton, "click", () => { AudioEngine.playClick(); StateManager.exitShared(); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.infoSongButton, "click", () => { AudioEngine.playClick(); this.openSongInfo(); });
@@ -3590,15 +3732,16 @@ Em -  C    -  G  -  D
                 StateManager.loadDemo();
                 Editor.loadActiveSong();
                 this.renderAll();
+                this.toast("Demo song loaded");
               }
             });
           });
           add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
 
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
-          add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); });
-          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); }));
-          add(this.dom.newSongButton, "click", () => { AudioEngine.playClick(); if (StateManager.state.libraryFilter === 'setlists') { this.openSetlistModal(); return; } StateManager.createSong(); Editor.loadActiveSong(); this.renderAll(); this.toast("New song ready"); });
+          add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast("Sorted: " + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text); });
+          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); this.toast("Filter: " + b.textContent); }));
+          add(this.dom.newSongButton, "click", () => { AudioEngine.playClick(); if (StateManager.state.libraryFilter === 'setlists') { this.openSetlistModal(); return; } StateManager.createSong(); Editor.loadActiveSong(); this.switchView('editor'); this.renderAll(); this.toast("New song ready"); });
 
           add(this.dom.slPrev, "click", () => { AudioEngine.playClick(); const s = StateManager.state.activeSetlist; StateManager.playSetlist(s.id, Math.max(0, s.index - 1)); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.slNext, "click", () => { AudioEngine.playClick(); const s = StateManager.state.activeSetlist; const set = StateManager.state.setlists.find(x => x.id === s.id); StateManager.playSetlist(s.id, Math.min(set.items.length - 1, s.index + 1)); Editor.loadActiveSong(); this.renderAll(); });
@@ -4165,8 +4308,8 @@ Em -  C    -  G  -  D
                   if (action === 'delete') { UIManager.openModal({ title: "Delete Setlist", message: "Delete this setlist?", confirmText: "Delete", destructive: true, onConfirm: () => { StateManager.state.setlists = StateManager.state.setlists.filter(s => s.id !== set.id); StateManager.saveNow("Setlist Deleted"); if (state.activeSetlist.id === set.id) StateManager.exitSetlist(); this.render(); UIManager.toast("Setlist Deleted"); } }); }
                   if (action === 'edit') UIManager.openSetlistModal(set.id);
                   if (action === 'share') { StateManager.playSetlist(set.id); ExportManager.share(true); }
-                  if (action === 'play') { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.renderAll(); UIManager.toast("Playing Setlist"); }
-                } else { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.renderAll(); }
+                  if (action === 'play') { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + set.title); }
+                } else { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + set.title); }
               });
               list.appendChild(card);
             });
@@ -4208,7 +4351,7 @@ Em -  C    -  G  -  D
               const key = KeyDetector.activeKey(song, state.detectedKey);
               if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
             }
-            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View in Editor">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
             card.addEventListener('click', (e) => {
               const actionBtn = e.target.closest('button[data-action]');
               if (actionBtn) {
@@ -4216,8 +4359,8 @@ Em -  C    -  G  -  D
                 if (action === 'fav') { song.isFavorite = !song.isFavorite; StateManager.saveNow("Favorite Toggled"); this.render(); UIManager.toast(song.isFavorite ? "Added to Favorites" : "Removed from Favorites"); }
                 if (action === 'delete') { StateManager.setActive(song.id); UIManager.openModal({ title: "Delete Song", message: "Delete this song?", confirmText: "Delete", destructive: true, onConfirm: () => { StateManager.deleteActive(); Editor.loadActiveSong(); UIManager.renderAll(); UIManager.toast("Deleted"); } }); }
                 if (action === 'share') { StateManager.setActive(song.id); ExportManager.share(false); }
-                if (action === 'view') { StateManager.setActive(song.id); Editor.loadActiveSong(); UIManager.renderAll(); }
-              } else { StateManager.setActive(song.id); Editor.loadActiveSong(); UIManager.renderAll(); }
+                if (action === 'view') { StateManager.setActive(song.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Opened: " + Util.titleOf(song)); }
+              } else { StateManager.setActive(song.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Opened: " + Util.titleOf(song)); }
             });
             list.appendChild(card);
           });
