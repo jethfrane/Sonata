@@ -1490,16 +1490,23 @@
 
     @media (min-width: 1024px) {
       .workspace {
-        grid-template-columns: minmax(220px, 280px) minmax(500px, 1fr) minmax(260px, 340px);
+        grid-template-columns: 240px minmax(480px, 1fr) 280px;
         height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
         gap: clamp(10px, 1.2vw, 16px);
-        padding: 12px clamp(12px, 1.8vw, 20px);
+        padding: 12px clamp(12px, 1.5vw, 18px);
       }
 
-      @media (min-width: 1400px) {
+      @media (min-width: 1300px) {
         .workspace {
-          grid-template-columns: minmax(240px, 300px) minmax(650px, 1fr) minmax(280px, 360px);
+          grid-template-columns: 260px minmax(600px, 1fr) 300px;
           gap: 16px;
+        }
+      }
+
+      @media (min-width: 1600px) {
+        .workspace {
+          grid-template-columns: 280px minmax(800px, 1fr) 320px;
+          gap: 20px;
         }
       }
 
