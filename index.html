@@ -3421,7 +3421,6 @@ Em -  C    -  G  -  D
               const stop = (e) => {
                 if (e.type === 'touchend') e.preventDefault();
                 key.classList.remove('active');
-                if (activeNode) { activeNode.stop(); activeNode = null; }
               };
               key.addEventListener('mousedown', play);
               key.addEventListener('touchstart', play, { passive: false });
@@ -3440,13 +3439,30 @@ Em -  C    -  G  -  D
         },
         renderFretboard(instrument) {
           const tunings = {
-            guitar: [{ n: 'e', f: 329.63, m: 64 }, { n: 'B', f: 246.94, m: 59 }, { n: 'G', f: 196.00, m: 55 }, { n: 'D', f: 146.83, m: 50 }, { n: 'A', f: 110.00, m: 45 }, { n: 'E', f: 82.41, m: 40 }],
-            bass: [{ n: 'G', f: 98.00, m: 43 }, { n: 'D', f: 73.42, m: 38 }, { n: 'A', f: 55.00, m: 33 }, { n: 'E', f: 41.20, m: 28 }],
-            bass5: [{ n: 'G', f: 98.00, m: 43 }, { n: 'D', f: 73.42, m: 38 }, { n: 'A', f: 55.00, m: 33 }, { n: 'E', f: 41.20, m: 28 }, { n: 'B', f: 30.87, m: 23 }],
-            ukulele: [{ n: 'A', f: 440.00, m: 69 }, { n: 'E', f: 329.63, m: 64 }, { n: 'C', f: 261.63, m: 60 }, { n: 'G', f: 392.00, m: 67 }]
+            guitar: {
+              strings: [{ n: 'e', f: 329.63, m: 64 }, { n: 'B', f: 246.94, m: 59 }, { n: 'G', f: 196.00, m: 55 }, { n: 'D', f: 146.83, m: 50 }, { n: 'A', f: 110.00, m: 45 }, { n: 'E', f: 82.41, m: 40 }],
+              gauges: [1.2, 1.8, 2.3, 2.9, 3.4, 4.0],
+              woundIdx: 3
+            },
+            bass: {
+              strings: [{ n: 'G', f: 98.00, m: 43 }, { n: 'D', f: 73.42, m: 38 }, { n: 'A', f: 55.00, m: 33 }, { n: 'E', f: 41.20, m: 28 }],
+              gauges: [3.2, 4.0, 5.0, 6.2],
+              woundIdx: 0
+            },
+            bass5: {
+              strings: [{ n: 'G', f: 98.00, m: 43 }, { n: 'D', f: 73.42, m: 38 }, { n: 'A', f: 55.00, m: 33 }, { n: 'E', f: 41.20, m: 28 }, { n: 'B', f: 30.87, m: 23 }],
+              gauges: [3.2, 4.0, 5.0, 6.2, 7.5],
+              woundIdx: 0
+            },
+            ukulele: {
+              strings: [{ n: 'A', f: 440.00, m: 69 }, { n: 'E', f: 329.63, m: 64 }, { n: 'C', f: 261.63, m: 60 }, { n: 'G', f: 392.00, m: 67 }],
+              gauges: [1.3, 1.7, 2.2, 1.5],
+              woundIdx: 4
+            }
           };
           const grid = UIManager.dom.fretboardGrid; if (!grid) return; grid.innerHTML = '';
-          const strings = tunings[instrument] || tunings.guitar;
+          const tuningData = tunings[instrument] || tunings.guitar;
+          const strings = tuningData.strings;
           const totalStrings = strings.length;
           const midRow = Math.floor((totalStrings - 1) / 2);
 
@@ -3468,7 +3484,6 @@ Em -  C    -  G  -  D
               };
               const stop = (e) => {
                 if (e.type === 'touchend') e.preventDefault();
-                if (refNode) { refNode.stop(); refNode = null; }
                 btn.classList.remove('active');
               };
               btn.addEventListener('mousedown', play);
@@ -3483,8 +3498,8 @@ Em -  C    -  G  -  D
           strings.forEach((stringData, stringIdx) => {
             const row = document.createElement('div');
             row.className = 'fret-string';
-            const gauge = (1.2 + (stringIdx * (2.8 / (totalStrings - 1 || 1)))).toFixed(1);
-            const isWound = stringIdx >= Math.floor(totalStrings / 2);
+            const gauge = tuningData.gauges[stringIdx] || 2.0;
+            const isWound = stringIdx >= tuningData.woundIdx;
             row.style.setProperty('--string-gauge', gauge + 'px');
             row.style.setProperty('--string-color', isWound ? 'linear-gradient(to bottom, #d8ba72, #9a803c, #5c4c1e)' : 'linear-gradient(to bottom, #fcfcfc, #c0c0c0, #727272)');
 
@@ -3529,7 +3544,6 @@ Em -  C    -  G  -  D
               };
               const stop = (e) => {
                 if (e.type === 'touchend') e.preventDefault();
-                if (activeNode) { activeNode.stop(); activeNode = null; }
                 cell.classList.remove('active');
               };
               cell.addEventListener('mousedown', play);
@@ -3658,7 +3672,12 @@ Em -  C    -  G  -  D
           const width = (padding * 2) + (columnWidth * columns) - (columns > 1 ? 20 : 0); const height = headerHeight + footerHeight + (linesPerColumn * lineHeight) + padding;
           canvas.width = width * scale; canvas.height = height * scale; ctx.scale(scale, scale);
           ctx.fillStyle = bgColor; ctx.fillRect(0, 0, width, height); ctx.fillStyle = surfaceColor; ctx.fillRect(0, 0, width, headerHeight); ctx.fillStyle = lineColor; ctx.fillRect(0, headerHeight, width, 1);
-          ctx.fillStyle = textColor; ctx.font = `700 32px ${uiFont}`; ctx.fillText(payload.title, padding, 56); let yOffset = 86; if (hasArtist) { ctx.font = `600 16px ${uiFont}`; ctx.fillStyle = mutedColor; ctx.fillText(`By ${payload.artist}`, padding, yOffset); yOffset += 24; }
+          
+          ctx.fillStyle = accentColor; ctx.beginPath(); if(ctx.roundRect) { ctx.roundRect(padding, 38, 36, 36, 8); } else { ctx.rect(padding, 38, 36, 36); } ctx.fill();
+          ctx.fillStyle = "#ffffff"; ctx.font = `800 22px ${uiFont}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("S", padding + 18, 38 + 19);
+          ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+
+          ctx.fillStyle = textColor; ctx.font = `700 32px ${uiFont}`; ctx.fillText(payload.title, padding + 52, 65); let yOffset = 95; if (hasArtist) { ctx.font = `600 16px ${uiFont}`; ctx.fillStyle = mutedColor; ctx.fillText(`By ${payload.artist}`, padding, yOffset); yOffset += 24; }
           ctx.fillStyle = mutedColor; ctx.font = `600 14px ${uiFont}`; ctx.fillText(`Key: ${payload.keyInfo}   •   BPM: ${payload.bpm}   •   Layout: ${payload.modeName}`, padding, yOffset);
 
           wrappedLines.forEach((line, i) => {
@@ -3880,12 +3899,14 @@ Em -  C    -  G  -  D
 
             let chrome = `q 0.96 0.96 0.98 rg 0 ${headerY} ${pageWidth} ${headerHeight} re f Q\n` +
               `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
-              `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
+              `q ${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg ${margin} ${pageHeight - 38} 24 24 re f Q\n` +
+              `q 1 1 1 rg BT /F3 14 Tf ${(margin + 6.5).toFixed(2)} ${(pageHeight - 21.5).toFixed(2)} Td (S) Tj ET Q\n` +
+              `0 g BT /F3 18 Tf ${margin + 36} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
             if (p.artist) {
-              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 60))}) Tj ET\n` +
-                `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin + 36} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 60))}) Tj ET\n` +
+                `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin + 36} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             } else {
-              chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+              chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin + 36} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             }
             chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
               `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
@@ -4000,7 +4021,11 @@ Em -  C    -  G  -  D
           const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
           ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
           ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
-          ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
+          
+          ctx.fillStyle = "#ffffff"; ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(144, 30, 40, 40, 10); } else { ctx.rect(144, 30, 40, 40); } ctx.fill();
+          ctx.fillStyle = activeAccent; ctx.font = "bold 24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("S", 164, 52);
+          ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText("Sonata", 196, 50);
+          ctx.textBaseline = "alphabetic"; ctx.textAlign = "center";
 
           ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText((isSet ? "SETLIST" : "SONG"), 230, 140);
           ctx.fillStyle = "#16181d"; ctx.font = "bold 28px sans-serif"; ctx.fillText(this.pdfTruncate(titleText, 25), 230, 172);
@@ -4408,7 +4433,11 @@ Em -  C    -  G  -  D
             const activeAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
             ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
             ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
-            ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "center"; ctx.fillText("Sonata", 230, 60);
+            
+            ctx.fillStyle = "#ffffff"; ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(144, 30, 40, 40, 10); } else { ctx.rect(144, 30, 40, 40); } ctx.fill();
+            ctx.fillStyle = activeAccent; ctx.font = "bold 24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("S", 164, 52);
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText("Sonata", 196, 50);
+            ctx.textBaseline = "alphabetic"; ctx.textAlign = "center";
 
             ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText("SHARED SELECTION", 230, 140);
             ctx.fillStyle = "#16181d"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${selectedSongs.length} Songs`, 230, 172);
