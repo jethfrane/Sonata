@@ -153,8 +153,11 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      min-height: 56px;
-      padding: 10px clamp(12px, 3vw, 20px) calc(10px + env(safe-area-inset-top, 0px));
+      min-height: calc(56px + env(safe-area-inset-top, 0px));
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      padding-bottom: 10px;
+      padding-left: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-left, 0px));
+      padding-right: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-right, 0px));
       background: color-mix(in srgb, var(--surface) 85%, transparent);
       border-bottom: 1px solid var(--line);
       backdrop-filter: blur(16px);
@@ -1067,7 +1070,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 14px;
+      padding: calc(14px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
     }
 
     .modal-host[hidden] {
@@ -1487,9 +1490,17 @@
 
     @media (min-width: 1024px) {
       .workspace {
-        grid-template-columns: minmax(240px, 340px) minmax(400px, 1fr) minmax(280px, 400px);
-        height: calc(100vh - 56px);
-        gap: clamp(8px, 1.5vw, 12px);
+        grid-template-columns: minmax(220px, 280px) minmax(500px, 1fr) minmax(260px, 340px);
+        height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
+        gap: clamp(10px, 1.2vw, 16px);
+        padding: 12px clamp(12px, 1.8vw, 20px);
+      }
+
+      @media (min-width: 1400px) {
+        .workspace {
+          grid-template-columns: minmax(240px, 300px) minmax(650px, 1fr) minmax(280px, 360px);
+          gap: 16px;
+        }
       }
 
       @media (max-width: 1200px) {
@@ -1503,12 +1514,30 @@
         min-height: 0;
         display: flex;
         flex-direction: column;
+        height: 100%;
+      }
+
+      .editor-panel {
+        flex: 1;
+      }
+
+      .editor-container {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .editor-panel .textarea {
+        flex: 1;
+        height: 100%;
+        min-height: 0;
+        padding: 18px 20px;
       }
 
       .right-column {
         display: flex;
         flex-direction: column;
         min-height: 0;
+        height: 100%;
       }
 
       .right-column>aside {
@@ -1558,8 +1587,11 @@
 
       .topbar {
         align-items: center;
-        min-height: 52px;
-        padding: 8px 12px;
+        min-height: calc(52px + env(safe-area-inset-top, 0px));
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        padding-bottom: 8px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
       }
 
       .top-actions {
@@ -1666,7 +1698,10 @@
 
     @media (max-width: 480px) {
       .topbar {
-        padding: 8px 10px;
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        padding-bottom: 8px;
+        padding-left: calc(10px + env(safe-area-inset-left, 0px));
+        padding-right: calc(10px + env(safe-area-inset-right, 0px));
         gap: 8px;
       }
 
@@ -1764,7 +1799,10 @@
       }
 
       .topbar {
-        padding: 8px 12px;
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        padding-bottom: 8px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
         gap: 12px;
       }
 
@@ -2208,8 +2246,8 @@
       STORAGE_KEYS = { songs: "sonata:v12:songs", settings: "sonata:v12:settings", activeSong: "sonata:v12:active", setlists: "sonata:v12:setlists" };
 
       const SHARP_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-      const FLAT_NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-      const KEY_ROOTS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+      const FLAT_NOTES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+      const KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const MINOR_KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const NOTE_TO_SEMITONE = { C: 0, "B#": 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11 };
 
@@ -2217,8 +2255,8 @@
         { major: "C", minor: "A", dim: "B", offset: 0 }, { major: "G", minor: "E", dim: "F#", offset: 7 },
         { major: "D", minor: "B", dim: "C#", offset: 2 }, { major: "A", minor: "F#", dim: "G#", offset: 9 },
         { major: "E", minor: "C#", dim: "D#", offset: 4 }, { major: "B", minor: "G#", dim: "A#", offset: 11 },
-        { major: "F#", minor: "D#", dim: "E#", offset: 6 }, { major: "Db", minor: "Bb", dim: "C", offset: 1 },
-        { major: "Ab", minor: "F", dim: "G", offset: 8 }, { major: "Eb", minor: "C", dim: "D", offset: 3 },
+        { major: "F#", minor: "D#", dim: "E#", offset: 6 }, { major: "C#", minor: "A#", dim: "C", offset: 1 },
+        { major: "G#", minor: "F", dim: "G", offset: 8 }, { major: "Eb", minor: "C", dim: "D", offset: 3 },
         { major: "Bb", minor: "G", dim: "A", offset: 10 }, { major: "F", minor: "D", dim: "E", offset: 5 }
       ];
 
@@ -2779,8 +2817,17 @@ Em -  C    -  G  -  D
             });
           }).join("\n");
         },
-        transposeChord(chord, steps, key) { const flats = this.preferFlats(chord, key); return (flats ? FLAT_NOTES : SHARP_NOTES)[Util.mod(chord.rootValue + steps, 12)] + chord.quality + (chord.bass ? "/" + (flats ? FLAT_NOTES : SHARP_NOTES)[Util.mod(chord.bassValue + steps, 12)] : "") + (chord.trailingSlashes || ""); },
-        preferFlats(chord, key) { return (key && key.root) ? (key.root.includes("b") || ["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"].includes(key.root)) : (chord.root.includes("b") || (chord.bass && chord.bass.includes("b"))); }
+        transposeChord(chord, steps, key) {
+          const rootVal = Util.mod(chord.rootValue + steps, 12);
+          const rootName = FLAT_NOTES[rootVal];
+          let bassName = "";
+          if (chord.bass) {
+            const bassVal = Util.mod(chord.bassValue + steps, 12);
+            bassName = "/" + FLAT_NOTES[bassVal];
+          }
+          return rootName + chord.quality + bassName + (chord.trailingSlashes || "");
+        },
+        preferFlats(chord, key) { return false; }
       };
 
       const KeyDetector = {
