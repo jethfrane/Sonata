@@ -4,6 +4,12 @@ Sonata is a professional, offline-first, mobile-friendly chord sheet editor and 
 
 The entire application lives in a single, lightning-fast static file (`index.html`) optimized for GitHub Pages and offline stage use.
 
+## 📸 Screenshots & Walkthrough
+
+| 📝 Chord Sheet Editor | ⚙️ Music Theory (Circle of 5ths) | 🎹 Virtual Instruments |
+| :---: | :---: | :---: |
+| ![Chord Sheet Editor](screenshots/editor.png) | ![Circle of 5ths](screenshots/theory.png) | ![Virtual Instruments](screenshots/play.png) |
+
 ## 🌟 Why Sonata Was Built
 
 Sonata was created by Jeth Frane primarily to help church musicians and bands collaborate and stay synchronized during rehearsals and live services.
