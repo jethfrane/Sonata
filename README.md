@@ -67,19 +67,26 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 ### 7. Cloud Backup & Sync (Optional)
 * **Google Drive Sync:** Back up and restore your library via Google Identity Services and the Drive REST API (`drive.file` scope). Changes auto-merge by timestamp and sync to your private Google Drive, keeping data consistent across all devices. Direct fetch requests are used for a lightweight integration without heavy external client library dependencies.
 
-## 🛠️ How to Publish on GitHub Pages
+## 🛠️ Paano I‑Publish sa GitHub Pages
 
-Because Sonata is a single-file static app, publishing it takes less than 60 seconds:
+Dahil ngayon ay nakahiwalay na ang **style.css** at **app.js**, kailangan mong i‑bundle ang app para maging isang monolithic file.
 
-1. Create a new repository on GitHub (e.g., `sonata-master`).
-2. Save the final code provided into a file named exactly `index.html`.
-3. Upload `index.html` to the root of your repository.
-4. Go to your repository **Settings > Pages**.
-5. Under **Build and deployment**, set the Branch to `main` (or `master`) and `/ (root)` folder, then click **Save**.
-6. Your app will be live globally at `https://<your-username>.github.io/<repository-name>/`!
+1. **I‑build ang production bundle** – patakbuhin ang script:
+   ```bash
+   python3 bundle.py
+   ```
+   Lilikha ito ng `dist/index.html` na nag‑iinline ng `style.css` at `app.js`.
+
+2. **I‑upload ang `dist/index.html`** sa repository mo (palitan o idagdag ito bilang `index.html`).
+
+3. Pumunta sa **Settings → Pages** sa GitHub repo mo, itakda ang branch sa `main` (o `master`) at ang folder sa `/ (root)`.
+
+4. I‑save at makikita mo na ang app mo sa `https://<username>.github.io/<repo>/`.
+
+*(Opsyonal) Kung nais mong bawasan pa ang laki ng icon, patakbuhin ang `python3 optimize_assets.py` para i‑compress ang `icon.png`.)
 
 ## 📦 Data Privacy & Backup
 
-Sonata stores all songs and settings securely in your browser's `localStorage` and optionally syncs with Google Drive's private app folder. Your data never leaves your device or your personal storage. To back up your library manually, simply go to Settings and click **Export Backup (.json)**. You can restore it anytime using **Import Backup**.
+All songs and settings are stored locally in the browser's `localStorage`. Optionally, you can enable synchronization with a private Google Drive folder. Your data never leaves your device unless you explicitly choose to sync. To create a manual backup, open **Settings** and click **Export Backup (.json)**. You can restore a backup at any time via **Import Backup**.
 
-Created with ❤️ by Jeth Frane for musicians everywhere.
+© 2026 Jeth Frane – built for musicians.
