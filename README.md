@@ -26,11 +26,14 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 * **Smart Text Wrapping:** Long chord lines wrap cleanly inside the editor instead of overflowing horizontally.
 * **Live Metadata Bar:** Author, Arranger, and detected Key are displayed in a compact bar below the title—always visible without opening dialogs.
 * **Demo Safeguards:** The Demo button is automatically disabled when the editor has content, with confirmation prompts to prevent accidental overwrites.
+* **Split Live Chart Editor:** A responsive split-pane layout for desktop screens that allows editing on one side and viewing live-rendered output on the other, maximizing work area proportions.
+* **Tactile Feedback & Action Toasts:** Native-feeling tactile feedback vibration (when supported) and visual action toast notifications for copy, save, share, and undo/redo operations.
 
 ### 2. Music Theory & Instruments Engine
-* **Interactive Circle of 5th's:** Click any key to hear a 3-note synthesized chord. Toggle "Auto-Rotate" to spin your active key to the top, and toggle "Highlight Key Family" to dim non-diatonic chords and reveal the 7 chords belonging to your key. Intelligently swaps to relative minor layouts when a minor key is active.
+* **Interactive Circle of 5th's:** Click any key to hear a 3-note synthesized chord. Toggle "Auto-Rotate" to spin your active key to the top, and toggle "Highlight Key Family" to dim non-diatonic chords and reveal the 7 chords belonging to your key. Intelligently swaps to relative minor layouts when a minor key is active. Diminished and minor chords are configured to respect proper flat/sharp music theory spelling rules based on the selected key family, and the chords ring out naturally without abrupt audio stops.
 * **Multi-Format Conversions:** Instantly view your sheet as Transposed Chords, Roman Numerals (`I, ii, iii`), Nashville Numbers (`1, 2, 3`), or Lyrics Only (stripping out all chords for clean vocal sheets).
-* **Virtual Instruments:** Includes a scrollable multi-touch Digital Piano and an interactive Fretboard supporting 6-String Guitar, 4-String Bass, 5-String Bass, and Ukulele with native audio synthesis.
+* **Virtual Instruments & High-Quality Synthesis:** Includes a scrollable multi-touch Digital Piano and an interactive Fretboard supporting 6-String Guitar, 4-String Bass, 5-String Bass, and Ukulele. Features high-quality acoustic piano and guitar chord synthesis.
+* **True Instrument Proportions:** Built with realistic guitar/bass fretboard tapering, correct string gauges, and wide virtual piano keys for an intuitive playing and learning experience.
 * **Capo Support:** Set your Capo fret, and Sonata instantly calculates the actual chord shapes you need to play while keeping your original key intact.
 
 ### 3. Stage Presentation Mode
@@ -45,6 +48,7 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 
 ### 5. Zero-Friction Sharing & QR Codes
 * **Intelligent Short Links:** Short URLs via `is.gd` for small payloads; for large setlists (4+ songs), compressed data is stored on `dpaste.com` and retrieved via a minimal `?paste=ID` parameter—always scannable.
+* **Shared Link Preview:** An interactive preview modal that allows users to review shared songs or setlists before importing them into their local library.
 * **Theme-Aware QR Cards:** QR Profile Card images use your active accent color, display song metadata (Key, BPM, artist), and song lists for setlists—no raw URLs cluttering the image.
 * **Native & Social Sharing:** Share via device share sheet, WhatsApp, Facebook, X, Email, or copy link.
 * **View-Only Import:** Shared links open in read-only preview without affecting the recipient's library.
@@ -55,7 +59,7 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 * **Multiple Formats:** Export as vector PDF, high-resolution PNG, plain text TXT, or direct browser Print with full metadata headers and page footers.
 
 ### 7. Cloud Backup & Sync (Optional)
-* **Google Drive Sync:** Back up and restore your library via Google Identity Services and the Drive REST API (`drive.file` scope). Changes auto-merge by timestamp and sync to your private Google Drive, keeping data consistent across all devices.
+* **Google Drive Sync:** Back up and restore your library via Google Identity Services and the Drive REST API (`drive.file` scope). Changes auto-merge by timestamp and sync to your private Google Drive, keeping data consistent across all devices. Direct fetch requests are used for a lightweight integration without heavy external client library dependencies.
 
 ## 🛠️ How to Publish on GitHub Pages
 
