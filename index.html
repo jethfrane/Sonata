@@ -43,7 +43,7 @@
   <aside id="sidebarDrawer" class="sidebar-drawer" aria-label="Menu">
     <div class="sidebar-header">
       <div class="brand">
-        <img src="sonata_logo.png" alt="Sonata" class="brand-logo" width="32" height="32" aria-hidden="true" />
+        <img src="icon.png" alt="Sonata" class="brand-logo" width="32" height="32" aria-hidden="true" />
         <div class="brand-text">
           <span class="brand-title">Sonata</span>
           <span id="sidebarVersion" class="brand-subtitle"></span>
@@ -87,7 +87,7 @@
       <button id="menuToggleBtn" class="icon-button ghost topbar-menu-btn" data-icon="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="sidebarDrawer"></button>
 
       <div class="brand">
-        <img src="sonata_logo.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
+        <img src="icon.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
         <div class="brand-text">
           <h1 class="brand-title">Sonata</h1>
           <p class="brand-subtitle">Offline tool for musicians</p>
@@ -390,8 +390,17 @@
 
       <!-- 5. PLAY / INSTRUMENTS PAGE -->
       <aside class="panel instrument-panel" aria-label="Instruments">
-        <div class="panel-heading">
-          <h2>Virtual Piano</h2><button class="help-icon" data-help="piano" type="button">?</button>
+        <div class="panel-heading" style="margin-bottom:0;">
+          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button">?</button></h2>
+          <!-- Key highlight selector -->
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
+            <select id="instrumentKeyRoot" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
+            <select id="instrumentKeyMode" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
+              <option value="major">Major</option>
+              <option value="minor">Minor</option>
+            </select>
+          </div>
         </div>
         <div class="piano-container">
           <div class="piano-scroll" id="pianoKeyboard"></div>

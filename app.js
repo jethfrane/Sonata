@@ -34,6 +34,7 @@
       const KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const MINOR_KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const NOTE_TO_SEMITONE = { C: 0, "B#": 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11 };
+      const SCALE_INTERVALS = { major: [0,2,4,5,7,9,11], minor: [0,2,3,5,7,8,10] };
 
       const CIRCLE_OF_FIFTHS = [
         { major: "C", minor: "A", dim: "B", offset: 0 }, { major: "G", minor: "E", dim: "F#", offset: 7 },
@@ -1222,12 +1223,44 @@ Em -  C    -  G  -  D
       };
 
       const InstrumentManager = {
-        init() { this.renderCircle(); this.renderPiano(); this.renderFretboard('guitar'); this.bind(); },
+        init() {
+          this.renderCircle();
+          // Populate instrument key root dropdown
+          const rootSel = UIManager.dom.instrumentKeyRoot;
+          if (rootSel) {
+            KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootSel.appendChild(o); });
+          }
+          // Sync key selectors to current song key
+          this.syncKeySelectors();
+          this.renderPiano();
+          this.renderFretboard('guitar');
+          this.bind();
+        },
+        syncKeySelectors() {
+          const ak = KeyDetector.activeKey(StateManager.activeSong(), StateManager.state.detectedKey);
+          if (ak) {
+            if (UIManager.dom.instrumentKeyRoot) UIManager.dom.instrumentKeyRoot.value = SHARP_NOTES[ak.tonic] || KEY_ROOTS[ak.tonic] || 'C';
+            if (UIManager.dom.instrumentKeyMode) UIManager.dom.instrumentKeyMode.value = ak.mode || 'major';
+          }
+        },
+        getScaleSet() {
+          const rootEl = UIManager.dom.instrumentKeyRoot;
+          const modeEl = UIManager.dom.instrumentKeyMode;
+          const rootName = rootEl?.value || 'C';
+          const mode = modeEl?.value || 'major';
+          const tonic = NOTE_TO_SEMITONE[rootName] ?? 0;
+          const intervals = SCALE_INTERVALS[mode] || SCALE_INTERVALS.major;
+          const scaleSet = new Set(intervals.map(i => (tonic + i) % 12));
+          return { tonic, scaleSet };
+        },
         bind() {
           UIManager.dom.circleRotateToggle?.addEventListener('change', () => this.renderCircle());
           UIManager.dom.circleHighlightToggle?.addEventListener('change', () => this.renderCircle());
           UIManager.dom.fretboardTuning?.addEventListener('change', (e) => this.renderFretboard(e.target.value));
           UIManager.dom.micTunerBtn?.addEventListener('click', () => Tuner.toggle());
+          // Key selector re-renders
+          UIManager.dom.instrumentKeyRoot?.addEventListener('change', () => { this.renderPiano(); this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar'); });
+          UIManager.dom.instrumentKeyMode?.addEventListener('change', () => { this.renderPiano(); this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar'); });
         },
         wedgePath(cx, cy, rOuter, rInner, startAngle, endAngle) {
           const startRad = (startAngle - 90) * Math.PI / 180; const endRad = (endAngle - 90) * Math.PI / 180;
@@ -1301,12 +1334,17 @@ Em -  C    -  G  -  D
         },
         renderPiano() {
           const keyboard = UIManager.dom.pianoKeyboard; if (!keyboard) return; keyboard.innerHTML = '';
+          const { tonic, scaleSet } = this.getScaleSet();
           const notes = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
           for (let octave = 3; octave <= 5; octave++) {
             for (let i = 0; i < 12; i++) {
               const isBlack = notes[i].includes('#') || notes[i].includes('b');
+              const pc = i; // pitch class 0-11
               const key = document.createElement('div');
-              key.className = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
+              let cls = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
+              if (pc === tonic) cls += ' key-root';
+              else if (scaleSet.has(pc)) cls += ' key-in-scale';
+              key.className = cls;
               const label = document.createElement('span');
               label.className = 'key-label';
               label.textContent = notes[i];
@@ -1396,6 +1434,7 @@ Em -  C    -  G  -  D
             });
           }
 
+          const { tonic, scaleSet } = this.getScaleSet();
           strings.forEach((stringData, stringIdx) => {
             const row = document.createElement('div');
             row.className = 'fret-string';
@@ -1406,7 +1445,8 @@ Em -  C    -  G  -  D
 
             for (let fret = 0; fret <= 15; fret++) {
               const cell = document.createElement('div');
-              cell.className = 'fret-cell';
+              const pc = (stringData.m + fret) % 12;
+              cell.className = 'fret-cell' + (pc === tonic ? ' fret-root' : scaleSet.has(pc) ? ' fret-in-scale' : '');
               if (fret === 0) {
                 cell.style.flex = "0 0 44px";
                 cell.style.width = "44px";
@@ -2009,7 +2049,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
         switchView(viewName) {
           const workspace = document.querySelector(".workspace");
@@ -2020,6 +2060,7 @@ Em -  C    -  G  -  D
           });
           if (viewName === "theory") InstrumentManager.renderCircle();
           if (viewName === "instruments") {
+            InstrumentManager.syncKeySelectors();
             InstrumentManager.renderPiano();
             InstrumentManager.renderFretboard(document.getElementById("fretboardTuning")?.value || "guitar");
           }
@@ -2329,7 +2370,7 @@ Em -  C    -  G  -  D
           n.style.display = 'flex'; this.dom.slPrev.disabled = s.index <= 0; this.dom.slNext.disabled = s.index >= set.items.length - 1; this.dom.slTitle.textContent = `${set.title} (${s.index + 1}/${set.items.length})`;
           if (this.dom.exportPdfButton) Icon.set(this.dom.exportPdfButton, "pdf", "Set PDF", false);
         },
-        renderAll() { const song = StateManager.activeSong(); if (this.dom.keySelect) this.dom.keySelect.value = song?.manualKey || "auto"; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); if (this.dom.capoSelect) this.dom.capoSelect.value = String(StateManager.state.capo); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); this.updateScrollControls(); this.updateSetlistNav(); this.updateAnalysis(); InstrumentManager.renderCircle(); this.renderLibrarySoon(); if (this.dom.theoryKeyInput) this.dom.theoryKeyInput.value = KeyDetector.activeKey(song, StateManager.state.detectedKey)?.name || ""; },
+        renderAll() { const song = StateManager.activeSong(); if (this.dom.keySelect) this.dom.keySelect.value = song?.manualKey || "auto"; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); if (this.dom.capoSelect) this.dom.capoSelect.value = String(StateManager.state.capo); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); this.updateScrollControls(); this.updateSetlistNav(); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); InstrumentManager.renderPiano(); InstrumentManager.renderFretboard(this.dom.fretboardTuning?.value || 'guitar'); this.renderLibrarySoon(); if (this.dom.theoryKeyInput) this.dom.theoryKeyInput.value = KeyDetector.activeKey(song, StateManager.state.detectedKey)?.name || ""; },
         updateAnalysis() {
           const song = StateManager.activeSong(); if (!song) return; const chords = ChordParser.extractChords(song.body);
           let active = { root: "C", mode: "major", tonic: 0, name: "C major" }, detected = active;
@@ -2917,7 +2958,21 @@ Em -  C    -  G  -  D
         applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--ui-font", FONT_STACKS[s.uiFontFamily] || FONT_STACKS.system); document.documentElement.style.setProperty("--chart-font", FONT_STACKS[s.chartFontFamily] || FONT_STACKS.mono); document.documentElement.style.setProperty("--app-font-size", Util.clamp(s.appFontSize, 10, 24) + "px"); document.documentElement.style.setProperty("--editor-font", Util.clamp(s.editorFontSize, 8, 64) + "px"); document.documentElement.style.setProperty("--preview-font", Util.clamp(s.previewFontSize, 8, 48) + "px"); document.documentElement.style.setProperty("--editor-line", Util.clamp(s.editorLineHeight, 1.2, 2.8)); }
       };
 
-      const ThemeManager = { apply() { const theme = StateManager.state.settings.theme; document.documentElement.dataset.theme = theme; document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue"; if (UIManager.dom.themeToggle) Icon.set(UIManager.dom.themeToggle, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true); } };
+      const ThemeManager = {
+        apply() {
+          const theme = StateManager.state.settings.theme;
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue";
+          if (UIManager.dom.themeToggle) Icon.set(UIManager.dom.themeToggle, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
+          // Dynamically swap light / dark icon variants
+          const iconSrc = theme === "dark" ? "icon_dark.png" : "icon_light.png";
+          document.querySelectorAll(".brand-logo").forEach(img => {
+            if (img.getAttribute("src") !== iconSrc) img.src = iconSrc;
+          });
+          const appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+          if (appleTouchIcon) appleTouchIcon.href = iconSrc;
+        }
+      };
 
       const SongLibrary = {
         render() {
@@ -3054,7 +3109,7 @@ Em -  C    -  G  -  D
                 };
               }
             }
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v4'; const ASSETS = ['index.html','style.css','app.js','sonata_logo.png','version.json','update_log.json']; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => location.pathname.replace(/\\/[^\\/]*$/, '/') + a)))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request).then(res => { const clone = res.clone(); if (e.request.method === 'GET') caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }))); });"], { type: 'application/javascript' }))).catch(() => { });
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v5'; const ASSETS = ['index.html','style.css','app.js','icon.png','icon_light.png','icon_dark.png','version.json','update_log.json']; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => location.pathname.replace(/\\/[^\\/]*$/, '/') + a)))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request).then(res => { const clone = res.clone(); if (e.request.method === 'GET') caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }))); });"], { type: 'application/javascript' }))).catch(() => { });
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
             // Populate version display + sidebar version
             const versionEl = UIManager.dom.appVersion;
