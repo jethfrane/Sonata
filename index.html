@@ -36,34 +36,92 @@
 </head>
 
 <body>
+  <!-- Sidebar backdrop overlay -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <!-- Slide-out sidebar drawer -->
+  <aside id="sidebarDrawer" class="sidebar-drawer" aria-label="Menu">
+    <div class="sidebar-header">
+      <div class="brand">
+        <img src="sonata_logo.png" alt="Sonata" class="brand-logo" width="32" height="32" aria-hidden="true" />
+        <div class="brand-text">
+          <span class="brand-title">Sonata</span>
+          <span id="sidebarVersion" class="brand-subtitle"></span>
+        </div>
+      </div>
+      <button id="sidebarCloseBtn" class="icon-button ghost" data-icon="x" type="button" aria-label="Close menu"></button>
+    </div>
+
+    <!-- Sidebar nav (mirrors top-nav for tablet/mobile) -->
+    <nav class="sidebar-nav" role="tablist" aria-label="Main navigation">
+      <button class="sidebar-nav-btn active" data-view="editor" data-icon="edit" type="button">Editor</button>
+      <button class="sidebar-nav-btn" data-view="library" data-icon="library" type="button">Library</button>
+      <button class="sidebar-nav-btn" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
+      <button class="sidebar-nav-btn" data-view="theory" data-icon="aperture" type="button">Theory</button>
+      <button class="sidebar-nav-btn" data-view="instruments" data-icon="music" type="button">Play</button>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Sidebar secondary actions -->
+    <div class="sidebar-actions">
+      <button class="button secondary full-width" id="sidebarDriveSyncBtn" data-icon="cloud" type="button">Drive Sync</button>
+      <button class="button ghost full-width" id="sidebarHelpBtn" data-icon="help" type="button">Help &amp; About</button>
+      <button class="button ghost full-width" id="sidebarSettingsBtn" data-icon="settings" type="button">Settings</button>
+      <button class="button ghost full-width" id="sidebarPresentBtn" data-icon="presentation" type="button">Presentation Mode</button>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Language + version in sidebar -->
+    <div class="sidebar-footer">
+      <label class="sidebar-label" for="langSelectSidebar">Language</label>
+      <select id="langSelectSidebar" class="select" style="width:100%;"></select>
+      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
+    </div>
+  </aside>
+
   <div class="app-shell">
     <header class="topbar">
+      <!-- Hamburger — shown on tablet/mobile, hidden on desktop -->
+      <button id="menuToggleBtn" class="icon-button ghost topbar-menu-btn" data-icon="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="sidebarDrawer"></button>
+
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">S</div>
+        <img src="sonata_logo.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
         <div class="brand-text">
           <h1 class="brand-title">Sonata</h1>
           <p class="brand-subtitle">Offline tool for musicians</p>
         </div>
       </div>
 
+      <!-- Desktop tab nav pill -->
       <nav class="top-nav" role="tablist" aria-label="Main navigation">
         <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
         <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
-        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools & Export</span></button>
+        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
         <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
         <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
       </nav>
 
+      <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
-        <!-- Google Drive Sync Button -->
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button"
-          style="display:none;">Install App</button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
-        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
-          aria-label="Toggle theme"></button>
+        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle theme"></button>
         <button class="button ghost" id="settingsButton" data-icon="settings" type="button">Settings</button>
         <button class="button primary" id="presentationButton" data-icon="presentation" type="button">Present</button>
+        <select id="langSelect" class="select">
+          <option value="en" selected>English</option>
+          <option value="fil">Filipino</option>
+        </select>
+        <span id="appVersion" class="muted" style="font-size:0.82rem;"></span>
+      </div>
+
+      <!-- Mobile quick actions row: theme toggle + present only -->
+      <div class="topbar-mobile-actions">
+        <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle theme"></button>
+        <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button">Present</button>
       </div>
     </header>
 
@@ -204,8 +262,7 @@
             <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
                   type="button">?</button></label><select class="select" id="keySelect"></select></div>
             <div class="field">
-              <label for="capoSelect">Capo (Plays in) <button class="help-icon" data-help="capo"
-                  type="button">?</button></label>
+              <label id="capoLabel" for="capoSelect"></label>
               <select class="select" id="capoSelect">
                 <option value="0">No Capo</option>
                 <option value="1">Capo 1</option>

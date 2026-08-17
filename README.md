@@ -67,23 +67,29 @@ Preparing for a setlist often involves juggling scattered text files, unformatte
 ### 7. Cloud Backup & Sync (Optional)
 * **Google Drive Sync:** Back up and restore your library via Google Identity Services and the Drive REST API (`drive.file` scope). Changes auto-merge by timestamp and sync to your private Google Drive, keeping data consistent across all devices. Direct fetch requests are used for a lightweight integration without heavy external client library dependencies.
 
-## 🛠️ Paano I‑Publish sa GitHub Pages
-
-Dahil ngayon ay nakahiwalay na ang **style.css** at **app.js**, kailangan mong i‑bundle ang app para maging isang monolithic file.
-
-1. **I‑build ang production bundle** – patakbuhin ang script:
+## 🛠️ How to Publish to GitHub Pages
+ 
+Since the stylesheet (**style.css**) and application script (**app.js**) are separated for clean development, you need to compile them back into a single monolithic file for deployment and offline use.
+ 
+1. **Build the production bundle** – run the utility script:
    ```bash
    python3 bundle.py
    ```
-   Lilikha ito ng `dist/index.html` na nag‑iinline ng `style.css` at `app.js`.
-
-2. **I‑upload ang `dist/index.html`** sa repository mo (palitan o idagdag ito bilang `index.html`).
-
-3. Pumunta sa **Settings → Pages** sa GitHub repo mo, itakda ang branch sa `main` (o `master`) at ang folder sa `/ (root)`.
-
-4. I‑save at makikita mo na ang app mo sa `https://<username>.github.io/<repo>/`.
-
-*(Opsyonal) Kung nais mong bawasan pa ang laki ng icon, patakbuhin ang `python3 optimize_assets.py` para i‑compress ang `icon.png`.)
+   This creates a self-contained, offline-resilient `dist/index.html` with all CSS and JS fully inlined.
+ 
+2. **Deploy the compiled file**: Copy `dist/index.html` to your root directory as `index.html` on your production branch.
+ 
+3. **Configure GitHub Pages**: Navigate to **Settings → Pages** in your GitHub repository, and select the branch and `/ (root)` folder to serve.
+ 
+4. **Access the live site**: Your application will be live at `https://<username>.github.io/<repo>/`.
+ 
+*(Optional) If you want to compress and optimize the application icon, run `python3 optimize_assets.py` to compress `icon.png`.*
+ 
+## 🌐 Versioning & Internationalization (i18n)
+ 
+Sonata includes built-in support for:
+- **Semantic Versioning**: The application version is tracked in `version.json`. When deployed, Sonata dynamically updates the version display badge in the top bar. If run entirely offline without local network access, it falls back gracefully to the standard local release number.
+- **Internationalization**: Users can toggle between **English** and **Filipino** translations directly via the dropdown in the header actions bar. The selected language is saved in settings and persisted locally in the browser (`localStorage`), remaining fully functional offline on stage.
 
 ## 📦 Data Privacy & Backup
 

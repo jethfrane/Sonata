@@ -1,3 +1,2477 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#f6f7f9">
+  <link rel="manifest"
+    href="data:application/json;base64,eyJuYW1lIjoiU29uYXRhIE1hc3RlciIsInNob3J0X25hbWUiOiJTb25hdGEiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmNmY3ZjkiLCJ0aGVtZV9jb2xvciI6IiMxOTY3ZDIiLCJpY29ucyI6W3sic3JjIjoiaWNvbi5wbmciLCJ0eXBlIjoiaW1hZ2UvcG5nIiwic2l6ZXMiOiI1MTJ4NTEyIn1dfQ==">
+
+  <!-- Standard Favicon for Browser Tabs -->
+  <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+
+  <!-- Apple Touch Icon (for iOS / Safari Home Screen) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+
+  <meta property="og:title" content="Sonata Master">
+  <meta property="og:description"
+    content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
+  <meta property="og:type" content="website">
+  <meta property="twitter:card" content="summary">
+  <meta property="twitter:title" content="Sonata Master">
+  <meta property="twitter:description"
+    content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
+
+  <title>Sonata</title>
+
+  <script async defer src="https://accounts.google.com/gsi/client"></script>
+
+
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-2: #f0f2f5;
+      --surface-3: #e7eaf0;
+      --text: #16181d;
+      --muted: #667085;
+      --subtle: #8792a2;
+      --line: #d8dde6;
+      --accent: #1967d2;
+      --accent-2: #0f766e;
+      --danger: #c24133;
+      --warning: #b45309;
+      --warning-slash: #e65100;
+      --shadow: 0 16px 42px rgba(16, 24, 40, 0.12);
+      --radius: 8px;
+      --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --chart-font: "SFMono-Regular", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+      --app-font-size: 15px;
+      --editor-font: 15px;
+      --preview-font: 14px;
+      --presentation-font: 42px;
+      --editor-line: 1.6;
+      --panel-pad: 16px;
+      --tap-size: 40px;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --surface: #17191f;
+      --surface-2: #21252d;
+      --surface-3: #2d333f;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --subtle: #64748b;
+      --line: #333b4d;
+      --accent: #60a5fa;
+      --accent-2: #2dd4bf;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --warning-slash: #f59e0b;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    html[data-accent="teal"] {
+      --accent: #0f766e;
+      --accent-2: #2563eb;
+    }
+
+    html[data-accent="rose"] {
+      --accent: #c02660;
+      --accent-2: #7c3aed;
+    }
+
+    html[data-accent="amber"] {
+      --accent: #b45309;
+      --accent-2: #15803d;
+    }
+
+    html[data-accent="violet"] {
+      --accent: #6d28d9;
+      --accent-2: #0891b2;
+    }
+
+    html[data-accent="graphite"] {
+      --accent: #475467;
+      --accent-2: #0f766e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)) fixed, var(--bg);
+      color: var(--text);
+      font-family: var(--ui-font);
+      font-size: var(--app-font-size);
+      letter-spacing: -0.01em;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html[data-theme="dark"] body {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)) fixed, var(--bg);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: calc(56px + env(safe-area-inset-top, 0px));
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      padding-bottom: 10px;
+      padding-left: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-left, 0px));
+      padding-right: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-right, 0px));
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.1;
+      font-weight: 760;
+    }
+
+    .brand-subtitle {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 30vw;
+    }
+
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .top-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      min-height: 32px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+
+    .top-nav-btn:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface) 60%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .top-nav-btn:active {
+      transform: scale(0.96);
+    }
+
+    .top-nav-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 750;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .top-actions,
+    .toolbar,
+    .inline-actions,
+    .segmented,
+    .presentation-controls,
+    .export-grid {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .mobile-view-switcher {
+      display: none;
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+      gap: 6px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-top: 1px solid var(--line);
+      z-index: 60;
+    }
+
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 14px clamp(12px, 2vw, 24px);
+      flex: 1;
+      min-height: 0;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-width: 0;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      animation: viewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes viewFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .workspace[data-view="editor"] > .editor-panel,
+    .workspace[data-view="library"] > .library-panel,
+    .workspace[data-view="tools"] > .tools-panel,
+    .workspace[data-view="theory"] > .theory-panel,
+    .workspace[data-view="instruments"] > .instrument-panel {
+      display: flex !important;
+    }
+
+    .library-panel,
+    .tools-panel,
+    .theory-panel,
+    .instrument-panel {
+      padding: var(--panel-pad);
+      gap: 14px;
+    }
+
+    .editor-panel {
+      min-height: 60vh;
+      overflow: hidden;
+    }
+
+    .editor-split-container {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.25fr);
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+      padding: 12px 14px;
+      background: var(--surface);
+    }
+
+    .editor-pane-left,
+    .editor-pane-right {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .pane-tag {
+      font-size: 0.72rem;
+      font-weight: 750;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .editor-pane-left .editor-container {
+      flex: 1;
+      min-height: 0;
+      background: var(--surface-2);
+    }
+
+    .editor-pane-left .textarea {
+      flex: 1;
+      height: 100%;
+      min-height: 0;
+      background: transparent;
+      padding: 14px 18px;
+    }
+
+    .editor-pane-right .preview-output {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 16px 20px;
+      font-size: var(--preview-font);
+      line-height: 1.55;
+      white-space: pre;
+      background: var(--surface-2);
+    }
+
+    .tools-grid-layout {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      width: 100%;
+    }
+
+    .tool-dashboard-card {
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .panel-heading h2,
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.2;
+      font-weight: 720;
+      color: var(--text);
+    }
+
+    .section-title {
+      padding-top: 6px;
+    }
+
+    .help-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--surface-3);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--line);
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .help-icon:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .help-popover {
+      position: fixed;
+      width: max-content;
+      max-width: 280px;
+      padding: 12px 16px;
+      background: var(--text);
+      color: var(--bg);
+      font-size: 0.85rem;
+      border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+      z-index: 999999;
+      animation: popIn 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      line-height: 1.5;
+      pointer-events: none;
+      text-align: left;
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .field,
+    .settings-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label,
+    .settings-field label,
+    .control-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface-2);
+      color: var(--text);
+      outline: none;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .input,
+    .select {
+      height: 36px;
+      padding: 0 10px;
+      font-size: 0.88rem;
+    }
+
+    .textarea {
+      min-height: 300px;
+      resize: none;
+      border: 0;
+      border-radius: 0;
+      padding: 16px;
+      background: transparent;
+      font-family: var(--chart-font);
+      font-size: var(--editor-font);
+      line-height: var(--editor-line);
+      white-space: pre-wrap;
+      overflow: auto;
+      tab-size: 4;
+      z-index: 2;
+      position: relative;
+    }
+
+    .editor-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--surface);
+    }
+
+    .editor-placeholder {
+      position: absolute;
+      inset: 0;
+      padding: 32px;
+      pointer-events: none;
+      color: var(--muted);
+      font-family: var(--ui-font);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 1;
+      background: var(--surface);
+      overflow-y: auto;
+    }
+
+    .textarea:placeholder-shown~.editor-placeholder {
+      opacity: 1;
+      pointer-events: auto;
+      cursor: text;
+    }
+
+    .textarea:focus~.editor-placeholder {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    .editor-placeholder h3 {
+      margin: 0 0 12px;
+      color: var(--text);
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .editor-placeholder p {
+      font-size: 0.95rem;
+      margin: 0 0 16px;
+      max-width: 420px;
+      line-height: 1.5;
+    }
+
+    .editor-placeholder ul {
+      text-align: left;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      margin: 0 auto;
+      padding: 0;
+      list-style: none;
+      max-width: 320px;
+    }
+
+    .editor-placeholder li {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .editor-placeholder code {
+      background: var(--surface-2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: var(--chart-font);
+      font-size: 0.85em;
+      color: var(--accent);
+      font-weight: bold;
+      min-width: 50px;
+      text-align: center;
+      border: 1px solid var(--line);
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .textarea:focus {
+      box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    .input:read-only,
+    .textarea:read-only {
+      opacity: 0.85;
+      background: var(--surface-3);
+      cursor: not-allowed;
+    }
+
+    .song-title-input:read-only {
+      background: var(--surface);
+      cursor: default;
+    }
+
+    .song-title-input {
+      height: auto;
+      min-height: 46px;
+      padding: 12px 18px 6px;
+      border: 0;
+      border-radius: 0;
+      background: var(--surface);
+      color: var(--text);
+      font-size: clamp(1.15rem, 2.5vw, 1.65rem);
+      line-height: 1.25;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .song-title-input:focus {
+      box-shadow: none;
+    }
+
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .status-line {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge {
+      padding: 2px 6px;
+      background: var(--warning);
+      color: #fff;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .setlist-nav {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      border-bottom: 1px solid var(--line);
+      font-size: 0.88rem;
+    }
+
+    .button,
+    .icon-button,
+    .tab-button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface-2);
+      color: var(--text);
+      min-height: 34px;
+      padding: 0 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+
+    .button:hover,
+    .icon-button:hover {
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+      transform: translateY(-1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .button:active,
+    .icon-button:active,
+    .tab-button:active {
+      transform: scale(0.96) translateY(0);
+    }
+
+    .icon-button {
+      width: var(--tap-size);
+      min-height: var(--tap-size);
+      padding: 0;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      stroke-width: 2.2;
+    }
+
+    .button-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    .button.primary:hover {
+      filter: brightness(1.06);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 40%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .button.secondary {
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+      border-color: color-mix(in srgb, var(--accent) 25%, var(--line));
+      color: var(--accent);
+    }
+
+    .button.secondary:hover {
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    }
+
+    .button.danger,
+    .icon-button.danger {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 25%, var(--line));
+      background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+    }
+
+    .button.danger:hover,
+    .icon-button.danger:hover {
+      background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+      border-color: var(--danger);
+    }
+
+    .button.ghost,
+    .icon-button.ghost {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    .button.ghost:hover,
+    .icon-button.ghost:hover {
+      background: var(--surface-2);
+      border-color: var(--line);
+    }
+
+    .segmented {
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .tab-button {
+      border: 0;
+      min-height: 30px;
+      padding: 0 12px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex-direction: column;
+      gap: 2px;
+      border-radius: 6px;
+      box-shadow: none;
+    }
+
+    .tab-button:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--surface) 60%, transparent);
+    }
+
+    .tab-button.active {
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 750;
+      box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
+    }
+
+    .library-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-auto-rows: max-content;
+      gap: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      flex: 1;
+      align-content: start;
+      align-items: start;
+      min-height: 320px;
+      padding: 4px 2px 24px;
+    }
+
+    .song-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      padding: 14px 16px;
+      min-height: 68px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .song-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .song-card:active {
+      transform: scale(0.98);
+    }
+
+    .song-card.active {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .song-card-title {
+      margin: 0;
+      font-size: 0.92rem;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+    }
+
+    .song-card-meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.76rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      background: var(--surface-2);
+      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--surface-2);
+      min-width: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 650;
+      margin-bottom: 2px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tool-card {
+      display: grid;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface-2);
+    }
+
+    .tool-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .tool-card-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .tool-card-value {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .beat-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .beat-dot {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      transition: background 90ms ease, transform 90ms ease;
+    }
+
+    .beat-dot.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: scaleY(1.3);
+    }
+
+    .beat-dot.downbeat {
+      background: var(--accent-2);
+      border-color: var(--accent-2);
+    }
+
+    .preview-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 240px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .preview-header {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .preview-output {
+      margin: 0;
+      padding: 12px;
+      overflow: auto;
+      flex: 1;
+      color: var(--text);
+      font-family: var(--chart-font);
+      font-size: var(--preview-font);
+      line-height: 1.5;
+      white-space: pre;
+      tab-size: 4;
+    }
+
+    .export-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .export-grid .button {
+      width: 100%;
+    }
+
+    .layout-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .circle-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 1/1;
+      margin: 0 auto;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .explanation-text {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin-top: 12px;
+      background: var(--surface-2);
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .piano-container {
+      width: 100%;
+      overflow-x: auto;
+      padding: 14px 16px 20px;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-2);
+      margin-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--subtle) var(--surface-3);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .piano-container::-webkit-scrollbar,
+    .fretboard-container::-webkit-scrollbar {
+      height: 10px;
+      -webkit-appearance: none;
+      display: block;
+    }
+
+    .piano-container::-webkit-scrollbar-track,
+    .fretboard-container::-webkit-scrollbar-track {
+      background: var(--surface-3);
+      border-radius: 6px;
+    }
+
+    .piano-container::-webkit-scrollbar-thumb,
+    .fretboard-container::-webkit-scrollbar-thumb {
+      background: var(--subtle);
+      border-radius: 6px;
+      border: 2px solid var(--surface-3);
+    }
+
+    .piano-scroll {
+      display: flex;
+      height: 175px;
+      padding: 0 8px;
+      width: 100%;
+      min-width: max-content;
+      justify-content: center;
+      background: #141414;
+      border-radius: 8px 8px 10px 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.15);
+      border: 3px solid #222;
+    }
+
+    .piano-key {
+      position: relative;
+      border-radius: 0 0 6px 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.08s ease;
+    }
+
+    .piano-key-white {
+      background: linear-gradient(to bottom, #fcfcfc 0%, #f4f4f4 80%, #ebebeb 100%);
+      border: 1px solid #d0d0d0;
+      border-top: none;
+      width: clamp(48px, 4.5vw, 64px);
+      height: 100%;
+      z-index: 1;
+      margin-right: -1px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 12px;
+      box-shadow: inset 0 -5px 8px rgba(0, 0, 0, 0.08), 0 2px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    .piano-key-white:hover {
+      background: linear-gradient(to bottom, #ffffff 0%, #f9f9f9 80%, #f0f0f0 100%);
+    }
+
+    .piano-key-white .key-label {
+      font-size: 0.85rem;
+      color: #333;
+      font-weight: 750;
+      pointer-events: none;
+      font-family: var(--ui-font);
+    }
+
+    .piano-key-black {
+      background: linear-gradient(to bottom, #2d2d2d 0%, #1a1a1a 75%, #0d0d0d 100%);
+      width: clamp(30px, 2.8vw, 40px);
+      height: 60%;
+      z-index: 2;
+      margin-left: clamp(-15px, -1.4vw, -20px);
+      margin-right: clamp(-15px, -1.4vw, -20px);
+      border: 1px solid #000;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.25), inset 0 -3px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .piano-key-black .key-label {
+      font-size: 0.72rem;
+      color: #eee;
+      font-weight: 700;
+      pointer-events: none;
+      text-align: center;
+      line-height: 1.1;
+      font-family: var(--ui-font);
+    }
+
+    .piano-key-white:active,
+    .piano-key-white.active {
+      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+      transform: translateY(2px);
+    }
+
+    .piano-key-white:active .key-label,
+    .piano-key-white.active .key-label {
+      color: #fff !important;
+    }
+
+    .piano-key-black:active,
+    .piano-key-black.active {
+      background: linear-gradient(to bottom, var(--accent-2) 0%, color-mix(in srgb, var(--accent-2) 75%, black) 100%) !important;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+      transform: translateY(2px);
+    }
+
+    .fretboard-container {
+      width: 100%;
+      overflow-x: auto;
+      padding: 14px 16px 20px;
+      -webkit-overflow-scrolling: touch;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-2);
+      margin-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--subtle) var(--surface-3);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .fretboard {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 860px;
+      padding: 0;
+      background: linear-gradient(180deg, #20110a 0%, #351c12 30%, #402317 50%, #351c12 70%, #20110a 100%);
+      border-radius: 6px;
+      border: 3px solid #1a0b06;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 0 16px rgba(0, 0, 0, 0.7);
+      position: relative;
+      user-select: none;
+    }
+
+    .fret-string {
+      display: flex;
+      position: relative;
+      height: 38px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .fret-string::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: var(--string-gauge, 2px);
+      background: var(--string-color, linear-gradient(to bottom, #f0f0f0, #888));
+      z-index: 2;
+      pointer-events: none;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    }
+
+    .fret-cell {
+      height: 100%;
+      border-right: 3px solid #8d98a5;
+      box-shadow: inset -1px 0 1px rgba(255, 255, 255, 0.4), 1px 0 2px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .fret-cell:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .fret-cell:first-child {
+      flex: 0 0 44px !important;
+      width: 44px !important;
+      background: linear-gradient(to right, #e8e4db 0%, #dcd6c8 70%, #c4bcae 100%);
+      border-right: 6px solid #b0a696;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.5);
+    }
+
+    .fret-dot {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 20%, #e0e4e8 70%, #a8b0b8 100%);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.85;
+    }
+
+    .fret-note-marker {
+      position: relative;
+      z-index: 3;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      opacity: 0;
+      transform: scale(0.7);
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.4);
+    }
+
+    .fret-cell:active .fret-note-marker,
+    .fret-cell.active .fret-note-marker {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .modal-host {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: calc(14px + env(safe-area-inset-top, 0px)) calc(14px + env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) calc(14px + env(safe-area-inset-left, 0px));
+    }
+
+    .modal-host[hidden] {
+      display: none;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 8, 16, 0.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .modal {
+      position: relative;
+      width: min(600px, 100%);
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+      padding: 0;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      animation: modalFade 0.2s ease-out;
+    }
+
+    @keyframes modalFade {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header {
+      padding: 18px 24px 12px;
+      flex-shrink: 0;
+    }
+
+    .modal-header h2 {
+      margin: 0 0 6px;
+      font-size: 1.1rem;
+      line-height: 1.2;
+      font-weight: 760;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-message {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .modal-fields {
+      padding: 8px 24px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .modal-actions {
+      padding: 14px 24px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface) 95%, transparent);
+      border-radius: 0 0 12px 12px;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 60px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      accent-color: var(--accent);
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .range-value {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .settings-heading {
+      margin-top: 6px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 760;
+    }
+
+    .toast-host {
+      position: fixed;
+      right: 16px;
+      z-index: 300;
+      display: grid;
+      gap: 8px;
+      width: min(340px, calc(100vw - 32px));
+      pointer-events: none;
+      bottom: 16px;
+      transition: bottom 0.2s;
+    }
+
+    .toast {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .presentation[data-pres-theme="light"] {
+      --p-bg: #f6f7f9;
+      --p-text: #16181d;
+      --p-surface: #ffffff;
+      --p-line: #d8dde6;
+      --p-muted: #667085;
+      --p-accent: var(--accent, #1967d2);
+      --p-slash: var(--warning-slash, #e65100);
+    }
+
+    .presentation[data-pres-theme="dark"] {
+      --p-bg: #0f1115;
+      --p-text: #f1f5f9;
+      --p-surface: #17191f;
+      --p-line: #334155;
+      --p-muted: #94a3b8;
+      --p-accent: var(--accent, #60a5fa);
+      --p-slash: var(--warning-slash, #fbbf24);
+    }
+
+    .presentation[data-pres-theme="stage"] {
+      --p-bg: #000000;
+      --p-text: #ffffff;
+      --p-surface: #111111;
+      --p-line: #333333;
+      --p-muted: #888888;
+      --p-accent: var(--accent, #3b82f6);
+      --p-slash: var(--warning-slash, #f59e0b);
+    }
+
+    .presentation {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      background: var(--p-bg);
+      color: var(--p-text);
+      transition: background 0.3s;
+    }
+
+    .presentation[hidden] {
+      display: none;
+    }
+
+    .presentation-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 510;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px calc(10px + max(0px, env(safe-area-inset-top)));
+      background: color-mix(in srgb, var(--p-surface) 85%, transparent);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid color-mix(in srgb, var(--p-line) 50%, transparent);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .presentation-title {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 760;
+      font-size: 1.1rem;
+      color: var(--p-text);
+    }
+
+    .presentation-controls .button {
+      background: var(--p-surface);
+      color: var(--p-text);
+      border-color: var(--p-line);
+    }
+
+    .presentation-stage {
+      flex: 1;
+      overflow: auto;
+      scroll-behavior: smooth;
+      padding: clamp(16px, 4vw, 56px);
+      padding-top: calc(80px + env(safe-area-inset-top));
+      padding-bottom: 50vh;
+    }
+
+    .presentation-text {
+      width: min(100%, var(--presentation-width, 920px));
+      margin: 0 auto;
+      font-family: var(--chart-font);
+      font-size: var(--presentation-font);
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--p-text);
+    }
+
+    .presentation.orientation-landscape {
+      --presentation-width: 1180px;
+    }
+
+    .presentation.orientation-portrait {
+      --presentation-width: 760px;
+    }
+
+    .presentation-controls-bottom {
+      position: absolute;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: color-mix(in srgb, var(--p-surface) 85%, transparent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid color-mix(in srgb, var(--p-line) 50%, transparent);
+      border-radius: 999px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 510;
+    }
+
+    .presentation-controls-bottom .icon-button {
+      border: none;
+      background: transparent;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      color: var(--p-text);
+    }
+
+    .presentation.idle .presentation-top {
+      opacity: 0;
+      transform: translateY(-100%);
+      pointer-events: none;
+    }
+
+    .presentation.idle .presentation-controls-bottom {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+      pointer-events: none;
+    }
+
+    .print-area {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      body> :not(.print-area) {
+        display: none !important;
+      }
+
+      .app-shell,
+      .modal-host,
+      .toast-host {
+        display: none !important;
+      }
+
+      .print-area {
+        display: block !important;
+        padding: 20px;
+      }
+
+      .print-area h1 {
+        font-family: sans-serif;
+        font-size: 24px;
+        margin: 0 0 10px;
+        font-weight: bold;
+      }
+
+      .print-area pre {
+        font-family: monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        margin: 0;
+      }
+
+      .print-area footer {
+        font-family: sans-serif;
+        font-size: 10px;
+        color: #666;
+        margin-top: 20px;
+        border-top: 1px solid #ccc;
+        padding-top: 10px;
+      }
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+      white-space: nowrap;
+    }
+
+    .md-divider {
+      border: 0;
+      border-top: 1px dashed var(--line);
+      margin: 12px 0;
+    }
+
+    .md-header {
+      font-size: 1.25em;
+      font-weight: bold;
+      color: var(--accent);
+      margin: 16px 0 8px;
+      display: block;
+      font-family: var(--ui-font);
+    }
+
+    .presentation .md-header {
+      color: var(--p-accent);
+    }
+
+    .md-subheader {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 12px 0 6px;
+      display: block;
+      font-family: var(--ui-font);
+    }
+
+    .presentation .md-subheader {
+      color: var(--p-accent);
+    }
+
+    .md-note {
+      color: var(--muted);
+      font-style: italic;
+      background: var(--surface-2);
+      padding: 4px 8px;
+      border-left: 3px solid var(--line);
+      display: inline-block;
+      margin: 4px 0;
+      border-radius: 0 4px 4px 0;
+      font-family: var(--ui-font);
+      font-size: 0.9em;
+    }
+
+    .md-chord-line,
+    .md-chord,
+    .chord-bold {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .md-slash {
+      color: var(--warning-slash);
+      font-weight: 800;
+    }
+
+    .presentation .md-chord-line,
+    .presentation .md-chord,
+    .presentation .chord-bold {
+      color: var(--p-accent);
+    }
+
+    .presentation .md-slash {
+      color: var(--p-slash);
+    }
+
+    @media (min-width: 768px) {
+      .top-nav {
+        display: flex;
+      }
+
+      .mobile-view-switcher {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 767px) {
+      :root {
+        --panel-pad: 12px;
+        --tap-size: 44px;
+      }
+
+      .top-nav {
+        display: none;
+      }
+
+      .mobile-view-switcher {
+        display: grid;
+      }
+
+      .topbar {
+        align-items: center;
+        min-height: calc(52px + env(safe-area-inset-top, 0px));
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        padding-bottom: 8px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
+        gap: 8px;
+      }
+
+      .top-actions {
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+        gap: 4px;
+      }
+
+      .top-actions .button:not(.primary) .button-label,
+      .brand-subtitle {
+        display: none;
+      }
+
+      .workspace {
+        padding: 8px 8px calc(76px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .editor-split-container {
+        grid-template-columns: 1fr;
+        padding: 6px;
+        gap: 8px;
+      }
+
+      .editor-pane-right,
+      .desktop-preview-mode-switch {
+        display: none !important;
+      }
+
+      .editor-placeholder {
+        padding: 18px 14px;
+        justify-content: flex-start;
+        padding-top: 24px;
+      }
+
+      .editor-placeholder h3 {
+        font-size: 1.15rem;
+        margin-bottom: 6px;
+      }
+
+      .editor-placeholder p {
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+        line-height: 1.4;
+      }
+
+      .editor-placeholder ul {
+        font-size: 0.82rem;
+        line-height: 1.6;
+      }
+
+      .editor-placeholder li {
+        margin-bottom: 4px;
+        gap: 8px;
+      }
+
+      .editor-placeholder code {
+        padding: 2px 6px;
+        min-width: 44px;
+      }
+
+      .library-list {
+        grid-template-columns: 1fr;
+      }
+
+      .tools-grid-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .editor-toolbar {
+        padding: 6px 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 4px;
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .button {
+        min-height: var(--tap-size);
+        padding: 0 10px;
+      }
+
+      .toolbar .button {
+        padding: 0 8px;
+        min-height: 36px;
+        font-size: 0.8rem;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .toolbar .button .icon {
+        width: 15px;
+        height: 15px;
+      }
+
+      .toolbar .button-label {
+        display: inline-block;
+      }
+
+      .song-title-input {
+        min-height: 44px;
+        padding: 8px 10px 4px;
+      }
+
+      .textarea {
+        min-height: calc(100dvh - 230px);
+        padding: 12px;
+      }
+
+      .metric-grid,
+      .export-grid,
+      .layout-row {
+        grid-template-columns: 1fr;
+      }
+
+      .presentation-top {
+        flex-wrap: wrap;
+      }
+
+      .presentation-controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .modal {
+        max-height: 88vh;
+      }
+
+      .toast-host {
+        bottom: max(78px, calc(74px + env(safe-area-inset-bottom)));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar {
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        padding-bottom: 8px;
+        padding-left: calc(10px + env(safe-area-inset-left, 0px));
+        padding-right: calc(10px + env(safe-area-inset-right, 0px));
+        gap: 6px;
+      }
+
+      .brand-mark {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+      }
+
+      .brand-title {
+        font-size: 1.05rem;
+      }
+
+      .top-actions .button {
+        padding: 0 8px;
+        min-height: 36px;
+      }
+
+      .top-actions .icon-button {
+        width: 36px;
+        height: 36px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .presentation-text {
+        font-size: calc(var(--presentation-font) * 0.55) !important;
+      }
+
+      .presentation-stage {
+        padding: 16px;
+        padding-top: calc(90px + env(safe-area-inset-top));
+        padding-bottom: 30vh;
+      }
+
+      .presentation-top {
+        padding: 8px 10px;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .presentation-controls {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        width: 100%;
+      }
+
+      .presentation-controls .button {
+        font-size: 0.75rem;
+        padding: 0 8px;
+        min-height: 32px;
+      }
+
+      .presentation-controls-bottom {
+        padding: 4px 8px;
+        gap: 4px;
+        bottom: 12px;
+      }
+
+      .presentation-controls-bottom .icon-button {
+        width: 36px;
+        height: 36px;
+      }
+    }
+
+    .manage-song-row:hover {
+      background: color-mix(in srgb, var(--accent) 6%, var(--surface)) !important;
+    }
+
+    @media (max-width: 400px) {
+      .mobile-view-switcher {
+        padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+        gap: 2px;
+      }
+
+      .mobile-view-switcher .tab-button {
+        padding: 4px 2px;
+        font-size: 0.7rem;
+      }
+
+      .mobile-view-switcher .tab-button .icon {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .top-actions .button-label {
+        display: none !important;
+      }
+
+      .topbar {
+        padding-top: calc(8px + env(safe-area-inset-top, 0px));
+        padding-bottom: 8px;
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        padding-right: calc(12px + env(safe-area-inset-right, 0px));
+        gap: 12px;
+      }
+
+      .top-actions {
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .mobile-view-switcher .tab-button .button-label {
+        display: none !important;
+      }
+
+      .mobile-view-switcher .tab-button {
+        min-height: 44px;
+        justify-content: center;
+        align-items: center;
+        gap: 0;
+      }
+
+      .mobile-view-switcher {
+        padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+        gap: 4px;
+      }
+    }
+
+</style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">S</div>
+        <div class="brand-text">
+          <h1 class="brand-title">Sonata</h1>
+          <p class="brand-subtitle">Offline tool for musicians</p>
+        </div>
+      </div>
+
+      <nav class="top-nav" role="tablist" aria-label="Main navigation">
+        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
+        <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
+        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools & Export</span></button>
+        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
+        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
+      </nav>
+
+      <div class="top-actions">
+        <!-- Google Drive Sync Button -->
+        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button"
+          style="display:none;">Install App</button>
+        <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
+        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
+          aria-label="Toggle theme"></button>
+        <button class="button ghost" id="settingsButton" data-icon="settings" type="button">Settings</button>
+        <button class="button primary" id="presentationButton" data-icon="presentation" type="button">Present</button>
+        <!-- Language selector -->
+        <select id="langSelect" class="select" style="margin-left:8px;">
+          <option value="en" selected>English</option>
+          <option value="fil">Filipino</option>
+        </select>
+        <!-- Version display -->
+        <span id="appVersion" class="muted" style="margin-left:12px; font-size:0.85rem;"></span>
+      </div>
+    </header>
+
+    <nav class="mobile-view-switcher" aria-label="Mobile navigation">
+      <button class="tab-button active" type="button" data-view="editor" data-icon="edit">Editor</button>
+      <button class="tab-button" type="button" data-view="library" data-icon="library">Library</button>
+      <button class="tab-button" type="button" data-view="tools" data-icon="sliders">Tools</button>
+      <button class="tab-button" type="button" data-view="theory" data-icon="aperture">Theory</button>
+      <button class="tab-button" type="button" data-view="instruments" data-icon="music">Play</button>
+    </nav>
+
+    <main class="workspace" data-view="editor">
+
+      <!-- 1. LIBRARY PAGE -->
+      <aside class="panel library-panel" aria-label="Song library">
+        <div class="panel-heading">
+          <h2>Song Library <button class="help-icon" data-help="library" type="button">?</button></h2>
+          <div style="display:flex; gap:6px;">
+            <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
+              title="Manage Library">Manage</button>
+            <button class="button primary" id="newSongButton" data-icon="plus" type="button">New Song</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+          <div class="field" style="flex:1; min-width:180px; margin:0;">
+            <label class="visually-hidden" for="songSearch">Search</label>
+            <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics..." autocomplete="off" style="margin:0;">
+          </div>
+          <div class="select-wrapper" style="width:120px;">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;" title="Sort Library">
+              <option value="recent">Recent</option>
+              <option value="title">Title</option>
+              <option value="author">Author</option>
+              <option value="arranger">Arranger</option>
+              <option value="key">Key</option>
+            </select>
+          </div>
+          <div class="segmented" role="tablist">
+            <button class="tab-button active" type="button" data-library-filter="all">All</button>
+            <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
+            <button class="tab-button" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
+          </div>
+        </div>
+        <div class="library-list" id="libraryList" aria-live="polite"></div>
+      </aside>
+
+      <!-- 2. EDITOR PAGE (SPLIT VIEW ON DESKTOP) -->
+      <section class="panel editor-panel" aria-label="Song editor">
+        <label class="visually-hidden" for="songTitle">Song title</label>
+        <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
+        <div id="editorMetadataBar"
+          style="padding: 6px 14px; font-size: 0.75rem; color: var(--muted); display: none; gap: 12px; flex-wrap: wrap; background: var(--surface-2); border-bottom: 1px solid var(--line); align-items:center;">
+        </div>
+        <div class="editor-toolbar">
+          <div class="toolbar">
+            <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save</button>
+            <button class="button" id="undoSongButton" data-icon="rotate-ccw" type="button"
+              title="Undo (Ctrl+Z)">Undo</button>
+            <button class="button" id="redoSongButton" data-icon="rotate" type="button"
+              title="Redo (Ctrl+Y)">Redo</button>
+            <button class="button primary" id="importSharedButton" data-icon="download" type="button"
+              style="display:none;">Save to Library</button>
+            <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
+            <button class="button" id="loadDemoButton" data-icon="sparkles" type="button">Demo</button>
+            <button class="button" id="exitSharedButton" data-icon="x" type="button" style="display:none;">Close
+              Preview</button>
+          </div>
+          <div class="desktop-preview-mode-switch segmented" role="tablist">
+            <button class="tab-button active" type="button" data-preview-mode="original">Song</button>
+            <button class="tab-button" type="button" data-preview-mode="transposed">Transposed</button>
+            <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
+            <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
+            <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
+          </div>
+          <div class="status-line" id="saveStatus" aria-live="polite">Ready</div>
+        </div>
+
+        <div class="setlist-nav" id="setlistNav">
+          <button class="button secondary" id="slPrev" data-icon="arrow-left" type="button">Prev</button>
+          <span id="slTitle" style="font-weight:700; color:var(--accent);">Setlist</span>
+          <div style="display:flex; gap:6px;">
+            <button class="button secondary" id="slNext" data-icon="arrow-right" type="button">Next</button>
+            <button class="icon-button danger" id="slExit" data-icon="x" type="button"
+              aria-label="Exit Setlist"></button>
+          </div>
+        </div>
+
+        <div class="editor-split-container">
+          <div class="editor-pane-left">
+            <div class="pane-header">
+              <span class="pane-tag">CHORD &amp; LYRIC EDITOR</span>
+              <span class="muted" style="font-size:0.72rem;"># Section &bull; [Chord] inline</span>
+            </div>
+            <div class="editor-container">
+              <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body" placeholder=" "></textarea>
+              <div class="editor-placeholder">
+                <h3>Welcome to Sonata!</h3>
+                <p>Type your chords and lyrics below, or click <strong>Demo</strong> above to instantly load a fully
+                  formatted example.</p>
+                <ul>
+                  <li><code># </code> Header (e.g., # Verse 1)</li>
+                  <li><code>## </code> Subheader (e.g., ## Build)</li>
+                  <li><code>---</code> Creates a solid divider line</li>
+                  <li><code>[G]</code> Creates inline chords</li>
+                  <li><code>&gt; </code> Creates a safe comment/note</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="editor-pane-right">
+            <div class="pane-header">
+              <span class="pane-tag">LIVE CHART PREVIEW</span>
+              <div style="display:flex; gap:4px; align-items:center;">
+                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
+                <button class="help-icon" data-help="formats" type="button">?</button>
+              </div>
+            </div>
+            <div class="preview-output" id="previewOutput"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. TOOLS & EXPORT PAGE -->
+      <aside class="panel tools-panel" aria-label="Music tools">
+        <div class="tools-grid-layout">
+          <!-- Card 1: Music Analysis & Transposition -->
+          <div class="tool-dashboard-card">
+            <div class="panel-heading">
+              <h2>Music Analysis &amp; Transposition</h2>
+              <span class="muted" id="wordCount">0 lines</span>
+            </div>
+            <div class="metric-grid">
+              <div class="metric"><span>Detected Key</span><strong id="detectedKey">Unknown</strong></div>
+              <div class="metric"><span>Active Key</span><strong id="activeKey">Auto</strong></div>
+              <div class="metric"><span>Chords</span><strong id="chordCount">0</strong></div>
+              <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
+            </div>
+            <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
+                  type="button">?</button></label><select class="select" id="keySelect"></select></div>
+            <div class="field">
+              <label id="capoLabel" for="capoSelect"></label>
+              <select class="select" id="capoSelect">
+                <option value="0">No Capo</option>
+                <option value="1">Capo 1</option>
+                <option value="2">Capo 2</option>
+                <option value="3">Capo 3</option>
+                <option value="4">Capo 4</option>
+                <option value="5">Capo 5</option>
+                <option value="6">Capo 6</option>
+                <option value="7">Capo 7</option>
+                <option value="8">Capo 8</option>
+                <option value="9">Capo 9</option>
+                <option value="10">Capo 10</option>
+                <option value="11">Capo 11</option>
+                <option value="12">Capo 12</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="transposeSelect">Transpose semitones <button class="help-icon" data-help="transpose"
+                  type="button">?</button></label>
+              <div class="transpose-box"
+                style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
+                  class="icon-button" id="transposeDown" data-icon="minus" type="button"
+                  aria-label="Transpose down"></button><select class="select" id="transposeSelect"
+                  style="text-align:center; font-weight: 600;"></select><button class="icon-button" id="transposeUp"
+                  data-icon="plus" type="button" aria-label="Transpose up"></button></div>
+            </div>
+            <div class="inline-actions"><button class="button secondary" id="applyTransposeButton" data-icon="wand"
+                type="button">Apply Transpose</button><button class="button" id="resetTransposeButton"
+                data-icon="rotate-ccw" type="button">Reset</button></div>
+          </div>
+
+          <!-- Card 2: Metronome -->
+          <div class="tool-dashboard-card">
+            <div class="tool-card-header">
+              <div class="tool-card-title"><span data-inline-icon="metronome"></span>Metronome</div><span
+                class="tool-card-value" id="metronomeStatus">Stopped</span>
+            </div>
+            <div class="field" style="margin-bottom: 4px;"><input id="metronomeBpmRange" type="range" min="30" max="500"
+                step="1" value="90" aria-label="Metronome BPM" style="width: 100%;"></div>
+            <div
+              style="display:grid; grid-template-columns: 36px minmax(0, 1fr) 36px 64px; gap:8px; align-items:center;">
+              <button class="icon-button" id="metronomeDown" data-icon="minus" type="button"
+                aria-label="Slower"></button>
+              <input class="input" id="metronomeBpmInput" type="number" min="30" max="500" step="1" value="90"
+                style="text-align: center; padding: 0 4px; font-weight: 700; font-size: 1rem;">
+              <button class="icon-button" id="metronomeUp" data-icon="plus" type="button" aria-label="Faster"></button>
+              <select class="select" id="metronomeBeats" aria-label="Beats" style="padding: 0 6px; font-weight: 600;">
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4" selected>4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+              </select>
+            </div>
+            <div class="beat-row" id="beatRow" aria-hidden="true"></div>
+            <div class="inline-actions"><button class="button primary" id="metronomeToggle" data-icon="play"
+                type="button">Start</button><button class="button" id="tapTempoButton" data-icon="tap" type="button">Tap
+                Tempo</button></div>
+          </div>
+
+          <!-- Card 3: Export & Layout -->
+          <div class="tool-dashboard-card">
+            <div class="panel-heading">
+              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button">?</button></h2>
+            </div>
+            <div class="layout-row">
+              <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select" id="exportOrientation" aria-label="Orientation">
+                  <option value="portrait">Portrait</option>
+                  <option value="landscape">Landscape</option>
+                </select></div>
+              <div class="field"><label for="exportColumns">Columns</label><select class="select" id="exportColumns" aria-label="Columns">
+                  <option value="1">1 Column</option>
+                  <option value="2">2 Columns</option>
+                  <option value="3">3 Columns</option>
+                </select></div>
+            </div>
+            <div class="export-grid">
+              <button class="button" id="exportTxtButton" data-icon="file-text" type="button">Export TXT</button><button
+                class="button" id="exportPngButton" data-icon="image" type="button">Export PNG</button><button class="button"
+                id="exportPdfButton" data-icon="pdf" type="button">Export PDF</button><button class="button" id="printButton"
+                data-icon="print" type="button">Print Chart</button><button class="button" id="copyButton" data-icon="copy"
+                type="button">Copy Text</button><button class="button primary" id="shareButton" data-icon="share"
+                type="button">Share Link / QR</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 4. THEORY PAGE -->
+      <aside class="panel theory-panel" aria-label="Music Theory">
+        <div class="panel-heading">
+          <h2>Circle of 5th's</h2>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div class="segmented" style="padding:2px; display:inline-flex;">
+              <button class="tab-button active" type="button" data-circle-format="roman"
+                style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
+              <button class="tab-button" type="button" data-circle-format="nashville"
+                style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
+            </div><button class="help-icon" data-help="circle" type="button">?</button>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom: 12px;"><label for="theoryKeyInput"
+            style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
+              class="help-icon" data-help="theoryKey" type="button"
+              style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
+            id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor"
+            autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
+        <div class="field"
+          style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+          <label for="circleRotateToggle">Auto-Rotate to Key</label><input type="checkbox" id="circleRotateToggle"
+            checked style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
+        </div>
+        <div class="field"
+          style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+          <label for="circleHighlightToggle">Highlight Key Family</label><input type="checkbox"
+            id="circleHighlightToggle" checked
+            style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
+        </div>
+        <div class="circle-container" id="circleContainer"></div>
+        <div class="explanation-text"><strong>How it works:</strong> The Circle organizes keys mathematically. Toggle
+          'Highlight Key Family' to instantly reveal the 7 diatonic chords (I, ii, iii, IV, V, vi, vii°) that
+          naturally belong in your active song.</div>
+      </aside>
+
+      <!-- 5. PLAY / INSTRUMENTS PAGE -->
+      <aside class="panel instrument-panel" aria-label="Instruments">
+        <div class="panel-heading">
+          <h2>Virtual Piano</h2><button class="help-icon" data-help="piano" type="button">?</button>
+        </div>
+        <div class="piano-container">
+          <div class="piano-scroll" id="pianoKeyboard"></div>
+        </div>
+        <div class="explanation-text" style="margin-top:0;">Scroll horizontally to view more octaves. Touch and hold
+          keys to sustain the note.</div>
+
+        <div class="panel-heading" style="margin-top:24px;">
+          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button">?</button></h2>
+          <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;">
+            <option value="guitar">Guitar (EADGBE)</option>
+            <option value="bass">4-Str Bass (EADG)</option>
+            <option value="bass5">5-Str Bass (BEADG)</option>
+            <option value="ukulele">Ukulele (GCEA)</option>
+          </select>
+        </div>
+        <div class="fretboard-container">
+          <div class="fretboard" id="fretboardGrid"></div>
+        </div>
+        <div class="explanation-text" style="margin-top:0;">The leftmost column is the open string (nut). Touch and
+          hold frets to sustain the note.</div>
+
+        <div class="panel-heading" style="margin-top:24px;">
+          <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button">?</button>
+        </div>
+        <div class="tool-card">
+          <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); text-align: center;">Click to hear
+            reference pitch</p>
+          <div id="tunerReferenceButtons"
+            style="display:flex; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;"></div>
+          <button id="micTunerBtn" class="button secondary" type="button" style="width:100%;"><span
+              data-inline-icon="music" style="margin-right:6px;"></span> Start Microphone Tuner</button>
+          <div id="tunerDisplay"
+            style="display:none; text-align:center; padding:16px 10px 10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; margin-top:8px;">
+            <div id="tunerNote" style="font-size: 3rem; font-weight: 800; color:var(--text); line-height: 1;">--</div>
+            <div id="tunerCents" style="color: var(--muted); font-size:0.9rem; font-weight:600; margin:8px 0 16px;">0
+              cents</div>
+            <div
+              style="width:100%; height:14px; background:var(--surface-3); border-radius:7px; position:relative; overflow:hidden;">
+              <div style="position:absolute; width:2px; height:100%; background:var(--line); left:50%; z-index: 1;">
+              </div>
+              <div id="tunerNeedle"
+                style="position:absolute; width:10px; height:14px; border-radius:5px; background:var(--accent); top:0; left:50%; transform:translateX(-50%); transition: left 0.1s ease-out; z-index: 2;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+  </div>
+
+  <div class="modal-host" id="modalHost" hidden>
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle"></h2>
+        <p class="modal-message" id="modalMessage"></p>
+      </div>
+      <div class="modal-fields" id="modalFields"></div>
+      <div class="modal-actions" id="modalActions"><button class="button" id="modalCancel"
+          type="button">Cancel</button><button class="button primary" id="modalConfirm" type="button">Done</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast-host" id="toastHost" aria-live="polite"></div>
+
+  <section class="presentation" id="presentation" data-pres-theme="stage" hidden aria-label="Presentation mode">
+    <div class="presentation-top">
+      <div class="presentation-title" id="presentationTitle">Sonata</div>
+      <div class="presentation-controls">
+        <button class="button" id="presentationFontDown" data-icon="type-minus" type="button">A-</button><button
+          class="button" id="presentationFontUp" data-icon="type-plus" type="button">A+</button>
+        <select class="select" id="presentationOrientation" style="width: auto; min-width: 90px;">
+          <option value="auto">Auto</option>
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+        <button class="help-icon" data-help="present" type="button"
+          style="margin-left:8px; width: 22px; height: 22px;">?</button><button class="button danger"
+          id="presentationExit" data-icon="x" type="button" style="margin-left:8px;">Exit</button>
+      </div>
+    </div>
+    <div class="presentation-stage" id="presentationStage">
+      <div class="presentation-text" id="presentationText"></div>
+    </div>
+    <div class="presentation-controls-bottom">
+      <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" title="Cycle Theme"></button>
+      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button"
+        title="Toggle Metronome"></button>
+      <div class="beat-row" id="presBeatRow" style="width: 70px; margin-left: 8px;"></div>
+      <div
+        style="width: 1px; height: 28px; background: color-mix(in srgb, var(--p-line) 50%, transparent); margin: 0 12px;">
+      </div>
+      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" title="Auto-Scroll"></button>
+      <span style="font-size:0.7rem; font-weight:bold; color:var(--p-text); margin-left:4px;">SPD</span>
+      <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30"
+        style="width: 100px; accent-color: var(--p-text); margin: 0 8px;">
+      <span id="presScrollSpeedLabel"
+        style="font-size:0.75rem; font-weight:bold; color:var(--p-text); font-variant-numeric: tabular-nums;">30</span>
+    </div>
+  </section>
+
+  <section class="print-area" id="printArea" aria-hidden="true">
+    <h1 id="printTitle"></h1>
+    <pre id="printBody"></pre>
+    <footer id="printFooter"></footer>
+  </section>
+
+  <script>
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       window.__deferredPrompt = e;
@@ -25,7 +2499,7 @@
       UI_FONT_OPTIONS = [{ value: "system", label: "System" }, { value: "rounded", label: "Rounded" }, { value: "serif", label: "Serif" }, { value: "mono", label: "Mono" }];
       CHART_FONT_OPTIONS = [{ value: "mono", label: "Mono" }, { value: "system", label: "System" }, { value: "serif", label: "Serif" }];
       ACCENT_THEMES = [{ value: "blue", label: "Blue" }, { value: "teal", label: "Teal" }, { value: "rose", label: "Rose" }, { value: "amber", label: "Amber" }, { value: "violet", label: "Violet" }, { value: "graphite", label: "Graphite" }];
-      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: true, haptics: true, autoScrollSpeed: 30, language: "en", autoFillArranger: true };
+      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: true, haptics: true, autoScrollSpeed: 30, language: "en" };
       FONT_STACKS = { system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', rounded: '"SF Pro Rounded", Nunito, sans-serif', serif: 'Georgia, serif', mono: 'ui-monospace, Menlo, Consolas, monospace' };
       STORAGE_KEYS = { songs: "sonata:v12:songs", settings: "sonata:v12:settings", activeSong: "sonata:v12:active", setlists: "sonata:v12:setlists" };
 
@@ -543,7 +3017,7 @@ Em -  C    -  G  -  D
 
         FILENAME: "sonata_library.json",
         tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
-        userEmail: null, userName: null, resolveSignIn: null,
+        userEmail: null, resolveSignIn: null,
 
         init() {
           const checkLibs = setInterval(() => {
@@ -613,7 +3087,6 @@ Em -  C    -  G  -  D
             if (resp.ok) {
               const data = await resp.json();
               this.userEmail = data.email;
-              this.userName = data.name || data.given_name || data.email || null;
             }
           } catch (e) {
             console.error("Fetch user info error:", e);
@@ -1089,7 +3562,7 @@ Em -  C    -  G  -  D
           }
         },
         setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
-        createSong() { const now = Util.now(); const autoName = (StateManager.state.settings.autoFillArranger && GoogleDriveSync.userName) ? GoogleDriveSync.userName : ""; const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: autoName, body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
+        createSong() { const now = Util.now(); const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: "", body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
         loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.touch(s); this.saveNow("Demo loaded"); return s; },
         deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
         revertActive() { const a = this.activeSong(); if (!a || a.readonly) return; a.body = a.savedSnapshot || ""; this.touch(a); this.saveNow("Restored"); Editor.loadActiveSong(); UIManager.renderAll(); },
@@ -2009,12 +4482,11 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "appVersion", "capoLabel"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
         switchView(viewName) {
           const workspace = document.querySelector(".workspace");
           if (workspace) workspace.dataset.view = viewName;
-          // Sync active state for all [data-view] buttons (top-nav, mobile-switcher, sidebar)
           document.querySelectorAll("[data-view]").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.view === viewName);
           });
@@ -2023,20 +4495,14 @@ Em -  C    -  G  -  D
             InstrumentManager.renderPiano();
             InstrumentManager.renderFretboard(document.getElementById("fretboardTuning")?.value || "guitar");
           }
-          // Close sidebar if open
-          this.closeSidebar();
-        },
-        openSidebar() {
-          this.dom.sidebarDrawer?.classList.add('open');
-          this.dom.sidebarBackdrop?.classList.add('open');
-          this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'true');
-          document.body.style.overflow = 'hidden';
-        },
-        closeSidebar() {
-          this.dom.sidebarDrawer?.classList.remove('open');
-          this.dom.sidebarBackdrop?.classList.remove('open');
-          this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = '';
+          const viewLabels = {
+            editor: t("navEditor", "Editor"),
+            library: t("navLibrary", "Library"),
+            tools: t("navTools", "Tools & Export"),
+            theory: t("navTheory", "Theory"),
+            instruments: t("navPlay", "Play")
+          };
+          if (viewLabels[viewName]) this.toast(t("switchedTo", "Switched to ") + viewLabels[viewName]);
         },
         applyLanguage() {
           const lang = StateManager.state?.settings?.language || "en";
@@ -2220,43 +4686,10 @@ Em -  C    -  G  -  D
           const add = (el, type, fn) => el?.addEventListener(type, fn);
           add(this.dom.themeToggle, "click", () => { AudioEngine.playClick(); StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; StateManager.saveNow(t("themeSaved", "Theme saved")); ThemeManager.apply(); this.toast(t("themeUpdated", "Theme updated: ") + StateManager.state.settings.theme); });
           add(this.dom.settingsButton, "click", () => { AudioEngine.playClick(); this.openSettings(); });
-          add(this.dom.helpButton, "click", () => {
-            AudioEngine.playClick();
-            const aboutHtml = t("aboutHtml", `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> comes from Latin <em>sonare</em>, meaning "to sound."</p><p>Created by <strong>Jethro Frane</strong>, Sonata was built to help church musicians collaborate seamlessly and eliminate stage friction.</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size:0.85rem;"><li><strong>100% Offline</strong></li><li><strong>Centralized Hub</strong></li><li><strong>Instant Transposition</strong></li><li><strong>Number Systems</strong></li><li><strong>Zero-Friction Sharing</strong></li><li><strong>Stage Ready</strong></li><li><strong>Robust Exports</strong></li><li><strong>Theory Tools</strong></li></ul><p style="margin-top:16px;font-style:italic;font-weight:700;text-align:center;color:var(--accent);font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Cor 10:31</p></div>`);
-            const changelogHtml = '<div id="changelogSection" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;"><p style="font-weight:700;font-size:0.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px;">Release Notes</p><div id="changelogContent" style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>';
-            this.openModal({ title: t("aboutTitle", "About Sonata"), confirmText: t("aboutConfirm", "Close"), fields: [{ type: "custom", html: aboutHtml + changelogHtml }] });
-            fetch('update_log.json').then(r => r.json()).then(logs => {
-              const el = document.getElementById('changelogContent'); if (!el) return;
-              el.innerHTML = logs.map(v => `<details style="margin-bottom:6px;border:1px solid var(--line);border-radius:6px;overflow:hidden;"><summary style="padding:8px 12px;cursor:pointer;font-weight:700;font-size:0.83rem;background:var(--surface-2);color:var(--text);display:flex;justify-content:space-between;list-style:none;"><span>v${v.version}</span><span style="color:var(--muted);font-weight:400;">${v.date}</span></summary><p style="font-style:italic;color:var(--accent);margin:8px 14px 4px;font-size:0.82rem;">${v.whatsNew||''}</p><ul style="padding:0 14px 8px 28px;margin:0;line-height:1.8;">${(v.changes||[]).map(c=>`<li>${c}</li>`).join('')}</ul></details>`).join('');
-            }).catch(() => { const el = document.getElementById('changelogContent'); if (el) el.textContent = 'No release notes available offline.'; });
-          });
+          add(this.dom.helpButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: t("aboutTitle", "About Sonata"), confirmText: t("aboutConfirm", "Close"), fields: [{ type: "custom", html: t("aboutHtml", `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> (/səˈnɑːtə/) comes from Latin <em>sonare</em>, meaning "to sound" or "a piece played."</p><p>Created by <strong>Jethro Frane</strong>, a church musician, Sonata was built to help church musicians and bands collaborate seamlessly and eliminate stage friction.</p><p style="margin-bottom:6px; font-weight:700;">Core Objectives:</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size: 0.85rem;"><li><strong>100% Offline:</strong> Works on stages with zero Wi-Fi or cellular coverage.</li><li><strong>Centralized Hub:</strong> Charts, metronomes, and theory tools in one app.</li><li><strong>Instant Transposition:</strong> Adapt to any vocal range on the fly.</li><li><strong>Number Systems:</strong> Master Nashville Numbers and Roman Numerals effortlessly.</li><li><strong>Zero-Friction Sharing:</strong> Share configurations via QR codes—no accounts.</li><li><strong>Stage Ready:</strong> True-black presentation modes that save battery and reduce glare.</li><li><strong>Robust Exports:</strong> Multi-column PDF and PNG generation.</li><li><strong>Theory Tools:</strong> Interactive Circle of 5ths and Virtual Fretboard.</li><li><strong>Setlists:</strong> Compile songs and share entire sets securely.</li><li><strong>Privacy First:</strong> Your library stays securely local on your device.</li></ul><p style="margin-top:16px; font-style:italic; font-weight:700; text-align:center; color:var(--accent); font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." <br>— 1 Corinthians 10:31 (NIV)</p></div>`) }] }); });
           add(this.dom.presentationButton, "click", () => { AudioEngine.playClick(); PresentationManager.open(); });
           add(this.dom.langSelect, "change", () => { AudioEngine.playClick(); StateManager.state.settings.language = this.dom.langSelect.value; StateManager.saveNow(t("languageSaved", "Language saved")); this.applyLanguage(); });
           
-          // Sidebar open/close
-          add(this.dom.menuToggleBtn, 'click', () => { AudioEngine.playClick(); this.openSidebar(); });
-          add(this.dom.sidebarCloseBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); });
-          add(this.dom.sidebarBackdrop, 'click', () => { this.closeSidebar(); });
-          // Sidebar action buttons (mirror desktop buttons)
-          add(this.dom.sidebarDriveSyncBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.googleSyncButton?.click(); });
-          add(this.dom.sidebarHelpBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.helpButton?.click(); });
-          add(this.dom.sidebarSettingsBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.settingsButton?.click(); });
-          add(this.dom.sidebarPresentBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); PresentationManager.open(); });
-          add(this.dom.sidebarInstallBtn, 'click', () => { this.dom.headerInstallBtn?.click(); });
-          // Mobile topbar quick-action duplicates
-          add(this.dom.themeToggleMobile, 'click', () => { this.dom.themeToggle?.click(); });
-          add(this.dom.presentationButtonMobile, 'click', () => { AudioEngine.playClick(); PresentationManager.open(); });
-          // Sidebar language selector (mirrors #langSelect)
-          if (this.dom.langSelectSidebar) {
-            this.dom.langSelectSidebar.value = StateManager.state.settings.language || 'en';
-            add(this.dom.langSelectSidebar, 'change', () => {
-              AudioEngine.playClick();
-              StateManager.state.settings.language = this.dom.langSelectSidebar.value;
-              if (this.dom.langSelect) this.dom.langSelect.value = this.dom.langSelectSidebar.value;
-              StateManager.saveNow(t('languageSaved', 'Language saved'));
-              this.applyLanguage();
-            });
-          }
           document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); this.switchView(b.dataset.view); }));
           add(this.dom.copyLiveChartBtn, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
  
@@ -3054,31 +5487,13 @@ Em -  C    -  G  -  D
                 };
               }
             }
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v4'; const ASSETS = ['index.html','style.css','app.js','sonata_logo.png','version.json','update_log.json']; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => location.pathname.replace(/\\/[^\\/]*$/, '/') + a)))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request).then(res => { const clone = res.clone(); if (e.request.method === 'GET') caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }))); });"], { type: 'application/javascript' }))).catch(() => { });
+            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v3'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).then(res => { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }).catch(() => caches.match(e.request))); });"], { type: 'application/javascript' }))).catch(() => { });
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
-            // Populate version display + sidebar version
-            const versionEl = UIManager.dom.appVersion;
-            const sidebarVersionEl = UIManager.dom.sidebarVersion;
-            fetch("version.json")
-              .then(res => res.json())
-              .then(data => {
-                const vStr = "v" + data.version;
-                if (versionEl) versionEl.textContent = vStr;
-                if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
-              })
-              .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.0.0";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.0.0";
-              });
-            // Populate sidebar language select options
-            if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {
-              UIManager.dom.langSelect.querySelectorAll('option').forEach(opt => {
-                const o = document.createElement('option');
-                o.value = opt.value;
-                o.textContent = opt.textContent;
-                if (opt.selected) o.selected = true;
-                UIManager.dom.langSelectSidebar.appendChild(o);
-              });
+            if (UIManager.dom.appVersion) {
+              fetch("version.json")
+                .then(res => res.json())
+                .then(data => { UIManager.dom.appVersion.textContent = "v" + data.version; })
+                .catch(() => { UIManager.dom.appVersion.textContent = "v1.0.0"; });
             }
 
             const params = new URLSearchParams(window.location.search);
@@ -3134,3 +5549,8 @@ Em -  C    -  G  -  D
 
       document.addEventListener("DOMContentLoaded", () => App.init());
     })();
+
+</script>
+</body>
+
+</html>

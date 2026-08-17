@@ -1,0 +1,37 @@
+[
+  {
+    "version": "1.2.0",
+    "date": "2026-08-17",
+    "changes": [
+      "Responsive sidebar drawer navigation for mobile and tablet screens.",
+      "Full offline Service Worker pre-caching for PWA installations.",
+      "Google account name auto-fill for the Arranger field.",
+      "Removed unnecessary toast notifications from instrument panels.",
+      "Optimized layout and whitespace for all screen sizes.",
+      "Official Sonata logo in the navbar."
+    ],
+    "whatsNew": "Cleaner responsive layout with a slide-out navigation menu and true offline compatibility."
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-08-15",
+    "changes": [
+      "Multi-language localization support (English & Filipino).",
+      "Manual key overrides and interactive Capo settings.",
+      "Guitar Capo support with transposed preview labels.",
+      "App versioning and internationalization."
+    ],
+    "whatsNew": "Localization and key transposing enhancements."
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-08-10",
+    "changes": [
+      "Initial release of Sonata.",
+      "Offline interactive chords editor, virtual piano, fretboard, and tuner.",
+      "Google Drive sync and zero-friction QR code sharing.",
+      "Circle of Fifths, Nashville Numbers, and Roman Numeral support."
+    ],
+    "whatsNew": "Initial release of the offline tool for musicians."
+  }
+]
