@@ -2301,8 +2301,17 @@ Em -  C    -  G  -  D
           }
         },
 
-        async getShortUrl(compressed, titleText) {
-          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+        async getShortUrl(directUrl, compressed, titleText) {
+          // Tier 1: TinyURL (100% reliable, zero rate limit, instant browser CORS)
+          try {
+            const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(directUrl)}`);
+            if (res.ok) {
+              const short = (await res.text()).trim();
+              if (short && short.startsWith("http")) return short;
+            }
+          } catch (e) {}
+
+          // Tier 2: dpaste API (creates direct domain ?paste=ID)
           try {
             const formData = new URLSearchParams();
             formData.append('content', compressed);
@@ -2312,16 +2321,24 @@ Em -  C    -  G  -  D
               method: 'POST',
               body: formData
             });
-            if (dppasteResp = dpasteResp, dppasteResp.ok) {
-              const pasteResultUrl = (await dppasteResp.text()).trim();
+            if (dpasteResp.ok) {
+              const pasteResultUrl = (await dpasteResp.text()).trim();
               const pasteId = pasteResultUrl.replace(/\/$/, '').split('/').pop();
               if (pasteId) {
                 return window.location.origin + window.location.pathname + "?paste=" + pasteId;
               }
             }
-          } catch (e) {
-            console.warn("Shortener fallback to direct compressed URL:", e);
-          }
+          } catch (e) {}
+
+          // Tier 3: is.gd API
+          try {
+            const isgd = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(directUrl)}`);
+            if (isgd.ok) {
+              const data = await isgd.json();
+              if (data.shorturl) return data.shorturl;
+            }
+          } catch (e) {}
+
           return directUrl;
         },
 
@@ -2352,7 +2369,8 @@ Em -  C    -  G  -  D
           });
 
           const compressed = await this.compressData(shareData);
-          activeShareUrl = await this.getShortUrl(compressed, titleText);
+          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+          activeShareUrl = await this.getShortUrl(directUrl, compressed, titleText);
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
@@ -3003,7 +3021,8 @@ Em -  C    -  G  -  D
             });
 
             const compressed = await ExportManager.compressData(shareData);
-            const finalUrl = await ExportManager.getShortUrl(compressed, `${selectedSongs.length} Selected Songs`);
+            const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+            const finalUrl = await ExportManager.getShortUrl(directUrl, compressed, `${selectedSongs.length} Selected Songs`);
 
             const wrapper = document.getElementById('bulkShareWrapper');
             if (!wrapper) return;
