@@ -2301,6 +2301,30 @@ Em -  C    -  G  -  D
           }
         },
 
+        async getShortUrl(compressed, titleText) {
+          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+          try {
+            const formData = new URLSearchParams();
+            formData.append('content', compressed);
+            formData.append('expiry_days', '365');
+            formData.append('title', titleText || 'Sonata Chart');
+            const dpasteResp = await fetch('https://dpaste.com/api/v2/', {
+              method: 'POST',
+              body: formData
+            });
+            if (dppasteResp = dpasteResp, dppasteResp.ok) {
+              const pasteResultUrl = (await dppasteResp.text()).trim();
+              const pasteId = pasteResultUrl.replace(/\/$/, '').split('/').pop();
+              if (pasteId) {
+                return window.location.origin + window.location.pathname + "?paste=" + pasteId;
+              }
+            }
+          } catch (e) {
+            console.warn("Shortener fallback to direct compressed URL:", e);
+          }
+          return directUrl;
+        },
+
         async share(isSetlist = false) {
           let shareData = {}; let titleText = ""; let isSet = isSetlist;
 
@@ -2319,21 +2343,21 @@ Em -  C    -  G  -  D
             shareData = { t: song.title, b: song.body }; if (song.manualKey && song.manualKey !== "auto") shareData.k = song.manualKey; if (StateManager.state.capo) shareData.c = StateManager.state.capo; if (song.artist) shareData.a = song.artist; if (song.creator) shareData.cr = song.creator; if (song.links?.length) shareData.l = song.links; if (song.description) shareData.d = song.description;
           }
 
-          const compressed = await this.compressData(shareData);
-          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
-          let activeShareUrl = directUrl;
-
+          let activeShareUrl = "";
           UIManager.openModal({
             title: "Share " + (isSet ? "Setlist" : "Song"),
             confirmText: "Copy Link & Close",
-            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;">Generating short link...</p></div>` }],
+            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:24px 0;">Generating ultra-short link...</p></div>` }],
             onConfirm: async () => { if (await this.copyText(activeShareUrl)) UIManager.toast("Share link copied!"); }
           });
+
+          const compressed = await this.compressData(shareData);
+          activeShareUrl = await this.getShortUrl(compressed, titleText);
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
           wrapper.innerHTML = '';
-          const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(directUrl);
+          const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(activeShareUrl);
 
           const canvas = document.createElement("canvas"); canvas.width = 460; canvas.height = 600;
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
@@ -2406,30 +2430,8 @@ Em -  C    -  G  -  D
           const downloadBtn = document.createElement('button'); downloadBtn.className = 'button secondary'; downloadBtn.type = 'button'; downloadBtn.style.cssText = "width:100%; margin-bottom:12px;"; downloadBtn.innerHTML = `<span data-inline-icon="image" style="width:16px;height:16px;margin-right:6px;"></span>Download QR Card`;
           downloadBtn.addEventListener('click', () => { canvas.toBlob(b => Util.download('Sonata-QR-' + Util.slug(titleText) + '.png', 'image/png', b)); UIManager.toast("Profile Card Downloaded!"); });
 
-          const urlInput = document.createElement('input'); urlInput.className = 'input'; urlInput.readOnly = true; urlInput.value = directUrl; urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
+          const urlInput = document.createElement('input'); urlInput.className = 'input'; urlInput.readOnly = true; urlInput.value = activeShareUrl; urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
           urlInput.addEventListener('click', () => urlInput.select());
-
-          // Asynchronously create ultra-shortened link via dpaste API
-          (async () => {
-            try {
-              const formData = new URLSearchParams();
-              formData.append('content', compressed);
-              formData.append('expiry_days', '365');
-              formData.append('title', titleText || 'Sonata');
-              const dpasteResp = await fetch('https://dpaste.com/api/v2/', {
-                method: 'POST',
-                body: formData
-              });
-              if (dpasteResp.ok) {
-                const pasteResultUrl = (await dpasteResp.text()).trim();
-                const pasteId = pasteResultUrl.replace(/\/$/, '').split('/').pop();
-                if (pasteId) {
-                  activeShareUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
-                  if (urlInput) urlInput.value = activeShareUrl;
-                }
-              }
-            } catch(e) {}
-          })();
 
           const nativeShare = async () => { try { if (navigator.share) await navigator.share({ title: titleText, text: `Check out this ${isSet ? 'Setlist' : 'Song'}: "${titleText}"`, url: activeShareUrl }); else UIManager.toast("Native sharing not supported on this device/browser."); } catch (e) { } };
 
@@ -3001,36 +3003,7 @@ Em -  C    -  G  -  D
             });
 
             const compressed = await ExportManager.compressData(shareData);
-            const rawUrl = window.location.origin + window.location.pathname + "?share=" + compressed;
-            let finalUrl = rawUrl;
-
-            try {
-              if (rawUrl.length > 200) {
-                const formBody = new URLSearchParams();
-                formBody.append('content', compressed);
-                formBody.append('format', 'url');
-
-                const dpasteRes = await fetch('https://dpaste.com/api/', {
-                  method: 'POST',
-                  body: formBody,
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
-
-                if (dpasteRes.ok) {
-                  const dpasteUrl = (await dpasteRes.text()).trim();
-                  const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
-                  finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
-                }
-              } else {
-                const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.shorturl) finalUrl = data.shorturl;
-                }
-              }
-            } catch (e) {
-              console.warn("Shortener failed, using full URL");
-            }
+            const finalUrl = await ExportManager.getShortUrl(compressed, `${selectedSongs.length} Selected Songs`);
 
             const wrapper = document.getElementById('bulkShareWrapper');
             if (!wrapper) return;
