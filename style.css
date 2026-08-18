@@ -1361,33 +1361,73 @@
       transform: translateY(2px);
     }
 
-    /* ── Scale highlight on piano keys ── */
+    /* ── Scale highlight on piano keys (Pastel Green & Darker Green Root) ── */
     .piano-key-white.key-root {
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 55%, white) 0%, color-mix(in srgb, var(--accent) 38%, white) 100%) !important;
+      background: linear-gradient(to bottom, #16a34a 0%, #15803d 100%) !important;
+      box-shadow: inset 0 -4px 0 #14532d !important;
     }
+    .piano-key-white.key-root .key-label {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+
     .piano-key-white.key-in-scale {
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 18%, white) 0%, color-mix(in srgb, var(--accent) 10%, white) 100%) !important;
+      background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%) !important;
+      box-shadow: inset 0 -3px 0 #86efac !important;
     }
+    .piano-key-white.key-in-scale .key-label {
+      color: #14532d !important;
+      font-weight: 750 !important;
+    }
+
     .piano-key-black.key-root {
-      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 65%, black) 100%) !important;
+      background: linear-gradient(to bottom, #15803d 0%, #052e16 100%) !important;
+      border: 1.5px solid #22c55e !important;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.45) !important;
     }
+    .piano-key-black.key-root .key-label {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
     .piano-key-black.key-in-scale {
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 60%, #111) 0%, #111 100%) !important;
+      background: linear-gradient(to bottom, #064e3b 0%, #022c22 100%) !important;
+      border: 1px solid #10b981 !important;
     }
-    /* Playback always wins */
-    .piano-key-white.active, .piano-key-white:active { background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important; }
+    .piano-key-black.key-in-scale .key-label {
+      color: #86efac !important;
+      font-weight: 750 !important;
+    }
+
+    /* Playback always overrides scale highlight */
+    .piano-key-white.active, .piano-key-white:active {
+      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important;
+    }
+    .piano-key-white.active .key-label, .piano-key-white:active .key-label {
+      color: #ffffff !important;
+    }
 
     /* ── Scale highlight on fret cells ── */
     .fret-cell.fret-root .fret-note-marker {
-      background: var(--accent) !important;
-      color: #fff !important;
+      background: #15803d !important;
+      color: #ffffff !important;
       opacity: 1 !important;
-      box-shadow: 0 0 0 2px var(--accent), 0 2px 6px color-mix(in srgb, var(--accent) 50%, transparent);
+      font-weight: 800 !important;
+      box-shadow: 0 0 0 2px #4ade80, 0 2px 8px rgba(21, 128, 61, 0.6) !important;
     }
     .fret-cell.fret-in-scale .fret-note-marker {
-      background: color-mix(in srgb, var(--accent) 35%, var(--surface-2)) !important;
-      color: var(--accent) !important;
+      background: #86efac !important;
+      color: #14532d !important;
       opacity: 1 !important;
+      font-weight: 750 !important;
+      border: 1px solid #4ade80 !important;
+    }
+
+    html[data-theme="dark"] .fret-cell.fret-in-scale .fret-note-marker {
+      background: #064e3b !important;
+      color: #86efac !important;
+      border: 1px solid #16a34a !important;
     }
 
 

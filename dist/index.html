@@ -1396,33 +1396,73 @@
       transform: translateY(2px);
     }
 
-    /* ── Scale highlight on piano keys ── */
+    /* ── Scale highlight on piano keys (Pastel Green & Darker Green Root) ── */
     .piano-key-white.key-root {
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 55%, white) 0%, color-mix(in srgb, var(--accent) 38%, white) 100%) !important;
+      background: linear-gradient(to bottom, #16a34a 0%, #15803d 100%) !important;
+      box-shadow: inset 0 -4px 0 #14532d !important;
     }
+    .piano-key-white.key-root .key-label {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+    }
+
     .piano-key-white.key-in-scale {
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 18%, white) 0%, color-mix(in srgb, var(--accent) 10%, white) 100%) !important;
+      background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%) !important;
+      box-shadow: inset 0 -3px 0 #86efac !important;
     }
+    .piano-key-white.key-in-scale .key-label {
+      color: #14532d !important;
+      font-weight: 750 !important;
+    }
+
     .piano-key-black.key-root {
-      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 65%, black) 100%) !important;
+      background: linear-gradient(to bottom, #15803d 0%, #052e16 100%) !important;
+      border: 1.5px solid #22c55e !important;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.45) !important;
     }
+    .piano-key-black.key-root .key-label {
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+
     .piano-key-black.key-in-scale {
-      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 60%, #111) 0%, #111 100%) !important;
+      background: linear-gradient(to bottom, #064e3b 0%, #022c22 100%) !important;
+      border: 1px solid #10b981 !important;
     }
-    /* Playback always wins */
-    .piano-key-white.active, .piano-key-white:active { background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important; }
+    .piano-key-black.key-in-scale .key-label {
+      color: #86efac !important;
+      font-weight: 750 !important;
+    }
+
+    /* Playback always overrides scale highlight */
+    .piano-key-white.active, .piano-key-white:active {
+      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important;
+    }
+    .piano-key-white.active .key-label, .piano-key-white:active .key-label {
+      color: #ffffff !important;
+    }
 
     /* ── Scale highlight on fret cells ── */
     .fret-cell.fret-root .fret-note-marker {
-      background: var(--accent) !important;
-      color: #fff !important;
+      background: #15803d !important;
+      color: #ffffff !important;
       opacity: 1 !important;
-      box-shadow: 0 0 0 2px var(--accent), 0 2px 6px color-mix(in srgb, var(--accent) 50%, transparent);
+      font-weight: 800 !important;
+      box-shadow: 0 0 0 2px #4ade80, 0 2px 8px rgba(21, 128, 61, 0.6) !important;
     }
     .fret-cell.fret-in-scale .fret-note-marker {
-      background: color-mix(in srgb, var(--accent) 35%, var(--surface-2)) !important;
-      color: var(--accent) !important;
+      background: #86efac !important;
+      color: #14532d !important;
       opacity: 1 !important;
+      font-weight: 750 !important;
+      border: 1px solid #4ade80 !important;
+    }
+
+    html[data-theme="dark"] .fret-cell.fret-in-scale .fret-note-marker {
+      background: #064e3b !important;
+      color: #86efac !important;
+      border: 1px solid #16a34a !important;
     }
 
 
@@ -4395,52 +4435,222 @@ Em -  C    -  G  -  D
         exportTxt() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".txt", "text/plain;charset=utf-8", p.text); UIManager.toast("TXT exported"); },
         exportPng() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p)); UIManager.toast("PNG exported"); },
         renderPng(payload) {
-          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1; const orientation = UIManager.dom.exportOrientation.value; const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-          const style = getComputedStyle(document.documentElement); const bgColor = style.getPropertyValue('--bg').trim() || "#f6f7f9"; const surfaceColor = style.getPropertyValue('--surface').trim() || "#ffffff"; const textColor = style.getPropertyValue('--text').trim() || "#16181d"; const mutedColor = style.getPropertyValue('--muted').trim() || "#667085"; const lineColor = style.getPropertyValue('--line').trim() || "#d8dde6"; const accentColor = style.getPropertyValue('--accent').trim() || "#1967d2"; const fontFamily = style.getPropertyValue('--chart-font').trim() || "monospace"; const uiFont = style.getPropertyValue('--ui-font').trim() || "sans-serif";
-          const textSize = parseInt(StateManager.state.settings.editorFontSize, 10) || 14; const lineHeight = textSize * 1.6; const padding = 48; const hasArtist = Boolean(payload.artist); const headerHeight = hasArtist ? 144 : 120; const footerHeight = 60;
-          const canvas = document.createElement("canvas"); const ctx = canvas.getContext("2d"); ctx.font = `${textSize}px ${fontFamily}`;
+          const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
+          const orientation = UIManager.dom.exportOrientation.value;
+          const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+          const style = getComputedStyle(document.documentElement);
+          const bgColor = style.getPropertyValue('--bg').trim() || "#f6f7f9";
+          const surfaceColor = style.getPropertyValue('--surface').trim() || "#ffffff";
+          const textColor = style.getPropertyValue('--text').trim() || "#16181d";
+          const mutedColor = style.getPropertyValue('--muted').trim() || "#667085";
+          const lineColor = style.getPropertyValue('--line').trim() || "#d8dde6";
+          const accentColor = style.getPropertyValue('--accent').trim() || "#1967d2";
+          const fontFamily = style.getPropertyValue('--chart-font').trim() || "monospace";
+          const uiFont = style.getPropertyValue('--ui-font').trim() || "sans-serif";
+          const textSize = parseInt(StateManager.state.settings.editorFontSize, 10) || 14;
+          const lineHeight = textSize * 1.6;
+          const padding = 40;
+          const hasArtist = Boolean(payload.artist);
+          const headerHeight = hasArtist ? 136 : 116;
+          const footerHeight = 64;
 
-          let wrappedLines = []; let originIndexMap = [];
-          payload.body.split('\n').forEach((line, origIdx) => { const limits = orientation === 'landscape' ? { 1: 120, 2: 55, 3: 35 } : { 1: 90, 2: 42, 3: 26 }; const limit = limits[columns] || limits[1]; if (!line) { wrappedLines.push(""); originIndexMap.push(origIdx); return; } let rem = line; while (rem.length > 0) { wrappedLines.push(rem.substring(0, limit)); originIndexMap.push(origIdx); rem = rem.substring(limit); } });
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          ctx.font = `${textSize}px ${fontFamily}`;
 
-          let maxLineWidth = 0; wrappedLines.forEach(l => { maxLineWidth = Math.max(maxLineWidth, ctx.measureText(l || " ").width); });
-          const columnWidth = Math.max(400, maxLineWidth + 40); const linesPerColumn = Math.ceil(wrappedLines.length / columns);
-          const width = (padding * 2) + (columnWidth * columns) - (columns > 1 ? 20 : 0); const height = headerHeight + footerHeight + (linesPerColumn * lineHeight) + padding;
-          canvas.width = width * scale; canvas.height = height * scale; ctx.scale(scale, scale);
-          ctx.fillStyle = bgColor; ctx.fillRect(0, 0, width, height); ctx.fillStyle = surfaceColor; ctx.fillRect(0, 0, width, headerHeight); ctx.fillStyle = lineColor; ctx.fillRect(0, headerHeight, width, 1);
-          
-          ctx.fillStyle = accentColor; ctx.beginPath(); if(ctx.roundRect) { ctx.roundRect(padding, 38, 36, 36, 8); } else { ctx.rect(padding, 38, 36, 36); } ctx.fill();
-          ctx.fillStyle = "#ffffff"; ctx.font = `800 22px ${uiFont}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("S", padding + 18, 38 + 19);
-          ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-
-          ctx.fillStyle = textColor; ctx.font = `700 32px ${uiFont}`; ctx.fillText(payload.title, padding + 52, 65); let yOffset = 95; if (hasArtist) { ctx.font = `600 16px ${uiFont}`; ctx.fillStyle = mutedColor; ctx.fillText(`By ${payload.artist}`, padding, yOffset); yOffset += 24; }
-          ctx.fillStyle = mutedColor; ctx.font = `600 14px ${uiFont}`; ctx.fillText(`Key: ${payload.keyInfo}   •   BPM: ${payload.bpm}   •   Layout: ${payload.modeName}`, padding, yOffset);
-
-          wrappedLines.forEach((line, i) => {
-            const x = padding + (Math.floor(i / linesPerColumn) * columnWidth); const y = headerHeight + padding + ((i % linesPerColumn) * lineHeight) + (textSize * 0.8);
-            if (line.startsWith('---')) { ctx.beginPath(); ctx.moveTo(x, y - (lineHeight / 2)); ctx.lineTo(x + columnWidth - 20, y - (lineHeight / 2)); ctx.strokeStyle = lineColor; ctx.stroke(); }
-            else if (line.startsWith('# ')) { ctx.fillStyle = accentColor; ctx.font = `bold ${textSize * 1.3}px ${uiFont}`; ctx.fillText(line.substring(2), x, y); ctx.font = `${textSize}px ${fontFamily}`; ctx.fillStyle = textColor; }
-            else if (line.startsWith('## ')) { ctx.fillStyle = textColor; ctx.font = `bold ${textSize * 1.1}px ${uiFont}`; ctx.fillText(line.substring(3), x, y); ctx.font = `${textSize}px ${fontFamily}`; ctx.fillStyle = textColor; }
-            else if (line.startsWith('> ') || line.startsWith('// ')) { ctx.fillStyle = mutedColor; ctx.font = `italic ${textSize * 0.9}px ${uiFont}`; ctx.fillText(line.substring(2), x, y); ctx.font = `${textSize}px ${fontFamily}`; ctx.fillStyle = textColor; }
-            else if (payload.chordLineIndices.has(originIndexMap[i]) && StateManager.state.previewMode !== 'lyrics') {
-              ctx.fillStyle = accentColor; ctx.font = `bold ${textSize}px ${fontFamily}`; ctx.fillText(line || "", x, y); ctx.font = `${textSize}px ${fontFamily}`; ctx.fillStyle = textColor;
+          // Filter out duplicate top title line if identical to payload.title
+          const rawLines = payload.body.split('\n');
+          let cleanLines = [];
+          let skippedFirstHeader = false;
+          for (let idx = 0; idx < rawLines.length; idx++) {
+            const l = rawLines[idx];
+            if (!skippedFirstHeader && l.trim().startsWith('# ') && l.trim().substring(2).trim().toLowerCase() === payload.title.trim().toLowerCase()) {
+              skippedFirstHeader = true;
+              continue;
             }
-            else if (line.includes('[') && line.includes(']') && StateManager.state.previewMode !== 'lyrics') {
+            cleanLines.push({ text: l, origIdx: idx });
+          }
+
+          let wrappedLines = [];
+          let originIndexMap = [];
+          cleanLines.forEach((item) => {
+            const limits = orientation === 'landscape' ? { 1: 120, 2: 55, 3: 35 } : { 1: 90, 2: 42, 3: 26 };
+            const limit = limits[columns] || limits[1];
+            const line = item.text;
+            if (!line) {
+              wrappedLines.push("");
+              originIndexMap.push(item.origIdx);
+              return;
+            }
+            let rem = line;
+            while (rem.length > 0) {
+              wrappedLines.push(rem.substring(0, limit));
+              originIndexMap.push(item.origIdx);
+              rem = rem.substring(limit);
+            }
+          });
+
+          let maxLineWidth = 0;
+          wrappedLines.forEach(l => {
+            maxLineWidth = Math.max(maxLineWidth, ctx.measureText(l || " ").width);
+          });
+
+          // Measure title to avoid header overflow
+          ctx.font = `700 28px ${uiFont}`;
+          const titleMeasurement = ctx.measureText(payload.title).width;
+          const minHeaderWidth = Math.max(540, titleMeasurement + (padding * 2) + 90);
+          const columnWidth = Math.max(380, maxLineWidth + 36);
+          const linesPerColumn = Math.ceil(wrappedLines.length / columns);
+          const contentWidth = (columnWidth * columns) - (columns > 1 ? 16 : 0);
+          const width = Math.max(minHeaderWidth, (padding * 2) + contentWidth);
+          const height = headerHeight + footerHeight + (linesPerColumn * lineHeight) + padding;
+
+          canvas.width = width * scale;
+          canvas.height = height * scale;
+          ctx.scale(scale, scale);
+
+          // Background & Header Surface
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, width, height);
+          ctx.fillStyle = surfaceColor;
+          ctx.fillRect(0, 0, width, headerHeight);
+          ctx.fillStyle = lineColor;
+          ctx.fillRect(0, headerHeight, width, 1);
+
+          // Draw Official Logo
+          const logoSize = 42;
+          const logoX = padding;
+          const logoY = 26;
+          const brandImg = document.querySelector('.brand-logo');
+          let drawnLogo = false;
+          if (brandImg && brandImg.complete && brandImg.naturalWidth > 0) {
+            try {
+              ctx.save();
+              ctx.beginPath();
+              if (ctx.roundRect) ctx.roundRect(logoX, logoY, logoSize, logoSize, 9);
+              else ctx.rect(logoX, logoY, logoSize, logoSize);
+              ctx.clip();
+              ctx.drawImage(brandImg, logoX, logoY, logoSize, logoSize);
+              ctx.restore();
+              drawnLogo = true;
+            } catch (e) { drawnLogo = false; }
+          }
+          if (!drawnLogo) {
+            ctx.fillStyle = accentColor;
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(logoX, logoY, logoSize, logoSize, 9);
+            else ctx.rect(logoX, logoY, logoSize, logoSize);
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = `800 20px ${uiFont}`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("S", logoX + (logoSize / 2), logoY + (logoSize / 2));
+            ctx.textAlign = "left";
+            ctx.textBaseline = "alphabetic";
+          }
+
+          // Title with dynamic scaling to fit
+          let titleSize = 28;
+          ctx.font = `700 ${titleSize}px ${uiFont}`;
+          const maxTitleArea = width - (padding * 2) - (logoSize + 18);
+          while (ctx.measureText(payload.title).width > maxTitleArea && titleSize > 18) {
+            titleSize -= 2;
+            ctx.font = `700 ${titleSize}px ${uiFont}`;
+          }
+          ctx.fillStyle = textColor;
+          ctx.fillText(payload.title, padding + logoSize + 14, 56);
+
+          // Metadata rows
+          let yOffset = 84;
+          if (hasArtist) {
+            ctx.font = `600 15px ${uiFont}`;
+            ctx.fillStyle = mutedColor;
+            ctx.fillText(`By ${payload.artist}`, padding, yOffset);
+            yOffset += 24;
+          }
+          ctx.font = `600 13px ${uiFont}`;
+          ctx.fillStyle = mutedColor;
+          ctx.fillText(`Key: ${payload.keyInfo}   •   BPM: ${payload.bpm}   •   Layout: ${payload.modeName}`, padding, yOffset);
+
+          // Song body lines
+          ctx.font = `${textSize}px ${fontFamily}`;
+          wrappedLines.forEach((line, i) => {
+            const x = padding + (Math.floor(i / linesPerColumn) * columnWidth);
+            const y = headerHeight + padding + ((i % linesPerColumn) * lineHeight) + (textSize * 0.8);
+            if (line.startsWith('---')) {
+              ctx.beginPath();
+              ctx.moveTo(x, y - (lineHeight / 2));
+              ctx.lineTo(x + columnWidth - 20, y - (lineHeight / 2));
+              ctx.strokeStyle = lineColor;
+              ctx.stroke();
+            } else if (line.startsWith('# ')) {
+              ctx.fillStyle = accentColor;
+              ctx.font = `bold ${textSize * 1.25}px ${uiFont}`;
+              ctx.fillText(line.substring(2), x, y);
+              ctx.font = `${textSize}px ${fontFamily}`;
+              ctx.fillStyle = textColor;
+            } else if (line.startsWith('## ')) {
+              ctx.fillStyle = textColor;
+              ctx.font = `bold ${textSize * 1.08}px ${uiFont}`;
+              ctx.fillText(line.substring(3), x, y);
+              ctx.font = `${textSize}px ${fontFamily}`;
+              ctx.fillStyle = textColor;
+            } else if (line.startsWith('> ') || line.startsWith('// ')) {
+              ctx.fillStyle = mutedColor;
+              ctx.font = `italic ${textSize * 0.9}px ${uiFont}`;
+              ctx.fillText(line.substring(2), x, y);
+              ctx.font = `${textSize}px ${fontFamily}`;
+              ctx.fillStyle = textColor;
+            } else if (payload.chordLineIndices.has(originIndexMap[i]) && StateManager.state.previewMode !== 'lyrics') {
+              ctx.fillStyle = accentColor;
+              ctx.font = `bold ${textSize}px ${fontFamily}`;
+              ctx.fillText(line || "", x, y);
+              ctx.font = `${textSize}px ${fontFamily}`;
+              ctx.fillStyle = textColor;
+            } else if (line.includes('[') && line.includes(']') && StateManager.state.previewMode !== 'lyrics') {
               const parts = line.split(/(\[[^\]]+\])/g);
               let currentX = x;
               parts.forEach(part => {
                 if (!part) return;
                 if (part.startsWith('[') && part.endsWith(']')) {
-                  ctx.fillStyle = accentColor; ctx.font = `bold ${textSize}px ${fontFamily}`; ctx.fillText(part, currentX, y); currentX += ctx.measureText(part).width;
+                  ctx.fillStyle = accentColor;
+                  ctx.font = `bold ${textSize}px ${fontFamily}`;
+                  ctx.fillText(part, currentX, y);
+                  currentX += ctx.measureText(part).width;
                 } else {
-                  ctx.fillStyle = textColor; ctx.font = `${textSize}px ${fontFamily}`; ctx.fillText(part, currentX, y); currentX += ctx.measureText(part).width;
+                  ctx.fillStyle = textColor;
+                  ctx.font = `${textSize}px ${fontFamily}`;
+                  ctx.fillText(part, currentX, y);
+                  currentX += ctx.measureText(part).width;
                 }
               });
+            } else {
+              ctx.fillStyle = textColor;
+              ctx.font = `${textSize}px ${fontFamily}`;
+              ctx.fillText(line || "", x, y);
             }
-            else { ctx.fillStyle = textColor; ctx.font = `${textSize}px ${fontFamily}`; ctx.fillText(line || "", x, y); }
           });
-          ctx.fillStyle = mutedColor; ctx.font = `12px ${uiFont}`; ctx.textAlign = "center"; let footerText = `Generated with Sonata Master`; if (payload.creator) footerText += `  •  Arranged by: ${payload.creator}`; if (payload.links?.length) footerText += `  •  Ref: ${payload.links[0].url}`; ctx.fillText(footerText, width / 2, height - 24);
-          const byteString = atob(canvas.toDataURL("image/png").split(",")[1]); const bytes = new Uint8Array(byteString.length); for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i); return new Blob([bytes], { type: "image/png" });
+
+          // Footer with smart wrapping
+          ctx.fillStyle = mutedColor;
+          ctx.font = `12px ${uiFont}`;
+          ctx.textAlign = "center";
+          let footerParts = ["Generated with Sonata Master"];
+          if (payload.creator) footerParts.push(`Arranged by: ${payload.creator}`);
+          if (payload.links?.length) footerParts.push(`Ref: ${payload.links[0].url}`);
+          const fullFooter = footerParts.join("   •   ");
+          if (ctx.measureText(fullFooter).width > (width - (padding * 2))) {
+            ctx.fillText(footerParts[0] + (footerParts[1] ? "   •   " + footerParts[1] : ""), width / 2, height - 32);
+            if (footerParts[2]) ctx.fillText(footerParts[2], width / 2, height - 16);
+          } else {
+            ctx.fillText(fullFooter, width / 2, height - 24);
+          }
+
+          const byteString = atob(canvas.toDataURL("image/png").split(",")[1]);
+          const bytes = new Uint8Array(byteString.length);
+          for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+          return new Blob([bytes], { type: "image/png" });
         },
         exportPdf() { const payloads = this.setlistPayloads(); const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads)); UIManager.toast("PDF exported"); },
         createPdf(payloads) {
