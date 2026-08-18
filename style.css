@@ -2316,3 +2316,10 @@
         gap: 4px;
       }
     }
+
+    @keyframes qrScanLaser {
+      0% { top: 0; opacity: 0.8; }
+      50% { top: calc(100% - 2px); opacity: 1; }
+      100% { top: 0; opacity: 0.8; }
+    }
+

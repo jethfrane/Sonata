@@ -563,6 +563,8 @@ Em -  C    -  G  -  D
           "type-plus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M19 11v6"></path><path d="M16 14h6"></path>',
           scroll: '<path d="M8 21h8"></path><path d="M12 17V3"></path><path d="m7 8 5-5 5 5"></path><path d="m7 12 5 5 5-5"></path>',
           menu: '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>',
+          camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle>',
+          qr: '<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>',
           wand: '<path d="m15 4 5 5"></path><path d="M14 5 3 16l5 5L19 10Z"></path><path d="M9 6 8 3"></path><path d="M18 14l3 1"></path>',
           x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
         },
@@ -2162,28 +2164,14 @@ Em -  C    -  G  -  D
             shareData = { t: song.title, b: song.body }; if (song.manualKey && song.manualKey !== "auto") shareData.k = song.manualKey; if (StateManager.state.capo) shareData.c = StateManager.state.capo; if (song.artist) shareData.a = song.artist; if (song.creator) shareData.cr = song.creator; if (song.links?.length) shareData.l = song.links; if (song.description) shareData.d = song.description;
           }
 
-          const rawUrl = window.location.origin + window.location.pathname + "?share=" + await this.compressData(shareData);
-          let finalUrl = rawUrl;
+          const finalUrl = window.location.origin + window.location.pathname + "?s=" + await this.compressData(shareData);
 
           UIManager.openModal({
             title: "Share " + (isSet ? "Setlist" : "Song"),
             confirmText: "Copy Link & Close",
-            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;">Generating secure short link...</p></div>` }],
+            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;">Generating secure link...</p></div>` }],
             onConfirm: async () => { if (await this.copyText(finalUrl)) UIManager.toast("Share link copied!"); }
           });
-
-          try {
-            const shortRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(rawUrl)}`);
-            if (shortRes.ok) {
-              const text = (await shortRes.text()).trim();
-              if (text.startsWith('http')) finalUrl = text;
-            } else {
-              const isgdRes = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
-              if (isgdRes.ok) { const data = await isgdRes.json(); if (data.shorturl) finalUrl = data.shorturl; }
-            }
-          } catch (e) {
-            // Direct compressed offline url is preserved
-          }
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
@@ -2301,7 +2289,7 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
         switchView(viewName) {
           const workspace = document.querySelector(".workspace");
@@ -2574,6 +2562,8 @@ Em -  C    -  G  -  D
             });
           });
           add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
+          add(this.dom.scanQrBtn, "click", () => { AudioEngine.playClick(); QrScannerManager.startScan(); });
+          add(this.dom.sidebarScanQrBtn, "click", () => { AudioEngine.playClick(); this.closeSidebar(); QrScannerManager.startScan(); });
  
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
           add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast(t("sortedToast", "Sorted: ") + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text); });
@@ -3306,6 +3296,176 @@ Em -  C    -  G  -  D
         }
       };
 
+      const QrScannerManager = {
+        stream: null,
+        scanning: false,
+        detector: null,
+
+        async startScan() {
+          if ('BarcodeDetector' in window) {
+            try {
+              this.detector = new BarcodeDetector({ formats: ['qr_code'] });
+            } catch (e) {
+              this.detector = null;
+            }
+          }
+
+          const modalHtml = `
+            <div style="display:flex; flex-direction:column; align-items:center; width:100%; font-family:var(--ui-font);">
+              <div style="position:relative; width:100%; max-width:320px; aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:#000; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(0,0,0,0.3); border:1px solid var(--line);">
+                <video id="qrScannerVideo" playsinline autoplay muted style="width:100%; height:100%; object-fit:cover;"></video>
+                <!-- Viewfinder Target Frame -->
+                <div style="position:absolute; inset:28px; border:2px solid var(--accent); border-radius:12px; pointer-events:none; box-shadow:0 0 0 9999px rgba(0,0,0,0.45);">
+                  <div style="position:absolute; top:0; left:0; width:100%; height:2px; background:linear-gradient(90deg, transparent, var(--accent), transparent); animation:qrScanLaser 2s ease-in-out infinite;"></div>
+                </div>
+                <div id="qrScannerLoading" style="position:absolute; color:#fff; font-size:0.85rem; font-weight:600; text-align:center; padding:12px;">Requesting camera access...</div>
+              </div>
+
+              <div style="display:flex; gap:8px; margin-top:14px; width:100%; max-width:320px;">
+                <label class="button secondary" style="flex:1; cursor:pointer; text-align:center; font-size:0.82rem;">
+                  <span data-inline-icon="image" style="margin-right:6px;"></span> Choose Photo / Screenshot
+                  <input type="file" id="qrPhotoInput" accept="image/*" style="display:none;">
+                </label>
+              </div>
+              <p id="qrScannerStatus" style="color:var(--muted); font-size:0.78rem; text-align:center; margin:10px 0 0;">Point your camera at any Sonata Chart QR code</p>
+            </div>`;
+
+          UIManager.openModal({
+            title: "Scan Chart QR Code",
+            fields: [{ type: "custom", html: modalHtml }],
+            confirmText: "Close Scanner",
+            onConfirm: () => this.stopScan()
+          });
+
+          // Wire file input for scanning from screenshot/photos
+          const photoInput = document.getElementById('qrPhotoInput');
+          if (photoInput) {
+            photoInput.addEventListener('change', async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              this.processImageFile(file);
+            });
+          }
+
+          // Start camera
+          const video = document.getElementById('qrScannerVideo');
+          const loadingEl = document.getElementById('qrScannerLoading');
+          try {
+            this.stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: "environment" } },
+              audio: false
+            });
+            if (video) {
+              video.srcObject = this.stream;
+              video.onloadedmetadata = () => {
+                video.play();
+                if (loadingEl) loadingEl.style.display = 'none';
+                this.scanning = true;
+                this.scanLoop(video);
+              };
+            }
+          } catch (err) {
+            if (loadingEl) loadingEl.textContent = "Camera access unavailable. You can still choose a photo or screenshot.";
+          }
+        },
+
+        async scanLoop(video) {
+          if (!this.scanning || !video || video.paused || video.ended) return;
+
+          if (this.detector) {
+            try {
+              const barcodes = await this.detector.detect(video);
+              if (barcodes.length > 0 && barcodes[0].rawValue) {
+                this.handleScanResult(barcodes[0].rawValue);
+                return;
+              }
+            } catch (e) {}
+          }
+
+          if (this.scanning) {
+            requestAnimationFrame(() => this.scanLoop(video));
+          }
+        },
+
+        async processImageFile(file) {
+          const statusEl = document.getElementById('qrScannerStatus');
+          if (statusEl) statusEl.textContent = "Scanning image...";
+          try {
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = async () => {
+              if (this.detector) {
+                try {
+                  const barcodes = await this.detector.detect(img);
+                  if (barcodes.length > 0 && barcodes[0].rawValue) {
+                    this.handleScanResult(barcodes[0].rawValue);
+                    return;
+                  }
+                } catch (e) {}
+              }
+              if (statusEl) statusEl.textContent = "No valid QR code detected in this photo.";
+            };
+          } catch (e) {
+            if (statusEl) statusEl.textContent = "Could not parse image.";
+          }
+        },
+
+        handleScanResult(rawValue) {
+          this.stopScan();
+          AudioEngine.playClick();
+          if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+          UIManager.closeModal();
+
+          try {
+            const url = new URL(rawValue);
+            const params = new URLSearchParams(url.search);
+            const sParam = params.get('s') || params.get('share');
+            if (sParam) {
+              ExportManager.decompressData(sParam).then(jsonStr => {
+                const data = JSON.parse(jsonStr);
+                App.handleImport(data);
+              }).catch(err => {
+                UIManager.toast("Invalid Sonata QR Code");
+              });
+              return;
+            }
+          } catch (e) {
+            // Not a standard URL
+            try {
+              const data = JSON.parse(rawValue);
+              if (data.t || data.type) {
+                App.handleImport(data);
+                return;
+              }
+            } catch (err2) {}
+          }
+
+          // Raw chord/song text fallback
+          if (rawValue.trim()) {
+            StateManager.createSong();
+            const song = StateManager.activeSong();
+            if (song) {
+              song.title = "Scanned Song";
+              song.body = rawValue;
+              StateManager.touch(song);
+              StateManager.saveNow("Scanned Song");
+              Editor.loadActiveSong();
+              UIManager.switchView('editor');
+              UIManager.renderAll();
+              UIManager.toast("Scanned content imported!");
+            }
+          }
+        },
+
+        stopScan() {
+          this.scanning = false;
+          if (this.stream) {
+            this.stream.getTracks().forEach(t => t.stop());
+            this.stream = null;
+          }
+        }
+      };
+
       const App = {
         saveDebounced: Util.debounce(() => StateManager.saveNow("Autosaved"), 650), scheduleSave() { UIManager.setStatus("Autosaving"); this.saveDebounced(); },
         async handleImport(d) {
@@ -3397,7 +3557,7 @@ Em -  C    -  G  -  D
             }
 
             const params = new URLSearchParams(window.location.search);
-            const shareParam = params.get("share");
+            const shareParam = params.get("s") || params.get("share");
             const pasteParam = params.get("paste");
             if (shareParam || pasteParam) {
               try {
