@@ -55,12 +55,12 @@ Sonata was created by **Jeth Frane** to solve the real-world friction musicians,
 * **Auto-Scroll & Metronome:** Smooth auto-scroll with adjustable speed and visual beat indicators.
 
 ### 4. Zero-Friction Sharing & QR Codes
-* **Ultra-Compressed Direct Links:** Generates direct, self-contained URLs using Deflate compression with no third-party URL dependencies.
-* **Scannable QR Codes:** Built-in QR card generation and camera scanner for rapid device-to-device imports.
+* **Shortened Share Links:** Generates direct TinyURL shortened links containing your ultra-compressed song data.
+* **Scannable QR Codes:** Built-in dynamic QR code generation for rapid device-to-device sharing.
 
 ### 5. Multi-Format Exporting
-* **Vector PDF:** Clean multi-column PDF charts with embedded scannable QR codes and headers.
-* **High-Res PNG & Text:** Export as image charts or clean text downloads.
+* **Vector PDF:** Clean multi-column PDF charts featuring your custom logo and responsive headers.
+* **High-Res PNG & Text:** Export as image charts with your logo or as clean text downloads.
 
 ### 6. Cloud Backup & Sync
 * **Google Drive Sync:** Automatic background synchronization with your personal Google Drive account for ultimate privacy.

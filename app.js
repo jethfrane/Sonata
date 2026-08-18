@@ -2384,7 +2384,7 @@ Em -  C    -  G  -  D
           ctx.font = `700 28px ${uiFont}`;
           const titleMeasurement = ctx.measureText(payload.title).width;
           const qrBoxSize = 60;
-          const minHeaderWidth = Math.max(580, titleMeasurement + (padding * 2) + 60 + qrBoxSize + 40);
+          const minHeaderWidth = Math.max(580, titleMeasurement + (padding * 2) + 60 + 40);
           const columnWidth = Math.max(380, maxLineWidth + 36);
           const linesPerColumn = Math.ceil(wrappedLines.length / columns);
           const contentWidth = (columnWidth * columns) - (columns > 1 ? 16 : 0);
@@ -2436,35 +2436,10 @@ Em -  C    -  G  -  D
             ctx.textBaseline = "alphabetic";
           }
 
-          // Draw QR Code in Header Right
-          const qrX = width - padding - qrBoxSize;
-          const qrY = 22;
-          ctx.fillStyle = "#ffffff";
-          ctx.beginPath();
-          if (ctx.roundRect) ctx.roundRect(qrX, qrY, qrBoxSize, qrBoxSize, 8);
-          else ctx.rect(qrX, qrY, qrBoxSize, qrBoxSize);
-          ctx.fill();
-          ctx.strokeStyle = lineColor;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          // Render QR pattern
-          if (shareUrl) {
-            QRCode.draw(ctx, shareUrl, qrX + 4, qrY + 4, qrBoxSize - 8, qrBoxSize - 8, { ecc: 'L', foreground: '#16181d', background: '#ffffff', margin: 1 });
-          } else {
-            Util.drawSimpleQrPattern(ctx, qrX + 5, qrY + 5, qrBoxSize - 10);
-          }
-
-          ctx.fillStyle = mutedColor;
-          ctx.font = `600 9px ${uiFont}`;
-          ctx.textAlign = "center";
-          ctx.fillText("Scan Chart", qrX + (qrBoxSize / 2), qrY + qrBoxSize + 14);
-          ctx.textAlign = "left";
-
-          // Title with dynamic scaling to fit (never overlaps QR code or logo)
+          // Title with dynamic scaling to fit (never overlaps logo)
           let titleSize = 28;
           ctx.font = `700 ${titleSize}px ${uiFont}`;
-          const maxTitleArea = width - (padding * 2) - logoSize - qrBoxSize - 40;
+          const maxTitleArea = width - (padding * 2) - logoSize - 40;
           while (ctx.measureText(payload.title).width > maxTitleArea && titleSize > 18) {
             titleSize -= 2;
             ctx.font = `700 ${titleSize}px ${uiFont}`;
@@ -2763,38 +2738,15 @@ Em -  C    -  G  -  D
 
             let chrome = `q 0.96 0.96 0.98 rg 0 ${headerY} ${pageWidth} ${headerHeight} re f Q\n` +
               `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
-              `q ${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg ${margin} ${pageHeight - 38} 24 24 re f Q\n` +
-              `q 1 1 1 rg BT /F3 14 Tf ${(margin + 6.5).toFixed(2)} ${(pageHeight - 21.5).toFixed(2)} Td (S) Tj ET Q\n` +
-              `0 g BT /F3 18 Tf ${margin + 36} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 42))}) Tj ET\n`;
+              `0 g BT /F3 18 Tf ${margin} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 42))}) Tj ET\n`;
             if (p.artist) {
-              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin + 36} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 48))}) Tj ET\n` +
-                `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin + 36} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 48))}) Tj ET\n` +
+                `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             } else {
-              chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin + 36} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
+              chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             }
 
-            // Top-right QR Code Block in PDF
-            const qrBoxX = pageWidth - margin - 46;
-            const qrBoxY = pageHeight - 62;
-            chrome += `q 1 1 1 rg 0.84 0.86 0.90 RG 0.75 w ${qrBoxX} ${qrBoxY} 44 44 re B Q\n` +
-                      `q 0 0 0 rg 0.5 w ${qrBoxX + 4} ${qrBoxY + 4} 36 36 re S Q\n`;
-            if (shareUrl) {
-              chrome += Util.drawQrPatternPdf(shareUrl, qrBoxX + 6, qrBoxY + 6, 32);
-            } else {
-              chrome += `q 0 0 0 rg\n` +
-                `${qrBoxX + 6} ${qrBoxY + 30} 8 8 re f\n` +
-                `${qrBoxX + 30} ${qrBoxY + 30} 8 8 re f\n` +
-                `${qrBoxX + 6} ${qrBoxY + 6} 8 8 re f\n` +
-                `${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\n` +
-                `${qrBoxX + 8} ${qrBoxY + 32} 4 4 re f\n` +
-                `${qrBoxX + 32} ${qrBoxY + 32} 4 4 re f\n` +
-                `${qrBoxX + 8} ${qrBoxY + 8} 4 4 re f\n` +
-                `${qrBoxX + 18} ${qrBoxY + 18} 6 6 re f\n` +
-                `${qrBoxX + 26} ${qrBoxY + 12} 8 4 re f\n` +
-                `${qrBoxX + 18} ${qrBoxY + 6} 6 6 re f\n` +
-                `Q\n`;
-            }
-            chrome += `q 0.45 0.48 0.52 rg BT /F3 6.5 Tf ${qrBoxX + 2} ${qrBoxY - 8} Td (Live Chart QR) Tj ET Q\n`;
+
 
             chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
               `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
