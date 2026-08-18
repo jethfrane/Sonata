@@ -170,6 +170,21 @@
       font-weight: 760;
     }
 
+    .version-badge {
+      font-size: 0.68rem;
+      font-weight: 750;
+      font-family: var(--ui-font);
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--surface-3);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      letter-spacing: 0.02em;
+    }
+
     .brand-subtitle {
       margin: 2px 0 0;
       color: var(--muted);

@@ -463,7 +463,7 @@ Em -  C    -  G  -  D
           if (!iso) return "";
           const d = new Date(iso);
           if (isNaN(d)) return "";
-          return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+          return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) + " • " + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
         },
         titleOf(song) { return (song && song.title && song.title.trim()) || "Untitled Song"; },
         slug(text) { return (text || "song").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "song"; },
@@ -665,20 +665,24 @@ Em -  C    -  G  -  D
 
         updateProfileUI() {
           const name = this.userName ? this.userName.split(' ')[0] : 'Musician';
-          const pic = this.userPicture || 'data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="%23999" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z"/></svg>';
+          const emptySvg = 'data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="%2394a3b8" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z"/></svg>';
+          const pic = this.userPicture || emptySvg;
           
           if (UIManager.dom.sidebarProfileContainer) {
-            UIManager.dom.sidebarProfileContainer.hidden = !this.accessToken;
+            UIManager.dom.sidebarProfileContainer.hidden = false;
             if (UIManager.dom.sidebarUserGreeting) UIManager.dom.sidebarUserGreeting.textContent = `Hi, ${name}`;
             if (UIManager.dom.sidebarUserAvatar) UIManager.dom.sidebarUserAvatar.src = pic;
           }
           if (UIManager.dom.topbarProfileContainer) {
-            UIManager.dom.topbarProfileContainer.hidden = !this.accessToken;
-            if (UIManager.dom.topbarUserGreeting) UIManager.dom.topbarUserGreeting.textContent = `Hi, ${name}`;
+            UIManager.dom.topbarProfileContainer.hidden = false;
+            if (UIManager.dom.topbarUserGreeting) {
+              UIManager.dom.topbarUserGreeting.textContent = `Hi, ${name}`;
+              UIManager.dom.topbarUserGreeting.style.display = 'inline';
+            }
             if (UIManager.dom.topbarUserAvatar) UIManager.dom.topbarUserAvatar.src = pic;
           }
           if (UIManager.dom.mobileUserAvatar) {
-            UIManager.dom.mobileUserAvatar.hidden = !this.accessToken;
+            UIManager.dom.mobileUserAvatar.hidden = false;
             UIManager.dom.mobileUserAvatar.src = pic;
           }
         },
@@ -2347,7 +2351,7 @@ Em -  C    -  G  -  D
         dom: {}, modalAction: null,
         renderLibrarySoon() { SongLibrary.render(); },
         updateAnalysisSoon() { this.updateAnalysis(); },
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["brandVersion", "googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
         switchView(viewName) {
           const workspace = document.querySelector(".workspace");
@@ -2575,6 +2579,12 @@ Em -  C    -  G  -  D
           add(this.dom.menuToggleBtn, 'click', () => { AudioEngine.playClick(); this.openSidebar(); });
           add(this.dom.sidebarCloseBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); });
           add(this.dom.sidebarBackdrop, 'click', () => { this.closeSidebar(); });
+          add(this.dom.googleSyncButton, "click", () => GoogleDriveSync.performSync());
+          add(this.dom.sidebarDriveSyncBtn, "click", () => { this.closeSidebar(); GoogleDriveSync.performSync(); });
+          ['topbarUserAvatar', 'sidebarUserAvatar', 'mobileUserAvatar', 'topbarProfileContainer', 'sidebarProfileContainer'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) add(el, "click", () => GoogleDriveSync.performSync());
+          });
           // Sidebar action buttons (mirror desktop buttons)
           add(this.dom.sidebarDriveSyncBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.googleSyncButton?.click(); });
           add(this.dom.sidebarHelpBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.helpButton?.click(); });
@@ -3663,19 +3673,22 @@ Em -  C    -  G  -  D
               });
             }
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
-            // Populate version display + sidebar version
+            // Populate version display + brand version + sidebar version
             const versionEl = UIManager.dom.appVersion;
+            const brandVersionEl = UIManager.dom.brandVersion;
             const sidebarVersionEl = UIManager.dom.sidebarVersion;
             fetch("version.json")
               .then(res => res.json())
               .then(data => {
                 const vStr = "v" + data.version;
                 if (versionEl) versionEl.textContent = vStr;
+                if (brandVersionEl) brandVersionEl.textContent = vStr;
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.0.0";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.0.0";
+                if (versionEl) versionEl.textContent = "v1.3.0";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.3.0";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.3.0";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {

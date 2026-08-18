@@ -104,7 +104,10 @@
       <div class="brand">
         <img src="icon.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
         <div class="brand-text">
-          <h1 class="brand-title">Sonata</h1>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <h1 class="brand-title">Sonata</h1>
+            <span class="version-badge" id="brandVersion">v1.3.0</span>
+          </div>
           <p class="brand-subtitle">Offline tool for musicians</p>
         </div>
       </div>
@@ -120,9 +123,9 @@
 
       <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
-        <div style="display:flex; align-items:center; gap:6px; margin-right:4px;" id="topbarProfileContainer" hidden>
-          <img id="topbarUserAvatar" src="" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer;" title="Change Avatar">
-          <span id="topbarUserGreeting" style="font-size:0.82rem; font-weight:600; display:none;"></span>
+        <div style="display:flex; align-items:center; gap:6px; margin-right:4px;" id="topbarProfileContainer">
+          <img id="topbarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
+          <span id="topbarUserGreeting" style="font-size:0.82rem; font-weight:600; color:var(--text);">Hi, Musician</span>
         </div>
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
         <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
@@ -134,12 +137,12 @@
           <option value="en" selected>English</option>
           <option value="fil">Filipino</option>
         </select>
-        <span id="appVersion" class="muted" style="font-size:0.82rem;"></span>
+        <span id="appVersion" class="version-badge">v1.3.0</span>
       </div>
 
       <!-- Mobile quick actions row: theme toggle + present only -->
       <div class="topbar-mobile-actions">
-        <img id="mobileUserAvatar" src="" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer;" title="Change Avatar" hidden>
+        <img id="mobileUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
         <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle theme"></button>
         <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button">Present</button>
       </div>

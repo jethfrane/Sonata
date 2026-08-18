@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.3.0",
+    "date": "2026-08-18",
+    "changes": [
+      "Ultra-shortened, direct song and setlist share links without external shorteners.",
+      "Embedded QR codes for fast camera scanning in PNG and PDF exports.",
+      "Google account profile greeting (Hi, [Name]) and persistent avatar display.",
+      "Precise timestamps with date and time on all song modifications.",
+      "Manual key override mode for Virtual Piano and Fretboard without automatic resets.",
+      "Seamless offline-first PWA caching and instant Google Drive auto-sync.",
+      "Enhanced responsive navigation across mobile, tablet, and desktop views."
+    ],
+    "whatsNew": "Direct links with embedded QR code exports, user profile greetings, precise timestamps, and full cross-device responsiveness."
+  },
+  {
     "version": "1.2.0",
     "date": "2026-08-17",
     "changes": [

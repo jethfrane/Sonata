@@ -1,5 +1,5 @@
 // Sonata Service Worker - 100% Offline-First Musician's Toolkit
-const CACHE_NAME = 'sonata-cache-v9';
+const CACHE_NAME = 'sonata-cache-v10';
 
 const PRECACHE_ASSETS = [
   './',
