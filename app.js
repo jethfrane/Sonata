@@ -2235,8 +2235,57 @@ Em -  C    -  G  -  D
         print() { const p = this.setlistPayloads()[0]; UIManager.dom.printTitle.textContent = p.title; UIManager.dom.printBody.innerHTML = p.body.replace(/\n/g, '<br>'); UIManager.dom.printFooter.textContent = `Key: ${p.keyInfo} | BPM: ${p.bpm} | Layout: ${p.modeName}`; UIManager.dom.printBody.style.columnCount = parseInt(UIManager.dom.exportColumns.value, 10) || 1; UIManager.dom.printBody.style.columnGap = "40px"; window.setTimeout(() => window.print(), 60); UIManager.toast("Print dialog opened"); },
         async copyText(text) { try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; } } catch (e) { } try { const helper = document.createElement("textarea"); helper.value = text; helper.style.position = "fixed"; helper.style.opacity = "0"; document.body.appendChild(helper); helper.select(); const success = document.execCommand("copy"); helper.remove(); return success; } catch (e) { return false; } },
         async copy() { const success = await this.copyText(UIManager.dom.previewOutput.innerText || UIManager.dom.previewOutput.textContent); if (success) UIManager.toast("Copied visible chart"); },
-        async compressData(obj) { const str = "v3." + JSON.stringify(obj); if (!window.CompressionStream) return btoa(encodeURIComponent(str)); try { const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw')); return btoa(String.fromCharCode(...new Uint8Array(await new Response(stream).arrayBuffer()))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return btoa(encodeURIComponent(str)); } },
-        async decompressData(base64url) { try { const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/'); const binary = atob(base64); if (!window.DecompressionStream) { const dec = decodeURIComponent(binary); return dec.startsWith("v3.") ? dec.substring(3) : dec.startsWith("v2.") ? dec.substring(3) : dec; } const bytes = new Uint8Array(binary.length); for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i); const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')); const result = await new Response(stream).text(); return result.startsWith("v3.") ? result.substring(3) : result.startsWith("v2.") ? result.substring(3) : result; } catch (e) { const fall = decodeURIComponent(atob(base64url)); return fall.startsWith("v3.") ? fall.substring(3) : fall.startsWith("v2.") ? fall.substring(3) : fall; } },
+        async compressData(obj) {
+          const str = "v3." + JSON.stringify(obj);
+          if (!window.CompressionStream) {
+            return encodeURIComponent(btoa(unescape(encodeURIComponent(str))));
+          }
+          try {
+            const stream = new Blob([new TextEncoder().encode(str)]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+            const buffer = await new Response(stream).arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          } catch (e) {
+            console.error("Compression error:", e);
+            return encodeURIComponent(btoa(unescape(encodeURIComponent(str))));
+          }
+        },
+
+        async decompressData(raw) {
+          if (!raw) return "";
+          try {
+            let base64 = decodeURIComponent(raw).replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4 !== 0) {
+              base64 += '=';
+            }
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+            if (window.DecompressionStream) {
+              try {
+                const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+                const result = await new Response(stream).text();
+                return result.startsWith("v3.") ? result.substring(3) : result.startsWith("v2.") ? result.substring(3) : result;
+              } catch(e) {}
+            }
+            const text = new TextDecoder().decode(bytes);
+            return text.startsWith("v3.") ? text.substring(3) : text.startsWith("v2.") ? text.substring(3) : text;
+          } catch (e) {
+            try {
+              const fallback = decodeURIComponent(escape(atob(decodeURIComponent(raw))));
+              return fallback.startsWith("v3.") ? fallback.substring(3) : fallback.startsWith("v2.") ? fallback.substring(3) : fallback;
+            } catch(err2) {
+              console.error("Decompress error:", err2);
+              return "";
+            }
+          }
+        },
 
         async share(isSetlist = false) {
           let shareData = {}; let titleText = ""; let isSet = isSetlist;

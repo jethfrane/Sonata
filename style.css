@@ -2198,18 +2198,31 @@
       }
 
       .editor-toolbar {
-        padding: 6px 8px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        padding: 8px 10px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--line);
       }
 
       .toolbar {
         display: flex;
-        flex-wrap: nowrap;
-        gap: 4px;
-        width: 100%;
-        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .mobile-editor-mode-toggle {
+        display: inline-flex !important;
+      }
+
+      .mobile-editor-mode-toggle .tab-button {
+        padding: 4px 10px;
+        font-size: 0.78rem;
+        min-height: 32px;
       }
 
       .button {
@@ -2218,11 +2231,10 @@
       }
 
       .toolbar .button {
-        padding: 0 8px;
-        min-height: 36px;
+        padding: 0 9px;
+        min-height: 34px;
         font-size: 0.8rem;
         gap: 4px;
-        flex-shrink: 0;
       }
 
       .toolbar .button .icon {
