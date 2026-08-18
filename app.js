@@ -3002,23 +3002,26 @@ Em -  C    -  G  -  D
 
           const compressed = await this.compressData(shareData);
           const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
-          let shareUrl = directUrl; // will be replaced with short URL once resolved
 
+          // Shorten first so QR, input, and native share all use the same single shortest URL
           UIManager.openModal({
             title: "Share " + (isSet ? "Setlist" : "Song"),
             confirmText: "Copy Link & Close",
-            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:24px 0;">Generating link...</p></div>` }],
+            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:32px 0 8px;">⏳ Generating shortest link...</p></div>` }],
             onConfirm: async () => { if (await this.copyText(shareUrl)) UIManager.toast("Share link copied!"); }
           });
+
+          const short = await this.shortenUrl(directUrl);
+          const shareUrl = short || directUrl;
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
           wrapper.innerHTML = '';
 
-          // QR always uses full data URL (works offline when scanned)
+          // QR encodes the final short link (same URL the user copies/shares)
           const canvas = document.createElement("canvas");
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
-          this.drawQrCard(canvas, { titleText, isSet, shareData, directUrl });
+          this.drawQrCard(canvas, { titleText, isSet, shareData, directUrl: shareUrl });
 
           const downloadBtn = document.createElement('button');
           downloadBtn.className = 'button secondary';
@@ -3033,7 +3036,7 @@ Em -  C    -  G  -  D
           const urlInput = document.createElement('input');
           urlInput.className = 'input';
           urlInput.readOnly = true;
-          urlInput.value = 'Shortening link...';
+          urlInput.value = shareUrl;
           urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
           urlInput.addEventListener('click', () => urlInput.select());
 
@@ -3060,17 +3063,10 @@ Em -  C    -  G  -  D
 
           const noteText = document.createElement('p');
           noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;";
-          noteText.textContent = "QR works offline. Link shortened with TinyURL.";
+          noteText.textContent = short ? "Scan QR or copy link to import." : "Link uses compressed data directly.";
 
           wrapper.append(canvas, downloadBtn, urlInput, shareBtn, noteText);
           Icon.decorateAll(wrapper);
-
-          // Shorten URL in background — swap input value when ready
-          this.shortenUrl(directUrl).then(short => {
-            shareUrl = short || directUrl;
-            urlInput.value = shareUrl;
-            if (!short) noteText.textContent = "QR works offline. (Short link unavailable — using direct link)";
-          });
         }
       };
 
@@ -3615,26 +3611,27 @@ Em -  C    -  G  -  D
               fields: [{
                 type: "custom",
                 id: "share-content",
-                html: `<div id="bulkShareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:20px 0;">Generating secure share link...</p></div>`
+                html: `<div id="bulkShareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:32px 0 8px;">⏳ Generating shortest link...</p></div>`
               }],
               onConfirm: async () => {
-                const urlInput = document.getElementById('bulkShareUrl');
-                const urlToCopy = urlInput ? urlInput.value : finalUrl;
-                if (await ExportManager.copyText(urlToCopy)) UIManager.toast("Share link copied!");
+                if (await ExportManager.copyText(shareUrl)) UIManager.toast("Share link copied!");
               }
             });
 
             const compressed = await ExportManager.compressData(shareData);
             const finalUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
-            let shareUrl = finalUrl; // replaced with TinyURL once resolved
+
+            const short = await ExportManager.shortenUrl(finalUrl);
+            const shareUrl = short || finalUrl;
 
             const wrapper = document.getElementById('bulkShareWrapper');
             if (!wrapper) return;
             wrapper.innerHTML = '';
 
-            const canvas = document.createElement("canvas");
+            // QR encodes the same short URL
+            const canvas = document.createElement(\"canvas\");
             canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
-            ExportManager.drawQrCard(canvas, { titleText, isSet: true, shareData, directUrl: finalUrl });
+            ExportManager.drawQrCard(canvas, { titleText, isSet: true, shareData, directUrl: shareUrl });
 
             const downloadBtn = document.createElement('button');
             downloadBtn.className = 'button secondary';
@@ -3650,7 +3647,7 @@ Em -  C    -  G  -  D
             urlInput.className = 'input';
             urlInput.id = 'bulkShareUrl';
             urlInput.readOnly = true;
-            urlInput.value = 'Shortening link...';
+            urlInput.value = shareUrl;
             urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
             urlInput.addEventListener('click', () => urlInput.select());
 
@@ -3675,17 +3672,10 @@ Em -  C    -  G  -  D
 
             const noteText = document.createElement('p');
             noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;";
-            noteText.textContent = "QR works offline. Link shortened with TinyURL.";
+            noteText.textContent = short ? "Scan QR or copy link to import." : "Link uses compressed data directly.";
 
             wrapper.append(canvas, downloadBtn, urlInput, shareBtn, noteText);
             Icon.decorateAll(wrapper);
-
-            // Shorten in background — swap URL once ready
-            ExportManager.shortenUrl(finalUrl).then(short => {
-              shareUrl = short || finalUrl;
-              urlInput.value = shareUrl;
-              if (!short) noteText.textContent = "QR works offline. (Short link unavailable — using direct link)";
-            });
           });
         },
 
