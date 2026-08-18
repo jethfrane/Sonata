@@ -4111,35 +4111,8 @@ Em -  C    -  G  -  D
           } catch(e) {}
           this.updateProfileUI();
           this.loadCachedToken();
-          setTimeout(() => {
-            if (window.google?.accounts?.oauth2) {
-              try {
-                this.tokenClient = google.accounts.oauth2.initTokenClient({
-                  client_id: this.CLIENT_ID,
-                  scope: this.SCOPES,
-                  callback: (tokenResponse) => {
-                    if (tokenResponse.error !== undefined) {
-                      console.error("OAuth Error:", tokenResponse);
-                      this.updateUI("Auth Failed", "danger");
-                      if (this.resolveSignIn) this.resolveSignIn(false);
-                      return;
-                    }
-                    this.accessToken = tokenResponse.access_token;
-                    const expiresInMs = (Number(tokenResponse.expires_in) || 3599) * 1000;
-                    sessionStorage.setItem('sonata_google_token', this.accessToken);
-                    sessionStorage.setItem('sonata_google_token_expiry', String(Date.now() + expiresInMs));
-                    this.fetchUserInfo().then(() => {
-                      this.performSync().then(() => {
-                        if (this.resolveSignIn) this.resolveSignIn(true);
-                      });
-                    });
-                  },
-                });
-              } catch (err) {
-                console.error("GIS TokenClient Init Error:", err);
-              }
-            }
-          }, 200);
+          
+          setTimeout(() => this.initTokenClientIfNeeded(), 500);
 
           const btn = document.getElementById('googleSyncButton');
           btn?.addEventListener('click', () => {
@@ -4152,9 +4125,42 @@ Em -  C    -  G  -  D
           });
         },
 
+        initTokenClientIfNeeded() {
+          if (this.tokenClient) return true;
+          if (window.google?.accounts?.oauth2) {
+            try {
+              this.tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: this.CLIENT_ID,
+                scope: this.SCOPES,
+                callback: (tokenResponse) => {
+                  if (tokenResponse.error !== undefined) {
+                    console.error("OAuth Error:", tokenResponse);
+                    this.updateUI("Auth Failed", "danger");
+                    if (this.resolveSignIn) this.resolveSignIn(false);
+                    return;
+                  }
+                  this.accessToken = tokenResponse.access_token;
+                  const expiresInMs = (Number(tokenResponse.expires_in) || 3599) * 1000;
+                  localStorage.setItem('sonata_google_token', this.accessToken);
+                  localStorage.setItem('sonata_google_token_expiry', String(Date.now() + expiresInMs));
+                  this.fetchUserInfo().then(() => {
+                    this.performSync().then(() => {
+                      if (this.resolveSignIn) this.resolveSignIn(true);
+                    });
+                  });
+                },
+              });
+              return true;
+            } catch (err) {
+              console.error("GIS TokenClient Init Error:", err);
+            }
+          }
+          return false;
+        },
+
         loadCachedToken() {
-          const token = sessionStorage.getItem('sonata_google_token');
-          const expiry = Number(sessionStorage.getItem('sonata_google_token_expiry') || '0');
+          const token = localStorage.getItem('sonata_google_token');
+          const expiry = Number(localStorage.getItem('sonata_google_token_expiry') || '0');
           if (token && expiry > Date.now()) {
             this.accessToken = token;
             this.fetchUserInfo().then(() => {
@@ -4229,12 +4235,12 @@ Em -  C    -  G  -  D
 
         signIn() {
           return new Promise((resolve) => {
-            if (this.tokenClient) {
-              this.resolveSignIn = resolve;
+            this.resolveSignIn = resolve;
+            if (this.initTokenClientIfNeeded()) {
               this.updateUI("Connecting...", "secondary");
               this.tokenClient.requestAccessToken({ prompt: '' });
             } else {
-              UIManager.toast("Google Identity Services loading...");
+              UIManager.toast("Google Identity Services loading... please try again.");
               resolve(false);
             }
           });
@@ -4249,8 +4255,8 @@ Em -  C    -  G  -  D
           this.accessToken = null;
           this.userEmail = null;
           this.fileId = null;
-          sessionStorage.removeItem('sonata_google_token');
-          sessionStorage.removeItem('sonata_google_token_expiry');
+          localStorage.removeItem('sonata_google_token');
+          localStorage.removeItem('sonata_google_token_expiry');
           this.updateUI("Drive Sync", "secondary");
           UIManager.toast("Disconnected from Google Drive");
         },
@@ -4290,7 +4296,7 @@ Em -  C    -  G  -  D
 
             if (listResp.status === 401) {
               this.accessToken = null;
-              sessionStorage.removeItem('sonata_google_token');
+              localStorage.removeItem('sonata_google_token');
               UIManager.toast("Session expired. Please sync again.");
               this.updateUI("Drive Sync", "secondary");
               this.isSyncing = false;
@@ -4346,9 +4352,18 @@ Em -  C    -  G  -  D
             return Array.from(map.values());
           };
 
-          const mergedSongs = mergeArrays(StateManager.state.songs, cloudData.songs || [], 'updatedAt');
-          const mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'updatedAt');
+          const combinedDeletedIds = Array.from(new Set([
+            ...(StateManager.state.deletedIds || []),
+            ...(cloudData.deletedIds || [])
+          ]));
 
+          let mergedSongs = mergeArrays(StateManager.state.songs, cloudData.songs || [], 'updatedAt');
+          let mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'updatedAt');
+
+          mergedSongs = mergedSongs.filter(s => !combinedDeletedIds.includes(s.id));
+          mergedSets = mergedSets.filter(s => !combinedDeletedIds.includes(s.id));
+
+          StateManager.state.deletedIds = combinedDeletedIds;
           StateManager.state.songs = mergedSongs.map(s => StorageManager.normalizeSong(s));
           StateManager.state.setlists = mergedSets;
           if (cloudData.settings) {
@@ -4358,6 +4373,7 @@ Em -  C    -  G  -  D
           StorageManager.saveSongs(StateManager.state.songs);
           StorageManager.saveSetlists(StateManager.state.setlists);
           StorageManager.saveSettings(StateManager.state.settings);
+          StorageManager.saveDeletedIds(StateManager.state.deletedIds);
 
           Editor.loadActiveSong();
           UIManager.renderAll();
@@ -4377,6 +4393,7 @@ Em -  C    -  G  -  D
             songs: StateManager.state.songs,
             setlists: StateManager.state.setlists,
             settings: StateManager.state.settings,
+            deletedIds: StateManager.state.deletedIds || [],
             lastSynced: Util.now()
           };
           const metadata = {
@@ -4688,14 +4705,16 @@ Em -  C    -  G  -  D
         saveSetlists(setlists) { localStorage.setItem(STORAGE_KEYS.setlists, JSON.stringify(setlists)); },
         loadSettings() { try { const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.settings) || "{}"); return Object.assign({}, DEFAULT_SETTINGS, p || {}); } catch (e) { return Object.assign({}, DEFAULT_SETTINGS); } },
         saveSettings(settings) { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings)); },
+        loadDeletedIds() { try { const p = JSON.parse(localStorage.getItem('sonata:v12:deleted') || "[]"); return Array.isArray(p) ? p : []; } catch (e) { return []; } },
+        saveDeletedIds(ids) { localStorage.setItem('sonata:v12:deleted', JSON.stringify(ids)); },
         loadActiveId() { return localStorage.getItem(STORAGE_KEYS.activeSong); },
         saveActiveId(id) { localStorage.setItem(STORAGE_KEYS.activeSong, id); },
         normalizeSong(s) { const now = Util.now(); return { id: s.id || Util.uid(), title: s.title || "Untitled", artist: s.artist || "", description: s.description || "", links: Array.isArray(s.links) ? s.links : [], creator: s.creator || "", body: s.body || "", savedSnapshot: s.savedSnapshot || s.body || "", manualKey: s.manualKey || "auto", isFavorite: s.isFavorite || false, createdAt: s.createdAt || now, updatedAt: s.updatedAt || now, lastOpenedAt: s.lastOpenedAt || s.updatedAt || now }; }
       };
 
       const StateManager = {
-        state: { songs: [], setlists: [], activeId: null, sharedSong: null, activeSetlist: { id: null, index: 0 }, settings: Object.assign({}, DEFAULT_SETTINGS), capo: 0, query: "", libraryFilter: "all", previewMode: "original", circleFormat: "roman", transposeDelta: 0, detectedKey: null, dirty: false },
-        init() { this.state.settings = StorageManager.loadSettings(); this.state.songs = StorageManager.loadSongs(); this.state.setlists = StorageManager.loadSetlists(); const sId = StorageManager.loadActiveId(); this.state.activeId = this.state.songs.some(s => s.id === sId) ? sId : (this.state.songs[0]?.id || null); },
+        state: { songs: [], setlists: [], deletedIds: [], activeId: null, sharedSong: null, activeSetlist: { id: null, index: 0 }, settings: Object.assign({}, DEFAULT_SETTINGS), capo: 0, query: "", libraryFilter: "all", previewMode: "original", circleFormat: "roman", transposeDelta: 0, detectedKey: null, dirty: false },
+        init() { this.state.settings = StorageManager.loadSettings(); this.state.songs = StorageManager.loadSongs(); this.state.setlists = StorageManager.loadSetlists(); this.state.deletedIds = StorageManager.loadDeletedIds(); const sId = StorageManager.loadActiveId(); this.state.activeId = this.state.songs.some(s => s.id === sId) ? sId : (this.state.songs[0]?.id || null); },
         activeSong() { return this.state.activeId === 'shared' && this.state.sharedSong ? this.state.sharedSong : (this.state.songs.find(s => s.id === this.state.activeId) || this.state.songs[0] || null); },
         touch(song) { if (!song || song.readonly) return; song.updatedAt = Util.now(); this.state.dirty = true; App.scheduleSave(); GoogleDriveSync.scheduleUpload(); },
         saveNow(msg) {
@@ -4704,6 +4723,7 @@ Em -  C    -  G  -  D
           StorageManager.saveSongs(this.state.songs);
           StorageManager.saveSetlists(this.state.setlists);
           StorageManager.saveSettings(this.state.settings);
+          StorageManager.saveDeletedIds(this.state.deletedIds);
           if (this.state.activeId && this.state.activeId !== 'shared') StorageManager.saveActiveId(this.state.activeId);
           this.state.dirty = false;
           UIManager.setStatus(msg || "Saved");
@@ -4714,7 +4734,7 @@ Em -  C    -  G  -  D
         setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
         createSong() { const now = Util.now(); const autoName = (StateManager.state.settings.autoFillArranger && GoogleDriveSync.userName) ? GoogleDriveSync.userName : ""; const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: autoName, body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
         loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.touch(s); this.saveNow("Demo loaded"); return s; },
-        deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
+        deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.deletedIds.includes(a.id)) this.state.deletedIds.push(a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
         revertActive() { const a = this.activeSong(); if (!a || a.readonly) return; a.body = a.savedSnapshot || ""; this.touch(a); this.saveNow("Restored"); Editor.loadActiveSong(); UIManager.renderAll(); },
         importShared() { if (!this.state.sharedSong) return; const s = { ...this.state.sharedSong, id: Util.uid(), readonly: false }; this.state.songs.unshift(s); this.state.sharedSong = null; this.state.activeId = s.id; this.saveNow("Saved to Library"); return s; },
         exitShared() { this.state.sharedSong = null; this.state.activeId = this.state.songs[0]?.id || null; if (!this.state.activeId) this.createSong(); },
@@ -6274,7 +6294,7 @@ Em -  C    -  G  -  D
           setHtml(".instrument-panel .explanation-text:nth-of-type(2)", d.fretboardScrollText);
           setHtml(".instrument-panel .panel-heading:nth-of-type(3) h2", `${d.tunerHeading}<button class="help-icon" data-help="tuner" type="button">?</button>`);
           setHtml(".instrument-panel .tool-card p", d.tunerSubtext);
-          setHtml("#micTunerBtn", `<span data-inline-icon="music" style="margin-right:6px;"></span> ${TunerManager.isListening ? d.tunerMicBtnStop : d.tunerMicBtnStart}`);
+          setHtml("#micTunerBtn", `<span data-inline-icon="music" style="margin-right:6px;"></span> ${Tuner.isListening ? d.tunerMicBtnStop : d.tunerMicBtnStart}`);
 
           // Presentation Panel
           setLabel("#presentationExit", d.presentationExit);
@@ -7427,13 +7447,21 @@ Em -  C    -  G  -  D
                   let tracklistHtml = '';
                   if (isSet && d.s && d.s.length) {
                     tracklistHtml = `
-                      <div style="margin-top:14px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface-2);">
-                        <div style="padding:8px 12px; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); border-bottom:1px solid var(--line);">Included Songs (${d.s.length})</div>
-                        <div style="max-height:160px; overflow-y:auto; padding:4px 0;">
+                      <div class="shared-setlist-tracklist" style="margin-top:16px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface);">
+                        <div style="padding:10px 14px; font-weight:700; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); background:var(--surface-2); display:flex; align-items:center; gap:6px;">
+                          <span data-inline-icon="list" style="width:14px; height:14px;"></span> Included Songs (${d.s.length})
+                        </div>
+                        <div style="max-height:180px; overflow-y:auto; padding:0;">
                           ${d.s.map((s, i) => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; font-size:0.86rem; border-bottom:1px solid color-mix(in srgb, var(--line) 40%, transparent);">
-                              <span><strong>${i + 1}.</strong> ${Util.escapeHtml(s.t || 'Untitled')}</span>
-                              <span style="font-size:0.75rem; color:var(--muted); font-weight:600;">${s.k ? s.k : ''} ${s.a ? '&middot; ' + Util.escapeHtml(s.a) : ''}</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:0.86rem; border-bottom:1px solid color-mix(in srgb, var(--line) 40%, transparent);">
+                              <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:var(--muted); font-size:0.8rem; font-weight:600; width:18px;">${i + 1}.</span>
+                                <strong>${Util.escapeHtml(s.t || 'Untitled')}</strong>
+                              </div>
+                              <div style="display:flex; align-items:center; gap:6px;">
+                                ${s.k ? `<span style="font-size:0.7rem; font-weight:700; padding:2px 6px; border-radius:4px; background:var(--surface-2); color:var(--text);">${s.k}</span>` : ''}
+                                ${s.a ? `<span style="font-size:0.75rem; color:var(--muted); font-weight:500;">&middot; ${Util.escapeHtml(s.a)}</span>` : ''}
+                              </div>
                             </div>
                           `).join('')}
                         </div>
@@ -7444,34 +7472,43 @@ Em -  C    -  G  -  D
                   if (!isSet && d.b) {
                     const lines = d.b.split('\n').filter(l => l.trim()).slice(0, 8).join('\n');
                     previewExcerpt = `
-                      <div style="margin-top:14px; border:1px solid var(--line); border-radius:8px; padding:12px; background:var(--surface-2); font-family:var(--chart-font); font-size:0.82rem; color:var(--text); max-height:140px; overflow-y:auto; line-height:1.45; white-space:pre-wrap;">${Util.escapeHtml(lines)}</div>`;
+                      <div style="margin-top:16px; border:1px solid var(--line); border-radius:12px; padding:14px; background:var(--surface); font-family:var(--chart-font); font-size:0.85rem; color:var(--text); max-height:160px; overflow-y:auto; line-height:1.5; white-space:pre-wrap; box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);">${Util.escapeHtml(lines)}</div>`;
                   }
 
                   const previewHtml = `
-                    <div style="font-family:var(--ui-font); color:var(--text);">
-                      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                        <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800; font-size:16px;">S</span>
-                        <div>
-                          <span style="display:inline-block; font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; padding:2px 8px; border-radius:999px; background:color-mix(in srgb, var(--accent) 15%, var(--surface-2)); color:var(--accent);">${isSet ? 'Shared Setlist' : 'Shared Song'}</span>
-                          <h2 style="margin:2px 0 0; font-size:1.25rem; font-weight:800; line-height:1.2;">${Util.escapeHtml(title)}</h2>
+                    <div style="font-family:var(--ui-font); color:var(--text); display:flex; flex-direction:column; gap:4px;">
+                      <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+                        <img src="icon.png" alt="Sonata Logo" style="width:42px; height:42px; border-radius:10px; object-fit:cover; box-shadow:0 4px 12px rgba(0,0,0,0.1); border:1px solid color-mix(in srgb, var(--line) 50%, transparent);">
+                        <div style="flex:1;">
+                          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; padding:3px 8px; border-radius:999px; background:color-mix(in srgb, var(--accent) 15%, transparent); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);">
+                              <span data-inline-icon="${isSet ? 'list' : 'file-text'}" style="width:12px; height:12px;"></span> ${isSet ? 'Shared Setlist' : 'Shared Song'}
+                            </span>
+                          </div>
+                          <h2 style="margin:0; font-size:1.35rem; font-weight:800; line-height:1.2; letter-spacing:-0.02em;">${Util.escapeHtml(title)}</h2>
                         </div>
                       </div>
-                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; font-size:0.82rem;">
-                        ${artist ? `<span style="color:var(--muted); font-weight:600;">By ${Util.escapeHtml(artist)}</span>` : ''}
-                        ${arranger ? `<span style="color:var(--muted);">&bull; Arranged by ${Util.escapeHtml(arranger)}</span>` : ''}
+                      
+                      ${(artist || arranger) ? `
+                      <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:0.85rem; margin-bottom:12px; padding-left:54px;">
+                        ${artist ? `<span style="color:var(--text); font-weight:600;"><span data-inline-icon="user" style="width:12px; height:12px; margin-right:4px; color:var(--muted);"></span>${Util.escapeHtml(artist)}</span>` : ''}
+                        ${arranger ? `<span style="color:var(--muted); display:flex; align-items:center; gap:4px;">&bull; Arranged by ${Util.escapeHtml(arranger)}</span>` : ''}
+                      </div>` : ''}
+                      
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; padding-left:54px;">
+                        ${!isSet && keyStr ? `<span class="badge" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;"><span data-inline-icon="music" style="width:12px; height:12px; color:var(--muted);"></span>Key: ${keyStr}</span>` : ''}
+                        ${capoStr ? `<span class="badge" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${capoStr}</span>` : ''}
+                        ${songsCount ? `<span class="badge" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;"><span data-inline-icon="layers" style="width:12px; height:12px; color:var(--muted);"></span>${songsCount} Songs</span>` : ''}
                       </div>
-                      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
-                        ${!isSet && keyStr ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">Key: ${keyStr}</span>` : ''}
-                        ${capoStr ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${capoStr}</span>` : ''}
-                        ${songsCount ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${songsCount} Songs</span>` : ''}
-                      </div>
-                      ${d.d ? `<p style="font-size:0.85rem; color:var(--muted); margin:0 0 10px; font-style:italic;">${Util.escapeHtml(d.d)}</p>` : ''}
+                      
+                      ${d.d ? `<div style="margin-top:12px; padding:10px 14px; background:color-mix(in srgb, var(--accent) 5%, var(--surface-2)); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; font-size:0.85rem; color:var(--text); font-style:italic; line-height:1.4;"><span data-inline-icon="info" style="width:14px; height:14px; float:left; margin-right:8px; margin-top:2px; color:var(--accent);"></span>${Util.escapeHtml(d.d)}</div>` : ''}
+                      
                       ${tracklistHtml}
                       ${previewExcerpt}
                     </div>`;
 
                   UIManager.openModal({
-                    title: isSet ? 'Shared Setlist' : 'Shared Song',
+                    title: isSet ? 'Import Setlist' : 'Import Song',
                     fields: [{ type: 'custom', html: previewHtml }],
                     confirmText: 'Open & Play',
                     onConfirm: () => {

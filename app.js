@@ -1114,35 +1114,8 @@ Em -  C    -  G  -  D
           } catch(e) {}
           this.updateProfileUI();
           this.loadCachedToken();
-          setTimeout(() => {
-            if (window.google?.accounts?.oauth2) {
-              try {
-                this.tokenClient = google.accounts.oauth2.initTokenClient({
-                  client_id: this.CLIENT_ID,
-                  scope: this.SCOPES,
-                  callback: (tokenResponse) => {
-                    if (tokenResponse.error !== undefined) {
-                      console.error("OAuth Error:", tokenResponse);
-                      this.updateUI("Auth Failed", "danger");
-                      if (this.resolveSignIn) this.resolveSignIn(false);
-                      return;
-                    }
-                    this.accessToken = tokenResponse.access_token;
-                    const expiresInMs = (Number(tokenResponse.expires_in) || 3599) * 1000;
-                    sessionStorage.setItem('sonata_google_token', this.accessToken);
-                    sessionStorage.setItem('sonata_google_token_expiry', String(Date.now() + expiresInMs));
-                    this.fetchUserInfo().then(() => {
-                      this.performSync().then(() => {
-                        if (this.resolveSignIn) this.resolveSignIn(true);
-                      });
-                    });
-                  },
-                });
-              } catch (err) {
-                console.error("GIS TokenClient Init Error:", err);
-              }
-            }
-          }, 200);
+          
+          setTimeout(() => this.initTokenClientIfNeeded(), 500);
 
           const btn = document.getElementById('googleSyncButton');
           btn?.addEventListener('click', () => {
@@ -1155,9 +1128,42 @@ Em -  C    -  G  -  D
           });
         },
 
+        initTokenClientIfNeeded() {
+          if (this.tokenClient) return true;
+          if (window.google?.accounts?.oauth2) {
+            try {
+              this.tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: this.CLIENT_ID,
+                scope: this.SCOPES,
+                callback: (tokenResponse) => {
+                  if (tokenResponse.error !== undefined) {
+                    console.error("OAuth Error:", tokenResponse);
+                    this.updateUI("Auth Failed", "danger");
+                    if (this.resolveSignIn) this.resolveSignIn(false);
+                    return;
+                  }
+                  this.accessToken = tokenResponse.access_token;
+                  const expiresInMs = (Number(tokenResponse.expires_in) || 3599) * 1000;
+                  localStorage.setItem('sonata_google_token', this.accessToken);
+                  localStorage.setItem('sonata_google_token_expiry', String(Date.now() + expiresInMs));
+                  this.fetchUserInfo().then(() => {
+                    this.performSync().then(() => {
+                      if (this.resolveSignIn) this.resolveSignIn(true);
+                    });
+                  });
+                },
+              });
+              return true;
+            } catch (err) {
+              console.error("GIS TokenClient Init Error:", err);
+            }
+          }
+          return false;
+        },
+
         loadCachedToken() {
-          const token = sessionStorage.getItem('sonata_google_token');
-          const expiry = Number(sessionStorage.getItem('sonata_google_token_expiry') || '0');
+          const token = localStorage.getItem('sonata_google_token');
+          const expiry = Number(localStorage.getItem('sonata_google_token_expiry') || '0');
           if (token && expiry > Date.now()) {
             this.accessToken = token;
             this.fetchUserInfo().then(() => {
@@ -1232,12 +1238,12 @@ Em -  C    -  G  -  D
 
         signIn() {
           return new Promise((resolve) => {
-            if (this.tokenClient) {
-              this.resolveSignIn = resolve;
+            this.resolveSignIn = resolve;
+            if (this.initTokenClientIfNeeded()) {
               this.updateUI("Connecting...", "secondary");
               this.tokenClient.requestAccessToken({ prompt: '' });
             } else {
-              UIManager.toast("Google Identity Services loading...");
+              UIManager.toast("Google Identity Services loading... please try again.");
               resolve(false);
             }
           });
@@ -1252,8 +1258,8 @@ Em -  C    -  G  -  D
           this.accessToken = null;
           this.userEmail = null;
           this.fileId = null;
-          sessionStorage.removeItem('sonata_google_token');
-          sessionStorage.removeItem('sonata_google_token_expiry');
+          localStorage.removeItem('sonata_google_token');
+          localStorage.removeItem('sonata_google_token_expiry');
           this.updateUI("Drive Sync", "secondary");
           UIManager.toast("Disconnected from Google Drive");
         },
@@ -1293,7 +1299,7 @@ Em -  C    -  G  -  D
 
             if (listResp.status === 401) {
               this.accessToken = null;
-              sessionStorage.removeItem('sonata_google_token');
+              localStorage.removeItem('sonata_google_token');
               UIManager.toast("Session expired. Please sync again.");
               this.updateUI("Drive Sync", "secondary");
               this.isSyncing = false;
@@ -3291,7 +3297,7 @@ Em -  C    -  G  -  D
           setHtml(".instrument-panel .explanation-text:nth-of-type(2)", d.fretboardScrollText);
           setHtml(".instrument-panel .panel-heading:nth-of-type(3) h2", `${d.tunerHeading}<button class="help-icon" data-help="tuner" type="button">?</button>`);
           setHtml(".instrument-panel .tool-card p", d.tunerSubtext);
-          setHtml("#micTunerBtn", `<span data-inline-icon="music" style="margin-right:6px;"></span> ${TunerManager.isListening ? d.tunerMicBtnStop : d.tunerMicBtnStart}`);
+          setHtml("#micTunerBtn", `<span data-inline-icon="music" style="margin-right:6px;"></span> ${Tuner.isListening ? d.tunerMicBtnStop : d.tunerMicBtnStart}`);
 
           // Presentation Panel
           setLabel("#presentationExit", d.presentationExit);
