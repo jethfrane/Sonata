@@ -1,5 +1,5 @@
 // Sonata Service Worker - 100% Offline-First Musician's Toolkit
-const CACHE_NAME = 'sonata-cache-v14';
+const CACHE_NAME = 'sonata-cache-v16';
 
 const PRECACHE_ASSETS = [
   './',
@@ -90,6 +90,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Cross-origin requests (e.g. Google APIs / Fonts)
+  // CRITICAL FIX: NEVER cache Google APIs (Google Drive Sync will loop infinitely if API responses are cached)
+  if (url.origin.includes('googleapis.com')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((cached) => {
       return cached || fetch(request).then((networkResponse) => {

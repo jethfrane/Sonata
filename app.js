@@ -1349,9 +1349,18 @@ Em -  C    -  G  -  D
             return Array.from(map.values());
           };
 
-          const mergedSongs = mergeArrays(StateManager.state.songs, cloudData.songs || [], 'updatedAt');
-          const mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'updatedAt');
+          const combinedDeletedIds = Array.from(new Set([
+            ...(StateManager.state.deletedIds || []),
+            ...(cloudData.deletedIds || [])
+          ]));
 
+          let mergedSongs = mergeArrays(StateManager.state.songs, cloudData.songs || [], 'updatedAt');
+          let mergedSets = mergeArrays(StateManager.state.setlists, cloudData.setlists || [], 'updatedAt');
+
+          mergedSongs = mergedSongs.filter(s => !combinedDeletedIds.includes(s.id));
+          mergedSets = mergedSets.filter(s => !combinedDeletedIds.includes(s.id));
+
+          StateManager.state.deletedIds = combinedDeletedIds;
           StateManager.state.songs = mergedSongs.map(s => StorageManager.normalizeSong(s));
           StateManager.state.setlists = mergedSets;
           if (cloudData.settings) {
@@ -1361,6 +1370,7 @@ Em -  C    -  G  -  D
           StorageManager.saveSongs(StateManager.state.songs);
           StorageManager.saveSetlists(StateManager.state.setlists);
           StorageManager.saveSettings(StateManager.state.settings);
+          StorageManager.saveDeletedIds(StateManager.state.deletedIds);
 
           Editor.loadActiveSong();
           UIManager.renderAll();
@@ -1380,6 +1390,7 @@ Em -  C    -  G  -  D
             songs: StateManager.state.songs,
             setlists: StateManager.state.setlists,
             settings: StateManager.state.settings,
+            deletedIds: StateManager.state.deletedIds || [],
             lastSynced: Util.now()
           };
           const metadata = {
@@ -1691,14 +1702,16 @@ Em -  C    -  G  -  D
         saveSetlists(setlists) { localStorage.setItem(STORAGE_KEYS.setlists, JSON.stringify(setlists)); },
         loadSettings() { try { const p = JSON.parse(localStorage.getItem(STORAGE_KEYS.settings) || "{}"); return Object.assign({}, DEFAULT_SETTINGS, p || {}); } catch (e) { return Object.assign({}, DEFAULT_SETTINGS); } },
         saveSettings(settings) { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings)); },
+        loadDeletedIds() { try { const p = JSON.parse(localStorage.getItem('sonata:v12:deleted') || "[]"); return Array.isArray(p) ? p : []; } catch (e) { return []; } },
+        saveDeletedIds(ids) { localStorage.setItem('sonata:v12:deleted', JSON.stringify(ids)); },
         loadActiveId() { return localStorage.getItem(STORAGE_KEYS.activeSong); },
         saveActiveId(id) { localStorage.setItem(STORAGE_KEYS.activeSong, id); },
         normalizeSong(s) { const now = Util.now(); return { id: s.id || Util.uid(), title: s.title || "Untitled", artist: s.artist || "", description: s.description || "", links: Array.isArray(s.links) ? s.links : [], creator: s.creator || "", body: s.body || "", savedSnapshot: s.savedSnapshot || s.body || "", manualKey: s.manualKey || "auto", isFavorite: s.isFavorite || false, createdAt: s.createdAt || now, updatedAt: s.updatedAt || now, lastOpenedAt: s.lastOpenedAt || s.updatedAt || now }; }
       };
 
       const StateManager = {
-        state: { songs: [], setlists: [], activeId: null, sharedSong: null, activeSetlist: { id: null, index: 0 }, settings: Object.assign({}, DEFAULT_SETTINGS), capo: 0, query: "", libraryFilter: "all", previewMode: "original", circleFormat: "roman", transposeDelta: 0, detectedKey: null, dirty: false },
-        init() { this.state.settings = StorageManager.loadSettings(); this.state.songs = StorageManager.loadSongs(); this.state.setlists = StorageManager.loadSetlists(); const sId = StorageManager.loadActiveId(); this.state.activeId = this.state.songs.some(s => s.id === sId) ? sId : (this.state.songs[0]?.id || null); },
+        state: { songs: [], setlists: [], deletedIds: [], activeId: null, sharedSong: null, activeSetlist: { id: null, index: 0 }, settings: Object.assign({}, DEFAULT_SETTINGS), capo: 0, query: "", libraryFilter: "all", previewMode: "original", circleFormat: "roman", transposeDelta: 0, detectedKey: null, dirty: false },
+        init() { this.state.settings = StorageManager.loadSettings(); this.state.songs = StorageManager.loadSongs(); this.state.setlists = StorageManager.loadSetlists(); this.state.deletedIds = StorageManager.loadDeletedIds(); const sId = StorageManager.loadActiveId(); this.state.activeId = this.state.songs.some(s => s.id === sId) ? sId : (this.state.songs[0]?.id || null); },
         activeSong() { return this.state.activeId === 'shared' && this.state.sharedSong ? this.state.sharedSong : (this.state.songs.find(s => s.id === this.state.activeId) || this.state.songs[0] || null); },
         touch(song) { if (!song || song.readonly) return; song.updatedAt = Util.now(); this.state.dirty = true; App.scheduleSave(); GoogleDriveSync.scheduleUpload(); },
         saveNow(msg) {
@@ -1707,6 +1720,7 @@ Em -  C    -  G  -  D
           StorageManager.saveSongs(this.state.songs);
           StorageManager.saveSetlists(this.state.setlists);
           StorageManager.saveSettings(this.state.settings);
+          StorageManager.saveDeletedIds(this.state.deletedIds);
           if (this.state.activeId && this.state.activeId !== 'shared') StorageManager.saveActiveId(this.state.activeId);
           this.state.dirty = false;
           UIManager.setStatus(msg || "Saved");
@@ -1717,7 +1731,7 @@ Em -  C    -  G  -  D
         setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
         createSong() { const now = Util.now(); const autoName = (StateManager.state.settings.autoFillArranger && GoogleDriveSync.userName) ? GoogleDriveSync.userName : ""; const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: autoName, body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
         loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.touch(s); this.saveNow("Demo loaded"); return s; },
-        deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
+        deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.deletedIds.includes(a.id)) this.state.deletedIds.push(a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
         revertActive() { const a = this.activeSong(); if (!a || a.readonly) return; a.body = a.savedSnapshot || ""; this.touch(a); this.saveNow("Restored"); Editor.loadActiveSong(); UIManager.renderAll(); },
         importShared() { if (!this.state.sharedSong) return; const s = { ...this.state.sharedSong, id: Util.uid(), readonly: false }; this.state.songs.unshift(s); this.state.sharedSong = null; this.state.activeId = s.id; this.saveNow("Saved to Library"); return s; },
         exitShared() { this.state.sharedSong = null; this.state.activeId = this.state.songs[0]?.id || null; if (!this.state.activeId) this.createSong(); },
