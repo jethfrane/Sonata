@@ -2001,6 +2001,42 @@
       }
     }
 
+    /* Intermediate Desktop (1024px – 1320px): compact topbar elements so everything fits gracefully */
+    @media (min-width: 1024px) and (max-width: 1320px) {
+      .topbar {
+        gap: 6px;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .brand {
+        gap: 6px;
+      }
+      .brand-subtitle {
+        display: none;
+      }
+      .top-nav {
+        gap: 2px;
+        padding: 2px;
+      }
+      .top-nav-btn {
+        padding: 0 7px;
+        font-size: 0.78rem;
+      }
+      .top-actions {
+        gap: 5px;
+      }
+      .top-actions .button:not(#presentationButton) {
+        padding: 0 7px;
+        font-size: 0.78rem;
+      }
+      #topbarUserGreeting {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
     /* Tablet (768px – 1023px): hide top-actions; show hamburger & top-nav */
     @media (min-width: 768px) and (max-width: 1023px) {
       .top-nav {

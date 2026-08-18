@@ -643,8 +643,8 @@ Em -  C    -  G  -  D
             });
             if (resp.ok) {
               const data = await resp.json();
-              this.userEmail = data.email;
-              this.userName = data.name || data.given_name || data.email || null;
+              this.userEmail = data.email || null;
+              this.userName = data.given_name || data.name || null;
               this.userPicture = data.picture || null;
             }
           } catch (e) {
@@ -653,19 +653,28 @@ Em -  C    -  G  -  D
         },
 
         updateProfileUI() {
-          const name = this.userName ? this.userName.split(' ')[0] : 'Musician';
+          let name = 'Musician';
+          if (this.userName && !this.userName.includes('@')) {
+            name = this.userName.trim().split(' ')[0];
+          } else if (this.userEmail) {
+            const rawPrefix = this.userEmail.split('@')[0].split('.')[0].replace(/[0-9_]/g, '');
+            if (rawPrefix) {
+              name = rawPrefix.charAt(0).toUpperCase() + rawPrefix.slice(1);
+            }
+          }
+          const greetingText = `Hi, ${name}!`;
           const emptySvg = 'data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="%2394a3b8" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z"/></svg>';
           const pic = this.userPicture || emptySvg;
           
           if (UIManager.dom.sidebarProfileContainer) {
             UIManager.dom.sidebarProfileContainer.hidden = false;
-            if (UIManager.dom.sidebarUserGreeting) UIManager.dom.sidebarUserGreeting.textContent = `Hi, ${name}`;
+            if (UIManager.dom.sidebarUserGreeting) UIManager.dom.sidebarUserGreeting.textContent = greetingText;
             if (UIManager.dom.sidebarUserAvatar) UIManager.dom.sidebarUserAvatar.src = pic;
           }
           if (UIManager.dom.topbarProfileContainer) {
             UIManager.dom.topbarProfileContainer.hidden = false;
             if (UIManager.dom.topbarUserGreeting) {
-              UIManager.dom.topbarUserGreeting.textContent = `Hi, ${name}`;
+              UIManager.dom.topbarUserGreeting.textContent = greetingText;
               UIManager.dom.topbarUserGreeting.style.display = 'inline';
             }
             if (UIManager.dom.topbarUserAvatar) UIManager.dom.topbarUserAvatar.src = pic;
