@@ -1310,10 +1310,15 @@ Em -  C    -  G  -  D
             if (UIManager.dom.instrumentKeyRoot) {
               UIManager.dom.instrumentKeyRoot.value = KEY_ROOTS[tonic] || 'C';
             }
-            if (UIManager.dom.instrumentKeyMode) UIManager.dom.instrumentKeyMode.value = baseAk.mode || 'major';
-            if (UIManager.dom.theoryKeyInput) {
-              UIManager.dom.theoryKeyInput.value = baseAk.name || "";
+            if (UIManager.dom.instrumentKeyMode) {
+              UIManager.dom.instrumentKeyMode.value = baseAk.mode || 'major';
             }
+            if (UIManager.dom.theoryKeyInput) {
+              const rootName = KEY_ROOTS[tonic] || 'C';
+              UIManager.dom.theoryKeyInput.value = `${rootName} ${baseAk.mode || 'major'}`;
+            }
+            this.renderPiano();
+            this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar');
           }
         },
         getScaleSet() {
@@ -1442,12 +1447,15 @@ Em -  C    -  G  -  D
               keyboard.appendChild(key);
             }
           }
-          setTimeout(() => {
-            const container = document.querySelector('.piano-container');
-            if (container && keyboard.scrollWidth > container.clientWidth) {
-              container.scrollLeft = (keyboard.scrollWidth - container.clientWidth) / 2;
-            }
-          }, 80);
+          if (!this._pianoScrolled) {
+            this._pianoScrolled = true;
+            setTimeout(() => {
+              const container = document.querySelector('.piano-container');
+              if (container && keyboard.scrollWidth > container.clientWidth) {
+                container.scrollLeft = (keyboard.scrollWidth - container.clientWidth) / 2;
+              }
+            }, 80);
+          }
         },
         renderFretboard(instrument) {
           const tunings = {
@@ -1489,13 +1497,13 @@ Em -  C    -  G  -  D
               btn.textContent = note.n;
               let refNode = null;
               const play = (e) => {
-                if (e.type === 'touchstart') e.preventDefault();
+                if (e.cancelable) e.preventDefault();
                 if (refNode) refNode.stop();
                 refNode = AudioEngine.playGuitarNote(note.f, 0.8);
                 btn.classList.add('active');
               };
               const stop = (e) => {
-                if (e.type === 'touchend') e.preventDefault();
+                if (e.cancelable) e.preventDefault();
                 btn.classList.remove('active');
               };
               btn.addEventListener('mousedown', play);
@@ -2326,6 +2334,8 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
+        renderLibrarySoon() { SongLibrary.render(); },
+        updateAnalysisSoon() { this.updateAnalysis(); },
         cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
         switchView(viewName) {
@@ -2648,7 +2658,7 @@ Em -  C    -  G  -  D
           n.style.display = 'flex'; this.dom.slPrev.disabled = s.index <= 0; this.dom.slNext.disabled = s.index >= set.items.length - 1; this.dom.slTitle.textContent = `${set.title} (${s.index + 1}/${set.items.length})`;
           if (this.dom.exportPdfButton) Icon.set(this.dom.exportPdfButton, "pdf", "Set PDF", false);
         },
-        renderAll() { const song = StateManager.activeSong(); if (this.dom.keySelect) this.dom.keySelect.value = song?.manualKey || "auto"; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); if (this.dom.capoSelect) this.dom.capoSelect.value = String(StateManager.state.capo); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); this.updateScrollControls(); this.updateSetlistNav(); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.renderPiano(); InstrumentManager.renderFretboard(this.dom.fretboardTuning?.value || 'guitar'); this.renderLibrarySoon(); },
+        renderAll() { const song = StateManager.activeSong(); if (this.dom.keySelect) this.dom.keySelect.value = song?.manualKey || "auto"; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); if (this.dom.capoSelect) this.dom.capoSelect.value = String(StateManager.state.capo); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); this.updateScrollControls(); this.updateSetlistNav(); this.updateAnalysis(); InstrumentManager.renderCircle(); SongLibrary.render(); },
         updateAnalysis() {
           const song = StateManager.activeSong(); if (!song) return; const chords = ChordParser.extractChords(song.body);
           let active = { root: "C", mode: "major", tonic: 0, name: "C major" }, detected = active;
@@ -3683,7 +3693,6 @@ Em -  C    -  G  -  D
             if (!StateManager.state.activeId && StateManager.state.songs.length === 0) StateManager.createSong();
 
             UIManager.init(); ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); Editor.bind(); Editor.loadActiveSong();
-            UIManager.updateAnalysisSoon = Util.debounce(() => UIManager.updateAnalysis(), 130); UIManager.renderLibrarySoon = Util.debounce(() => SongLibrary.render(), 120);
             UIManager.renderAll();
             if (StateManager.state.activeId !== 'shared') StateManager.saveNow("Ready");
           } catch (e) { console.error("Boot Error:", e); }
