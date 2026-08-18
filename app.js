@@ -4387,8 +4387,10 @@ Em -  C    -  G  -  D
               headerBtn.style.display = 'inline-flex';
             }
             if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.register('./sw.js').catch(err => {
-                console.warn('ServiceWorker registration error:', err);
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister();
+                }
               });
             }
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
