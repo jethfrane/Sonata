@@ -2236,7 +2236,17 @@ Em -  C    -  G  -  D
         async copyText(text) { try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true; } } catch (e) { } try { const helper = document.createElement("textarea"); helper.value = text; helper.style.position = "fixed"; helper.style.opacity = "0"; document.body.appendChild(helper); helper.select(); const success = document.execCommand("copy"); helper.remove(); return success; } catch (e) { return false; } },
         async copy() { const success = await this.copyText(UIManager.dom.previewOutput.innerText || UIManager.dom.previewOutput.textContent); if (success) UIManager.toast("Copied visible chart"); },
         async compressData(obj) {
-          const str = "v3." + JSON.stringify(obj);
+          // Deep clean empty or nullish values to guarantee minimum payload length
+          const cleanObj = JSON.parse(JSON.stringify(obj));
+          if (cleanObj.b && typeof cleanObj.b === 'string') {
+            cleanObj.b = cleanObj.b.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+          }
+          if (cleanObj.s && Array.isArray(cleanObj.s)) {
+            cleanObj.s.forEach(s => {
+              if (s.b && typeof s.b === 'string') s.b = s.b.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+            });
+          }
+          const str = "v3." + JSON.stringify(cleanObj);
           if (!window.CompressionStream) {
             return encodeURIComponent(btoa(unescape(encodeURIComponent(str))));
           }
@@ -2245,8 +2255,9 @@ Em -  C    -  G  -  D
             const buffer = await new Response(stream).arrayBuffer();
             const bytes = new Uint8Array(buffer);
             let binary = '';
-            for (let i = 0; i < bytes.length; i++) {
-              binary += String.fromCharCode(bytes[i]);
+            const chunk = 8192;
+            for (let i = 0; i < bytes.length; i += chunk) {
+              binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
             }
             return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
           } catch (e) {
@@ -2258,27 +2269,30 @@ Em -  C    -  G  -  D
         async decompressData(raw) {
           if (!raw) return "";
           try {
-            let base64 = decodeURIComponent(raw).replace(/-/g, '+').replace(/_/g, '/');
-            while (base64.length % 4 !== 0) {
-              base64 += '=';
+            let cleanBase64 = String(raw).trim().replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '+');
+            while (cleanBase64.length % 4 !== 0) {
+              cleanBase64 += '=';
             }
-            const binary = atob(base64);
+            const binary = atob(cleanBase64);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) {
               bytes[i] = binary.charCodeAt(i);
             }
+            let text = '';
             if (window.DecompressionStream) {
               try {
                 const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-                const result = await new Response(stream).text();
-                return result.startsWith("v3.") ? result.substring(3) : result.startsWith("v2.") ? result.substring(3) : result;
-              } catch(e) {}
+                text = await new Response(stream).text();
+              } catch(e) {
+                text = new TextDecoder().decode(bytes);
+              }
+            } else {
+              text = new TextDecoder().decode(bytes);
             }
-            const text = new TextDecoder().decode(bytes);
             return text.startsWith("v3.") ? text.substring(3) : text.startsWith("v2.") ? text.substring(3) : text;
           } catch (e) {
             try {
-              const fallback = decodeURIComponent(escape(atob(decodeURIComponent(raw))));
+              const fallback = decodeURIComponent(escape(atob(decodeURIComponent(String(raw)).replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '+'))));
               return fallback.startsWith("v3.") ? fallback.substring(3) : fallback.startsWith("v2.") ? fallback.substring(3) : fallback;
             } catch(err2) {
               console.error("Decompress error:", err2);

@@ -1958,6 +1958,40 @@
       font-size: 0.9em;
     }
 
+    .presentation .md-note {
+      color: var(--p-muted);
+      background: color-mix(in srgb, var(--p-surface) 90%, transparent);
+      border-left: 3px solid var(--p-line);
+    }
+
+    .presentation .md-divider {
+      border-color: var(--p-line);
+    }
+
+    .presentation-controls .select {
+      background: var(--p-surface);
+      color: var(--p-text);
+      border-color: var(--p-line);
+    }
+
+    .presentation-controls .help-icon {
+      background: var(--p-surface);
+      color: var(--p-muted);
+      border: 1px solid var(--p-line);
+    }
+
+    .presentation-controls-bottom input[type="range"] {
+      accent-color: var(--p-accent);
+    }
+
+    .presentation .beat-dot {
+      background: var(--p-line);
+    }
+
+    .presentation .beat-dot.active {
+      background: var(--p-accent);
+    }
+
     .md-chord-line,
     .md-chord,
     .chord-bold {

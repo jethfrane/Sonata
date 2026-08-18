@@ -10,9 +10,13 @@ Sonata is a modern, offline-first, cross-platform chord sheet editor and music t
 | :---: | :---: |
 | ![Split Chord Editor](screenshots/editor.png) | ![Virtual Instruments & Tuner](screenshots/play.png) |
 
-| 📚 Song Library (Dark Mode) | 🎨 Custom Themes & Inline Accents | 📱 Mobile-First Responsive Layout |
+| 📚 Song Library (Dark Mode) | 🎨 Custom Themes & Accents |
+| :---: | :---: |
+| ![Library in Dark Mode](screenshots/library_dark.png) | ![Custom Accent Themes](screenshots/editor_rose.png) |
+
+| 📱 Mobile-First Live Preview | 📑 Slide-Out Drawer Navigation | 🎭 Stage Presentation Mode |
 | :---: | :---: | :---: |
-| ![Library in Dark Mode](screenshots/library_dark.png) | ![Custom Accent Themes](screenshots/editor_rose.png) | ![Mobile Live Preview](screenshots/mobile_view.png) |
+| ![Mobile Live Preview](screenshots/mobile_view.png) | ![Drawer Navigation](screenshots/sidebar_drawer.png) | ![Stage Presentation Mode](screenshots/presentation_mode.png) |
 
 ---
 
@@ -47,7 +51,7 @@ Sonata was created by **Jeth Frane** to solve the real-world friction musicians,
 
 ### 3. Stage Presentation Mode
 * **Immersive Fullscreen:** Strips away editor controls for distraction-free reading on stage.
-* **Independent Stage Themes:** Choose Light, Dark, or Stage True-Black modes.
+* **Independent Stage Themes:** Choose Light, Dark, or Stage True-Black modes without conflicting with your main application theme.
 * **Auto-Scroll & Metronome:** Smooth auto-scroll with adjustable speed and visual beat indicators.
 
 ### 4. Zero-Friction Sharing & QR Codes
