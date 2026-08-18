@@ -1,43 +1,47 @@
 # Sonata Master 🎵
 
-Sonata is a professional, offline-first, cross-platform chord sheet editor and musicians' toolkit designed specifically for musicians, worship leaders, bands, and song arrangers. It runs completely in the browser with 100% offline capabilities, zero backend server requirements, and instant Google Drive synchronization.
+Sonata is a modern, offline-first, cross-platform chord sheet editor and music toolkit designed specifically for musicians, worship leaders, bands, and song arrangers. It runs 100% in the browser with full offline capabilities, zero backend server dependencies, private Google Drive synchronization, and zero-friction team sharing.
 
 ---
 
-## 📸 Screenshots & Walkthrough
+## 📸 Screenshots & Interface Showcase
 
-| 📝 Chord Sheet Editor | ⚙️ Music Theory & Circle of 5ths | 🎹 Virtual Instruments |
+| 📝 Split Editor (Light Mode) | 🎹 Virtual Piano, Fretboard & Tuner |
+| :---: | :---: |
+| ![Split Chord Editor](screenshots/editor.png) | ![Virtual Instruments & Tuner](screenshots/play.png) |
+
+| 📚 Song Library (Dark Mode) | 🎨 Custom Themes & Inline Accents | 📱 Mobile-First Responsive Layout |
 | :---: | :---: | :---: |
-| ![Chord Sheet Editor](screenshots/editor.png) | ![Circle of 5ths](screenshots/theory.png) | ![Virtual Instruments](screenshots/play.png) |
+| ![Library in Dark Mode](screenshots/library_dark.png) | ![Custom Accent Themes](screenshots/editor_rose.png) | ![Mobile Live Preview](screenshots/mobile_view.png) |
 
 ---
 
 ## 🌟 Why Sonata Was Built
 
-Sonata was created by **Jeth Frane** to provide musicians with a centralized, distraction-free environment for songwriting, rehearsal, and stage performance.
+Sonata was created by **Jeth Frane** to solve the real-world friction musicians, church bands, and worship teams face when managing chord charts, rehearsing, and performing live:
 
-1. **Band Sync & Team Collaboration:** Share full, interactive song charts and multi-song setlists instantly via scannable QR codes or ultra-compressed direct URLs without requiring user accounts or external link shorteners.
-2. **Centralized Musical Toolkit:** Put away separate calculators and theory apps—transposition, metronomes, key detection, circle of fifths, digital piano, and multi-instrument fretboards are built directly into your workspace.
-3. **Stage-Ready Presentation:** High-contrast presentation mode with adjustable auto-scroll, metronome indicators, and independent dark/stage themes keeps your eyes focused on the music.
-4. **100% Offline PWA Resilience:** Fully pre-cached Service Worker allows you to install Sonata to your Home Screen or Desktop and use every single tool on stage with zero Wi-Fi or cellular connection.
-5. **Universal Formatting:** Paste any standard chord chart, and Sonata preserves spacing while enabling instant transposition, Roman Numerals (`I, ii, iii`), Nashville Numbers (`1, 2, 3`), and Lyrics-Only views.
+1. **🎸 Worship Team & Band Collaboration:** Share full, interactive song charts and multi-song setlists instantly via scannable QR codes or ultra-compressed direct URLs without requiring user accounts or external link shorteners.
+2. **🔒 Privacy & 100% Offline-First:** Your data belongs to you. Sonata stores all songs and setlists locally in your browser's encrypted `localStorage` with optional private Google Drive background sync. No central tracking or server databases.
+3. **⚡ Stage-Ready Presentation:** Fullscreen high-contrast presentation mode with adjustable auto-scroll, metronome indicators, and independent dark/stage themes keeps your eyes focused on the performance.
+4. **🎹 Centralized Musical Toolkit:** Put away separate calculators and tuner apps—transposition, metronomes, key detection, Circle of Fifths, digital piano, and multi-instrument fretboards are built directly into your workspace.
+5. **📱 Universal Cross-Device Responsiveness:** Whether on an iPhone, iPad, Android tablet, MacBook, or ultra-wide desktop monitor, Sonata dynamically adapts its toolbars, navigation, and editor panes for maximum efficiency.
 
 ---
 
 ## 🚀 Core Features & Capabilities
 
-### 1. Advanced Song Editor
+### 1. Advanced Song Editor & Markdown Engine
 * **Chord Over Lyrics & Inline Chords:** Seamlessly handles traditional chord spacing (`G  C/G  G`) and inline chord brackets (`[G]Amazing [C]grace`).
-* **Rich Markdown Support:** Use `# Header` for titles, `## Subheader` for verse/chorus sections, `---` for solid dividers, and `> Note` for comments that never transpose.
-* **Mobile & Tablet Editor Switcher:** Toggle between **Edit Mode** (full-screen writing), **Preview Mode** (formatted live chart), and **Split Mode** (stacked view) on any mobile or tablet screen.
-* **Metadata & References:** Store Song Title, Artist, Arranger, BPM, and multiple named reference links (e.g. YouTube tutorials).
-* **Multi-Step Undo/Redo:** Full history stack (up to 50 levels) with keyboard shortcuts (`Ctrl+Z` / `Ctrl+Y`).
+* **Rich Markdown Syntax:** Use `# Header` for titles, `## Subheader` for sections (Verse, Chorus, Bridge), `---` for solid dividers, and `> Note` or `// Comment` for notes that never accidentally transpose.
+* **Mobile & Tablet Mode Switcher:** Toggle between **Edit Mode** (full-screen writing), **Preview Mode** (formatted live chart), and **Split Mode** (stacked view) on any mobile or tablet screen.
+* **Live Metadata Bar:** Real-time display of Author, Arranger, BPM, and detected Song Key right below the title.
+* **Multi-Step Undo/Redo:** 50-level history stack with keyboard shortcuts (`Ctrl+Z` / `Ctrl+Y`).
 * **View & Position Persistence:** Automatically remembers your active song and current tab across refreshes.
 
 ### 2. Music Theory & Virtual Instruments
 * **Interactive Circle of 5ths:** Click any key to hear 3-note harmonic synthesis. Toggle Auto-Rotate to align the active root, and highlight the 7 diatonic chords in your key family with correct music theory spelling.
-* **Virtual Piano Keyboard:** Touch-responsive, multi-octave digital piano with realistic key proportions, sustained release, and scale highlighting.
-* **Interactive Multi-String Fretboard:** Full chord visualization supporting 6-String Guitar, 4-String Bass, 5-String Bass, and Ukulele.
+* **Virtual Piano Keyboard:** Touch-responsive, multi-octave digital piano with realistic key proportions, sustained release, and custom scale highlighting.
+* **Interactive Multi-Instrument Fretboard:** Full chord and scale visualization supporting 6-String Guitar, 4-String Bass, 5-String Bass, and Ukulele.
 * **Manual Key Override Lock:** Lock your custom key or mode on the Play page without automatic resets when switching tabs.
 * **Capo & Transposition:** Select capo frets and semitone shifts to preview exact fingerings in real time.
 
