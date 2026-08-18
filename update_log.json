@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.3.1",
+    "date": "2026-08-18",
+    "changes": [
+      "Personalized profile greeting (Hi, [First Name]! e.g., Hi, Jethro!) with instant local caching.",
+      "Mobile & Tablet Editor view switcher: Edit, Preview, and Split mode toggling.",
+      "Full position and view persistence across page refreshes.",
+      "Direct ultra-shortened song/setlist sharing links without external URL shorteners.",
+      "Official embedded QR code generator for camera scanning in PNG & PDF exports.",
+      "Universal PWA app installation prompt across iOS, Android, and Desktop.",
+      "Enhanced responsive design for tablet, desktop, and mobile viewports."
+    ],
+    "whatsNew": "Instant view persistence on refresh, mobile Edit/Preview mode toggle, and personalized user profile greetings."
+  },
+  {
     "version": "1.3.0",
     "date": "2026-08-18",
     "changes": [

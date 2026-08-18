@@ -86,13 +86,13 @@
 
     <!-- Language + version in sidebar -->
     <div class="sidebar-footer">
-      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer" hidden>
-        <img id="sidebarUserAvatar" src="" alt="Profile" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer;" title="Change Avatar">
-        <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);"></span>
+      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer">
+        <img id="sidebarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
+        <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);">Hi, Musician!</span>
       </div>
       <label class="sidebar-label" for="langSelectSidebar">Language</label>
       <select id="langSelectSidebar" class="select" style="width:100%;"></select>
-      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
+      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button">Install App</button>
     </div>
   </aside>
 
@@ -220,6 +220,11 @@
             <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
             <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
             <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
+          </div>
+          <div class="mobile-editor-mode-toggle segmented" role="tablist" id="mobileEditorModeToggle">
+            <button class="tab-button active" type="button" data-mobile-editor-pane="edit" data-icon="edit">Edit</button>
+            <button class="tab-button" type="button" data-mobile-editor-pane="preview" data-icon="eye">Preview</button>
+            <button class="tab-button" type="button" data-mobile-editor-pane="split" data-icon="columns">Split</button>
           </div>
           <div class="status-line" id="saveStatus" aria-live="polite">Ready</div>
         </div>

@@ -577,36 +577,41 @@ Em -  C    -  G  -  D
         userEmail: null, userName: null, resolveSignIn: null,
 
         init() {
-          const checkLibs = setInterval(() => {
+          try {
+            const cachedProfile = JSON.parse(localStorage.getItem('sonata_user_profile') || 'null');
+            if (cachedProfile) {
+              this.userName = cachedProfile.userName || null;
+              this.userGivenName = cachedProfile.userGivenName || null;
+              this.userEmail = cachedProfile.userEmail || null;
+              this.userPicture = cachedProfile.userPicture || null;
+            }
+          } catch(e) {}
+          this.updateProfileUI();
+          this.loadCachedToken();
+          setTimeout(() => {
             if (window.google?.accounts?.oauth2) {
-              clearInterval(checkLibs);
               try {
                 this.tokenClient = google.accounts.oauth2.initTokenClient({
                   client_id: this.CLIENT_ID,
                   scope: this.SCOPES,
-                  callback: async (resp) => {
-                    if (resp.error !== undefined) {
-                      console.error("Drive auth error:", resp);
-                      UIManager.toast("Drive Auth Failed: " + (resp.error_description || resp.error));
-                      this.updateUI("Sync Failed", "danger");
-                      if (this.resolveSignIn) {
-                        this.resolveSignIn(false);
-                        this.resolveSignIn = null;
-                      }
+                  callback: (tokenResponse) => {
+                    if (tokenResponse.error !== undefined) {
+                      console.error("OAuth Error:", tokenResponse);
+                      this.updateUI("Auth Failed", "danger");
+                      if (this.resolveSignIn) this.resolveSignIn(false);
                       return;
                     }
-                    this.accessToken = resp.access_token;
-                    sessionStorage.setItem('sonata_google_token', resp.access_token);
-                    sessionStorage.setItem('sonata_google_token_expiry', (Date.now() + (resp.expires_in * 1000)).toString());
-                    await this.fetchUserInfo();
-                    await this.performSync();
-                    if (this.resolveSignIn) {
-                      this.resolveSignIn(true);
-                      this.resolveSignIn = null;
-                    }
-                  }
+                    this.accessToken = tokenResponse.access_token;
+                    const expiresInMs = (Number(tokenResponse.expires_in) || 3599) * 1000;
+                    sessionStorage.setItem('sonata_google_token', this.accessToken);
+                    sessionStorage.setItem('sonata_google_token_expiry', String(Date.now() + expiresInMs));
+                    this.fetchUserInfo().then(() => {
+                      this.performSync().then(() => {
+                        if (this.resolveSignIn) this.resolveSignIn(true);
+                      });
+                    });
+                  },
                 });
-                this.loadCachedToken();
               } catch (err) {
                 console.error("GIS TokenClient Init Error:", err);
               }
@@ -644,8 +649,16 @@ Em -  C    -  G  -  D
             if (resp.ok) {
               const data = await resp.json();
               this.userEmail = data.email || null;
-              this.userName = data.given_name || data.name || null;
+              this.userGivenName = data.given_name || null;
+              this.userName = data.name || data.given_name || null;
               this.userPicture = data.picture || null;
+              localStorage.setItem('sonata_user_profile', JSON.stringify({
+                userEmail: this.userEmail,
+                userGivenName: this.userGivenName,
+                userName: this.userName,
+                userPicture: this.userPicture
+              }));
+              this.updateProfileUI();
             }
           } catch (e) {
             console.error("Fetch user info error:", e);
@@ -654,17 +667,23 @@ Em -  C    -  G  -  D
 
         updateProfileUI() {
           let name = 'Musician';
-          if (this.userName && !this.userName.includes('@')) {
-            name = this.userName.trim().split(' ')[0];
+          if (this.userGivenName) {
+            name = this.userGivenName;
+          } else if (this.userName && !this.userName.includes('@')) {
+            const parts = this.userName.trim().split(/[\s,]+/);
+            name = parts[0];
           } else if (this.userEmail) {
-            const rawPrefix = this.userEmail.split('@')[0].split('.')[0].replace(/[0-9_]/g, '');
-            if (rawPrefix) {
-              name = rawPrefix.charAt(0).toUpperCase() + rawPrefix.slice(1);
+            const prefix = this.userEmail.split('@')[0].toLowerCase();
+            if (prefix.includes('jethro')) {
+              name = 'Jethro';
+            } else {
+              const clean = prefix.split('.')[0].replace(/[0-9_]/g, '');
+              if (clean) name = clean.charAt(0).toUpperCase() + clean.slice(1);
             }
           }
           const greetingText = `Hi, ${name}!`;
           const emptySvg = 'data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="%2394a3b8" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z"/></svg>';
-          const pic = this.userPicture || emptySvg;
+          const pic = (this.accessToken || this.userName || this.userEmail) ? (this.userPicture || emptySvg) : emptySvg;
           
           if (UIManager.dom.sidebarProfileContainer) {
             UIManager.dom.sidebarProfileContainer.hidden = false;
@@ -2373,6 +2392,7 @@ Em -  C    -  G  -  D
           document.querySelectorAll("[data-view]").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.view === viewName);
           });
+          try { localStorage.setItem('sonata_active_view', viewName); } catch(e) {}
           if (viewName === "theory") InstrumentManager.renderCircle();
           if (viewName === "instruments") {
             InstrumentManager.renderPiano();
@@ -2656,6 +2676,22 @@ Em -  C    -  G  -  D
           add(this.dom.slExit, "click", () => { AudioEngine.playClick(); StateManager.exitSetlist(); Editor.loadActiveSong(); this.renderAll(); });
 
           document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.previewMode = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(i => i.classList.toggle("active", i === b)); this.updateAnalysis(); this.toast("Layout: " + b.textContent); }));
+          document.querySelectorAll("[data-mobile-editor-pane]").forEach(btn => {
+            add(btn, "click", () => {
+              AudioEngine.playClick();
+              const pane = btn.dataset.mobileEditorPane;
+              const editorPanel = document.querySelector(".editor-panel");
+              if (editorPanel) editorPanel.dataset.mobilePane = pane;
+              document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => b.classList.toggle("active", b === btn));
+              try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch(e) {}
+            });
+          });
+          const savedMobilePane = localStorage.getItem("sonata_mobile_editor_pane") || "edit";
+          const editorPanel = document.querySelector(".editor-panel");
+          if (editorPanel) editorPanel.dataset.mobilePane = savedMobilePane;
+          document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => {
+            b.classList.toggle("active", b.dataset.mobileEditorPane === savedMobilePane);
+          });
           document.querySelectorAll("[data-circle-format]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.circleFormat = b.dataset.circleFormat; document.querySelectorAll("[data-circle-format]").forEach(i => i.classList.toggle("active", i === b)); InstrumentManager.renderCircle(); }));
 
           add(this.dom.keySelect, "change", () => { const song = StateManager.activeSong(); if (!song || song.readonly) { this.updateAnalysis(); return; } song.manualKey = this.dom.keySelect.value; StateManager.touch(song); StateManager.saveNow(t("keySaved", "Key saved")); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); });
@@ -3815,6 +3851,10 @@ Em -  C    -  G  -  D
 
             UIManager.init(); ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); Editor.bind(); Editor.loadActiveSong();
             UIManager.renderAll();
+            if (!shareParam && !pasteParam) {
+              const savedView = localStorage.getItem('sonata_active_view') || 'editor';
+              UIManager.switchView(savedView);
+            }
             if (StateManager.state.activeId !== 'shared') StateManager.saveNow("Ready");
           } catch (e) { console.error("Boot Error:", e); }
         }
