@@ -3301,6 +3301,39 @@ Em -  C    -  G  -  D
           const blob = content instanceof Blob ? content : new Blob([content], { type });
           const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = name;
           document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 800);
+        },
+        drawSimpleQrPattern(ctx, x, y, size) {
+          const cells = 21;
+          const cellSize = size / cells;
+          ctx.fillStyle = "#111111";
+          const drawFinder = (r0, c0) => {
+            for (let r = 0; r < 7; r++) {
+              for (let c = 0; c < 7; c++) {
+                if (r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) {
+                  ctx.fillRect(x + (c0 + c) * cellSize, y + (r0 + r) * cellSize, cellSize + 0.3, cellSize + 0.3);
+                }
+              }
+            }
+          };
+          drawFinder(0, 0);
+          drawFinder(0, 14);
+          drawFinder(14, 0);
+          for (let i = 8; i <= 12; i += 2) {
+            ctx.fillRect(x + i * cellSize, y + 6 * cellSize, cellSize, cellSize);
+            ctx.fillRect(x + 6 * cellSize, y + i * cellSize, cellSize, cellSize);
+          }
+          const pattern = [
+            [0,8],[2,8],[3,8],[5,8],[7,8],[8,0],[8,2],[8,4],[8,7],[8,8],
+            [9,9],[9,11],[9,13],[10,8],[10,10],[10,12],[10,14],[11,9],[11,11],[11,13],
+            [12,8],[12,10],[12,12],[12,14],[13,9],[13,11],[13,13],[14,8],[14,10],[14,12],
+            [15,9],[15,11],[15,13],[15,15],[16,8],[16,10],[16,12],[16,14],[17,9],[17,11],
+            [18,8],[18,10],[18,12],[18,14],[18,16],[19,9],[19,11],[19,13],[19,15],[20,8],
+            [8,15],[8,17],[8,19],[8,20],[9,16],[9,18],[9,20],[10,17],[10,19],[11,16],[11,18],
+            [12,17],[12,19],[13,16],[13,18],[13,20],[14,17],[14,19],[15,16],[15,18],[16,17]
+          ];
+          pattern.forEach(([r, c]) => {
+            ctx.fillRect(x + c * cellSize, y + r * cellSize, cellSize + 0.3, cellSize + 0.3);
+          });
         }
       };
 
@@ -4498,7 +4531,8 @@ Em -  C    -  G  -  D
           // Measure title to avoid header overflow
           ctx.font = `700 28px ${uiFont}`;
           const titleMeasurement = ctx.measureText(payload.title).width;
-          const minHeaderWidth = Math.max(540, titleMeasurement + (padding * 2) + 90);
+          const qrBoxSize = 60;
+          const minHeaderWidth = Math.max(580, titleMeasurement + (padding * 2) + 60 + qrBoxSize + 40);
           const columnWidth = Math.max(380, maxLineWidth + 36);
           const linesPerColumn = Math.ceil(wrappedLines.length / columns);
           const contentWidth = (columnWidth * columns) - (columns > 1 ? 16 : 0);
@@ -4550,10 +4584,31 @@ Em -  C    -  G  -  D
             ctx.textBaseline = "alphabetic";
           }
 
-          // Title with dynamic scaling to fit
+          // Draw QR Code in Header Right
+          const qrX = width - padding - qrBoxSize;
+          const qrY = 22;
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(qrX, qrY, qrBoxSize, qrBoxSize, 8);
+          else ctx.rect(qrX, qrY, qrBoxSize, qrBoxSize);
+          ctx.fill();
+          ctx.strokeStyle = lineColor;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Render QR pattern
+          Util.drawSimpleQrPattern(ctx, qrX + 5, qrY + 5, qrBoxSize - 10);
+
+          ctx.fillStyle = mutedColor;
+          ctx.font = `600 9px ${uiFont}`;
+          ctx.textAlign = "center";
+          ctx.fillText("Scan Chart", qrX + (qrBoxSize / 2), qrY + qrBoxSize + 14);
+          ctx.textAlign = "left";
+
+          // Title with dynamic scaling to fit (never overlaps QR code or logo)
           let titleSize = 28;
           ctx.font = `700 ${titleSize}px ${uiFont}`;
-          const maxTitleArea = width - (padding * 2) - (logoSize + 18);
+          const maxTitleArea = width - (padding * 2) - logoSize - qrBoxSize - 40;
           while (ctx.measureText(payload.title).width > maxTitleArea && titleSize > 18) {
             titleSize -= 2;
             ctx.font = `700 ${titleSize}px ${uiFont}`;
@@ -4847,13 +4902,36 @@ Em -  C    -  G  -  D
               `q 0.88 0.90 0.92 RG 1 w 0 ${headerY} m ${pageWidth} ${headerY} l S Q\n` +
               `q ${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg ${margin} ${pageHeight - 38} 24 24 re f Q\n` +
               `q 1 1 1 rg BT /F3 14 Tf ${(margin + 6.5).toFixed(2)} ${(pageHeight - 21.5).toFixed(2)} Td (S) Tj ET Q\n` +
-              `0 g BT /F3 18 Tf ${margin + 36} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 55))}) Tj ET\n`;
+              `0 g BT /F3 18 Tf ${margin + 36} ${pageHeight - 32} Td (${this.pdfEscape(this.pdfTruncate(p.title, 42))}) Tj ET\n`;
             if (p.artist) {
-              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin + 36} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 60))}) Tj ET\n` +
+              chrome += `0.38 0.40 0.45 rg BT /F2 10.5 Tf ${margin + 36} ${pageHeight - 50} Td (By: ${this.pdfEscape(this.pdfTruncate(p.artist, 48))}) Tj ET\n` +
                 `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin + 36} ${pageHeight - 66} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             } else {
               chrome += `0.48 0.50 0.55 rg BT /F2 9.5 Tf ${margin + 36} ${pageHeight - 52} Td (Key: ${this.pdfEscape(p.keyInfo)}  |  BPM: ${this.pdfEscape(p.bpm)}  |  Layout: ${this.pdfEscape(p.modeName)}) Tj ET\n`;
             }
+
+            // Top-right QR Code Block in PDF
+            const qrBoxX = pageWidth - margin - 46;
+            const qrBoxY = pageHeight - 62;
+            chrome += `q 1 1 1 rg 0.84 0.86 0.90 RG 0.75 w ${qrBoxX} ${qrBoxY} 44 44 re B Q\n` +
+              `q ${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\n` +
+              `${qrBoxX + 4} ${qrBoxY + 28} 12 12 re f\n` +
+              `${qrBoxX + 28} ${qrBoxY + 28} 12 12 re f\n` +
+              `${qrBoxX + 4} ${qrBoxY + 4} 12 12 re f\n` +
+              `1 1 1 rg\n` +
+              `${qrBoxX + 6} ${qrBoxY + 30} 8 8 re f\n` +
+              `${qrBoxX + 30} ${qrBoxY + 30} 8 8 re f\n` +
+              `${qrBoxX + 6} ${qrBoxY + 6} 8 8 re f\n` +
+              `${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\n` +
+              `${qrBoxX + 8} ${qrBoxY + 32} 4 4 re f\n` +
+              `${qrBoxX + 32} ${qrBoxY + 32} 4 4 re f\n` +
+              `${qrBoxX + 8} ${qrBoxY + 8} 4 4 re f\n` +
+              `${qrBoxX + 18} ${qrBoxY + 18} 6 6 re f\n` +
+              `${qrBoxX + 26} ${qrBoxY + 12} 8 4 re f\n` +
+              `${qrBoxX + 18} ${qrBoxY + 6} 6 6 re f\n` +
+              `Q\n` +
+              `q 0.45 0.48 0.52 rg BT /F3 6.5 Tf ${qrBoxX + 2} ${qrBoxY - 8} Td (Live Chart QR) Tj ET Q\n`;
+
             chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
               `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
 
@@ -4929,30 +5007,16 @@ Em -  C    -  G  -  D
           });
 
           try {
-            if (rawUrl.length > 200) {
-              const formBody = new URLSearchParams();
-              formBody.append('content', await this.compressData(shareData));
-              formBody.append('format', 'url');
-
-              const dpasteRes = await fetch('https://dpaste.com/api/', {
-                method: 'POST',
-                body: formBody,
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-              });
-
-              if (dpasteRes.ok) {
-                const dpasteUrl = (await dpasteRes.text()).trim();
-                const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1);
-                finalUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
-              } else {
-                throw new Error("dpaste failed");
-              }
+            const shortRes = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(rawUrl)}`);
+            if (shortRes.ok) {
+              const text = (await shortRes.text()).trim();
+              if (text.startsWith('http')) finalUrl = text;
             } else {
-              const res = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
-              if (res.ok) { const data = await res.json(); if (data.shorturl) finalUrl = data.shorturl; }
+              const isgdRes = await fetch(`https://is.gd/create.php?format=json&url=${encodeURIComponent(rawUrl)}`);
+              if (isgdRes.ok) { const data = await isgdRes.json(); if (data.shorturl) finalUrl = data.shorturl; }
             }
           } catch (e) {
-            console.log("Shorteners unavailable, using full url");
+            // Direct compressed offline url is preserved
           }
 
           const wrapper = document.getElementById('shareWrapper');
@@ -4968,9 +5032,26 @@ Em -  C    -  G  -  D
           ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 460, 600);
           ctx.fillStyle = activeAccent; ctx.fillRect(0, 0, 460, 100);
           
-          ctx.fillStyle = "#ffffff"; ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(144, 30, 40, 40, 10); } else { ctx.rect(144, 30, 40, 40); } ctx.fill();
-          ctx.fillStyle = activeAccent; ctx.font = "bold 24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("S", 164, 52);
-          ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText("Sonata", 196, 50);
+          // Draw official logo or emblem in QR card header
+          const brandImg = document.querySelector('.brand-logo');
+          let drawnHeaderLogo = false;
+          if (brandImg && brandImg.complete && brandImg.naturalWidth > 0) {
+            try {
+              ctx.save();
+              ctx.beginPath();
+              if (ctx.roundRect) ctx.roundRect(144, 28, 44, 44, 10);
+              else ctx.rect(144, 28, 44, 44);
+              ctx.clip();
+              ctx.drawImage(brandImg, 144, 28, 44, 44);
+              ctx.restore();
+              drawnHeaderLogo = true;
+            } catch(e) {}
+          }
+          if (!drawnHeaderLogo) {
+            ctx.fillStyle = "#ffffff"; ctx.beginPath(); if (ctx.roundRect) { ctx.roundRect(144, 30, 40, 40, 10); } else { ctx.rect(144, 30, 40, 40); } ctx.fill();
+            ctx.fillStyle = activeAccent; ctx.font = "bold 24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("S", 164, 52);
+          }
+          ctx.fillStyle = "#ffffff"; ctx.font = "bold 32px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText("Sonata", 198, 50);
           ctx.textBaseline = "alphabetic"; ctx.textAlign = "center";
 
           ctx.fillStyle = "#667085"; ctx.font = "bold 18px sans-serif"; ctx.fillText((isSet ? "SETLIST" : "SONG"), 230, 140);
@@ -6152,43 +6233,90 @@ Em -  C    -  G  -  D
             const params = new URLSearchParams(window.location.search);
             const shareParam = params.get("share");
             const pasteParam = params.get("paste");
-            if (shareParam) {
+            if (shareParam || pasteParam) {
               try {
-                const d = JSON.parse(await ExportManager.decompressData(shareParam));
-                await this.handleImport(d);
-                // Show preview modal with shared content details
-                const isSet = d.type === 'set';
-                const title = d.t || '';
-                const subtitle = !isSet && d.a ? `By: ${d.a}` : '';
-                const arranger = d.cr ? `Arranged by: ${d.cr}` : '';
-                const links = (d.l || []).map(l => `<a href="${l.url}" target="_blank" style="color:var(--accent);">${l.name}</a>`).join(' &middot; ');
-                const description = d.d || '';
-                const bodyHtml = isSet ? `<p>${description}</p>` : `<pre style="white-space:pre-wrap;">${d.b}</pre>`;
-                const previewHtml = `
-                  <div style="font-family:var(--ui-font); color:var(--text);">
-                    <h2 style="margin:0 0 8px;">${title}</h2>
-                    ${subtitle ? `<p style="margin:0 0 4px;">${subtitle}</p>` : ''}
-                    ${arranger ? `<p style="margin:0 0 4px;">${arranger}</p>` : ''}
-                    ${links ? `<p style="margin:0 0 8px;">${links}</p>` : ''}
-                    ${description ? `<p style="margin:0 0 8px;">${description}</p>` : ''}
-                    ${bodyHtml}
-                  </div>`;
-                UIManager.openModal({
-                  title: isSet ? 'Shared Setlist' : 'Shared Song',
-                  fields: [{ type: 'custom', html: previewHtml }],
-                  confirmText: 'Close',
-                  onConfirm: () => {}
-                });
-              } catch (e) { console.error('Share import error', e); }
-            } else if (pasteParam) {
-              try {
-                const resp = await fetch(`https://dpaste.com/${pasteParam}.txt`);
-                if (resp.ok) {
-                  const rawBase64 = await resp.text();
-                  const d = JSON.parse(await ExportManager.decompressData(rawBase64.trim()));
-                  await this.handleImport(d);
+                let d = null;
+                if (shareParam) {
+                  d = JSON.parse(await ExportManager.decompressData(shareParam));
+                } else if (pasteParam) {
+                  const resp = await fetch(`https://dpaste.com/${pasteParam}.txt`);
+                  if (resp.ok) {
+                    const rawBase64 = await resp.text();
+                    d = JSON.parse(await ExportManager.decompressData(rawBase64.trim()));
+                  }
                 }
-              } catch (e) { }
+                if (d) {
+                  await this.handleImport(d);
+                  // Professional Information Link Preview Modal
+                  const isSet = d.type === 'set';
+                  const title = d.t || 'Untitled';
+                  const artist = d.a || '';
+                  const arranger = d.cr || '';
+                  const keyStr = d.k && d.k !== 'auto' ? d.k : 'Auto-detect';
+                  const capoStr = d.c ? `Capo ${d.c}` : null;
+                  const songsCount = isSet && d.s ? d.s.length : null;
+
+                  let tracklistHtml = '';
+                  if (isSet && d.s && d.s.length) {
+                    tracklistHtml = `
+                      <div style="margin-top:14px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface-2);">
+                        <div style="padding:8px 12px; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); border-bottom:1px solid var(--line);">Included Songs (${d.s.length})</div>
+                        <div style="max-height:160px; overflow-y:auto; padding:4px 0;">
+                          ${d.s.map((s, i) => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; font-size:0.86rem; border-bottom:1px solid color-mix(in srgb, var(--line) 40%, transparent);">
+                              <span><strong>${i + 1}.</strong> ${Util.escapeHtml(s.t || 'Untitled')}</span>
+                              <span style="font-size:0.75rem; color:var(--muted); font-weight:600;">${s.k ? s.k : ''} ${s.a ? '&middot; ' + Util.escapeHtml(s.a) : ''}</span>
+                            </div>
+                          `).join('')}
+                        </div>
+                      </div>`;
+                  }
+
+                  let previewExcerpt = '';
+                  if (!isSet && d.b) {
+                    const lines = d.b.split('\n').filter(l => l.trim()).slice(0, 8).join('\n');
+                    previewExcerpt = `
+                      <div style="margin-top:14px; border:1px solid var(--line); border-radius:8px; padding:12px; background:var(--surface-2); font-family:var(--chart-font); font-size:0.82rem; color:var(--text); max-height:140px; overflow-y:auto; line-height:1.45; white-space:pre-wrap;">${Util.escapeHtml(lines)}</div>`;
+                  }
+
+                  const previewHtml = `
+                    <div style="font-family:var(--ui-font); color:var(--text);">
+                      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                        <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800; font-size:16px;">S</span>
+                        <div>
+                          <span style="display:inline-block; font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; padding:2px 8px; border-radius:999px; background:color-mix(in srgb, var(--accent) 15%, var(--surface-2)); color:var(--accent);">${isSet ? 'Shared Setlist' : 'Shared Song'}</span>
+                          <h2 style="margin:2px 0 0; font-size:1.25rem; font-weight:800; line-height:1.2;">${Util.escapeHtml(title)}</h2>
+                        </div>
+                      </div>
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; font-size:0.82rem;">
+                        ${artist ? `<span style="color:var(--muted); font-weight:600;">By ${Util.escapeHtml(artist)}</span>` : ''}
+                        ${arranger ? `<span style="color:var(--muted);">&bull; Arranged by ${Util.escapeHtml(arranger)}</span>` : ''}
+                      </div>
+                      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+                        ${!isSet && keyStr ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">Key: ${keyStr}</span>` : ''}
+                        ${capoStr ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${capoStr}</span>` : ''}
+                        ${songsCount ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${songsCount} Songs</span>` : ''}
+                      </div>
+                      ${d.d ? `<p style="font-size:0.85rem; color:var(--muted); margin:0 0 10px; font-style:italic;">${Util.escapeHtml(d.d)}</p>` : ''}
+                      ${tracklistHtml}
+                      ${previewExcerpt}
+                    </div>`;
+
+                  UIManager.openModal({
+                    title: isSet ? 'Shared Setlist' : 'Shared Song',
+                    fields: [{ type: 'custom', html: previewHtml }],
+                    confirmText: 'Open & Play',
+                    onConfirm: () => {
+                      if (isSet) {
+                        StateManager.state.libraryFilter = 'setlists';
+                        UIManager.switchView('library');
+                      } else {
+                        UIManager.switchView('editor');
+                      }
+                    }
+                  });
+                }
+              } catch (e) { console.error('Share import error', e); }
             }
             if (!StateManager.state.activeId && StateManager.state.songs.length === 0) StateManager.createSong();
 
