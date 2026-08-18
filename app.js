@@ -467,7 +467,7 @@ Em -  C    -  G  -  D
         },
         titleOf(song) { return (song && song.title && song.title.trim()) || "Untitled Song"; },
         slug(text) { return (text || "song").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "song"; },
-        escapeHtml(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); },
+        escapeHtml(text) { return String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); },
         download(name, type, content) {
           const blob = content instanceof Blob ? content : new Blob([content], { type });
           const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = name;
@@ -1286,20 +1286,23 @@ Em -  C    -  G  -  D
       };
 
       const InstrumentManager = {
+        manualOverride: false,
         init() {
           this.renderCircle();
           // Populate instrument key root dropdown
           const rootSel = UIManager.dom.instrumentKeyRoot;
-          if (rootSel) {
+          if (rootSel && rootSel.options.length === 0) {
             KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootSel.appendChild(o); });
           }
           // Sync key selectors to current song key
-          this.syncKeySelectors();
+          this.syncKeySelectors(true);
           this.renderPiano();
           this.renderFretboard('guitar');
           this.bind();
         },
-        syncKeySelectors() {
+        syncKeySelectors(force = false) {
+          if (this.manualOverride && !force) return;
+          if (force) this.manualOverride = false;
           const song = StateManager.activeSong();
           const baseAk = KeyDetector.activeKey(song, StateManager.state.detectedKey);
           if (baseAk) {
@@ -1337,8 +1340,16 @@ Em -  C    -  G  -  D
           UIManager.dom.fretboardTuning?.addEventListener('change', (e) => this.renderFretboard(e.target.value));
           UIManager.dom.micTunerBtn?.addEventListener('click', () => Tuner.toggle());
           // Key selector re-renders
-          UIManager.dom.instrumentKeyRoot?.addEventListener('change', () => { this.renderPiano(); this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar'); });
-          UIManager.dom.instrumentKeyMode?.addEventListener('change', () => { this.renderPiano(); this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar'); });
+          UIManager.dom.instrumentKeyRoot?.addEventListener('change', () => {
+            this.manualOverride = true;
+            this.renderPiano();
+            this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar');
+          });
+          UIManager.dom.instrumentKeyMode?.addEventListener('change', () => {
+            this.manualOverride = true;
+            this.renderPiano();
+            this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar');
+          });
         },
         wedgePath(cx, cy, rOuter, rInner, startAngle, endAngle) {
           const startRad = (startAngle - 90) * Math.PI / 180; const endRad = (endAngle - 90) * Math.PI / 180;
@@ -2347,7 +2358,6 @@ Em -  C    -  G  -  D
           });
           if (viewName === "theory") InstrumentManager.renderCircle();
           if (viewName === "instruments") {
-            InstrumentManager.syncKeySelectors();
             InstrumentManager.renderPiano();
             InstrumentManager.renderFretboard(document.getElementById("fretboardTuning")?.value || "guitar");
           }
@@ -3268,77 +3278,153 @@ Em -  C    -  G  -  D
 
       const SongLibrary = {
         render() {
-          const list = UIManager.dom.libraryList; if (!list) return; const state = StateManager.state; const query = state.query.trim().toLowerCase();
+          const list = UIManager.dom.libraryList || document.getElementById('libraryList');
+          if (!list) return;
+          const state = StateManager.state;
+          const query = (state.query || "").trim().toLowerCase();
           list.innerHTML = '';
 
-          if (state.libraryFilter === 'setlists') {
-            if (state.setlists.length === 0) { list.innerHTML = `<div class="empty-state">No Setlists found</div>`; return; }
-            state.setlists.forEach(set => {
-              const card = document.createElement('div'); card.className = 'song-card' + (set.id === state.activeSetlist.id ? ' active' : '');
-              card.innerHTML = `<div><p class="song-card-title">${Icon.svg('list')} ${Util.escapeHtml(set.title)}</p><p class="song-card-meta">${set.items.length} songs • ${Util.formatDate(set.date)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost" data-action="play" type="button" title="Play">${Icon.svg('play')}</button><button class="icon-button ghost" data-action="edit" type="button" title="Edit">${Icon.svg('edit')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+          try {
+            if (state.libraryFilter === 'setlists') {
+              if (!state.setlists || state.setlists.length === 0) {
+                list.innerHTML = `<div class="empty-state">No Setlists found</div>`;
+                return;
+              }
+              state.setlists.forEach(set => {
+                const card = document.createElement('div');
+                card.className = 'song-card' + (set.id === state.activeSetlist?.id ? ' active' : '');
+                card.innerHTML = `<div><p class="song-card-title">${Icon.svg('list')} ${Util.escapeHtml(set.title || 'Untitled Setlist')}</p><p class="song-card-meta">${(set.items || []).length} songs • ${Util.formatDate(set.date || set.updatedAt)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost" data-action="play" type="button" title="Play">${Icon.svg('play')}</button><button class="icon-button ghost" data-action="edit" type="button" title="Edit">${Icon.svg('edit')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+                card.addEventListener('click', (e) => {
+                  const actionBtn = e.target.closest('button[data-action]');
+                  if (actionBtn) {
+                    e.stopPropagation();
+                    const action = actionBtn.dataset.action;
+                    if (action === 'delete') {
+                      UIManager.openModal({
+                        title: t("deleteSetlistTitle", "Delete Setlist"),
+                        message: t("deleteSetlistMessage", "Delete this setlist?"),
+                        confirmText: t("deleteSetlistConfirm", "Delete"),
+                        destructive: true,
+                        onConfirm: () => {
+                          StateManager.state.setlists = StateManager.state.setlists.filter(s => s.id !== set.id);
+                          StateManager.saveNow(t("deleteSetlistToast", "Setlist Deleted"));
+                          if (state.activeSetlist?.id === set.id) StateManager.exitSetlist();
+                          this.render();
+                          UIManager.toast(t("deleteSetlistToast", "Setlist Deleted"));
+                        }
+                      });
+                    }
+                    if (action === 'edit') UIManager.openSetlistModal(set.id);
+                    if (action === 'share') { StateManager.playSetlist(set.id); ExportManager.share(true); }
+                    if (action === 'play') { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + (set.title || "Setlist")); }
+                  } else {
+                    StateManager.playSetlist(set.id);
+                    Editor.loadActiveSong();
+                    UIManager.switchView('editor');
+                    UIManager.renderAll();
+                    UIManager.toast("Playing Setlist: " + (set.title || "Setlist"));
+                  }
+                });
+                list.appendChild(card);
+              });
+              return;
+            }
+
+            let songs = (state.songs || []).slice();
+            const sortVal = UIManager.dom.librarySortSelect ? UIManager.dom.librarySortSelect.value : 'recent';
+            if (state.libraryFilter === "favorites") {
+              songs = songs.filter(s => s && s.isFavorite);
+            }
+            if (sortVal === 'title') {
+              songs.sort((a, b) => Util.titleOf(a).localeCompare(Util.titleOf(b)));
+            } else if (sortVal === 'author') {
+              songs.sort((a, b) => (a.artist || "").localeCompare(b.artist || ""));
+            } else if (sortVal === 'arranger') {
+              songs.sort((a, b) => (a.creator || "").localeCompare(b.creator || ""));
+            } else if (sortVal === 'key') {
+              songs.sort((a, b) => {
+                const ka = KeyDetector.activeKey(a, null);
+                const kb = KeyDetector.activeKey(b, null);
+                const stra = ka ? (ka.root + (ka.mode === 'minor' ? 'm' : '')) : '';
+                const strb = kb ? (kb.root + (kb.mode === 'minor' ? 'm' : '')) : '';
+                return stra.localeCompare(strb);
+              });
+            } else {
+              songs.sort((a, b) => new Date(b?.updatedAt || 0) - new Date(a?.updatedAt || 0));
+            }
+
+            if (query) {
+              songs = songs.filter(s => Util.titleOf(s).toLowerCase().includes(query) || (s.body || "").toLowerCase().includes(query));
+            }
+
+            if (songs.length === 0) {
+              list.innerHTML = `<div class="empty-state">${query ? 'No matching songs' : 'Library is empty'}</div>`;
+              return;
+            }
+
+            songs.forEach(song => {
+              if (!song) return;
+              const card = document.createElement('div');
+              card.className = 'song-card' + (song.id === StateManager.state.activeId ? ' active' : '');
+              let metaText = Util.formatDate(song.updatedAt);
+              if (sortVal === 'author' && song.artist) metaText = `${song.artist} • ${metaText}`;
+              else if (sortVal === 'arranger' && song.creator) metaText = `${song.creator} • ${metaText}`;
+              else if (sortVal === 'key') {
+                const key = KeyDetector.activeKey(song, null);
+                if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
+              }
+              card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View in Editor">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
               card.addEventListener('click', (e) => {
                 const actionBtn = e.target.closest('button[data-action]');
                 if (actionBtn) {
-                  e.stopPropagation(); const action = actionBtn.dataset.action;
-                  if (action === 'delete') { UIManager.openModal({ title: t("deleteSetlistTitle", "Delete Setlist"), message: t("deleteSetlistMessage", "Delete this setlist?"), confirmText: t("deleteSetlistConfirm", "Delete"), destructive: true, onConfirm: () => { StateManager.state.setlists = StateManager.state.setlists.filter(s => s.id !== set.id); StateManager.saveNow(t("deleteSetlistToast", "Setlist Deleted")); if (state.activeSetlist.id === set.id) StateManager.exitSetlist(); this.render(); UIManager.toast(t("deleteSetlistToast", "Setlist Deleted")); } }); }
-                  if (action === 'edit') UIManager.openSetlistModal(set.id);
-                  if (action === 'share') { StateManager.playSetlist(set.id); ExportManager.share(true); }
-                  if (action === 'play') { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + set.title); }
-                } else { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + set.title); }
+                  e.stopPropagation();
+                  const action = actionBtn.dataset.action;
+                  if (action === 'fav') {
+                    song.isFavorite = !song.isFavorite;
+                    StateManager.saveNow(t("favoriteToggled", "Favorite Toggled"));
+                    this.render();
+                    UIManager.toast(song.isFavorite ? t("addedToFavorites", "Added to Favorites") : t("removedFromFavorites", "Removed from Favorites"));
+                  }
+                  if (action === 'delete') {
+                    StateManager.setActive(song.id);
+                    UIManager.openModal({
+                      title: t("deleteSongTitle", "Delete Song"),
+                      message: t("deleteSongMessage", "Delete this song?"),
+                      confirmText: t("deleteSongConfirm", "Delete"),
+                      destructive: true,
+                      onConfirm: () => {
+                        StateManager.deleteActive();
+                        Editor.loadActiveSong();
+                        UIManager.renderAll();
+                        UIManager.toast(t("deleteSongToast", "Deleted"));
+                      }
+                    });
+                  }
+                  if (action === 'share') {
+                    StateManager.setActive(song.id);
+                    ExportManager.share(false);
+                  }
+                  if (action === 'view') {
+                    StateManager.setActive(song.id);
+                    Editor.loadActiveSong();
+                    UIManager.switchView('editor');
+                    UIManager.renderAll();
+                    UIManager.toast("Opened: " + Util.titleOf(song));
+                  }
+                } else {
+                  StateManager.setActive(song.id);
+                  Editor.loadActiveSong();
+                  UIManager.switchView('editor');
+                  UIManager.renderAll();
+                  UIManager.toast("Opened: " + Util.titleOf(song));
+                }
               });
               list.appendChild(card);
             });
-            return;
+          } catch (e) {
+            console.error("SongLibrary render error:", e);
+            list.innerHTML = `<div class="empty-state">Error rendering library: ${Util.escapeHtml(e.message)}</div>`;
           }
-
-          let songs = state.songs.slice();
-          const sortVal = UIManager.dom.librarySortSelect ? UIManager.dom.librarySortSelect.value : 'recent';
-          if (state.libraryFilter === "favorites") {
-            songs = songs.filter(s => s.isFavorite);
-          }
-          if (sortVal === 'title') {
-            songs.sort((a, b) => Util.titleOf(a).localeCompare(Util.titleOf(b)));
-          } else if (sortVal === 'author') {
-            songs.sort((a, b) => (a.artist || "").localeCompare(b.artist || ""));
-          } else if (sortVal === 'arranger') {
-            songs.sort((a, b) => (a.creator || "").localeCompare(b.creator || ""));
-          } else if (sortVal === 'key') {
-            songs.sort((a, b) => {
-              const ka = KeyDetector.activeKey(a, null);
-              const kb = KeyDetector.activeKey(b, null);
-              const stra = ka ? (ka.root + (ka.mode === 'minor' ? 'm' : '')) : '';
-              const strb = kb ? (kb.root + (kb.mode === 'minor' ? 'm' : '')) : '';
-              return stra.localeCompare(strb);
-            });
-          } else {
-            songs.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-          }
-
-          if (query) songs = songs.filter(s => Util.titleOf(s).toLowerCase().includes(query) || (s.body || "").toLowerCase().includes(query));
-
-          if (songs.length === 0) { list.innerHTML = `<div class="empty-state">${query ? 'No matching songs' : 'Library is empty'}</div>`; return; }
-          songs.forEach(song => {
-            const card = document.createElement('div'); card.className = 'song-card' + (song.id === StateManager.state.activeId ? ' active' : '');
-            let metaText = Util.formatDate(song.updatedAt);
-            if (sortVal === 'author' && song.artist) metaText = `${song.artist} • ${metaText}`;
-            else if (sortVal === 'arranger' && song.creator) metaText = `${song.creator} • ${metaText}`;
-            else if (sortVal === 'key') {
-              const key = KeyDetector.activeKey(song, null);
-              if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
-            }
-            card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View in Editor">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
-            card.addEventListener('click', (e) => {
-              const actionBtn = e.target.closest('button[data-action]');
-              if (actionBtn) {
-                e.stopPropagation(); const action = actionBtn.dataset.action;
-                if (action === 'fav') { song.isFavorite = !song.isFavorite; StateManager.saveNow(t("favoriteToggled", "Favorite Toggled")); this.render(); UIManager.toast(song.isFavorite ? t("addedToFavorites", "Added to Favorites") : t("removedFromFavorites", "Removed from Favorites")); }
-                if (action === 'delete') { StateManager.setActive(song.id); UIManager.openModal({ title: t("deleteSongTitle", "Delete Song"), message: t("deleteSongMessage", "Delete this song?"), confirmText: t("deleteSongConfirm", "Delete"), destructive: true, onConfirm: () => { StateManager.deleteActive(); Editor.loadActiveSong(); UIManager.renderAll(); UIManager.toast(t("deleteSongToast", "Deleted")); } }); }
-                if (action === 'share') { StateManager.setActive(song.id); ExportManager.share(false); }
-                if (action === 'view') { StateManager.setActive(song.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Opened: " + Util.titleOf(song)); }
-              } else { StateManager.setActive(song.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Opened: " + Util.titleOf(song)); }
-            });
-            list.appendChild(card);
-          });
         }
       };
 
