@@ -2973,6 +2973,17 @@ Em -  C    -  G  -  D
           ctx.fillText("Scan to import securely offline", 230, 565);
         },
 
+        async shortenUrl(url) {
+          try {
+            const resp = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
+            if (!resp.ok) return null;
+            const short = (await resp.text()).trim();
+            return (short.startsWith('https://tinyurl.com/') || short.startsWith('http://tinyurl.com/')) ? short : null;
+          } catch (e) {
+            return null;
+          }
+        },
+
         async share(isSetlist = false) {
           let shareData = {}; let titleText = ""; let isSet = isSetlist;
 
@@ -2991,18 +3002,20 @@ Em -  C    -  G  -  D
 
           const compressed = await this.compressData(shareData);
           const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+          let shareUrl = directUrl; // will be replaced with short URL once resolved
 
           UIManager.openModal({
             title: "Share " + (isSet ? "Setlist" : "Song"),
             confirmText: "Copy Link & Close",
             fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;padding:24px 0;">Generating link...</p></div>` }],
-            onConfirm: async () => { if (await this.copyText(directUrl)) UIManager.toast("Share link copied!"); }
+            onConfirm: async () => { if (await this.copyText(shareUrl)) UIManager.toast("Share link copied!"); }
           });
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
           wrapper.innerHTML = '';
 
+          // QR always uses full data URL (works offline when scanned)
           const canvas = document.createElement("canvas");
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
           this.drawQrCard(canvas, { titleText, isSet, shareData, directUrl });
@@ -3020,7 +3033,7 @@ Em -  C    -  G  -  D
           const urlInput = document.createElement('input');
           urlInput.className = 'input';
           urlInput.readOnly = true;
-          urlInput.value = directUrl;
+          urlInput.value = 'Shortening link...';
           urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
           urlInput.addEventListener('click', () => urlInput.select());
 
@@ -3030,7 +3043,7 @@ Em -  C    -  G  -  D
                 await navigator.share({
                   title: titleText,
                   text: `Check out this ${isSet ? 'Setlist' : 'Song'}: "${titleText}"`,
-                  url: directUrl
+                  url: shareUrl
                 });
               } else {
                 UIManager.toast("Native sharing not supported on this device/browser.");
@@ -3047,10 +3060,17 @@ Em -  C    -  G  -  D
 
           const noteText = document.createElement('p');
           noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;";
-          noteText.textContent = "Data is securely compressed into this direct link. Works 100% offline & online.";
+          noteText.textContent = "QR works offline. Link shortened with TinyURL.";
 
           wrapper.append(canvas, downloadBtn, urlInput, shareBtn, noteText);
           Icon.decorateAll(wrapper);
+
+          // Shorten URL in background — swap input value when ready
+          this.shortenUrl(directUrl).then(short => {
+            shareUrl = short || directUrl;
+            urlInput.value = shareUrl;
+            if (!short) noteText.textContent = "QR works offline. (Short link unavailable — using direct link)";
+          });
         }
       };
 
@@ -3606,6 +3626,7 @@ Em -  C    -  G  -  D
 
             const compressed = await ExportManager.compressData(shareData);
             const finalUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+            let shareUrl = finalUrl; // replaced with TinyURL once resolved
 
             const wrapper = document.getElementById('bulkShareWrapper');
             if (!wrapper) return;
@@ -3629,7 +3650,7 @@ Em -  C    -  G  -  D
             urlInput.className = 'input';
             urlInput.id = 'bulkShareUrl';
             urlInput.readOnly = true;
-            urlInput.value = finalUrl;
+            urlInput.value = 'Shortening link...';
             urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
             urlInput.addEventListener('click', () => urlInput.select());
 
@@ -3644,7 +3665,7 @@ Em -  C    -  G  -  D
                   await navigator.share({
                     title: `Sonata: ${selectedSongs.length} Songs Shared`,
                     text: `Import ${selectedSongs.length} songs in Sonata:`,
-                    url: finalUrl
+                    url: shareUrl
                   });
                 } else {
                   UIManager.toast("Native sharing not supported on this browser.");
@@ -3654,10 +3675,17 @@ Em -  C    -  G  -  D
 
             const noteText = document.createElement('p');
             noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;";
-            noteText.textContent = "Data is securely compressed into this short link. Works entirely offline.";
+            noteText.textContent = "QR works offline. Link shortened with TinyURL.";
 
             wrapper.append(canvas, downloadBtn, urlInput, shareBtn, noteText);
             Icon.decorateAll(wrapper);
+
+            // Shorten in background — swap URL once ready
+            ExportManager.shortenUrl(finalUrl).then(short => {
+              shareUrl = short || finalUrl;
+              urlInput.value = shareUrl;
+              if (!short) noteText.textContent = "QR works offline. (Short link unavailable — using direct link)";
+            });
           });
         },
 
