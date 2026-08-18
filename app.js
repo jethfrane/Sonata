@@ -3656,7 +3656,7 @@ Em -  C    -  G  -  D
             wrapper.innerHTML = '';
 
             // QR encodes the same short URL
-            const canvas = document.createElement(\"canvas\");
+            const canvas = document.createElement('canvas');
             canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
             ExportManager.drawQrCard(canvas, { titleText, isSet: true, shareData, directUrl: shareUrl });
 
