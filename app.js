@@ -2,20 +2,9 @@
       e.preventDefault();
       window.__deferredPrompt = e;
       const headerBtn = document.getElementById('headerInstallBtn');
-      if (headerBtn) {
-        headerBtn.style.display = 'inline-flex';
-        headerBtn.onclick = () => {
-          e.prompt();
-          e.userChoice.then(() => {
-            window.__deferredPrompt = null;
-            headerBtn.style.display = 'none';
-          });
-        };
-      }
+      if (headerBtn) headerBtn.style.display = 'inline-flex';
       const settingsBtn = document.getElementById('installAppBtn');
-      if (settingsBtn) {
-        settingsBtn.style.display = 'inline-flex';
-      }
+      if (settingsBtn) settingsBtn.style.display = 'inline-flex';
     });
 
     let UI_FONT_OPTIONS = [], CHART_FONT_OPTIONS = [], ACCENT_THEMES = [], DEFAULT_SETTINGS = {}, FONT_STACKS = {}, STORAGE_KEYS = {};
@@ -890,18 +879,33 @@ Em -  C    -  G  -  D
                 <p style="font-size:0.85rem; color:var(--text); font-weight:600; margin:0;">Signed in as: <span style="color:var(--accent);">${this.userEmail || "Connected"}</span></p>
                 <p style="font-size:0.75rem; color:var(--muted); margin:0;">Last Synced: <strong>${Util.formatDate(this.lastSyncedTime)}</strong></p>
                 <div style="display:flex; gap:8px; margin-top:4px;">
-                  <button class="button primary" onclick="event.preventDefault(); GoogleDriveSync.performSync().then(() => GoogleDriveSync.renderSettingsUI())" type="button" style="flex:1;">Sync Now</button>
-                  <button class="button secondary" onclick="event.preventDefault(); GoogleDriveSync.disconnect(); GoogleDriveSync.renderSettingsUI();" type="button">Disconnect</button>
+                  <button class="button primary" id="settingsSyncNowBtn" type="button" style="flex:1;">Sync Now</button>
+                  <button class="button secondary" id="settingsDisconnectBtn" type="button">Disconnect</button>
                 </div>
               </div>
             `;
+            document.getElementById('settingsSyncNowBtn')?.addEventListener('click', async (e) => {
+              e.preventDefault();
+              await this.performSync();
+              this.renderSettingsUI();
+            });
+            document.getElementById('settingsDisconnectBtn')?.addEventListener('click', (e) => {
+              e.preventDefault();
+              this.disconnect();
+              this.renderSettingsUI();
+            });
           } else {
             container.innerHTML = `
               <div style="display:flex; flex-direction:column; gap:8px;">
                 <p style="font-size:0.85rem; color:var(--muted); margin:0;">Backup and sync your library to Google Drive.</p>
-                <button class="button primary" onclick="event.preventDefault(); GoogleDriveSync.signIn().then(() => GoogleDriveSync.renderSettingsUI())" type="button" style="width:100%;">Sign in with Google</button>
+                <button class="button primary" id="settingsSignInBtn" type="button" style="width:100%;">Sign in with Google</button>
               </div>
             `;
+            document.getElementById('settingsSignInBtn')?.addEventListener('click', async (e) => {
+              e.preventDefault();
+              await this.signIn();
+              this.renderSettingsUI();
+            });
           }
         }
       };
@@ -2590,7 +2594,8 @@ Em -  C    -  G  -  D
           add(this.dom.sidebarHelpBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.helpButton?.click(); });
           add(this.dom.sidebarSettingsBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.settingsButton?.click(); });
           add(this.dom.sidebarPresentBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); PresentationManager.open(); });
-          add(this.dom.sidebarInstallBtn, 'click', () => { this.dom.headerInstallBtn?.click(); });
+          add(this.dom.headerInstallBtn, 'click', () => { AudioEngine.playClick(); this.showInstallPrompt(); });
+          add(this.dom.sidebarInstallBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.showInstallPrompt(); });
           // Mobile topbar quick-action duplicates
           add(this.dom.themeToggleMobile, 'click', () => { this.dom.themeToggle?.click(); });
           add(this.dom.presentationButtonMobile, 'click', () => { AudioEngine.playClick(); PresentationManager.open(); });
@@ -3013,6 +3018,60 @@ Em -  C    -  G  -  D
           window.__songLinkManager.render();
           document.getElementById('songAddLinkBtn').addEventListener('click', window.__songLinkManager.addLink);
         },
+        showInstallPrompt() {
+          if (window.__deferredPrompt) {
+            window.__deferredPrompt.prompt();
+            window.__deferredPrompt.userChoice.then((choice) => {
+              if (choice.outcome === 'accepted') {
+                window.__deferredPrompt = null;
+                const headerBtn = document.getElementById('headerInstallBtn');
+                if (headerBtn) headerBtn.style.display = 'none';
+              }
+            });
+            return;
+          }
+          const isIOS = /ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+          if (isStandalone) {
+            this.toast(t("appAlreadyInstalled", "Sonata is already running as an installed app."));
+            return;
+          }
+          if (isIOS) {
+            this.openModal({
+              title: t("settingsInstallBtn", "Install Sonata on iOS"),
+              confirmText: t("modalConfirm", "Got it"),
+              fields: [{
+                type: "custom",
+                html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
+                         <p style="margin-bottom:12px;">To install this app on your iPhone/iPad:</p>
+                         <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
+                           <li>Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.</li>
+                           <li>Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.</li>
+                           <li>Tap <strong>Add</strong> in the top-right corner to finish.</li>
+                         </ol>
+                         <p style="font-size:0.75rem; color:var(--muted);">Note: Web App installation on iOS requires the Safari browser.</p>
+                       </div>`
+              }]
+            });
+          } else {
+            this.openModal({
+              title: "Install Sonata App",
+              confirmText: "Got it",
+              fields: [{
+                type: "custom",
+                html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
+                         <p style="margin-bottom:12px;">Sonata works 100% offline as an installed app on any device!</p>
+                         <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
+                           <li><strong>Chrome / Edge (Desktop):</strong> Click the <strong>Install</strong> icon in the address bar (or Menu &gt; Cast, save & share &gt; Install Sonata).</li>
+                           <li><strong>Android:</strong> Tap the 3 dots in Chrome and select <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+                           <li><strong>Mac Safari:</strong> Select <strong>File &gt; Add to Dock</strong>.</li>
+                         </ol>
+                         <p style="font-size:0.75rem; color:var(--muted);">Once installed, Sonata launches instantly from your home screen / desktop even without Wi-Fi or data.</p>
+                       </div>`
+              }]
+            });
+          }
+        },
         openSettings() {
           const s = StateManager.state.settings;
           this.openModal({
@@ -3034,45 +3093,31 @@ Em -  C    -  G  -  D
               { type: "custom", html: `<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="button" onclick="const d = { songs: StateManager.state.songs, setlists: StateManager.state.setlists, settings: StateManager.state.settings }; Util.download('sonata-backup.json', 'application/json', JSON.stringify(d, null, 2)); UIManager.toast(t('backupExported', 'Backup exported'));" type="button">${t("settingsExportBackup", "Export Backup")}</button><label class="button" style="margin:0;cursor:pointer;"><input type="file" accept=".json" style="display:none;" onchange="const r = new FileReader(); r.onload = (e) => { try { const d = JSON.parse(e.target.result); if (d.songs) StorageManager.saveSongs(d.songs); if (d.setlists) StorageManager.saveSetlists(d.setlists); if (d.settings) StorageManager.saveSettings(d.settings); UIManager.toast(t('backupRestored', 'Backup restored!')); setTimeout(() => window.location.reload(), 1000); } catch(err) { UIManager.toast(t('invalidBackup', 'Invalid backup file')); } }; if(this.files.length) r.readAsText(this.files[0]);">${t("settingsImportBackup", "Import Backup")}</label></div>` },
               { type: "heading", label: t("settingsHeadingSync", "Google Drive Sync") },
               { type: "custom", html: '<div id="settingsDriveSyncStatus" style="padding: 4px 0;"></div>' },
-              { id: "installAppContainer", type: "custom", html: `<button class="button primary" id="installAppBtn" style="width:100%;display:none;" type="button">${t("settingsInstallBtn", "Install App to Device")}</button><p id="iosInstallTip" style="margin:6px 0 0;font-size:0.75rem;color:var(--muted);display:none;">${t("settingsIosInstallTip", "To install on iOS/Mac: Tap Share then 'Add to Home Screen'.")}</p>` },
-              { type: "custom", html: `<button class="button danger" onclick="if(confirm(t('settingsRestoreConfirm', 'Reset all appearance settings?'))) { StateManager.state.settings = Object.assign({}, DEFAULT_SETTINGS); StateManager.saveNow(t('settingsRestored', 'Settings restored')); window.location.reload(); }" type="button" style="width:100%; margin-top: 14px;">${t("settingsRestoreDefaults", "Restore Default Settings")}</button>` }
+              { id: "installAppContainer", type: "custom", html: `<button class="button primary" id="installAppBtn" style="width:100%; margin-top:8px;" type="button">${t("settingsInstallBtn", "Install App to Device")}</button>` },
+              { type: "custom", html: `<button class="button danger" id="restoreDefaultsBtn" type="button" style="width:100%; margin-top: 14px;">${t("settingsRestoreDefaults", "Restore Default Settings")}</button>` }
             ], onConfirm: v => { s.theme = v.theme; s.accentTheme = v.accentTheme; s.uiFontFamily = v.uiFontFamily; s.chartFontFamily = v.chartFontFamily; s.appFontSize = v.appFontSize; s.editorFontSize = v.editorFontSize; s.previewFontSize = v.previewFontSize; s.editorLineHeight = v.editorLineHeight; s.metronomeVolume = v.metronomeVolume / 100; s.uiSounds = v.uiSounds === "true"; s.haptics = v.haptics === "true"; ThemeManager.apply(); Editor.applySettings(); PresentationManager.applySettings(); MetronomeManager.updateUi(); StateManager.saveNow(t("settingsSaved", "Settings saved")); this.toast(t("settingsSaved", "Settings saved")); }
           });
           const installBtn = document.getElementById('installAppBtn');
-          const isIOS = /ipad|iphone|ipod/.test(window.navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-          const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-
           if (installBtn) {
-            if (window.__deferredPrompt) {
-              installBtn.style.display = 'inline-flex';
-              installBtn.onclick = () => {
-                window.__deferredPrompt.prompt();
-                window.__deferredPrompt.userChoice.then(() => {
-                  window.__deferredPrompt = null;
-                  installBtn.style.display = 'none';
-                });
-              };
-            } else if (isIOS && !isStandalone) {
-              installBtn.style.display = 'inline-flex';
-              installBtn.onclick = () => {
-                this.openModal({
-                  title: t("settingsInstallBtn", "Install Sonata on iOS"),
-                  confirmText: t("modalConfirm", "Got it"),
-                  fields: [{
-                    type: "custom",
-                    html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
-                             <p style="margin-bottom:12px;">${t("settingsTheme", "Theme") === "Theme" ? "To install this app on your iPhone/iPad:" : "Upang i-install ang app na ito sa iyong iPhone/iPad:"}</p>
-                             <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
-                                <li>${t("settingsTheme", "Theme") === "Theme" ? 'Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.' : 'I-tap ang <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> sa toolbar ng Safari.'}</li>
-                                <li>${t("settingsTheme", "Theme") === "Theme" ? 'Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.' : 'Mag-scroll pababa at piliin ang <strong>Idagdag sa Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.'}</li>
-                                <li>${t("settingsTheme", "Theme") === "Theme" ? 'Tap <strong>Add</strong> in the top-right corner to finish.' : 'I-tap ang <strong>Add</strong> sa kanang-itaas na sulok para matapos.'}</li>
-                              </ol>
-                             <p style="font-size:0.75rem; color:var(--muted);">${t("settingsTheme", "Theme") === "Theme" ? "Note: Web App installation on iOS is only supported via the Safari browser." : "Tandaan: Ang pag-install ng Web App sa iOS ay suportado lamang sa Safari browser."}</p>
-                           </div>`
-                  }]
-                });
-              };
-            }
+            installBtn.addEventListener('click', () => {
+              this.showInstallPrompt();
+            });
+          }
+          const restoreBtn = document.getElementById('restoreDefaultsBtn');
+          if (restoreBtn) {
+            restoreBtn.addEventListener('click', () => {
+              if (confirm(t("settingsRestoreConfirm", "Reset all settings to default values?"))) {
+                StateManager.state.settings = Object.assign({}, DEFAULT_SETTINGS);
+                StorageManager.saveSettings(StateManager.state.settings);
+                ThemeManager.apply();
+                Editor.applySettings();
+                PresentationManager.applySettings();
+                MetronomeManager.updateUi();
+                this.applyLanguage();
+                this.closeModal();
+                this.toast(t("settingsRestored", "Settings restored to defaults"));
+              }
+            });
           }
           GoogleDriveSync.renderSettingsUI();
         },
@@ -3631,41 +3676,9 @@ Em -  C    -  G  -  D
             const isIOS = /ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
 
-            if (window.__deferredPrompt) {
-              const headerBtn = document.getElementById('headerInstallBtn');
-              if (headerBtn) {
-                headerBtn.style.display = 'inline-flex';
-                headerBtn.onclick = () => {
-                  window.__deferredPrompt.prompt();
-                  window.__deferredPrompt.userChoice.then(() => {
-                    window.__deferredPrompt = null;
-                    headerBtn.style.display = 'none';
-                  });
-                };
-              }
-            } else if (isIOS && !isStandalone) {
-              const headerBtn = document.getElementById('headerInstallBtn');
-              if (headerBtn) {
-                headerBtn.style.display = 'inline-flex';
-                headerBtn.onclick = () => {
-                  UIManager.openModal({
-                    title: "Install Sonata on iOS",
-                    confirmText: "Got it",
-                    fields: [{
-                      type: "custom",
-                      html: `<div style="color:var(--text); font-size:0.9rem; line-height:1.6; text-align:center;">
-                               <p style="margin-bottom:12px;">To install this app on your iPhone/iPad:</p>
-                               <ol style="text-align:left; padding-left:20px; display:inline-block; margin-bottom:12px;">
-                                 <li>Tap the <strong>Share</strong> button <span style="font-size:1.2rem;">⎋</span> in your Safari toolbar.</li>
-                                 <li>Scroll down and select <strong>Add to Home Screen</strong> <span style="font-size:1.2rem;">⊞</span>.</li>
-                                 <li>Tap <strong>Add</strong> in the top-right corner to finish.</li>
-                               </ol>
-                               <p style="font-size:0.75rem; color:var(--muted);">Note: Web App installation on iOS is only supported via the Safari browser.</p>
-                             </div>`
-                    }]
-                  });
-                };
-              }
+            const headerBtn = document.getElementById('headerInstallBtn');
+            if (headerBtn && !isStandalone) {
+              headerBtn.style.display = 'inline-flex';
             }
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.register('./sw.js').catch(err => {
