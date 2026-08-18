@@ -4430,13 +4430,21 @@ Em -  C    -  G  -  D
                   let tracklistHtml = '';
                   if (isSet && d.s && d.s.length) {
                     tracklistHtml = `
-                      <div style="margin-top:14px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface-2);">
-                        <div style="padding:8px 12px; font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); border-bottom:1px solid var(--line);">Included Songs (${d.s.length})</div>
-                        <div style="max-height:160px; overflow-y:auto; padding:4px 0;">
+                      <div class="shared-setlist-tracklist" style="margin-top:16px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface);">
+                        <div style="padding:10px 14px; font-weight:700; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); border-bottom:1px solid var(--line); background:var(--surface-2); display:flex; align-items:center; gap:6px;">
+                          <span data-inline-icon="list" style="width:14px; height:14px;"></span> Included Songs (${d.s.length})
+                        </div>
+                        <div style="max-height:180px; overflow-y:auto; padding:0;">
                           ${d.s.map((s, i) => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; font-size:0.86rem; border-bottom:1px solid color-mix(in srgb, var(--line) 40%, transparent);">
-                              <span><strong>${i + 1}.</strong> ${Util.escapeHtml(s.t || 'Untitled')}</span>
-                              <span style="font-size:0.75rem; color:var(--muted); font-weight:600;">${s.k ? s.k : ''} ${s.a ? '&middot; ' + Util.escapeHtml(s.a) : ''}</span>
+                            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; font-size:0.86rem; border-bottom:1px solid color-mix(in srgb, var(--line) 40%, transparent);">
+                              <div style="display:flex; align-items:center; gap:8px;">
+                                <span style="color:var(--muted); font-size:0.8rem; font-weight:600; width:18px;">${i + 1}.</span>
+                                <strong>${Util.escapeHtml(s.t || 'Untitled')}</strong>
+                              </div>
+                              <div style="display:flex; align-items:center; gap:6px;">
+                                ${s.k ? `<span style="font-size:0.7rem; font-weight:700; padding:2px 6px; border-radius:4px; background:var(--surface-2); color:var(--text);">${s.k}</span>` : ''}
+                                ${s.a ? `<span style="font-size:0.75rem; color:var(--muted); font-weight:500;">&middot; ${Util.escapeHtml(s.a)}</span>` : ''}
+                              </div>
                             </div>
                           `).join('')}
                         </div>
@@ -4447,34 +4455,43 @@ Em -  C    -  G  -  D
                   if (!isSet && d.b) {
                     const lines = d.b.split('\n').filter(l => l.trim()).slice(0, 8).join('\n');
                     previewExcerpt = `
-                      <div style="margin-top:14px; border:1px solid var(--line); border-radius:8px; padding:12px; background:var(--surface-2); font-family:var(--chart-font); font-size:0.82rem; color:var(--text); max-height:140px; overflow-y:auto; line-height:1.45; white-space:pre-wrap;">${Util.escapeHtml(lines)}</div>`;
+                      <div style="margin-top:16px; border:1px solid var(--line); border-radius:12px; padding:14px; background:var(--surface); font-family:var(--chart-font); font-size:0.85rem; color:var(--text); max-height:160px; overflow-y:auto; line-height:1.5; white-space:pre-wrap; box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);">${Util.escapeHtml(lines)}</div>`;
                   }
 
                   const previewHtml = `
-                    <div style="font-family:var(--ui-font); color:var(--text);">
-                      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                        <span style="display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; font-weight:800; font-size:16px;">S</span>
-                        <div>
-                          <span style="display:inline-block; font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; padding:2px 8px; border-radius:999px; background:color-mix(in srgb, var(--accent) 15%, var(--surface-2)); color:var(--accent);">${isSet ? 'Shared Setlist' : 'Shared Song'}</span>
-                          <h2 style="margin:2px 0 0; font-size:1.25rem; font-weight:800; line-height:1.2;">${Util.escapeHtml(title)}</h2>
+                    <div style="font-family:var(--ui-font); color:var(--text); display:flex; flex-direction:column; gap:4px;">
+                      <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+                        <img src="icon.png" alt="Sonata Logo" style="width:42px; height:42px; border-radius:10px; object-fit:cover; box-shadow:0 4px 12px rgba(0,0,0,0.1); border:1px solid color-mix(in srgb, var(--line) 50%, transparent);">
+                        <div style="flex:1;">
+                          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <span style="display:inline-flex; align-items:center; gap:4px; font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; padding:3px 8px; border-radius:999px; background:color-mix(in srgb, var(--accent) 15%, transparent); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);">
+                              <span data-inline-icon="${isSet ? 'list' : 'file-text'}" style="width:12px; height:12px;"></span> ${isSet ? 'Shared Setlist' : 'Shared Song'}
+                            </span>
+                          </div>
+                          <h2 style="margin:0; font-size:1.35rem; font-weight:800; line-height:1.2; letter-spacing:-0.02em;">${Util.escapeHtml(title)}</h2>
                         </div>
                       </div>
-                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; font-size:0.82rem;">
-                        ${artist ? `<span style="color:var(--muted); font-weight:600;">By ${Util.escapeHtml(artist)}</span>` : ''}
-                        ${arranger ? `<span style="color:var(--muted);">&bull; Arranged by ${Util.escapeHtml(arranger)}</span>` : ''}
+                      
+                      ${(artist || arranger) ? `
+                      <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:0.85rem; margin-bottom:12px; padding-left:54px;">
+                        ${artist ? `<span style="color:var(--text); font-weight:600;"><span data-inline-icon="user" style="width:12px; height:12px; margin-right:4px; color:var(--muted);"></span>${Util.escapeHtml(artist)}</span>` : ''}
+                        ${arranger ? `<span style="color:var(--muted); display:flex; align-items:center; gap:4px;">&bull; Arranged by ${Util.escapeHtml(arranger)}</span>` : ''}
+                      </div>` : ''}
+                      
+                      <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:4px; padding-left:54px;">
+                        ${!isSet && keyStr ? `<span class="badge" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;"><span data-inline-icon="music" style="width:12px; height:12px; color:var(--muted);"></span>Key: ${keyStr}</span>` : ''}
+                        ${capoStr ? `<span class="badge" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${capoStr}</span>` : ''}
+                        ${songsCount ? `<span class="badge" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding:4px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;"><span data-inline-icon="layers" style="width:12px; height:12px; color:var(--muted);"></span>${songsCount} Songs</span>` : ''}
                       </div>
-                      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
-                        ${!isSet && keyStr ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">Key: ${keyStr}</span>` : ''}
-                        ${capoStr ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${capoStr}</span>` : ''}
-                        ${songsCount ? `<span class="badge" style="font-size:0.75rem; padding:4px 8px; border-radius:6px; background:var(--surface-2); border:1px solid var(--line); font-weight:700;">${songsCount} Songs</span>` : ''}
-                      </div>
-                      ${d.d ? `<p style="font-size:0.85rem; color:var(--muted); margin:0 0 10px; font-style:italic;">${Util.escapeHtml(d.d)}</p>` : ''}
+                      
+                      ${d.d ? `<div style="margin-top:12px; padding:10px 14px; background:color-mix(in srgb, var(--accent) 5%, var(--surface-2)); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; font-size:0.85rem; color:var(--text); font-style:italic; line-height:1.4;"><span data-inline-icon="info" style="width:14px; height:14px; float:left; margin-right:8px; margin-top:2px; color:var(--accent);"></span>${Util.escapeHtml(d.d)}</div>` : ''}
+                      
                       ${tracklistHtml}
                       ${previewExcerpt}
                     </div>`;
 
                   UIManager.openModal({
-                    title: isSet ? 'Shared Setlist' : 'Shared Song',
+                    title: isSet ? 'Import Setlist' : 'Import Song',
                     fields: [{ type: 'custom', html: previewHtml }],
                     confirmText: 'Open & Play',
                     onConfirm: () => {

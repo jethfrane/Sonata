@@ -56,7 +56,7 @@ Sonata was created by **Jeth Frane** to solve the real-world friction musicians,
 
 ### 4. Zero-Friction Sharing & QR Codes
 * **Ultra-Compressed Direct Links:** Generates direct, self-contained URLs (`https://<username>.github.io/Sonata/?s=...`) using Deflate compression with no third-party URL dependencies.
-* **Professional Link Previews:** Interactive import modal displays artist, key, arranger, setlist songs, and chord excerpts.
+* **Professional Link Previews:** Beautifully optimized interactive import modal displaying custom branding, app logos, artist, key, arranger, setlist tracks, and formatted chord excerpts.
 * **Scannable QR Codes:** Built-in QR card generation and camera scanner for rapid device-to-device imports.
 
 ### 5. Multi-Format Exporting
