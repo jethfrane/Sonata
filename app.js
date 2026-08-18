@@ -2319,19 +2319,21 @@ Em -  C    -  G  -  D
             shareData = { t: song.title, b: song.body }; if (song.manualKey && song.manualKey !== "auto") shareData.k = song.manualKey; if (StateManager.state.capo) shareData.c = StateManager.state.capo; if (song.artist) shareData.a = song.artist; if (song.creator) shareData.cr = song.creator; if (song.links?.length) shareData.l = song.links; if (song.description) shareData.d = song.description;
           }
 
-          const finalUrl = window.location.origin + window.location.pathname + "?s=" + await this.compressData(shareData);
+          const compressed = await this.compressData(shareData);
+          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+          let activeShareUrl = directUrl;
 
           UIManager.openModal({
             title: "Share " + (isSet ? "Setlist" : "Song"),
             confirmText: "Copy Link & Close",
-            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;">Generating secure link...</p></div>` }],
-            onConfirm: async () => { if (await this.copyText(finalUrl)) UIManager.toast("Share link copied!"); }
+            fields: [{ type: "custom", id: "share-content", html: `<div id="shareWrapper" style="display:flex;flex-direction:column;align-items:center;width:100%;"><p style="color:var(--muted);font-size:0.9rem;">Generating short link...</p></div>` }],
+            onConfirm: async () => { if (await this.copyText(activeShareUrl)) UIManager.toast("Share link copied!"); }
           });
 
           const wrapper = document.getElementById('shareWrapper');
           if (!wrapper) return;
           wrapper.innerHTML = '';
-          const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(finalUrl);
+          const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&data=" + encodeURIComponent(directUrl);
 
           const canvas = document.createElement("canvas"); canvas.width = 460; canvas.height = 600;
           canvas.style.cssText = "display:block; margin: 0 auto 15px; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 240px; height: auto;";
@@ -2404,16 +2406,38 @@ Em -  C    -  G  -  D
           const downloadBtn = document.createElement('button'); downloadBtn.className = 'button secondary'; downloadBtn.type = 'button'; downloadBtn.style.cssText = "width:100%; margin-bottom:12px;"; downloadBtn.innerHTML = `<span data-inline-icon="image" style="width:16px;height:16px;margin-right:6px;"></span>Download QR Card`;
           downloadBtn.addEventListener('click', () => { canvas.toBlob(b => Util.download('Sonata-QR-' + Util.slug(titleText) + '.png', 'image/png', b)); UIManager.toast("Profile Card Downloaded!"); });
 
-          const urlInput = document.createElement('input'); urlInput.className = 'input'; urlInput.readOnly = true; urlInput.value = finalUrl; urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
+          const urlInput = document.createElement('input'); urlInput.className = 'input'; urlInput.readOnly = true; urlInput.value = directUrl; urlInput.style.cssText = "margin-bottom:12px; font-size: 0.85rem; text-align:center; font-weight:600; color:var(--accent);";
           urlInput.addEventListener('click', () => urlInput.select());
 
-          const nativeShare = async () => { try { if (navigator.share) await navigator.share({ title: titleText, text: `Check out this ${isSet ? 'Setlist' : 'Song'}: "${titleText}"`, url: finalUrl }); else UIManager.toast("Native sharing not supported on this device/browser."); } catch (e) { } };
+          // Asynchronously create ultra-shortened link via dpaste API
+          (async () => {
+            try {
+              const formData = new URLSearchParams();
+              formData.append('content', compressed);
+              formData.append('expiry_days', '365');
+              formData.append('title', titleText || 'Sonata');
+              const dpasteResp = await fetch('https://dpaste.com/api/v2/', {
+                method: 'POST',
+                body: formData
+              });
+              if (dpasteResp.ok) {
+                const pasteResultUrl = (await dpasteResp.text()).trim();
+                const pasteId = pasteResultUrl.replace(/\/$/, '').split('/').pop();
+                if (pasteId) {
+                  activeShareUrl = window.location.origin + window.location.pathname + "?paste=" + pasteId;
+                  if (urlInput) urlInput.value = activeShareUrl;
+                }
+              }
+            } catch(e) {}
+          })();
+
+          const nativeShare = async () => { try { if (navigator.share) await navigator.share({ title: titleText, text: `Check out this ${isSet ? 'Setlist' : 'Song'}: "${titleText}"`, url: activeShareUrl }); else UIManager.toast("Native sharing not supported on this device/browser."); } catch (e) { } };
 
           const shareBtn = document.createElement('button'); shareBtn.className = 'button primary'; shareBtn.type = 'button'; shareBtn.style.cssText = "width: 100%; margin-bottom:12px;";
           shareBtn.innerHTML = `<span data-inline-icon="share-native" style="width:18px; height:18px; margin-right:6px;"></span> Share via Messaging / App`;
           shareBtn.addEventListener('click', nativeShare);
 
-          const noteText = document.createElement('p'); noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;"; noteText.textContent = "Data is securely compressed into this short link. Works entirely offline.";
+          const noteText = document.createElement('p'); noteText.style.cssText = "font-size:0.75rem; color:var(--muted); text-align:center; margin:4px 0 0;"; noteText.textContent = "Data is securely compressed into this short link. Works seamlessly online & offline.";
 
           wrapper.append(canvas, downloadBtn, urlInput, shareBtn, noteText);
           Icon.decorateAll(wrapper);
@@ -3833,7 +3857,8 @@ Em -  C    -  G  -  D
                 } else if (pasteParam) {
                   const resp = await fetch(`https://dpaste.com/${pasteParam}.txt`);
                   if (resp.ok) {
-                    const rawBase64 = await resp.text();
+                    let rawBase64 = (await resp.text()).trim();
+                    if (rawBase64.includes('?s=')) rawBase64 = rawBase64.split('?s=')[1];
                     d = JSON.parse(await ExportManager.decompressData(rawBase64.trim()));
                   }
                 }
