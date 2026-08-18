@@ -248,6 +248,28 @@
     .topbar-menu-btn {
       display: none;
       flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .topbar-menu-btn:hover {
+      background: var(--surface-3);
+    }
+    .topbar-menu-btn:active {
+      transform: scale(0.94);
+    }
+    .topbar-menu-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.2;
     }
 
     /* Mobile quick actions (theme + present) — hidden on desktop */
@@ -1929,20 +1951,24 @@
     /* Tablet (768px – 1023px): hide top-nav pill + top-actions; show hamburger */
     @media (min-width: 768px) and (max-width: 1023px) {
       .top-nav {
-        display: none;
+        display: none !important;
       }
       .top-actions {
         display: none !important;
       }
       .topbar-menu-btn {
-        display: inline-flex;
+        display: inline-flex !important;
       }
       .topbar-mobile-actions {
-        display: flex;
+        display: flex !important;
         margin-left: auto;
+        gap: 8px;
       }
       .mobile-view-switcher {
         display: none !important;
+      }
+      .topbar {
+        gap: 12px;
       }
     }
 
@@ -1953,7 +1979,7 @@
       }
 
       .top-nav {
-        display: none;
+        display: none !important;
       }
 
       .top-actions {
@@ -1961,12 +1987,13 @@
       }
 
       .topbar-menu-btn {
-        display: inline-flex;
+        display: inline-flex !important;
       }
 
       .topbar-mobile-actions {
-        display: flex;
+        display: flex !important;
         margin-left: auto;
+        gap: 6px;
       }
 
       .mobile-view-switcher {
@@ -1980,8 +2007,15 @@
         padding-bottom: 8px;
         padding-left: calc(12px + env(safe-area-inset-left, 0px));
         padding-right: calc(12px + env(safe-area-inset-right, 0px));
+        gap: 10px;
+      }
+
+      .brand {
         gap: 8px;
-        justify-content: flex-start;
+      }
+
+      .brand-title {
+        font-size: 0.98rem;
       }
 
       .brand-subtitle {

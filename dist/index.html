@@ -8,12 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#f6f7f9">
-  <link rel="manifest"
-    href="data:application/json;base64,eyJuYW1lIjoiU29uYXRhIE1hc3RlciIsInNob3J0X25hbWUiOiJTb25hdGEiLCJzdGFydF91cmwiOiIuLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmNmY3ZjkiLCJ0aGVtZV9jb2xvciI6IiMxOTY3ZDIiLCJpY29ucyI6W3sic3JjIjoiaWNvbi5wbmciLCJ0eXBlIjoiaW1hZ2UvcG5nIiwic2l6ZXMiOiI1MTJ4NTEyIn1dfQ==">
+  <link rel="manifest" href="manifest.json">
 
-  <!-- Standard Favicon for Browser Tabs -->
+  <!-- Standard Favicons for Browser Tabs -->
   <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
   <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
+  <link rel="shortcut icon" href="icon.png">
 
   <!-- Apple Touch Icon (for iOS / Safari Home Screen) -->
   <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
@@ -156,8 +156,8 @@
       min-height: calc(56px + env(safe-area-inset-top, 0px));
       padding-top: calc(10px + env(safe-area-inset-top, 0px));
       padding-bottom: 10px;
-      padding-left: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-left, 0px));
-      padding-right: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-right, 0px));
+      padding-left: calc(clamp(12px, 2vw, 20px) + env(safe-area-inset-left, 0px));
+      padding-right: calc(clamp(12px, 2vw, 20px) + env(safe-area-inset-right, 0px));
       background: color-mix(in srgb, var(--surface) 88%, transparent);
       border-bottom: 1px solid var(--line);
       backdrop-filter: blur(16px);
@@ -171,17 +171,27 @@
       min-width: 0;
     }
 
-    .brand-mark {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #fff;
-      font-weight: 800;
-      font-size: 14px;
+    .brand-logo {
+      width: 35px;
+      height: 35px;
+      border-radius: 8px;
+      display: block;
+      object-fit: contain;
       box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
+      flex-shrink: 0;
+      /* Light mode: subtle shadow for depth */
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+      transition: filter 0.2s ease;
+    }
+
+    html[data-theme="dark"] .brand-logo {
+      /* Dark mode: brighten slightly and add glow */
+      filter: brightness(1.1) drop-shadow(0 2px 8px rgba(255,255,255,0.12));
+    }
+
+    .sidebar-header .brand-logo {
+      width: 32px;
+      height: 32px;
     }
 
     .brand-text {
@@ -249,7 +259,6 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
-    .top-actions,
     .toolbar,
     .inline-actions,
     .segmented,
@@ -259,6 +268,176 @@
       align-items: center;
       gap: 6px;
       flex-wrap: wrap;
+    }
+
+    /* Desktop top-actions: compact horizontal strip */
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Hamburger toggle — hidden on desktop */
+    .topbar-menu-btn {
+      display: none;
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .topbar-menu-btn:hover {
+      background: var(--surface-3);
+    }
+    .topbar-menu-btn:active {
+      transform: scale(0.94);
+    }
+    .topbar-menu-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.2;
+    }
+
+    /* Mobile quick actions (theme + present) — hidden on desktop */
+    .topbar-mobile-actions {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* Full-width utility for sidebar buttons */
+    .button.full-width {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    /* Compact button variant */
+    .button.compact {
+      padding: 0 10px;
+      min-height: 30px;
+      font-size: 0.8rem;
+    }
+
+    /* ─── Sidebar backdrop ─── */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 98;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-backdrop.open {
+      display: block;
+      opacity: 1;
+    }
+
+    /* ─── Sidebar drawer ─── */
+    .sidebar-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 280px;
+      max-width: 85vw;
+      background: var(--surface);
+      border-right: 1px solid var(--line);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      z-index: 99;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+    .sidebar-drawer.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px calc(16px + env(safe-area-inset-top, 0px));
+      padding-top: calc(16px + env(safe-area-inset-top, 0px));
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      padding: 10px 10px;
+      gap: 4px;
+    }
+
+    .sidebar-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s ease, color 0.15s ease;
+      width: 100%;
+    }
+    .sidebar-nav-btn:hover {
+      background: var(--surface-2);
+    }
+    .sidebar-nav-btn.active {
+      background: color-mix(in srgb, var(--accent) 15%, var(--surface-2));
+      color: var(--accent);
+    }
+    .sidebar-nav-btn::before {
+      content: attr(data-icon-char);
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: var(--line);
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 6px;
+    }
+
+    .sidebar-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .sidebar-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
     }
 
     .mobile-view-switcher {
@@ -1217,6 +1396,37 @@
       transform: translateY(2px);
     }
 
+    /* ── Scale highlight on piano keys ── */
+    .piano-key-white.key-root {
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 55%, white) 0%, color-mix(in srgb, var(--accent) 38%, white) 100%) !important;
+    }
+    .piano-key-white.key-in-scale {
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 18%, white) 0%, color-mix(in srgb, var(--accent) 10%, white) 100%) !important;
+    }
+    .piano-key-black.key-root {
+      background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 65%, black) 100%) !important;
+    }
+    .piano-key-black.key-in-scale {
+      background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 60%, #111) 0%, #111 100%) !important;
+    }
+    /* Playback always wins */
+    .piano-key-white.active, .piano-key-white:active { background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important; }
+
+    /* ── Scale highlight on fret cells ── */
+    .fret-cell.fret-root .fret-note-marker {
+      background: var(--accent) !important;
+      color: #fff !important;
+      opacity: 1 !important;
+      box-shadow: 0 0 0 2px var(--accent), 0 2px 6px color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+    .fret-cell.fret-in-scale .fret-note-marker {
+      background: color-mix(in srgb, var(--accent) 35%, var(--surface-2)) !important;
+      color: var(--accent) !important;
+      opacity: 1 !important;
+    }
+
+
+
     .fretboard-container {
       width: 100%;
       overflow-x: auto;
@@ -1752,13 +1962,48 @@
       color: var(--p-slash);
     }
 
-    @media (min-width: 768px) {
+    /* ─── Responsive breakpoints ─── */
+
+    /* Desktop-only (>= 1024px): show top-nav pill and full top-actions bar */
+    @media (min-width: 1024px) {
       .top-nav {
         display: flex;
       }
-
+      .top-actions {
+        display: flex;
+      }
+      .topbar-menu-btn {
+        display: none !important;
+      }
+      .topbar-mobile-actions {
+        display: none !important;
+      }
       .mobile-view-switcher {
         display: none !important;
+      }
+    }
+
+    /* Tablet (768px – 1023px): hide top-nav pill + top-actions; show hamburger */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .top-nav {
+        display: none !important;
+      }
+      .top-actions {
+        display: none !important;
+      }
+      .topbar-menu-btn {
+        display: inline-flex !important;
+      }
+      .topbar-mobile-actions {
+        display: flex !important;
+        margin-left: auto;
+        gap: 8px;
+      }
+      .mobile-view-switcher {
+        display: none !important;
+      }
+      .topbar {
+        gap: 12px;
       }
     }
 
@@ -1769,7 +2014,21 @@
       }
 
       .top-nav {
-        display: none;
+        display: none !important;
+      }
+
+      .top-actions {
+        display: none !important;
+      }
+
+      .topbar-menu-btn {
+        display: inline-flex !important;
+      }
+
+      .topbar-mobile-actions {
+        display: flex !important;
+        margin-left: auto;
+        gap: 6px;
       }
 
       .mobile-view-switcher {
@@ -1783,16 +2042,17 @@
         padding-bottom: 8px;
         padding-left: calc(12px + env(safe-area-inset-left, 0px));
         padding-right: calc(12px + env(safe-area-inset-right, 0px));
+        gap: 10px;
+      }
+
+      .brand {
         gap: 8px;
       }
 
-      .top-actions {
-        justify-content: flex-end;
-        flex-wrap: nowrap;
-        gap: 4px;
+      .brand-title {
+        font-size: 0.98rem;
       }
 
-      .top-actions .button:not(.primary) .button-label,
       .brand-subtitle {
         display: none;
       }
@@ -2056,41 +2316,92 @@
 </head>
 
 <body>
+  <!-- Sidebar backdrop overlay -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+
+  <!-- Slide-out sidebar drawer -->
+  <aside id="sidebarDrawer" class="sidebar-drawer" aria-label="Menu">
+    <div class="sidebar-header">
+      <div class="brand">
+        <img src="icon.png" alt="Sonata" class="brand-logo" width="32" height="32" aria-hidden="true" />
+        <div class="brand-text">
+          <span class="brand-title">Sonata</span>
+          <span id="sidebarVersion" class="brand-subtitle"></span>
+        </div>
+      </div>
+      <button id="sidebarCloseBtn" class="icon-button ghost" data-icon="x" type="button" aria-label="Close menu"></button>
+    </div>
+
+    <!-- Sidebar nav (mirrors top-nav for tablet/mobile) -->
+    <nav class="sidebar-nav" role="tablist" aria-label="Main navigation">
+      <button class="sidebar-nav-btn active" data-view="editor" data-icon="edit" type="button">Editor</button>
+      <button class="sidebar-nav-btn" data-view="library" data-icon="library" type="button">Library</button>
+      <button class="sidebar-nav-btn" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
+      <button class="sidebar-nav-btn" data-view="theory" data-icon="aperture" type="button">Theory</button>
+      <button class="sidebar-nav-btn" data-view="instruments" data-icon="music" type="button">Play</button>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Sidebar secondary actions -->
+    <div class="sidebar-actions">
+      <button class="button secondary full-width" id="sidebarDriveSyncBtn" data-icon="cloud" type="button">Drive Sync</button>
+      <button class="button ghost full-width" id="sidebarHelpBtn" data-icon="help" type="button">Help &amp; About</button>
+      <button class="button ghost full-width" id="sidebarSettingsBtn" data-icon="settings" type="button">Settings</button>
+      <button class="button ghost full-width" id="sidebarPresentBtn" data-icon="presentation" type="button">Presentation Mode</button>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Language + version in sidebar -->
+    <div class="sidebar-footer">
+      <label class="sidebar-label" for="langSelectSidebar">Language</label>
+      <select id="langSelectSidebar" class="select" style="width:100%;"></select>
+      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
+    </div>
+  </aside>
+
   <div class="app-shell">
     <header class="topbar">
+      <!-- Hamburger — shown on tablet/mobile, hidden on desktop -->
+      <button id="menuToggleBtn" class="icon-button ghost topbar-menu-btn" data-icon="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="sidebarDrawer"></button>
+
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">S</div>
+        <img src="icon.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
         <div class="brand-text">
           <h1 class="brand-title">Sonata</h1>
           <p class="brand-subtitle">Offline tool for musicians</p>
         </div>
       </div>
 
+      <!-- Desktop tab nav pill -->
       <nav class="top-nav" role="tablist" aria-label="Main navigation">
         <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
         <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
-        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools & Export</span></button>
+        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
         <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
         <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
       </nav>
 
+      <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
-        <!-- Google Drive Sync Button -->
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button"
-          style="display:none;">Install App</button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
-        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button"
-          aria-label="Toggle theme"></button>
+        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle theme"></button>
         <button class="button ghost" id="settingsButton" data-icon="settings" type="button">Settings</button>
         <button class="button primary" id="presentationButton" data-icon="presentation" type="button">Present</button>
-        <!-- Language selector -->
-        <select id="langSelect" class="select" style="margin-left:8px;">
+        <select id="langSelect" class="select">
           <option value="en" selected>English</option>
           <option value="fil">Filipino</option>
         </select>
-        <!-- Version display -->
-        <span id="appVersion" class="muted" style="margin-left:12px; font-size:0.85rem;"></span>
+        <span id="appVersion" class="muted" style="font-size:0.82rem;"></span>
+      </div>
+
+      <!-- Mobile quick actions row: theme toggle + present only -->
+      <div class="topbar-mobile-actions">
+        <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle theme"></button>
+        <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button">Present</button>
       </div>
     </header>
 
@@ -2359,8 +2670,17 @@
 
       <!-- 5. PLAY / INSTRUMENTS PAGE -->
       <aside class="panel instrument-panel" aria-label="Instruments">
-        <div class="panel-heading">
-          <h2>Virtual Piano</h2><button class="help-icon" data-help="piano" type="button">?</button>
+        <div class="panel-heading" style="margin-bottom:0;">
+          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button">?</button></h2>
+          <!-- Key highlight selector -->
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
+            <select id="instrumentKeyRoot" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
+            <select id="instrumentKeyMode" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
+              <option value="major">Major</option>
+              <option value="minor">Minor</option>
+            </select>
+          </div>
         </div>
         <div class="piano-container">
           <div class="piano-scroll" id="pianoKeyboard"></div>
@@ -2499,7 +2819,7 @@
       UI_FONT_OPTIONS = [{ value: "system", label: "System" }, { value: "rounded", label: "Rounded" }, { value: "serif", label: "Serif" }, { value: "mono", label: "Mono" }];
       CHART_FONT_OPTIONS = [{ value: "mono", label: "Mono" }, { value: "system", label: "System" }, { value: "serif", label: "Serif" }];
       ACCENT_THEMES = [{ value: "blue", label: "Blue" }, { value: "teal", label: "Teal" }, { value: "rose", label: "Rose" }, { value: "amber", label: "Amber" }, { value: "violet", label: "Violet" }, { value: "graphite", label: "Graphite" }];
-      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: true, haptics: true, autoScrollSpeed: 30, language: "en" };
+      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: true, haptics: true, autoScrollSpeed: 30, language: "en", autoFillArranger: true };
       FONT_STACKS = { system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', rounded: '"SF Pro Rounded", Nunito, sans-serif', serif: 'Georgia, serif', mono: 'ui-monospace, Menlo, Consolas, monospace' };
       STORAGE_KEYS = { songs: "sonata:v12:songs", settings: "sonata:v12:settings", activeSong: "sonata:v12:active", setlists: "sonata:v12:setlists" };
 
@@ -2508,6 +2828,7 @@
       const KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const MINOR_KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const NOTE_TO_SEMITONE = { C: 0, "B#": 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11 };
+      const SCALE_INTERVALS = { major: [0,2,4,5,7,9,11], minor: [0,2,3,5,7,8,10] };
 
       const CIRCLE_OF_FIFTHS = [
         { major: "C", minor: "A", dim: "B", offset: 0 }, { major: "G", minor: "E", dim: "F#", offset: 7 },
@@ -3002,6 +3323,7 @@ Em -  C    -  G  -  D
           "type-minus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M16 14h6"></path>',
           "type-plus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M19 11v6"></path><path d="M16 14h6"></path>',
           scroll: '<path d="M8 21h8"></path><path d="M12 17V3"></path><path d="m7 8 5-5 5 5"></path><path d="m7 12 5 5 5-5"></path>',
+          menu: '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>',
           wand: '<path d="m15 4 5 5"></path><path d="M14 5 3 16l5 5L19 10Z"></path><path d="M9 6 8 3"></path><path d="M18 14l3 1"></path>',
           x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
         },
@@ -3017,7 +3339,7 @@ Em -  C    -  G  -  D
 
         FILENAME: "sonata_library.json",
         tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
-        userEmail: null, resolveSignIn: null,
+        userEmail: null, userName: null, resolveSignIn: null,
 
         init() {
           const checkLibs = setInterval(() => {
@@ -3087,6 +3409,7 @@ Em -  C    -  G  -  D
             if (resp.ok) {
               const data = await resp.json();
               this.userEmail = data.email;
+              this.userName = data.name || data.given_name || data.email || null;
             }
           } catch (e) {
             console.error("Fetch user info error:", e);
@@ -3562,7 +3885,7 @@ Em -  C    -  G  -  D
           }
         },
         setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
-        createSong() { const now = Util.now(); const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: "", body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
+        createSong() { const now = Util.now(); const autoName = (StateManager.state.settings.autoFillArranger && GoogleDriveSync.userName) ? GoogleDriveSync.userName : ""; const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: autoName, body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
         loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.touch(s); this.saveNow("Demo loaded"); return s; },
         deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
         revertActive() { const a = this.activeSong(); if (!a || a.readonly) return; a.body = a.savedSnapshot || ""; this.touch(a); this.saveNow("Restored"); Editor.loadActiveSong(); UIManager.renderAll(); },
@@ -3695,12 +4018,44 @@ Em -  C    -  G  -  D
       };
 
       const InstrumentManager = {
-        init() { this.renderCircle(); this.renderPiano(); this.renderFretboard('guitar'); this.bind(); },
+        init() {
+          this.renderCircle();
+          // Populate instrument key root dropdown
+          const rootSel = UIManager.dom.instrumentKeyRoot;
+          if (rootSel) {
+            KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootSel.appendChild(o); });
+          }
+          // Sync key selectors to current song key
+          this.syncKeySelectors();
+          this.renderPiano();
+          this.renderFretboard('guitar');
+          this.bind();
+        },
+        syncKeySelectors() {
+          const ak = KeyDetector.activeKey(StateManager.activeSong(), StateManager.state.detectedKey);
+          if (ak) {
+            if (UIManager.dom.instrumentKeyRoot) UIManager.dom.instrumentKeyRoot.value = SHARP_NOTES[ak.tonic] || KEY_ROOTS[ak.tonic] || 'C';
+            if (UIManager.dom.instrumentKeyMode) UIManager.dom.instrumentKeyMode.value = ak.mode || 'major';
+          }
+        },
+        getScaleSet() {
+          const rootEl = UIManager.dom.instrumentKeyRoot;
+          const modeEl = UIManager.dom.instrumentKeyMode;
+          const rootName = rootEl?.value || 'C';
+          const mode = modeEl?.value || 'major';
+          const tonic = NOTE_TO_SEMITONE[rootName] ?? 0;
+          const intervals = SCALE_INTERVALS[mode] || SCALE_INTERVALS.major;
+          const scaleSet = new Set(intervals.map(i => (tonic + i) % 12));
+          return { tonic, scaleSet };
+        },
         bind() {
           UIManager.dom.circleRotateToggle?.addEventListener('change', () => this.renderCircle());
           UIManager.dom.circleHighlightToggle?.addEventListener('change', () => this.renderCircle());
           UIManager.dom.fretboardTuning?.addEventListener('change', (e) => this.renderFretboard(e.target.value));
           UIManager.dom.micTunerBtn?.addEventListener('click', () => Tuner.toggle());
+          // Key selector re-renders
+          UIManager.dom.instrumentKeyRoot?.addEventListener('change', () => { this.renderPiano(); this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar'); });
+          UIManager.dom.instrumentKeyMode?.addEventListener('change', () => { this.renderPiano(); this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar'); });
         },
         wedgePath(cx, cy, rOuter, rInner, startAngle, endAngle) {
           const startRad = (startAngle - 90) * Math.PI / 180; const endRad = (endAngle - 90) * Math.PI / 180;
@@ -3774,12 +4129,17 @@ Em -  C    -  G  -  D
         },
         renderPiano() {
           const keyboard = UIManager.dom.pianoKeyboard; if (!keyboard) return; keyboard.innerHTML = '';
+          const { tonic, scaleSet } = this.getScaleSet();
           const notes = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
           for (let octave = 3; octave <= 5; octave++) {
             for (let i = 0; i < 12; i++) {
               const isBlack = notes[i].includes('#') || notes[i].includes('b');
+              const pc = i; // pitch class 0-11
               const key = document.createElement('div');
-              key.className = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
+              let cls = `piano-key ${isBlack ? 'piano-key-black' : 'piano-key-white'}`;
+              if (pc === tonic) cls += ' key-root';
+              else if (scaleSet.has(pc)) cls += ' key-in-scale';
+              key.className = cls;
               const label = document.createElement('span');
               label.className = 'key-label';
               label.textContent = notes[i];
@@ -3869,6 +4229,7 @@ Em -  C    -  G  -  D
             });
           }
 
+          const { tonic, scaleSet } = this.getScaleSet();
           strings.forEach((stringData, stringIdx) => {
             const row = document.createElement('div');
             row.className = 'fret-string';
@@ -3879,7 +4240,8 @@ Em -  C    -  G  -  D
 
             for (let fret = 0; fret <= 15; fret++) {
               const cell = document.createElement('div');
-              cell.className = 'fret-cell';
+              const pc = (stringData.m + fret) % 12;
+              cell.className = 'fret-cell' + (pc === tonic ? ' fret-root' : scaleSet.has(pc) ? ' fret-in-scale' : '');
               if (fret === 0) {
                 cell.style.flex = "0 0 44px";
                 cell.style.width = "44px";
@@ -4482,27 +4844,35 @@ Em -  C    -  G  -  D
 
       const UIManager = {
         dom: {}, modalAction: null,
-        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "appVersion", "capoLabel"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarHelpBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
         switchView(viewName) {
           const workspace = document.querySelector(".workspace");
           if (workspace) workspace.dataset.view = viewName;
+          // Sync active state for all [data-view] buttons (top-nav, mobile-switcher, sidebar)
           document.querySelectorAll("[data-view]").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.view === viewName);
           });
           if (viewName === "theory") InstrumentManager.renderCircle();
           if (viewName === "instruments") {
+            InstrumentManager.syncKeySelectors();
             InstrumentManager.renderPiano();
             InstrumentManager.renderFretboard(document.getElementById("fretboardTuning")?.value || "guitar");
           }
-          const viewLabels = {
-            editor: t("navEditor", "Editor"),
-            library: t("navLibrary", "Library"),
-            tools: t("navTools", "Tools & Export"),
-            theory: t("navTheory", "Theory"),
-            instruments: t("navPlay", "Play")
-          };
-          if (viewLabels[viewName]) this.toast(t("switchedTo", "Switched to ") + viewLabels[viewName]);
+          // Close sidebar if open
+          this.closeSidebar();
+        },
+        openSidebar() {
+          this.dom.sidebarDrawer?.classList.add('open');
+          this.dom.sidebarBackdrop?.classList.add('open');
+          this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+        },
+        closeSidebar() {
+          this.dom.sidebarDrawer?.classList.remove('open');
+          this.dom.sidebarBackdrop?.classList.remove('open');
+          this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
         },
         applyLanguage() {
           const lang = StateManager.state?.settings?.language || "en";
@@ -4686,10 +5056,43 @@ Em -  C    -  G  -  D
           const add = (el, type, fn) => el?.addEventListener(type, fn);
           add(this.dom.themeToggle, "click", () => { AudioEngine.playClick(); StateManager.state.settings.theme = StateManager.state.settings.theme === "dark" ? "light" : "dark"; StateManager.saveNow(t("themeSaved", "Theme saved")); ThemeManager.apply(); this.toast(t("themeUpdated", "Theme updated: ") + StateManager.state.settings.theme); });
           add(this.dom.settingsButton, "click", () => { AudioEngine.playClick(); this.openSettings(); });
-          add(this.dom.helpButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: t("aboutTitle", "About Sonata"), confirmText: t("aboutConfirm", "Close"), fields: [{ type: "custom", html: t("aboutHtml", `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> (/səˈnɑːtə/) comes from Latin <em>sonare</em>, meaning "to sound" or "a piece played."</p><p>Created by <strong>Jethro Frane</strong>, a church musician, Sonata was built to help church musicians and bands collaborate seamlessly and eliminate stage friction.</p><p style="margin-bottom:6px; font-weight:700;">Core Objectives:</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size: 0.85rem;"><li><strong>100% Offline:</strong> Works on stages with zero Wi-Fi or cellular coverage.</li><li><strong>Centralized Hub:</strong> Charts, metronomes, and theory tools in one app.</li><li><strong>Instant Transposition:</strong> Adapt to any vocal range on the fly.</li><li><strong>Number Systems:</strong> Master Nashville Numbers and Roman Numerals effortlessly.</li><li><strong>Zero-Friction Sharing:</strong> Share configurations via QR codes—no accounts.</li><li><strong>Stage Ready:</strong> True-black presentation modes that save battery and reduce glare.</li><li><strong>Robust Exports:</strong> Multi-column PDF and PNG generation.</li><li><strong>Theory Tools:</strong> Interactive Circle of 5ths and Virtual Fretboard.</li><li><strong>Setlists:</strong> Compile songs and share entire sets securely.</li><li><strong>Privacy First:</strong> Your library stays securely local on your device.</li></ul><p style="margin-top:16px; font-style:italic; font-weight:700; text-align:center; color:var(--accent); font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." <br>— 1 Corinthians 10:31 (NIV)</p></div>`) }] }); });
+          add(this.dom.helpButton, "click", () => {
+            AudioEngine.playClick();
+            const aboutHtml = t("aboutHtml", `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> comes from Latin <em>sonare</em>, meaning "to sound."</p><p>Created by <strong>Jethro Frane</strong>, Sonata was built to help church musicians collaborate seamlessly and eliminate stage friction.</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size:0.85rem;"><li><strong>100% Offline</strong></li><li><strong>Centralized Hub</strong></li><li><strong>Instant Transposition</strong></li><li><strong>Number Systems</strong></li><li><strong>Zero-Friction Sharing</strong></li><li><strong>Stage Ready</strong></li><li><strong>Robust Exports</strong></li><li><strong>Theory Tools</strong></li></ul><p style="margin-top:16px;font-style:italic;font-weight:700;text-align:center;color:var(--accent);font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Cor 10:31</p></div>`);
+            const changelogHtml = '<div id="changelogSection" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;"><p style="font-weight:700;font-size:0.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 10px;">Release Notes</p><div id="changelogContent" style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>';
+            this.openModal({ title: t("aboutTitle", "About Sonata"), confirmText: t("aboutConfirm", "Close"), fields: [{ type: "custom", html: aboutHtml + changelogHtml }] });
+            fetch('update_log.json').then(r => r.json()).then(logs => {
+              const el = document.getElementById('changelogContent'); if (!el) return;
+              el.innerHTML = logs.map(v => `<details style="margin-bottom:6px;border:1px solid var(--line);border-radius:6px;overflow:hidden;"><summary style="padding:8px 12px;cursor:pointer;font-weight:700;font-size:0.83rem;background:var(--surface-2);color:var(--text);display:flex;justify-content:space-between;list-style:none;"><span>v${v.version}</span><span style="color:var(--muted);font-weight:400;">${v.date}</span></summary><p style="font-style:italic;color:var(--accent);margin:8px 14px 4px;font-size:0.82rem;">${v.whatsNew||''}</p><ul style="padding:0 14px 8px 28px;margin:0;line-height:1.8;">${(v.changes||[]).map(c=>`<li>${c}</li>`).join('')}</ul></details>`).join('');
+            }).catch(() => { const el = document.getElementById('changelogContent'); if (el) el.textContent = 'No release notes available offline.'; });
+          });
           add(this.dom.presentationButton, "click", () => { AudioEngine.playClick(); PresentationManager.open(); });
           add(this.dom.langSelect, "change", () => { AudioEngine.playClick(); StateManager.state.settings.language = this.dom.langSelect.value; StateManager.saveNow(t("languageSaved", "Language saved")); this.applyLanguage(); });
           
+          // Sidebar open/close
+          add(this.dom.menuToggleBtn, 'click', () => { AudioEngine.playClick(); this.openSidebar(); });
+          add(this.dom.sidebarCloseBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); });
+          add(this.dom.sidebarBackdrop, 'click', () => { this.closeSidebar(); });
+          // Sidebar action buttons (mirror desktop buttons)
+          add(this.dom.sidebarDriveSyncBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.googleSyncButton?.click(); });
+          add(this.dom.sidebarHelpBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.helpButton?.click(); });
+          add(this.dom.sidebarSettingsBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.settingsButton?.click(); });
+          add(this.dom.sidebarPresentBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); PresentationManager.open(); });
+          add(this.dom.sidebarInstallBtn, 'click', () => { this.dom.headerInstallBtn?.click(); });
+          // Mobile topbar quick-action duplicates
+          add(this.dom.themeToggleMobile, 'click', () => { this.dom.themeToggle?.click(); });
+          add(this.dom.presentationButtonMobile, 'click', () => { AudioEngine.playClick(); PresentationManager.open(); });
+          // Sidebar language selector (mirrors #langSelect)
+          if (this.dom.langSelectSidebar) {
+            this.dom.langSelectSidebar.value = StateManager.state.settings.language || 'en';
+            add(this.dom.langSelectSidebar, 'change', () => {
+              AudioEngine.playClick();
+              StateManager.state.settings.language = this.dom.langSelectSidebar.value;
+              if (this.dom.langSelect) this.dom.langSelect.value = this.dom.langSelectSidebar.value;
+              StateManager.saveNow(t('languageSaved', 'Language saved'));
+              this.applyLanguage();
+            });
+          }
           document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); this.switchView(b.dataset.view); }));
           add(this.dom.copyLiveChartBtn, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
  
@@ -4762,7 +5165,7 @@ Em -  C    -  G  -  D
           n.style.display = 'flex'; this.dom.slPrev.disabled = s.index <= 0; this.dom.slNext.disabled = s.index >= set.items.length - 1; this.dom.slTitle.textContent = `${set.title} (${s.index + 1}/${set.items.length})`;
           if (this.dom.exportPdfButton) Icon.set(this.dom.exportPdfButton, "pdf", "Set PDF", false);
         },
-        renderAll() { const song = StateManager.activeSong(); if (this.dom.keySelect) this.dom.keySelect.value = song?.manualKey || "auto"; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); if (this.dom.capoSelect) this.dom.capoSelect.value = String(StateManager.state.capo); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); this.updateScrollControls(); this.updateSetlistNav(); this.updateAnalysis(); InstrumentManager.renderCircle(); this.renderLibrarySoon(); if (this.dom.theoryKeyInput) this.dom.theoryKeyInput.value = KeyDetector.activeKey(song, StateManager.state.detectedKey)?.name || ""; },
+        renderAll() { const song = StateManager.activeSong(); if (this.dom.keySelect) this.dom.keySelect.value = song?.manualKey || "auto"; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(StateManager.state.transposeDelta); if (this.dom.capoSelect) this.dom.capoSelect.value = String(StateManager.state.capo); MetronomeManager.renderBeats(); MetronomeManager.updateUi(); this.updateScrollControls(); this.updateSetlistNav(); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); InstrumentManager.renderPiano(); InstrumentManager.renderFretboard(this.dom.fretboardTuning?.value || 'guitar'); this.renderLibrarySoon(); if (this.dom.theoryKeyInput) this.dom.theoryKeyInput.value = KeyDetector.activeKey(song, StateManager.state.detectedKey)?.name || ""; },
         updateAnalysis() {
           const song = StateManager.activeSong(); if (!song) return; const chords = ChordParser.extractChords(song.body);
           let active = { root: "C", mode: "major", tonic: 0, name: "C major" }, detected = active;
@@ -5350,7 +5753,25 @@ Em -  C    -  G  -  D
         applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--ui-font", FONT_STACKS[s.uiFontFamily] || FONT_STACKS.system); document.documentElement.style.setProperty("--chart-font", FONT_STACKS[s.chartFontFamily] || FONT_STACKS.mono); document.documentElement.style.setProperty("--app-font-size", Util.clamp(s.appFontSize, 10, 24) + "px"); document.documentElement.style.setProperty("--editor-font", Util.clamp(s.editorFontSize, 8, 64) + "px"); document.documentElement.style.setProperty("--preview-font", Util.clamp(s.previewFontSize, 8, 48) + "px"); document.documentElement.style.setProperty("--editor-line", Util.clamp(s.editorLineHeight, 1.2, 2.8)); }
       };
 
-      const ThemeManager = { apply() { const theme = StateManager.state.settings.theme; document.documentElement.dataset.theme = theme; document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue"; if (UIManager.dom.themeToggle) Icon.set(UIManager.dom.themeToggle, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true); } };
+      const ThemeManager = {
+        apply() {
+          const theme = StateManager.state.settings.theme;
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue";
+          if (UIManager.dom.themeToggle) Icon.set(UIManager.dom.themeToggle, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
+          if (UIManager.dom.themeToggleMobile) Icon.set(UIManager.dom.themeToggleMobile, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
+          
+          // Dynamically swap light / dark icon variants for brand logos and favicons
+          const iconSrc = theme === "dark" ? "icon_dark.png" : "icon.png";
+          document.querySelectorAll(".brand-logo").forEach(img => {
+            if (img.getAttribute("src") !== iconSrc) img.src = iconSrc;
+          });
+          const appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
+          if (appleTouchIcon) appleTouchIcon.href = iconSrc;
+          const favicons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
+          favicons.forEach(fav => fav.href = iconSrc);
+        }
+      };
 
       const SongLibrary = {
         render() {
@@ -5487,13 +5908,35 @@ Em -  C    -  G  -  D
                 };
               }
             }
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v3'; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll([location.pathname]))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).then(res => { const clone = res.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }).catch(() => caches.match(e.request))); });"], { type: 'application/javascript' }))).catch(() => { });
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.register('./sw.js').catch(err => {
+                console.warn('ServiceWorker registration error:', err);
+              });
+            }
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
-            if (UIManager.dom.appVersion) {
-              fetch("version.json")
-                .then(res => res.json())
-                .then(data => { UIManager.dom.appVersion.textContent = "v" + data.version; })
-                .catch(() => { UIManager.dom.appVersion.textContent = "v1.0.0"; });
+            // Populate version display + sidebar version
+            const versionEl = UIManager.dom.appVersion;
+            const sidebarVersionEl = UIManager.dom.sidebarVersion;
+            fetch("version.json")
+              .then(res => res.json())
+              .then(data => {
+                const vStr = "v" + data.version;
+                if (versionEl) versionEl.textContent = vStr;
+                if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
+              })
+              .catch(() => {
+                if (versionEl) versionEl.textContent = "v1.0.0";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.0.0";
+              });
+            // Populate sidebar language select options
+            if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {
+              UIManager.dom.langSelect.querySelectorAll('option').forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt.value;
+                o.textContent = opt.textContent;
+                if (opt.selected) o.selected = true;
+                UIManager.dom.langSelectSidebar.appendChild(o);
+              });
             }
 
             const params = new URLSearchParams(window.location.search);

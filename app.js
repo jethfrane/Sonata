@@ -529,6 +529,7 @@ Em -  C    -  G  -  D
           "type-minus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M16 14h6"></path>',
           "type-plus": '<path d="M4 7V4h12v3"></path><path d="M10 20V4"></path><path d="M7 20h6"></path><path d="M19 11v6"></path><path d="M16 14h6"></path>',
           scroll: '<path d="M8 21h8"></path><path d="M12 17V3"></path><path d="m7 8 5-5 5 5"></path><path d="m7 12 5 5 5-5"></path>',
+          menu: '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>',
           wand: '<path d="m15 4 5 5"></path><path d="M14 5 3 16l5 5L19 10Z"></path><path d="M9 6 8 3"></path><path d="M18 14l3 1"></path>',
           x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
         },
@@ -2964,13 +2965,17 @@ Em -  C    -  G  -  D
           document.documentElement.dataset.theme = theme;
           document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue";
           if (UIManager.dom.themeToggle) Icon.set(UIManager.dom.themeToggle, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
-          // Dynamically swap light / dark icon variants
-          const iconSrc = theme === "dark" ? "icon_dark.png" : "icon_light.png";
+          if (UIManager.dom.themeToggleMobile) Icon.set(UIManager.dom.themeToggleMobile, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
+          
+          // Dynamically swap light / dark icon variants for brand logos and favicons
+          const iconSrc = theme === "dark" ? "icon_dark.png" : "icon.png";
           document.querySelectorAll(".brand-logo").forEach(img => {
             if (img.getAttribute("src") !== iconSrc) img.src = iconSrc;
           });
           const appleTouchIcon = document.querySelector('link[rel="apple-touch-icon"]');
           if (appleTouchIcon) appleTouchIcon.href = iconSrc;
+          const favicons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
+          favicons.forEach(fav => fav.href = iconSrc);
         }
       };
 
@@ -3109,7 +3114,11 @@ Em -  C    -  G  -  D
                 };
               }
             }
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(URL.createObjectURL(new Blob(["const CACHE = 'sonata-v5'; const ASSETS = ['index.html','style.css','app.js','icon.png','icon_light.png','icon_dark.png','version.json','update_log.json']; self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(a => location.pathname.replace(/\\/[^\\/]*$/, '/') + a)))); }); self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE ? caches.delete(k) : null)))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request).then(res => { const clone = res.clone(); if (e.request.method === 'GET') caches.open(CACHE).then(c => c.put(e.request, clone)); return res; }))); });"], { type: 'application/javascript' }))).catch(() => { });
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.register('./sw.js').catch(err => {
+                console.warn('ServiceWorker registration error:', err);
+              });
+            }
             UIManager.cache(); StateManager.init(); AudioEngine.setupListeners(); GoogleDriveSync.init();
             // Populate version display + sidebar version
             const versionEl = UIManager.dom.appVersion;
