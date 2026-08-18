@@ -462,6 +462,28 @@ Em -  C    -  G  -  D
           const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = name;
           document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 800);
         },
+        drawQrPatternPdf(text, x, y, size) {
+          if (!text) return "";
+          try {
+            const qr = QRCode.generate(text, 'L');
+            const count = qr.getModuleCount();
+            const cellSize = size / count;
+            let str = `q 0 0 0 rg\n`;
+            for (let r = 0; r < count; r++) {
+              for (let c = 0; c < count; c++) {
+                if (qr.isDark(r, c)) {
+                  const px = x + (c * cellSize);
+                  const py = y + size - ((r + 1) * cellSize);
+                  str += `${px.toFixed(2)} ${py.toFixed(2)} ${cellSize.toFixed(2)} ${cellSize.toFixed(2)} re f\n`;
+                }
+              }
+            }
+            str += `Q\n`;
+            return str;
+          } catch (e) {
+            return "";
+          }
+        },
         drawSimpleQrPattern(ctx, x, y, size) {
           const cells = 21;
           const cellSize = size / cells;
@@ -2271,9 +2293,33 @@ Em -  C    -  G  -  D
           let textBase = Util.titleOf(song) + (capo > 0 && StateManager.state.previewMode !== 'lyrics' ? ` [Capo ${capo}]` : "") + "\n"; if (song.artist) textBase += `By: ${song.artist}\n`; if (song.creator) textBase += `Arranged by: ${song.creator}\n`; if (song.links?.length) song.links.forEach(l => textBase += `Ref [${l.name}]: ${l.url}\n`); textBase += "\n" + exportBody;
           return { title: Util.titleOf(song), artist: song.artist || "", links: song.links || [], creator: song.creator || "", body: exportBody, rawBody: song.body, chordLineIndices, text: textBase, bpm: StateManager.state.settings.metronomeBpm, keyInfo: activeKey.name || "Unknown", modeName: modeName, capo: capo };
         },
+        async getActiveShareUrl() {
+          const isSet = Boolean(StateManager.state.activeSetlist.id && StateManager.state.libraryFilter === 'setlists');
+          let shareData = {};
+          if (isSet) {
+            const set = StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id);
+            if (!set) return null;
+            const setSongs = (set.items || []).map(item => StateManager.state.songs.find(s => s.id === item.songId)).filter(Boolean);
+            shareData = this.cleanSetlistData(set, setSongs);
+          } else {
+            const song = StateManager.activeSong();
+            if (!song) return null;
+            shareData = this.cleanSongData(song);
+          }
+          const compressed = await this.compressData(shareData);
+          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+          const short = await this.shortenUrl(directUrl).catch(() => null);
+          return short || directUrl;
+        },
         exportTxt() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".txt", "text/plain;charset=utf-8", p.text); UIManager.toast("TXT exported"); },
-        exportPng() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p)); UIManager.toast("PNG exported"); },
-        renderPng(payload) {
+        async exportPng() { 
+          UIManager.toast("Generating PNG... (this may take a moment)");
+          const shareUrl = await this.getActiveShareUrl();
+          const p = this.setlistPayloads()[0]; 
+          Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p, shareUrl)); 
+          UIManager.toast("PNG exported"); 
+        },
+        renderPng(payload, shareUrl) {
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
           const orientation = UIManager.dom.exportOrientation.value;
           const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -2403,7 +2449,11 @@ Em -  C    -  G  -  D
           ctx.stroke();
 
           // Render QR pattern
-          Util.drawSimpleQrPattern(ctx, qrX + 5, qrY + 5, qrBoxSize - 10);
+          if (shareUrl) {
+            QRCode.draw(ctx, shareUrl, qrX + 4, qrY + 4, qrBoxSize - 8, qrBoxSize - 8, { ecc: 'L', foreground: '#16181d', background: '#ffffff', margin: 1 });
+          } else {
+            Util.drawSimpleQrPattern(ctx, qrX + 5, qrY + 5, qrBoxSize - 10);
+          }
 
           ctx.fillStyle = mutedColor;
           ctx.font = `600 9px ${uiFont}`;
@@ -2513,8 +2563,15 @@ Em -  C    -  G  -  D
           for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
           return new Blob([bytes], { type: "image/png" });
         },
-        exportPdf() { const payloads = this.setlistPayloads(); const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads)); UIManager.toast("PDF exported"); },
-        createPdf(payloads) {
+        async exportPdf() { 
+          UIManager.toast("Generating PDF... (this may take a moment)");
+          const shareUrl = await this.getActiveShareUrl();
+          const payloads = this.setlistPayloads(); 
+          const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; 
+          Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads, shareUrl)); 
+          UIManager.toast("PDF exported"); 
+        },
+        createPdf(payloads, shareUrl) {
           const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
           let r = 0, g = 0.35, b = 0.82;
           try {
@@ -2720,23 +2777,24 @@ Em -  C    -  G  -  D
             const qrBoxX = pageWidth - margin - 46;
             const qrBoxY = pageHeight - 62;
             chrome += `q 1 1 1 rg 0.84 0.86 0.90 RG 0.75 w ${qrBoxX} ${qrBoxY} 44 44 re B Q\n` +
-              `q ${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\n` +
-              `${qrBoxX + 4} ${qrBoxY + 28} 12 12 re f\n` +
-              `${qrBoxX + 28} ${qrBoxY + 28} 12 12 re f\n` +
-              `${qrBoxX + 4} ${qrBoxY + 4} 12 12 re f\n` +
-              `1 1 1 rg\n` +
-              `${qrBoxX + 6} ${qrBoxY + 30} 8 8 re f\n` +
-              `${qrBoxX + 30} ${qrBoxY + 30} 8 8 re f\n` +
-              `${qrBoxX + 6} ${qrBoxY + 6} 8 8 re f\n` +
-              `${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\n` +
-              `${qrBoxX + 8} ${qrBoxY + 32} 4 4 re f\n` +
-              `${qrBoxX + 32} ${qrBoxY + 32} 4 4 re f\n` +
-              `${qrBoxX + 8} ${qrBoxY + 8} 4 4 re f\n` +
-              `${qrBoxX + 18} ${qrBoxY + 18} 6 6 re f\n` +
-              `${qrBoxX + 26} ${qrBoxY + 12} 8 4 re f\n` +
-              `${qrBoxX + 18} ${qrBoxY + 6} 6 6 re f\n` +
-              `Q\n` +
-              `q 0.45 0.48 0.52 rg BT /F3 6.5 Tf ${qrBoxX + 2} ${qrBoxY - 8} Td (Live Chart QR) Tj ET Q\n`;
+                      `q 0 0 0 rg 0.5 w ${qrBoxX + 4} ${qrBoxY + 4} 36 36 re S Q\n`;
+            if (shareUrl) {
+              chrome += Util.drawQrPatternPdf(shareUrl, qrBoxX + 6, qrBoxY + 6, 32);
+            } else {
+              chrome += `q 0 0 0 rg\n` +
+                `${qrBoxX + 6} ${qrBoxY + 30} 8 8 re f\n` +
+                `${qrBoxX + 30} ${qrBoxY + 30} 8 8 re f\n` +
+                `${qrBoxX + 6} ${qrBoxY + 6} 8 8 re f\n` +
+                `${r.toFixed(2)} ${g.toFixed(2)} ${b.toFixed(2)} rg\n` +
+                `${qrBoxX + 8} ${qrBoxY + 32} 4 4 re f\n` +
+                `${qrBoxX + 32} ${qrBoxY + 32} 4 4 re f\n` +
+                `${qrBoxX + 8} ${qrBoxY + 8} 4 4 re f\n` +
+                `${qrBoxX + 18} ${qrBoxY + 18} 6 6 re f\n` +
+                `${qrBoxX + 26} ${qrBoxY + 12} 8 4 re f\n` +
+                `${qrBoxX + 18} ${qrBoxY + 6} 6 6 re f\n` +
+                `Q\n`;
+            }
+            chrome += `q 0.45 0.48 0.52 rg BT /F3 6.5 Tf ${qrBoxX + 2} ${qrBoxY - 8} Td (Live Chart QR) Tj ET Q\n`;
 
             chrome += `q 0.88 0.90 0.92 RG 1 w ${margin} 44 m ${pageWidth - margin} 44 l S Q\n` +
               `0.48 0.50 0.55 rg BT /F2 9 Tf ${margin} 28 Td (${this.pdfEscape(this.pdfTruncate(footerStr, 110))}) Tj ET\n0 g`;
@@ -4311,6 +4369,12 @@ Em -  C    -  G  -  D
 
           try {
             const url = new URL(rawValue);
+            // If it's a URL (like TinyURL or native Sonata URL), redirect the browser to it.
+            // This is the most reliable way to handle URL shorteners, which need resolving.
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+              window.location.href = rawValue;
+              return;
+            }
             const params = new URLSearchParams(url.search);
             const sParam = params.get('s') || params.get('share');
             if (sParam) {
