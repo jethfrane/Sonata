@@ -2973,15 +2973,40 @@ Em -  C    -  G  -  D
           ctx.fillText("Scan to import securely offline", 230, 565);
         },
 
-        async shortenUrl(url) {
+        async shortenUrl(compressed, baseUrl) {
+          // For large payloads: store data on dpaste → get a tiny ?paste=ID link
+          // For short payloads: use is.gd URL shortener
+          // Falls back to direct ?s= link if both fail
+          const directUrl = baseUrl + "?s=" + compressed;
           try {
-            const resp = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(url), { signal: AbortSignal.timeout(5000) });
-            if (!resp.ok) return null;
-            const short = (await resp.text()).trim();
-            return (short.startsWith('https://tinyurl.com/') || short.startsWith('http://tinyurl.com/')) ? short : null;
-          } catch (e) {
-            return null;
-          }
+            if (compressed.length > 300) {
+              // dpaste: stores raw compressed token, returns dpaste.com/XXXX
+              const formBody = new URLSearchParams();
+              formBody.append('content', compressed);
+              formBody.append('format', 'url');
+              const res = await fetch('https://dpaste.com/api/', {
+                method: 'POST',
+                body: formBody,
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                signal: AbortSignal.timeout(6000)
+              });
+              if (res.ok) {
+                const dpasteUrl = (await res.text()).trim();
+                const pasteId = dpasteUrl.substring(dpasteUrl.lastIndexOf('/') + 1).replace(/\/$/, '');
+                if (pasteId) return baseUrl + "?paste=" + pasteId;
+              }
+            } else {
+              // is.gd: shortens the full URL
+              const res = await fetch('https://is.gd/create.php?format=json&url=' + encodeURIComponent(directUrl), {
+                signal: AbortSignal.timeout(5000)
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.shorturl) return data.shorturl;
+              }
+            }
+          } catch (e) { }
+          return null; // fallback to directUrl handled by caller
         },
 
         async share(isSetlist = false) {
@@ -3001,7 +3026,8 @@ Em -  C    -  G  -  D
           }
 
           const compressed = await this.compressData(shareData);
-          const directUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+          const baseUrl = window.location.origin + window.location.pathname;
+          const directUrl = baseUrl + "?s=" + compressed;
 
           // Shorten first so QR, input, and native share all use the same single shortest URL
           UIManager.openModal({
@@ -3011,7 +3037,7 @@ Em -  C    -  G  -  D
             onConfirm: async () => { if (await this.copyText(shareUrl)) UIManager.toast("Share link copied!"); }
           });
 
-          const short = await this.shortenUrl(directUrl);
+          const short = await this.shortenUrl(compressed, baseUrl);
           const shareUrl = short || directUrl;
 
           const wrapper = document.getElementById('shareWrapper');
@@ -3619,9 +3645,10 @@ Em -  C    -  G  -  D
             });
 
             const compressed = await ExportManager.compressData(shareData);
-            const finalUrl = window.location.origin + window.location.pathname + "?s=" + compressed;
+            const baseUrl = window.location.origin + window.location.pathname;
+            const finalUrl = baseUrl + "?s=" + compressed;
 
-            const short = await ExportManager.shortenUrl(finalUrl);
+            const short = await ExportManager.shortenUrl(compressed, baseUrl);
             const shareUrl = short || finalUrl;
 
             const wrapper = document.getElementById('bulkShareWrapper');
@@ -4293,6 +4320,7 @@ Em -  C    -  G  -  D
             const url = new URL(rawValue);
             const params = new URLSearchParams(url.search);
             const sParam = params.get('s') || params.get('share');
+            const pasteParam = params.get('paste');
             if (sParam) {
               ExportManager.decompressData(sParam).then(jsonStr => {
                 const data = JSON.parse(jsonStr);
@@ -4300,6 +4328,14 @@ Em -  C    -  G  -  D
               }).catch(err => {
                 UIManager.toast("Invalid Sonata QR Code");
               });
+              return;
+            }
+            if (pasteParam) {
+              fetch(`https://dpaste.com/${pasteParam}.txt`)
+                .then(r => r.ok ? r.text() : Promise.reject())
+                .then(raw => ExportManager.decompressData(raw.trim()))
+                .then(jsonStr => App.handleImport(JSON.parse(jsonStr)))
+                .catch(() => UIManager.toast("Could not fetch shared link. Check connection."));
               return;
             }
           } catch (e) {
