@@ -254,8 +254,6 @@
       align-items: center;
       justify-content: center;
       border-radius: 8px;
-      border: 1px solid var(--line);
-      background: var(--surface-2);
       color: var(--text);
       cursor: pointer;
       transition: background 0.15s ease, transform 0.1s ease;
@@ -1988,10 +1986,10 @@
       }
     }
 
-    /* Tablet (768px – 1023px): hide top-nav pill + top-actions; show hamburger */
+    /* Tablet (768px – 1023px): hide top-actions; show hamburger & top-nav */
     @media (min-width: 768px) and (max-width: 1023px) {
       .top-nav {
-        display: none !important;
+        display: flex !important;
       }
       .top-actions {
         display: none !important;

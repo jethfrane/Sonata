@@ -18,6 +18,16 @@
   <!-- Apple Touch Icon (for iOS / Safari Home Screen) -->
   <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
 
+  <!-- Dynamic Favicon Early Script -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('sonata:v12:settings') ? JSON.parse(localStorage.getItem('sonata:v12:settings')).theme : null;
+      const isDark = theme === 'dark' || (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      const iconSrc = isDark ? 'icon_dark.png' : 'icon.png';
+      document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').forEach(l => l.href = iconSrc);
+    })();
+  </script>
+
   <meta property="og:title" content="Sonata Master">
   <meta property="og:description"
     content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
@@ -76,6 +86,10 @@
 
     <!-- Language + version in sidebar -->
     <div class="sidebar-footer">
+      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer" hidden>
+        <img id="sidebarUserAvatar" src="" alt="Profile" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer;" title="Change Avatar">
+        <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);"></span>
+      </div>
       <label class="sidebar-label" for="langSelectSidebar">Language</label>
       <select id="langSelectSidebar" class="select" style="width:100%;"></select>
       <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
@@ -106,6 +120,10 @@
 
       <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
+        <div style="display:flex; align-items:center; gap:6px; margin-right:4px;" id="topbarProfileContainer" hidden>
+          <img id="topbarUserAvatar" src="" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer;" title="Change Avatar">
+          <span id="topbarUserGreeting" style="font-size:0.82rem; font-weight:600; display:none;"></span>
+        </div>
         <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
         <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
         <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
@@ -121,6 +139,7 @@
 
       <!-- Mobile quick actions row: theme toggle + present only -->
       <div class="topbar-mobile-actions">
+        <img id="mobileUserAvatar" src="" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer;" title="Change Avatar" hidden>
         <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle theme"></button>
         <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button">Present</button>
       </div>
