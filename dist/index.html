@@ -2961,7 +2961,133 @@
       100% { top: 0; opacity: 0.8; }
     }
 
-
+    /* AI Co-Writer Styles */
+    .ai-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 900;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+    }
+    
+    .ai-fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+    
+    .ai-chat-panel {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      width: 360px;
+      height: 500px;
+      max-height: calc(100vh - 120px);
+      background: color-mix(in srgb, var(--surface) 95%, transparent);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      z-index: 900;
+      overflow: hidden;
+      transition: opacity 0.3s, transform 0.3s;
+      transform-origin: bottom right;
+    }
+    
+    .ai-chat-panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.9) translateY(20px);
+    }
+    
+    .ai-chat-header {
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .ai-chat-history {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 0.9rem;
+    }
+    
+    .ai-message {
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    
+    .ai-message.assistant {
+      background: var(--surface-2);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .ai-message.user {
+      background: var(--accent);
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .ai-chat-input-area {
+      padding: 12px;
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+      display: flex;
+      gap: 8px;
+    }
+    
+    .ai-chat-input-area textarea {
+      flex: 1;
+      resize: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      background: var(--surface-2);
+      color: var(--text);
+      outline: none;
+      font-family: inherit;
+    }
+    
+    .ai-chat-input-area textarea:focus {
+      border-color: var(--accent);
+    }
+    
+    @media (max-width: 600px) {
+      .ai-chat-panel {
+        width: calc(100% - 32px);
+        right: 16px;
+        bottom: 86px;
+      }
+      .ai-fab {
+        right: 16px;
+        bottom: 16px;
+      }
+    }
 
 </style>
 </head>
@@ -3460,6 +3586,32 @@
     <pre id="printBody"></pre>
     <footer id="printFooter"></footer>
   </section>
+
+  <!-- AI Assistant FAB and Panel -->
+  <button id="aiFabButton" class="ai-fab" title="AI Co-Writer" aria-label="Open AI Assistant">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+  </button>
+
+  <aside id="aiChatPanel" class="ai-chat-panel hidden">
+    <div class="ai-chat-header">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        <h2 style="margin:0; font-size:1.1rem; font-weight:700;">AI Co-Writer</h2>
+      </div>
+      <button id="aiCloseButton" class="icon-button ghost" data-icon="x" type="button" aria-label="Close AI" style="min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div id="aiChatHistory" class="ai-chat-history">
+      <div class="ai-message assistant">
+        <p style="margin:0;">Hi! I'm your AI co-writer. I can read your current chord chart and help you write, arrange, transpose, or format lyrics. How can I help?</p>
+      </div>
+    </div>
+    <div class="ai-chat-input-area">
+      <textarea id="aiChatInput" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2"></textarea>
+      <button id="aiSendButton" class="button primary" type="button" title="Send (Enter)">Send</button>
+    </div>
+  </aside>
 
   <script>
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -8077,6 +8229,126 @@ Em -  C    -  G  -  D
 
       document.addEventListener("DOMContentLoaded", () => App.init());
     })();
+
+/* AI Co-Writer Logic */
+(() => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const aiFab = document.getElementById('aiFabButton');
+    const aiPanel = document.getElementById('aiChatPanel');
+    const aiClose = document.getElementById('aiCloseButton');
+    const aiInput = document.getElementById('aiChatInput');
+    const aiSend = document.getElementById('aiSendButton');
+    const aiHistory = document.getElementById('aiChatHistory');
+    
+    if (!aiFab || !aiPanel) return;
+
+    // Toggle Panel
+    const togglePanel = () => {
+      aiPanel.classList.toggle('hidden');
+      if (!aiPanel.classList.contains('hidden')) {
+        aiInput.focus();
+      }
+    };
+    
+    aiFab.addEventListener('click', togglePanel);
+    aiClose.addEventListener('click', () => aiPanel.classList.add('hidden'));
+    
+    // Load chat history
+    try {
+      const savedChat = localStorage.getItem('sonata_ai_chat');
+      if (savedChat) {
+        aiHistory.innerHTML = savedChat;
+      }
+    } catch(e) {}
+    
+    const saveChat = () => {
+      localStorage.setItem('sonata_ai_chat', aiHistory.innerHTML);
+    };
+    
+    const appendMessage = (text, sender) => {
+      const div = document.createElement('div');
+      div.className = `ai-message ${sender}`;
+      
+      // Handle codeblocks specifically for markdown
+      let formattedText = text;
+      // Simple escape for html
+      formattedText = formattedText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      // format markdown bold/italic
+      formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      
+      // format basic code blocks
+      formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface); padding:8px; border-radius:6px; overflow-x:auto; font-family:var(--chart-font); font-size:0.8rem; margin:8px 0; border:1px solid var(--line);">$1</pre>');
+      formattedText = formattedText.replace(/`([^`]+)`/g, '<code style="background:color-mix(in srgb, var(--text) 10%, transparent); padding:2px 4px; border-radius:4px; font-family:var(--chart-font); font-size:0.85em;">$1</code>');
+      
+      // Convert newlines to breaks outside of pre tags
+      formattedText = formattedText.split(/(<pre[\s\S]*?<\/pre>)/).map(part => {
+        if (part.startsWith('<pre')) return part;
+        return part.replace(/\n/g, '<br/>');
+      }).join('');
+
+      div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
+      aiHistory.appendChild(div);
+      aiHistory.scrollTop = aiHistory.scrollHeight;
+      saveChat();
+    };
+    
+    const askAI = async () => {
+      const prompt = aiInput.value.trim();
+      if (!prompt) return;
+      
+      appendMessage(prompt, 'user');
+      aiInput.value = '';
+      
+      const typingIndicator = document.createElement('div');
+      typingIndicator.className = 'ai-message assistant';
+      typingIndicator.innerHTML = '<div style="margin:0; color: var(--muted);"><em>Thinking... 🎵</em></div>';
+      aiHistory.appendChild(typingIndicator);
+      aiHistory.scrollTop = aiHistory.scrollHeight;
+      
+      // Grab current song context
+      const songBody = document.getElementById('songBody');
+      const context = songBody ? songBody.value : "";
+      
+      try {
+        const response = await fetch('/api/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, context })
+        });
+        
+        typingIndicator.remove();
+        
+        if (response.status === 429) {
+          const errData = await response.json();
+          appendMessage(errData.error, 'assistant');
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error('Server returned ' + response.status);
+        }
+        
+        const data = await response.json();
+        appendMessage(data.reply, 'assistant');
+        
+      } catch (err) {
+        typingIndicator.remove();
+        console.error(err);
+        appendMessage("Oops, something went wrong connecting to the AI. Ensure you are connected to the internet and try again.", 'assistant');
+      }
+    };
+    
+    aiSend.addEventListener('click', askAI);
+    aiInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        askAI();
+      }
+    });
+  });
+})();
 
 </script>
 </body>
