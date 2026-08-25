@@ -60,8 +60,10 @@ ${context || "(The editor is currently empty)"}
 
     // Handle Rate Limiting gracefully
     if (response.status === 429) {
+      const errorText = await response.text();
       return res.status(429).json({ 
-        error: "Whoa there! I'm getting a lot of requests right now. Let me take a quick breather—please try asking again in a minute! 🎵" 
+        error: "Whoa there! I'm getting a lot of requests right now. Let me take a quick breather—please try asking again in a minute! 🎵",
+        details: errorText
       });
     }
 
