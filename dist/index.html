@@ -1672,14 +1672,22 @@
     }
 
     .modal-fields {
-      padding: 8px 24px 20px;
+      padding: 8px clamp(12px, 3vw, 24px) 20px;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
       gap: 12px;
       flex: 1;
       min-height: 0;
     }
+
+    .modal-fields table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
 
     .modal-actions {
       padding: 14px 24px;
@@ -2059,87 +2067,232 @@
       color: var(--p-slash);
     }
 
-    /* ─── Responsive breakpoints ─── */
+    /* ─── Responsive Breakpoints & Multi-Device Architecture ─── */
 
-    /* Desktop-only (>= 1024px): show top-nav pill and full top-actions bar */
-    @media (min-width: 1024px) {
-      .top-nav {
-        display: flex;
+    /* ── 1. Extra Large Desktop (≥ 1440px) ── */
+    @media (min-width: 1440px) {
+      .workspace {
+        max-width: 1560px;
+        padding: 20px 32px;
+        gap: 16px;
       }
-      .top-actions {
-        display: flex;
+
+      .tools-grid-layout {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
       }
-      .topbar-menu-btn {
-        display: none !important;
+
+      .editor-split-container {
+        grid-template-columns: minmax(380px, 1fr) minmax(460px, 1.35fr);
+        gap: 20px;
+        padding: 16px 20px;
       }
-      .topbar-mobile-actions {
-        display: none !important;
+
+      .library-list {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       }
-      .mobile-view-switcher {
-        display: none !important;
+
+      .topbar {
+        padding: 10px 28px;
+      }
+
+      .top-nav-btn {
+        padding: 0 16px;
+        font-size: 0.88rem;
       }
     }
 
-    /* Intermediate Desktop (1024px – 1320px): compact topbar elements so everything fits gracefully */
-    @media (min-width: 1024px) and (max-width: 1320px) {
+    /* ── 2. Desktop & Laptop Common (≥ 1024px) ── */
+    @media (min-width: 1024px) {
+      .top-nav {
+        display: flex !important;
+      }
+
+      .top-actions {
+        display: flex !important;
+      }
+
+      .topbar-menu-btn {
+        display: none !important;
+      }
+
+      .topbar-mobile-actions {
+        display: none !important;
+      }
+
+      .mobile-view-switcher {
+        display: none !important;
+      }
+
+      .mobile-editor-mode-toggle {
+        display: none !important;
+      }
+
+      .desktop-preview-mode-switch {
+        display: inline-flex !important;
+      }
+
+      .editor-split-container {
+        display: grid !important;
+      }
+
+      .editor-pane-left,
+      .editor-pane-right {
+        display: flex !important;
+      }
+    }
+
+    /* ── 3. Standard Laptop / Small Desktop (1024px – 1439px) ── */
+    @media (min-width: 1024px) and (max-width: 1439px) {
       .topbar {
-        gap: 6px;
-        padding-left: 8px;
-        padding-right: 8px;
+        gap: 8px;
+        padding: 8px 14px;
       }
+
       .brand {
-        gap: 6px;
+        gap: 8px;
       }
+
+      .brand-title {
+        font-size: 1.05rem;
+      }
+
       .brand-subtitle {
         display: none;
       }
+
       .top-nav {
-        gap: 2px;
-        padding: 2px;
+        gap: 3px;
+        padding: 3px;
       }
+
       .top-nav-btn {
-        padding: 0 7px;
-        font-size: 0.78rem;
+        padding: 0 10px;
+        font-size: 0.82rem;
+        min-height: 32px;
       }
+
       .top-actions {
-        gap: 5px;
+        gap: 6px;
       }
+
       .top-actions .button:not(#presentationButton) {
-        padding: 0 7px;
-        font-size: 0.78rem;
+        padding: 0 8px;
+        font-size: 0.8rem;
+        min-height: 32px;
       }
+
       #topbarUserGreeting {
-        max-width: 80px;
+        max-width: 90px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
+      .tools-grid-layout {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 14px;
+      }
+
+      .editor-split-container {
+        grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.2fr);
+        gap: 14px;
+        padding: 10px 12px;
+      }
     }
 
-    /* Tablet (768px – 1023px): hide top-actions; show hamburger & top-nav */
+    /* ── 4. Tablet Range (768px – 1023px) ── */
     @media (min-width: 768px) and (max-width: 1023px) {
-      .top-nav {
-        display: flex !important;
+      :root {
+        --panel-pad: 14px;
       }
-      .top-actions {
-        display: none !important;
+
+      .topbar {
+        padding: 8px 16px;
+        gap: 12px;
       }
+
       .topbar-menu-btn {
         display: inline-flex !important;
       }
+
+      .top-nav {
+        display: flex !important;
+        padding: 3px;
+        gap: 3px;
+      }
+
+      .top-nav-btn {
+        padding: 0 8px;
+        font-size: 0.78rem;
+        min-height: 30px;
+      }
+
+      .top-actions {
+        display: none !important;
+      }
+
       .topbar-mobile-actions {
         display: flex !important;
         margin-left: auto;
         gap: 8px;
+        align-items: center;
       }
+
       .mobile-view-switcher {
         display: none !important;
       }
-      .topbar {
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .workspace {
+        padding: 12px 16px 24px;
         gap: 12px;
+      }
+
+      .tools-grid-layout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .library-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .editor-split-container {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+        gap: 12px;
+        padding: 10px;
+      }
+
+      .editor-pane-left,
+      .editor-pane-right {
+        display: flex !important;
+      }
+
+      .desktop-preview-mode-switch {
+        display: inline-flex !important;
+      }
+
+      .mobile-editor-mode-toggle {
+        display: none !important;
+      }
+
+      .piano-key-white {
+        width: clamp(40px, 4.2vw, 54px);
+      }
+
+      .piano-key-black {
+        width: clamp(26px, 2.6vw, 34px);
+        margin-left: clamp(-13px, -1.3vw, -17px);
+        margin-right: clamp(-13px, -1.3vw, -17px);
       }
     }
 
+    /* ── 5. All Mobile Screens (≤ 767px) ── */
     @media (max-width: 767px) {
       :root {
         --panel-pad: 12px;
@@ -2162,10 +2315,11 @@
         display: flex !important;
         margin-left: auto;
         gap: 6px;
+        align-items: center;
       }
 
       .mobile-view-switcher {
-        display: grid;
+        display: grid !important;
       }
 
       .topbar {
@@ -2175,7 +2329,7 @@
         padding-bottom: 8px;
         padding-left: calc(12px + env(safe-area-inset-left, 0px));
         padding-right: calc(12px + env(safe-area-inset-right, 0px));
-        gap: 10px;
+        gap: 8px;
       }
 
       .brand {
@@ -2183,7 +2337,7 @@
       }
 
       .brand-title {
-        font-size: 0.98rem;
+        font-size: 1rem;
       }
 
       .brand-subtitle {
@@ -2192,6 +2346,7 @@
 
       .workspace {
         padding: 8px 8px calc(76px + env(safe-area-inset-bottom, 0px));
+        gap: 10px;
       }
 
       .editor-split-container {
@@ -2208,7 +2363,7 @@
         display: none !important;
       }
 
-      /* Pane visibility based on data-mobile-pane on editor-panel */
+      /* Pane visibility based on data-mobile-pane */
       .editor-panel[data-mobile-pane="edit"] .editor-pane-left {
         display: flex !important;
       }
@@ -2239,33 +2394,33 @@
       .editor-placeholder {
         padding: 18px 14px;
         justify-content: flex-start;
-        padding-top: 24px;
+        padding-top: 20px;
       }
 
       .editor-placeholder h3 {
-        font-size: 1.15rem;
+        font-size: 1.1rem;
         margin-bottom: 6px;
       }
 
       .editor-placeholder p {
-        font-size: 0.85rem;
-        margin-bottom: 12px;
+        font-size: 0.84rem;
+        margin-bottom: 10px;
         line-height: 1.4;
       }
 
       .editor-placeholder ul {
-        font-size: 0.82rem;
-        line-height: 1.6;
+        font-size: 0.8rem;
+        line-height: 1.55;
       }
 
       .editor-placeholder li {
         margin-bottom: 4px;
-        gap: 8px;
+        gap: 6px;
       }
 
       .editor-placeholder code {
-        padding: 2px 6px;
-        min-width: 44px;
+        padding: 2px 5px;
+        min-width: 40px;
       }
 
       .library-list {
@@ -2274,6 +2429,7 @@
 
       .tools-grid-layout {
         grid-template-columns: 1fr;
+        gap: 12px;
       }
 
       .editor-toolbar {
@@ -2292,10 +2448,6 @@
         flex-wrap: wrap;
         gap: 6px;
         align-items: center;
-      }
-
-      .mobile-editor-mode-toggle {
-        display: inline-flex !important;
       }
 
       .mobile-editor-mode-toggle .tab-button {
@@ -2321,18 +2473,16 @@
         height: 15px;
       }
 
-      .toolbar .button-label {
-        display: inline-block;
-      }
-
       .song-title-input {
         min-height: 44px;
         padding: 8px 10px 4px;
+        font-size: 1.05rem;
       }
 
       .textarea {
-        min-height: calc(100dvh - 230px);
+        min-height: calc(100dvh - 250px);
         padding: 12px;
+        font-size: 0.88rem;
       }
 
       .metric-grid,
@@ -2341,63 +2491,24 @@
         grid-template-columns: 1fr;
       }
 
-      .presentation-top {
-        flex-wrap: wrap;
-      }
-
-      .presentation-controls {
-        width: 100%;
-        justify-content: space-between;
-      }
-
       .modal {
-        max-height: 88vh;
+        max-height: calc(100dvh - 32px);
+        width: calc(100vw - 20px);
+        margin: 10px auto;
       }
 
       .toast-host {
-        bottom: max(78px, calc(74px + env(safe-area-inset-bottom)));
-      }
-    }
-
-    @media (max-width: 480px) {
-      .topbar {
-        padding-top: calc(8px + env(safe-area-inset-top, 0px));
-        padding-bottom: 8px;
-        padding-left: calc(10px + env(safe-area-inset-left, 0px));
-        padding-right: calc(10px + env(safe-area-inset-right, 0px));
-        gap: 6px;
+        bottom: max(78px, calc(74px + env(safe-area-inset-bottom, 0px)));
       }
 
-      .brand-mark {
-        width: 24px;
-        height: 24px;
-        font-size: 12px;
-      }
-
-      .brand-title {
-        font-size: 1.05rem;
-      }
-
-      .top-actions .button {
-        padding: 0 8px;
-        min-height: 36px;
-      }
-
-      .top-actions .icon-button {
-        width: 36px;
-        height: 36px;
-      }
-    }
-
-    @media (max-width: 767px) {
       .presentation-text {
         font-size: calc(var(--presentation-font) * 0.55) !important;
       }
 
       .presentation-stage {
-        padding: 16px;
-        padding-top: calc(90px + env(safe-area-inset-top));
-        padding-bottom: 30vh;
+        padding: 14px;
+        padding-top: calc(84px + env(safe-area-inset-top, 0px));
+        padding-bottom: 25vh;
       }
 
       .presentation-top {
@@ -2408,7 +2519,7 @@
 
       .presentation-controls {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         gap: 4px;
         width: 100%;
       }
@@ -2420,14 +2531,192 @@
       }
 
       .presentation-controls-bottom {
-        padding: 4px 8px;
-        gap: 4px;
-        bottom: 12px;
+        padding: 6px 10px;
+        gap: 6px;
+        bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 95vw;
       }
 
       .presentation-controls-bottom .icon-button {
         width: 36px;
         height: 36px;
+      }
+
+      .circle-container {
+        max-width: min(85vw, 340px);
+      }
+
+      .piano-key-white {
+        width: 38px;
+        padding-bottom: 8px;
+      }
+
+      .piano-key-white .key-label {
+        font-size: 0.75rem;
+      }
+
+      .piano-key-black {
+        width: 24px;
+        margin-left: -12px;
+        margin-right: -12px;
+        padding-bottom: 6px;
+      }
+
+      .piano-key-black .key-label {
+        font-size: 0.65rem;
+      }
+
+      .fret-cell {
+        min-width: 44px;
+      }
+    }
+
+    /* ── 6. Extra Small Mobile (< 480px) ── */
+    @media (max-width: 480px) {
+      .topbar {
+        padding-top: calc(6px + env(safe-area-inset-top, 0px));
+        padding-bottom: 6px;
+        padding-left: calc(8px + env(safe-area-inset-left, 0px));
+        padding-right: calc(8px + env(safe-area-inset-right, 0px));
+        gap: 6px;
+      }
+
+      .brand {
+        gap: 6px;
+      }
+
+      .brand-logo {
+        width: 28px;
+        height: 28px;
+      }
+
+      .brand-title {
+        font-size: 0.95rem;
+      }
+
+      .version-badge {
+        font-size: 0.65rem;
+        padding: 1px 5px;
+      }
+
+      .topbar-mobile-actions {
+        gap: 4px;
+      }
+
+      .topbar-mobile-actions .button.compact {
+        padding: 0 8px;
+        font-size: 0.75rem;
+        min-height: 32px;
+      }
+
+      .editor-toolbar {
+        padding: 6px 8px;
+        gap: 6px;
+      }
+
+      .toolbar {
+        gap: 4px;
+      }
+
+      .toolbar .button {
+        padding: 0 7px;
+        font-size: 0.75rem;
+        min-height: 30px;
+      }
+
+      .desktop-preview-mode-switch .tab-button,
+      .mobile-editor-mode-toggle .tab-button {
+        padding: 3px 8px;
+        font-size: 0.72rem;
+        min-height: 28px;
+      }
+
+      .circle-container {
+        max-width: min(88vw, 300px);
+      }
+
+      .transpose-box {
+        grid-template-columns: 32px minmax(0, 1fr) 32px !important;
+        gap: 4px !important;
+      }
+
+      .beat-row {
+        gap: 3px;
+      }
+
+      .beat-dot {
+        width: 10px;
+        height: 10px;
+      }
+    }
+
+    /* ── 7. Ultra-Compact Mobile (< 360px) ── */
+    @media (max-width: 360px) {
+      .mobile-view-switcher {
+        padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+        gap: 2px;
+      }
+
+      .mobile-view-switcher .tab-button {
+        min-height: 42px;
+        padding: 2px;
+        font-size: 0.68rem;
+      }
+
+      .mobile-view-switcher .tab-button .icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      .brand-title {
+        font-size: 0.88rem;
+      }
+
+      .brand-logo {
+        width: 24px;
+        height: 24px;
+      }
+
+      .version-badge {
+        display: none;
+      }
+
+      .topbar-mobile-actions .button.compact {
+        padding: 0 6px;
+        font-size: 0.7rem;
+      }
+    }
+
+    /* ── 8. Landscape Mode on Mobile / Handhelds ── */
+    @media (max-height: 520px) and (orientation: landscape) {
+      .topbar {
+        min-height: 42px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+      }
+
+      .workspace {
+        padding: 6px 12px calc(58px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .mobile-view-switcher {
+        height: 48px;
+        padding: 3px 8px calc(3px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .mobile-view-switcher .tab-button {
+        min-height: 38px;
+        font-size: 0.72rem;
+      }
+
+      .textarea {
+        min-height: 140px;
+      }
+
+      .presentation-stage {
+        padding-top: 56px;
       }
     }
 
@@ -2435,64 +2724,12 @@
       background: color-mix(in srgb, var(--accent) 6%, var(--surface)) !important;
     }
 
-    @media (max-width: 400px) {
-      .mobile-view-switcher {
-        padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
-        gap: 2px;
-      }
-
-      .mobile-view-switcher .tab-button {
-        padding: 4px 2px;
-        font-size: 0.7rem;
-      }
-
-      .mobile-view-switcher .tab-button .icon {
-        width: 16px;
-        height: 16px;
-      }
-    }
-
-    @media (max-width: 767px) {
-      .top-actions .button-label {
-        display: none !important;
-      }
-
-      .topbar {
-        padding-top: calc(8px + env(safe-area-inset-top, 0px));
-        padding-bottom: 8px;
-        padding-left: calc(12px + env(safe-area-inset-left, 0px));
-        padding-right: calc(12px + env(safe-area-inset-right, 0px));
-        gap: 12px;
-      }
-
-      .top-actions {
-        gap: 6px;
-      }
-    }
-
-    @media (max-width: 360px) {
-      .mobile-view-switcher .tab-button .button-label {
-        display: none !important;
-      }
-
-      .mobile-view-switcher .tab-button {
-        min-height: 44px;
-        justify-content: center;
-        align-items: center;
-        gap: 0;
-      }
-
-      .mobile-view-switcher {
-        padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-        gap: 4px;
-      }
-    }
-
     @keyframes qrScanLaser {
       0% { top: 0; opacity: 0.8; }
       50% { top: calc(100% - 2px); opacity: 1; }
       100% { top: 0; opacity: 0.8; }
     }
+
 
 
 </style>
