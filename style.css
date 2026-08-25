@@ -134,9 +134,11 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      min-width: 0;
+      flex-shrink: 0;
+      min-width: max-content;
       text-decoration: none;
       user-select: none;
+      z-index: 2;
     }
 
     .brand-logo {
@@ -168,19 +170,21 @@
     }
 
     .brand-text {
-      min-width: 0;
+      min-width: max-content;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .brand-title {
       margin: 0;
-      font-size: clamp(1rem, 1.6vw, 1.15rem);
+      font-size: clamp(1.05rem, 1.6vw, 1.2rem);
       line-height: 1.15;
       font-weight: 800;
       letter-spacing: -0.02em;
       color: var(--text);
+      white-space: nowrap;
     }
 
     .version-badge {
@@ -196,6 +200,7 @@
       display: inline-flex;
       align-items: center;
       letter-spacing: 0.02em;
+      white-space: nowrap;
     }
 
     .brand-subtitle {
@@ -204,9 +209,6 @@
       font-size: 0.74rem;
       font-weight: 500;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 30vw;
     }
 
     .top-nav {
@@ -218,13 +220,14 @@
       border: 1px solid var(--line);
       border-radius: 10px;
       box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+      flex-shrink: 0;
     }
 
     .top-nav-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 0 clamp(10px, 1.2vw, 15px);
+      padding: 0 clamp(8px, 1.1vw, 14px);
       min-height: 33px;
       border: none;
       border-radius: 7px;
@@ -233,8 +236,10 @@
       font-size: 0.83rem;
       font-weight: 650;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
+      flex-shrink: 0;
     }
 
     .top-nav-btn:hover {
@@ -2133,11 +2138,20 @@
 
       .topbar {
         padding: 10px 28px;
+        gap: 18px;
+      }
+
+      .brand-subtitle {
+        display: block;
       }
 
       .top-nav-btn {
-        padding: 0 16px;
-        font-size: 0.88rem;
+        padding: 0 15px;
+        font-size: 0.86rem;
+      }
+
+      .top-actions {
+        gap: 8px;
       }
     }
 
@@ -2181,11 +2195,11 @@
       }
     }
 
-    /* ── 3. Standard Laptop / Small Desktop (1024px – 1439px) ── */
-    @media (min-width: 1024px) and (max-width: 1439px) {
+    /* ── 3a. Standard Laptop (1200px – 1439px) ── */
+    @media (min-width: 1200px) and (max-width: 1439px) {
       .topbar {
-        gap: 8px;
-        padding: 8px 14px;
+        gap: 10px;
+        padding: 8px 16px;
       }
 
       .brand {
@@ -2193,7 +2207,7 @@
       }
 
       .brand-title {
-        font-size: 1.05rem;
+        font-size: 1.08rem;
       }
 
       .brand-subtitle {
@@ -2201,7 +2215,7 @@
       }
 
       .top-nav {
-        gap: 3px;
+        gap: 2px;
         padding: 3px;
       }
 
@@ -2216,13 +2230,13 @@
       }
 
       .top-actions .button:not(#presentationButton) {
-        padding: 0 8px;
+        padding: 0 9px;
         font-size: 0.8rem;
         min-height: 32px;
       }
 
       #topbarUserGreeting {
-        max-width: 90px;
+        max-width: 80px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -2237,6 +2251,89 @@
         grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.2fr);
         gap: 14px;
         padding: 10px 12px;
+      }
+    }
+
+    /* ── 3b. Compact Laptop (1024px – 1199px) ── */
+    @media (min-width: 1024px) and (max-width: 1199px) {
+      .topbar {
+        gap: 8px;
+        padding: 8px 12px;
+      }
+
+      .brand {
+        gap: 6px;
+      }
+
+      .brand-logo {
+        width: 30px;
+        height: 30px;
+      }
+
+      .brand-title {
+        font-size: 1rem;
+      }
+
+      .brand-subtitle {
+        display: none;
+      }
+
+      .top-nav {
+        gap: 2px;
+        padding: 2px;
+      }
+
+      .top-nav-btn {
+        padding: 0 8px;
+        font-size: 0.78rem;
+        min-height: 30px;
+        gap: 4px;
+      }
+
+      .top-actions {
+        gap: 4px;
+      }
+
+      #googleSyncButton .button-label,
+      #helpButton .button-label,
+      #settingsButton .button-label,
+      #headerInstallBtn .button-label {
+        display: none !important;
+      }
+
+      #googleSyncButton,
+      #helpButton,
+      #settingsButton,
+      #headerInstallBtn {
+        padding: 0 8px;
+        min-height: 32px;
+        min-width: 32px;
+        justify-content: center;
+      }
+
+      #topbarUserGreeting {
+        display: none !important;
+      }
+
+      #topbarProfileContainer {
+        padding: 2px;
+        border: none;
+        background: transparent;
+      }
+
+      #langSelect {
+        display: none !important;
+      }
+
+      .tools-grid-layout {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 12px;
+      }
+
+      .editor-split-container {
+        grid-template-columns: minmax(280px, 1fr) minmax(300px, 1.15fr);
+        gap: 12px;
+        padding: 8px 10px;
       }
     }
 
@@ -2266,14 +2363,15 @@
 
       .top-nav {
         display: flex !important;
-        padding: 3px;
+        padding: 2px;
         gap: 2px;
       }
 
       .top-nav-btn {
-        padding: 0 9px;
-        font-size: 0.8rem;
-        min-height: 32px;
+        padding: 0 8px;
+        font-size: 0.78rem;
+        min-height: 30px;
+        gap: 4px;
       }
 
       .top-actions {
@@ -2780,6 +2878,7 @@
         min-height: 30px;
       }
     }
+
 
 
     /* ── 8. Landscape Mode on Mobile / Handhelds ── */

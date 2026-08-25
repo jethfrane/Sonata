@@ -123,22 +123,22 @@
 
       <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
-        <div style="display:flex; align-items:center; gap:6px; margin-right:4px;" id="topbarProfileContainer">
-          <img id="topbarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
-          <span id="topbarUserGreeting" style="font-size:0.82rem; font-weight:600; color:var(--text);">Hi, Musician</span>
+        <div id="topbarProfileContainer" title="Google Account / Sync">
+          <img id="topbarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile">
+          <span id="topbarUserGreeting">Hi, Musician</span>
         </div>
-        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button">Drive Sync</button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;">Install App</button>
-        <button class="button ghost" id="helpButton" data-icon="help" type="button" title="About / Manual">Help</button>
-        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle theme"></button>
-        <button class="button ghost" id="settingsButton" data-icon="settings" type="button">Settings</button>
-        <button class="button primary" id="presentationButton" data-icon="presentation" type="button">Present</button>
-        <select id="langSelect" class="select">
+        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button" title="Google Drive Sync"><span class="button-label">Drive Sync</span></button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;" title="Install App"><span class="button-label">Install App</span></button>
+        <button class="button ghost" id="helpButton" data-icon="help" type="button" title="Help & About"><span class="button-label">Help</span></button>
+        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle theme" title="Toggle Theme"></button>
+        <button class="button ghost" id="settingsButton" data-icon="settings" type="button" title="Settings"><span class="button-label">Settings</span></button>
+        <button class="button primary" id="presentationButton" data-icon="presentation" type="button" title="Presentation Mode"><span class="button-label">Present</span></button>
+        <select id="langSelect" class="select" title="Language">
           <option value="en" selected>English</option>
           <option value="fil">Filipino</option>
         </select>
-        <span id="appVersion" class="version-badge">v1.3.0</span>
       </div>
+
 
       <!-- Mobile quick actions row: theme toggle + present only -->
       <div class="topbar-mobile-actions">
