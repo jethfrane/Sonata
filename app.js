@@ -4613,3 +4613,123 @@ Em -  C    -  G  -  D
 
       document.addEventListener("DOMContentLoaded", () => App.init());
     })();
+
+/* AI Co-Writer Logic */
+(() => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const aiFab = document.getElementById('aiFabButton');
+    const aiPanel = document.getElementById('aiChatPanel');
+    const aiClose = document.getElementById('aiCloseButton');
+    const aiInput = document.getElementById('aiChatInput');
+    const aiSend = document.getElementById('aiSendButton');
+    const aiHistory = document.getElementById('aiChatHistory');
+    
+    if (!aiFab || !aiPanel) return;
+
+    // Toggle Panel
+    const togglePanel = () => {
+      aiPanel.classList.toggle('hidden');
+      if (!aiPanel.classList.contains('hidden')) {
+        aiInput.focus();
+      }
+    };
+    
+    aiFab.addEventListener('click', togglePanel);
+    aiClose.addEventListener('click', () => aiPanel.classList.add('hidden'));
+    
+    // Load chat history
+    try {
+      const savedChat = localStorage.getItem('sonata_ai_chat');
+      if (savedChat) {
+        aiHistory.innerHTML = savedChat;
+      }
+    } catch(e) {}
+    
+    const saveChat = () => {
+      localStorage.setItem('sonata_ai_chat', aiHistory.innerHTML);
+    };
+    
+    const appendMessage = (text, sender) => {
+      const div = document.createElement('div');
+      div.className = `ai-message ${sender}`;
+      
+      // Handle codeblocks specifically for markdown
+      let formattedText = text;
+      // Simple escape for html
+      formattedText = formattedText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      // format markdown bold/italic
+      formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      
+      // format basic code blocks
+      formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface); padding:8px; border-radius:6px; overflow-x:auto; font-family:var(--chart-font); font-size:0.8rem; margin:8px 0; border:1px solid var(--line);">$1</pre>');
+      formattedText = formattedText.replace(/`([^`]+)`/g, '<code style="background:color-mix(in srgb, var(--text) 10%, transparent); padding:2px 4px; border-radius:4px; font-family:var(--chart-font); font-size:0.85em;">$1</code>');
+      
+      // Convert newlines to breaks outside of pre tags
+      formattedText = formattedText.split(/(<pre[\s\S]*?<\/pre>)/).map(part => {
+        if (part.startsWith('<pre')) return part;
+        return part.replace(/\n/g, '<br/>');
+      }).join('');
+
+      div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
+      aiHistory.appendChild(div);
+      aiHistory.scrollTop = aiHistory.scrollHeight;
+      saveChat();
+    };
+    
+    const askAI = async () => {
+      const prompt = aiInput.value.trim();
+      if (!prompt) return;
+      
+      appendMessage(prompt, 'user');
+      aiInput.value = '';
+      
+      const typingIndicator = document.createElement('div');
+      typingIndicator.className = 'ai-message assistant';
+      typingIndicator.innerHTML = '<div style="margin:0; color: var(--muted);"><em>Thinking... 🎵</em></div>';
+      aiHistory.appendChild(typingIndicator);
+      aiHistory.scrollTop = aiHistory.scrollHeight;
+      
+      // Grab current song context
+      const songBody = document.getElementById('songBody');
+      const context = songBody ? songBody.value : "";
+      
+      try {
+        const response = await fetch('/api/ai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, context })
+        });
+        
+        typingIndicator.remove();
+        
+        if (response.status === 429) {
+          const errData = await response.json();
+          appendMessage(errData.error, 'assistant');
+          return;
+        }
+        
+        if (!response.ok) {
+          throw new Error('Server returned ' + response.status);
+        }
+        
+        const data = await response.json();
+        appendMessage(data.reply, 'assistant');
+        
+      } catch (err) {
+        typingIndicator.remove();
+        console.error(err);
+        appendMessage("Oops, something went wrong connecting to the AI. Ensure you are connected to the internet and try again.", 'assistant');
+      }
+    };
+    
+    aiSend.addEventListener('click', askAI);
+    aiInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        askAI();
+      }
+    });
+  });
+})();
