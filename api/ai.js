@@ -61,8 +61,19 @@ ${context || "(The editor is currently empty)"}
     // Handle Rate Limiting gracefully
     if (response.status === 429) {
       const errorText = await response.text();
+      let customError = "Whoa there! I'm getting a lot of requests right now. Let me take a quick breather—please try asking again in a minute! 🎵";
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error && errorJson.error.message && errorJson.error.message.includes("credits are depleted")) {
+          customError = "Your Google AI Studio prepayment credits are depleted. Please check your billing at https://ai.studio/projects.";
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+
       return res.status(429).json({ 
-        error: "Whoa there! I'm getting a lot of requests right now. Let me take a quick breather—please try asking again in a minute! 🎵",
+        error: customError,
         details: errorText
       });
     }
