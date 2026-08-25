@@ -1,8 +1,10 @@
 # Sonata Master 🎵
 
-Sonata is a modern, online collaboration tool and music toolkit designed specifically for musicians, worship leaders, bands, and song arrangers. It runs entirely in your browser with zero backend server dependencies, private Google Drive synchronization, and zero-friction team sharing. 
+Sonata is a modern, online collaboration tool and music toolkit designed specifically for musicians, worship leaders, bands, and song arrangers. It runs entirely in your browser with zero backend server dependencies, private Google Drive synchronization, and zero-friction team sharing.
 
 **Best of all: Sonata is 100% free with no subscriptions.**
+
+🌐 **Live Web Application:** [https://jethfrane-sonata.vercel.app](https://jethfrane-sonata.vercel.app)
 
 ---
 
@@ -31,6 +33,7 @@ Sonata was created by **Jeth Frane** to solve the real-world friction musicians,
 3. **⚡ Stage-Ready Presentation:** Fullscreen high-contrast presentation mode with adjustable auto-scroll, metronome indicators, and independent dark/stage themes keeps your eyes focused on the performance.
 4. **🎹 Centralized Musical Toolkit:** Put away separate calculators and tuner apps—transposition, metronomes, key detection, Circle of Fifths, digital piano, and multi-instrument fretboards are built directly into your workspace.
 5. **📱 Universal Cross-Device Responsiveness:** Whether on an iPhone, iPad, Android tablet, MacBook, or ultra-wide desktop monitor, Sonata dynamically adapts its toolbars, navigation, and editor panes for maximum efficiency.
+6. **📑 Universal Sidebar Drawer Navigation:** A unified slide-out navigation drawer is available across all device sizes (mobile, tablet, laptop, desktop) keeping the top header clean, spacious, and distraction-free while keeping secondary utilities (Drive Sync, Settings, Help, Language, App Install) one click away.
 
 ---
 
@@ -64,6 +67,14 @@ Sonata was created by **Jeth Frane** to solve the real-world friction musicians,
 
 ### 6. Cloud Backup & Sync
 * **Google Drive Sync:** Automatic background synchronization with your personal Google Drive account for ultimate privacy.
+
+---
+
+## 💻 Tech Stack & Deployment
+
+* **Frontend:** Vanilla HTML5, Modern CSS3 (Glassmorphism, Flexbox, CSS Grid), Vanilla ES6+ JavaScript.
+* **PWA & Offline:** Service Worker cache with offline capabilities and Installable PWA manifest.
+* **Hosting & CI/CD:** Deployed on [Vercel](https://vercel.com) with automatic production builds via GitHub integration.
 
 ---
 
