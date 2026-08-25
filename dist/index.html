@@ -4581,12 +4581,27 @@ Em -  C    -  G  -  D
       };
 
       const GoogleDriveSync = {
-        CLIENT_ID: "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com",
+        DEFAULT_CLIENT_ID: "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com",
         SCOPES: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
 
         FILENAME: "sonata_library.json",
         tokenClient: null, accessToken: null, fileId: null, isSyncing: false, uploadTimer: null,
         userEmail: null, userName: null, resolveSignIn: null,
+
+        getClientId() {
+          const custom = localStorage.getItem('sonata_google_client_id');
+          return (custom && custom.trim()) ? custom.trim() : this.DEFAULT_CLIENT_ID;
+        },
+
+        setClientId(newId) {
+          if (newId && newId.trim()) {
+            localStorage.setItem('sonata_google_client_id', newId.trim());
+          } else {
+            localStorage.removeItem('sonata_google_client_id');
+          }
+          this.tokenClient = null;
+          this.initTokenClientIfNeeded();
+        },
 
         init() {
           try {
@@ -4618,13 +4633,40 @@ Em -  C    -  G  -  D
           if (this.tokenClient) return true;
           if (window.google?.accounts?.oauth2) {
             try {
+              const activeClientId = this.getClientId();
               this.tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: this.CLIENT_ID,
+                client_id: activeClientId,
                 scope: this.SCOPES,
                 callback: (tokenResponse) => {
                   if (tokenResponse.error !== undefined) {
                     console.error("OAuth Error:", tokenResponse);
                     this.updateUI("Auth Failed", "danger");
+                    if (tokenResponse.error === "origin_mismatch" || tokenResponse.error_description?.includes("origin_mismatch")) {
+                      UIManager.openModal({
+                        title: "Google OAuth Origin Setup Required",
+                        confirmText: "Got It",
+                        fields: [
+                          {
+                            type: "custom",
+                            html: `
+                              <div style="font-size:0.88rem; line-height:1.5; color:var(--text); display:flex; flex-direction:column; gap:10px;">
+                                <p style="margin:0;">Google OAuth requires registering the active domain in <strong>Google Cloud Console</strong>.</p>
+                                <div style="background:var(--surface-2); padding:10px 12px; border-radius:6px; border:1px solid var(--line);">
+                                  <div style="font-size:0.75rem; color:var(--muted); margin-bottom:4px;">Current Domain Origin:</div>
+                                  <code style="font-size:0.85rem; font-weight:700; color:var(--accent); word-break:break-all;">${window.location.origin}</code>
+                                </div>
+                                <ol style="padding-left:18px; margin:0; font-size:0.82rem; color:var(--muted); display:flex; flex-direction:column; gap:6px;">
+                                  <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">Google Cloud Console &rarr; Credentials</a></li>
+                                  <li>Open your <strong>OAuth 2.0 Client ID</strong></li>
+                                  <li>Add <strong><code>${window.location.origin}</code></strong> to <em>Authorized JavaScript origins</em></li>
+                                  <li>Click <strong>Save</strong> and retry signing in.</li>
+                                </ol>
+                              </div>
+                            `
+                          }
+                        ]
+                      });
+                    }
                     if (this.resolveSignIn) this.resolveSignIn(false);
                     return;
                   }
@@ -4646,6 +4688,7 @@ Em -  C    -  G  -  D
           }
           return false;
         },
+
 
         loadCachedToken() {
           const token = localStorage.getItem('sonata_google_token');
@@ -4930,6 +4973,8 @@ Em -  C    -  G  -  D
         renderSettingsUI() {
           const container = document.getElementById('settingsDriveSyncStatus');
           if (!container) return;
+          const currentClientId = this.getClientId();
+          const isCustom = localStorage.getItem('sonata_google_client_id');
           if (this.accessToken) {
             container.innerHTML = `
               <div style="display:flex; flex-direction:column; gap:8px;">
@@ -4953,9 +4998,15 @@ Em -  C    -  G  -  D
             });
           } else {
             container.innerHTML = `
-              <div style="display:flex; flex-direction:column; gap:8px;">
-                <p style="font-size:0.85rem; color:var(--muted); margin:0;">Backup and sync your library to Google Drive.</p>
+              <div style="display:flex; flex-direction:column; gap:10px;">
+                <p style="font-size:0.85rem; color:var(--muted); margin:0;">Backup and sync your library to Google Drive seamlessly.</p>
                 <button class="button primary" id="settingsSignInBtn" type="button" style="width:100%;">Sign in with Google</button>
+                <div style="margin-top:6px; padding:8px 10px; background:var(--surface-2); border:1px solid var(--line); border-radius:6px;">
+                  <div style="font-size:0.75rem; color:var(--muted); display:flex; justify-content:space-between; align-items:center;">
+                    <span>Active Domain Origin:</span>
+                    <strong style="color:var(--accent);">${window.location.origin}</strong>
+                  </div>
+                </div>
               </div>
             `;
             document.getElementById('settingsSignInBtn')?.addEventListener('click', async (e) => {
@@ -4966,6 +5017,7 @@ Em -  C    -  G  -  D
           }
         }
       };
+
 
       window.AudioEngine = {
         ctx: null,
