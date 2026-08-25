@@ -94,6 +94,14 @@ Created by **Jeth Frane**, Sonata was built to replace clumsy paper binders, clu
 * **PDF & Graphics:** html2pdf.js, QRCode.js, SVG Icons.
 * **Hosting & CI/CD:** [Vercel](https://vercel.com) (Edge CDN, Serverless AI Backend, Automated Deployments).
 
+## 📦 Update Log
+- **2026-08-26**: Updated AI backend to Gemini 3.6‑Flash model.
+- **2026-08-26**: Improved 429 handling to surface billing depletion messages.
+- **2026-08-26**: Adjusted mobile FAB position to avoid overlap on small screens.
+- **2026-08-26**: Added Open Graph metadata for link previews.
+- **2026-08-26**: Added AI Co‑Writer bullet to README.
+
+
 ---
 
 ## 💻 Local Development
