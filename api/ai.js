@@ -68,7 +68,7 @@ ${context || "(The editor is currently empty)"}
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API Error:", errorText);
-      return res.status(response.status).json({ error: 'Failed to communicate with AI server.' });
+      return res.status(response.status).json({ error: 'Failed to communicate with AI server.', details: errorText });
     }
 
     const data = await response.json();
