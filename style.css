@@ -2940,6 +2940,13 @@
       transform: scale(1.1);
       box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 60%, transparent);
     }
+
+    @media (max-width: 480px) {
+      .ai-fab {
+        bottom: 80px;
+        right: 16px;
+      }
+    }
     
     .ai-chat-panel {
       position: fixed;
