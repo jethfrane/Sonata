@@ -3,7 +3,7 @@
 > **The modern, distraction-free chord chart editor and musical toolkit for musicians, bands, and worship teams.**
 
 [![Live on Vercel](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=flat-square&logo=vercel)](https://jethfrane-sonata.vercel.app)
-[![GitHub Pages](https://img.shields.io/badge/Mirror-GitHub%20Pages-blue?style=flat-square&logo=github)](https://jethfrane.github.io/Sonata/)
+
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](#)
 [![No Subscriptions](https://img.shields.io/badge/Cost-100%25%20Free-brightgreen?style=flat-square)](#)
 
@@ -12,7 +12,7 @@
 ## 🌐 Live Web App
 
 * **Production URL:** [https://jethfrane-sonata.vercel.app](https://jethfrane-sonata.vercel.app)
-* **GitHub Pages Mirror:** [https://jethfrane.github.io/Sonata/](https://jethfrane.github.io/Sonata/)
+
 
 Sonata runs entirely in your web browser. No software installation or user accounts are required—simply open the link and start playing.
 
@@ -91,7 +91,7 @@ Created by **Jeth Frane**, Sonata was built to replace clumsy paper binders, clu
 * **Frontend Architecture:** Vanilla HTML5, Modern CSS3 (Glassmorphism, CSS Grid, Flexbox), Vanilla ES6+ JavaScript.
 * **Audio Synthesis:** Web Audio API (polyphonic synth, resonant filters, sample-accurate metronome scheduling).
 * **PDF & Graphics:** html2pdf.js, QRCode.js, SVG Icons.
-* **Hosting & CI/CD:** [Vercel](https://vercel.com) (Edge CDN, Automated Deployments) & [GitHub Pages](https://pages.github.com).
+* **Hosting & CI/CD:** [Vercel](https://vercel.com) (Edge CDN, Serverless AI Backend, Automated Deployments).
 
 ---
 
