@@ -113,20 +113,21 @@
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 50;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      min-height: calc(56px + env(safe-area-inset-top, 0px));
-      padding-top: calc(10px + env(safe-area-inset-top, 0px));
-      padding-bottom: 10px;
-      padding-left: calc(clamp(12px, 2vw, 20px) + env(safe-area-inset-left, 0px));
-      padding-right: calc(clamp(12px, 2vw, 20px) + env(safe-area-inset-right, 0px));
-      background: color-mix(in srgb, var(--surface) 88%, transparent);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      min-height: calc(58px + env(safe-area-inset-top, 0px));
+      padding-top: calc(8px + env(safe-area-inset-top, 0px));
+      padding-bottom: 8px;
+      padding-left: calc(clamp(12px, 2.5vw, 28px) + env(safe-area-inset-left, 0px));
+      padding-right: calc(clamp(12px, 2.5vw, 28px) + env(safe-area-inset-right, 0px));
+      background: color-mix(in srgb, var(--surface) 86%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      box-shadow: 0 1px 12px rgba(0, 0, 0, 0.03);
     }
 
     .brand {
@@ -134,24 +135,31 @@
       align-items: center;
       gap: 10px;
       min-width: 0;
+      text-decoration: none;
+      user-select: none;
     }
 
     .brand-logo {
-      width: 35px;
-      height: 35px;
-      border-radius: 8px;
+      width: clamp(30px, 3.2vw, 36px);
+      height: clamp(30px, 3.2vw, 36px);
+      border-radius: 9px;
       display: block;
       object-fit: contain;
-      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent);
+      box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 25%, transparent);
       flex-shrink: 0;
-      /* Light mode: subtle shadow for depth */
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
-      transition: filter 0.2s ease;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, box-shadow 0.2s ease;
+      border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+    }
+
+    .brand:hover .brand-logo {
+      transform: scale(1.05) rotate(-2deg);
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent);
     }
 
     html[data-theme="dark"] .brand-logo {
-      /* Dark mode: brighten slightly and add glow */
-      filter: brightness(1.1) drop-shadow(0 2px 8px rgba(255,255,255,0.12));
+      filter: brightness(1.1) drop-shadow(0 2px 8px rgba(255,255,255,0.14));
+      border-color: color-mix(in srgb, var(--line) 80%, transparent);
     }
 
     .sidebar-header .brand-logo {
@@ -161,25 +169,30 @@
 
     .brand-text {
       min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .brand-title {
       margin: 0;
-      font-size: 1.05rem;
-      line-height: 1.1;
-      font-weight: 760;
+      font-size: clamp(1rem, 1.6vw, 1.15rem);
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
     }
 
     .version-badge {
       font-size: 0.68rem;
       font-weight: 750;
       font-family: var(--ui-font);
-      padding: 1px 7px;
+      padding: 1.5px 7px;
       border-radius: 999px;
       background: var(--surface-3);
       color: var(--muted);
       border: 1px solid var(--line);
-      line-height: 1.4;
+      line-height: 1.35;
       display: inline-flex;
       align-items: center;
       letter-spacing: 0.02em;
@@ -188,7 +201,8 @@
     .brand-subtitle {
       margin: 2px 0 0;
       color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.74rem;
+      font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -198,27 +212,28 @@
     .top-nav {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       padding: 3px;
-      background: var(--surface-2);
+      background: color-mix(in srgb, var(--surface-2) 92%, var(--surface));
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 10px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .top-nav-btn {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 0 12px;
-      min-height: 32px;
+      padding: 0 clamp(10px, 1.2vw, 15px);
+      min-height: 33px;
       border: none;
-      border-radius: 6px;
+      border-radius: 7px;
       background: transparent;
       color: var(--muted);
-      font-size: 0.82rem;
-      font-weight: 600;
+      font-size: 0.83rem;
+      font-weight: 650;
       cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
     }
 
@@ -236,8 +251,9 @@
       background: var(--surface);
       color: var(--accent);
       font-weight: 750;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
     }
+
 
     .toolbar,
     .inline-actions,
@@ -254,31 +270,74 @@
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       flex-wrap: nowrap;
       flex-shrink: 0;
+    }
+
+    #topbarProfileContainer {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 3px 10px 3px 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #topbarProfileContainer:hover {
+      background: var(--surface-3);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+      transform: translateY(-1px);
+    }
+
+    #topbarUserAvatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid var(--surface);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    #topbarUserGreeting {
+      font-size: 0.8rem;
+      font-weight: 650;
+      color: var(--text);
+      letter-spacing: -0.01em;
     }
 
     /* Hamburger toggle — hidden on desktop */
     .topbar-menu-btn {
       display: none;
       flex-shrink: 0;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       padding: 0;
       align-items: center;
       justify-content: center;
       border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
       color: var(--text);
       cursor: pointer;
-      transition: background 0.15s ease, transform 0.1s ease;
+      transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
+
     .topbar-menu-btn:hover {
       background: var(--surface-3);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+      transform: translateY(-1px);
     }
+
     .topbar-menu-btn:active {
       transform: scale(0.94);
     }
+
     .topbar-menu-btn svg {
       width: 18px;
       height: 18px;
@@ -289,9 +348,34 @@
     .topbar-mobile-actions {
       display: none;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
       flex-shrink: 0;
     }
+
+    #mobileUserAvatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      cursor: pointer;
+      border: 1.5px solid var(--line);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    #mobileUserAvatar:hover {
+      transform: scale(1.05);
+      border-color: var(--accent);
+    }
+
+    #themeToggleMobile {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
 
     /* Full-width utility for sidebar buttons */
     .button.full-width {
@@ -2164,23 +2248,32 @@
 
       .topbar {
         padding: 8px 16px;
-        gap: 12px;
+        gap: 10px;
+        min-height: calc(56px + env(safe-area-inset-top, 0px));
       }
 
       .topbar-menu-btn {
         display: inline-flex !important;
       }
 
+      .brand {
+        gap: 8px;
+      }
+
+      .brand-title {
+        font-size: 1.05rem;
+      }
+
       .top-nav {
         display: flex !important;
         padding: 3px;
-        gap: 3px;
+        gap: 2px;
       }
 
       .top-nav-btn {
-        padding: 0 8px;
-        font-size: 0.78rem;
-        min-height: 30px;
+        padding: 0 9px;
+        font-size: 0.8rem;
+        min-height: 32px;
       }
 
       .top-actions {
@@ -2269,7 +2362,7 @@
       .topbar-mobile-actions {
         display: flex !important;
         margin-left: auto;
-        gap: 6px;
+        gap: 7px;
         align-items: center;
       }
 
@@ -2279,11 +2372,11 @@
 
       .topbar {
         align-items: center;
-        min-height: calc(52px + env(safe-area-inset-top, 0px));
+        min-height: calc(54px + env(safe-area-inset-top, 0px));
         padding-top: calc(8px + env(safe-area-inset-top, 0px));
         padding-bottom: 8px;
-        padding-left: calc(12px + env(safe-area-inset-left, 0px));
-        padding-right: calc(12px + env(safe-area-inset-right, 0px));
+        padding-left: calc(10px + env(safe-area-inset-left, 0px));
+        padding-right: calc(10px + env(safe-area-inset-right, 0px));
         gap: 8px;
       }
 
@@ -2291,8 +2384,19 @@
         gap: 8px;
       }
 
+      .brand-logo {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+      }
+
       .brand-title {
-        font-size: 1rem;
+        font-size: 1.02rem;
+      }
+
+      .version-badge {
+        font-size: 0.65rem;
+        padding: 1px 6px;
       }
 
       .brand-subtitle {
@@ -2545,10 +2649,11 @@
       .brand-logo {
         width: 28px;
         height: 28px;
+        border-radius: 7px;
       }
 
       .brand-title {
-        font-size: 0.95rem;
+        font-size: 0.96rem;
       }
 
       .version-badge {
@@ -2556,8 +2661,23 @@
         padding: 1px 5px;
       }
 
+      .topbar-menu-btn {
+        width: 34px;
+        height: 34px;
+      }
+
       .topbar-mobile-actions {
         gap: 4px;
+      }
+
+      #mobileUserAvatar {
+        width: 26px;
+        height: 26px;
+      }
+
+      #themeToggleMobile {
+        width: 34px;
+        height: 34px;
       }
 
       .topbar-mobile-actions .button.compact {
@@ -2609,6 +2729,12 @@
 
     /* ── 7. Ultra-Compact Mobile (< 360px) ── */
     @media (max-width: 360px) {
+      .topbar {
+        padding-left: calc(6px + env(safe-area-inset-left, 0px));
+        padding-right: calc(6px + env(safe-area-inset-right, 0px));
+        gap: 4px;
+      }
+
       .mobile-view-switcher {
         padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
         gap: 2px;
@@ -2638,11 +2764,23 @@
         display: none;
       }
 
+      .topbar-menu-btn {
+        width: 32px;
+        height: 32px;
+      }
+
+      #themeToggleMobile {
+        width: 32px;
+        height: 32px;
+      }
+
       .topbar-mobile-actions .button.compact {
         padding: 0 6px;
-        font-size: 0.7rem;
+        font-size: 0.72rem;
+        min-height: 30px;
       }
     }
+
 
     /* ── 8. Landscape Mode on Mobile / Handhelds ── */
     @media (max-height: 520px) and (orientation: landscape) {
