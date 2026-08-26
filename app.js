@@ -4745,7 +4745,8 @@ Em -  C    -  G  -  D
         }
         
         if (!response.ok) {
-          throw new Error('Server returned ' + response.status);
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || errData.details || 'Server returned ' + response.status);
         }
         
         const data = await response.json();
@@ -4754,7 +4755,7 @@ Em -  C    -  G  -  D
       } catch (err) {
         typingIndicator.remove();
         console.error(err);
-        appendMessage("Oops, something went wrong connecting to the AI. Ensure you are connected to the internet and try again.", 'assistant');
+        appendMessage(`Oops, AI error: ${err.message}. Ensure you are connected to the internet or check API keys.`, 'assistant');
       }
     };
     
