@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-08-26",
+    "changes": [
+      "AI Co-Writer: Generate chords, format lyrics, and automate the UI directly via chat.",
+      "Bring Your Own Key (BYOK): Add your own free Google Gemini API key for unlimited AI access.",
+      "AI Settings UI: Easily manage your AI API key and fallback settings.",
+      "Enhanced About Sonata page with feature accordions and updated UI."
+    ],
+    "whatsNew": "AI Co-Writer with BYOK support and automated UI controls."
+  },
+  {
     "version": "1.3.1",
     "date": "2026-08-18",
     "changes": [

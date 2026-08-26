@@ -42,7 +42,7 @@ Created by **Jeth Frane**, Sonata was built to replace clumsy paper binders, clu
 * 🆓 **100% Free Forever:** No paywalls, trial periods, or monthly subscriptions.
 * 🔒 **Private & Decentralized:** Your song charts belong to you. Data is stored on your device and backed up to your personal Google Drive. No centralized databases or user tracking.
 * ⚡ **Stage-Ready:** Distraction-free fullscreen presentation mode with smooth auto-scroll, customizable metronome, and true-black stage theme.
-* 🤖 **AI Co‑Writer Powered by Gemini 1.5‑Flash‑8B:** Real‑time music suggestions, chord generation, and transposition directly in the editor. Highly efficient and fast, working with a free API key – no billing required.
+* 🤖 **AI Co‑Writer Built-in:** Real‑time music suggestions, chord generation, and UI automation (change keys, themes, and tempo) directly via chat. Uses a mixed Bring-Your-Own-Key (BYOK) approach to ensure unlimited free usage while providing a seamless fallback.
 * 📱 **Universal Responsiveness:** Designed for all screens—smartphones, iPads, tablets, laptops, and wide desktop displays.
 
 ---
