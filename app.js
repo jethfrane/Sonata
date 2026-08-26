@@ -4654,14 +4654,21 @@ Em -  C    -  G  -  D
       const div = document.createElement('div');
       div.className = `ai-message ${sender}`;
       
-      let actionContent = null;
+      const actions = [];
       let displayHtml = text;
       
       if (sender === 'assistant') {
-        const actionMatch = text.match(/<action type="replace_editor">([\s\S]*?)<\/action>/);
-        if (actionMatch) {
-            actionContent = actionMatch[1].trim();
-            displayHtml = text.replace(actionMatch[0], '').trim();
+        const regex = /<action type="([^"]+)"(?: value="([^"]*)")?>([\s\S]*?)<\/action>/g;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+            actions.push({ type: match[1], value: match[2], content: match[3].trim(), original: match[0] });
+            displayHtml = displayHtml.replace(match[0], '').trim();
+        }
+        
+        const regexSelfClosing = /<action type="([^"]+)"(?: value="([^"]*)")?\s*\/>/g;
+        while ((match = regexSelfClosing.exec(displayHtml)) !== null) {
+            actions.push({ type: match[1], value: match[2], content: "", original: match[0] });
+            displayHtml = displayHtml.replace(match[0], '').trim();
         }
       }
       
@@ -4686,25 +4693,67 @@ Em -  C    -  G  -  D
 
       div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
       
-      if (actionContent) {
-          const actionBtn = document.createElement('button');
-          actionBtn.className = 'ai-action-btn button full-width';
-          actionBtn.style.marginTop = '12px';
-          actionBtn.style.background = 'var(--accent)';
-          actionBtn.style.color = '#fff';
-          actionBtn.innerHTML = '✨ Review & Apply Changes';
-          actionBtn.onclick = () => {
-              const songBody = document.getElementById('songBody');
-              if (songBody) {
-                  songBody.value = actionContent;
-                  songBody.dispatchEvent(new Event('input', { bubbles: true }));
-              }
-              actionBtn.innerHTML = '✅ Applied! (Undo if needed)';
-              actionBtn.disabled = true;
-              actionBtn.style.background = 'var(--surface-3)';
-              actionBtn.style.color = 'var(--text)';
-          };
-          div.appendChild(actionBtn);
+      if (actions.length > 0) {
+        actions.forEach(action => {
+            const actionBtn = document.createElement('button');
+            actionBtn.className = 'ai-action-btn button full-width';
+            actionBtn.style.marginTop = '12px';
+            actionBtn.style.background = 'var(--accent)';
+            actionBtn.style.color = '#fff';
+            
+            let label = "✨ Apply Action";
+            if (action.type === 'replace_editor') label = "✨ Apply Chord Chart Updates";
+            else if (action.type === 'set_theme') label = `✨ Set Theme: ${action.value}`;
+            else if (action.type === 'set_tempo') label = `✨ Set Tempo: ${action.value} BPM`;
+            else if (action.type === 'set_key') label = `✨ Set Key: ${action.value}`;
+            else if (action.type === 'set_capo') label = `✨ Set Capo: Fret ${action.value}`;
+            else if (action.type === 'navigate') label = `✨ Navigate to: ${action.value}`;
+            
+            actionBtn.innerHTML = label;
+            actionBtn.onclick = () => {
+                try {
+                  if (action.type === 'replace_editor') {
+                      const songBody = document.getElementById('songBody');
+                      if (songBody) {
+                          songBody.value = action.content;
+                          songBody.dispatchEvent(new Event('input', { bubbles: true }));
+                      }
+                  } else if (action.type === 'set_theme') {
+                      StateManager.state.settings.theme = action.value;
+                      ThemeManager.apply();
+                      UIManager.toast(`Theme set to ${action.value}`);
+                  } else if (action.type === 'set_tempo') {
+                      const bpm = parseInt(action.value);
+                      if (bpm) {
+                        StateManager.state.metronome.bpm = bpm;
+                        const bpmInput = document.getElementById('metronomeBpmInput');
+                        if (bpmInput) { bpmInput.value = bpm; bpmInput.dispatchEvent(new Event('input')); }
+                        UIManager.toast(`Tempo set to ${bpm} BPM`);
+                      }
+                  } else if (action.type === 'set_key') {
+                      const keySelect = document.getElementById('keySelect');
+                      if (keySelect) {
+                        keySelect.value = action.value;
+                        keySelect.dispatchEvent(new Event('change'));
+                      }
+                  } else if (action.type === 'set_capo') {
+                      const capoSelect = document.getElementById('capoSelect');
+                      if (capoSelect) {
+                        capoSelect.value = action.value;
+                        capoSelect.dispatchEvent(new Event('change'));
+                      }
+                  } else if (action.type === 'navigate') {
+                      UIManager.switchView(action.value);
+                  }
+                  
+                  actionBtn.innerHTML = '✅ Applied!';
+                  actionBtn.disabled = true;
+                  actionBtn.style.background = 'var(--surface-3)';
+                  actionBtn.style.color = 'var(--text)';
+                } catch(e) { console.error(e); }
+            };
+            div.appendChild(actionBtn);
+        });
       }
       
       aiHistory.appendChild(div);
