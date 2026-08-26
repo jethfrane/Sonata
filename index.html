@@ -554,6 +554,69 @@
             </div>
           </div>
 
+          <!-- Detailed Features Accordion -->
+          <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Detailed Features</h3>
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 3rem;">
+            
+            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
+              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Chord & Lyric Editor
+              </summary>
+              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li><strong>Dual Format Support:</strong> Works with both traditional chord lines and inline bracket chords.</li>
+                  <li><strong>Clean Markdown Syntax:</strong> Use <code>#</code> for titles, <code>##</code> for sections, and <code>---</code> for dividers.</li>
+                  <li><strong>Live Transposition & Capo:</strong> Transpose semitones up/down instantly with automatic enharmonic spelling.</li>
+                  <li><strong>Notation Formats:</strong> Switch between Standard Chords, Roman Numerals, and Nashville Number System.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
+              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                Song Library & Setlists
+              </summary>
+              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li><strong>Fast Search & Filtering:</strong> Filter by song key, artist, or tags with instant search.</li>
+                  <li><strong>Multi-Song Setlists:</strong> Create custom worship sets and gig setlists.</li>
+                  <li><strong>Quick Import & Export:</strong> Export your entire library as JSON backups.</li>
+                </ul>
+              </div>
+            </details>
+            
+            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
+              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+                Music Theory & Interactive Tools
+              </summary>
+              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li><strong>Interactive Circle of Fifths:</strong> Click any key to hear 3-note harmonic audio synthesis.</li>
+                  <li><strong>Virtual Instruments:</strong> Piano, 6-String Guitar, 4/5-String Bass, and Ukulele.</li>
+                  <li><strong>Digital Chromatic Tuner:</strong> Built-in microphone tuner with visual pitch cents needle.</li>
+                  <li><strong>Metronome:</strong> Tap tempo, adjustable BPM, and custom time signatures.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
+              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
+                Privacy & Security
+              </summary>
+              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
+                <ul style="margin: 0; padding-left: 20px;">
+                  <li><strong>Zero Centralized Database:</strong> Sonata does not store or process your songs on external company servers.</li>
+                  <li><strong>Isolated Google OAuth 2.0:</strong> Uses the restricted `drive.file` scope—Sonata can only access the files it creates in your Google Drive.</li>
+                  <li><strong>No Telemetry / No Trackers:</strong> 100% private, open, and client-side.</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+
           <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Release Notes</h3>
           <div id="aboutChangelogContent" style="color:var(--text); font-size: 0.95rem; padding-bottom: 40px;">
             Loading changelog...
