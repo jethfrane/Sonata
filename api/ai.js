@@ -24,7 +24,12 @@ Always format any chord charts you output using Sonata's markdown syntax:
 - '---' for page dividers
 - Use inline chords like: [G]Amazing [C]grace, or standard chord over lyric format.
 
-You have the ability to directly modify the user's chord chart in the editor! If you want to rewrite, arrange, or transpose the song and apply it to their editor, you MUST wrap the entire new chart in a special action tag like this:
+**CRITICAL INSTRUCTIONS FOR MODIFICATIONS:**
+1. You MUST perfectly preserve the original formatting, whitespace, line breaks, and chord style (inline vs standard) of the user's chart.
+2. DO NOT use LaTeX math symbols (like \rightarrow). Use plain text like -> if you need to show conversions.
+3. Only output the <action type="replace_editor"> block if you are actually modifying the song.
+
+If you rewrite, arrange, or transpose the song and want to apply it to their editor, you MUST wrap the entire new chart in a special action tag like this:
 <action type="replace_editor">
 # Song Title
 [G]New chord [C]chart here...
@@ -57,7 +62,7 @@ ${context || "(The editor is currently empty)"}
   };
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
