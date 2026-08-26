@@ -4625,7 +4625,48 @@ Em -  C    -  G  -  D
     const aiSend = document.getElementById('aiSendButton');
     const aiHistory = document.getElementById('aiChatHistory');
     
+    const aiSettingsBtn = document.getElementById('aiSettingsButton');
+    const aiSettingsOverlay = document.getElementById('aiSettingsOverlay');
+    const aiApiKeyInput = document.getElementById('aiApiKeyInput');
+    const aiSaveKeyBtn = document.getElementById('aiSaveKeyButton');
+    const aiClearKeyBtn = document.getElementById('aiClearKeyButton');
+    
     if (!aiFab || !aiPanel) return;
+
+    if (aiSettingsBtn && aiSettingsOverlay) {
+      aiSettingsBtn.addEventListener('click', () => {
+        const isHidden = aiSettingsOverlay.classList.toggle('hidden');
+        if (!isHidden) {
+          aiSettingsOverlay.style.display = 'flex';
+          const savedKey = localStorage.getItem('sonata_gemini_api_key');
+          if (savedKey) aiApiKeyInput.value = savedKey;
+        } else {
+          aiSettingsOverlay.style.display = '';
+        }
+      });
+    }
+    
+    if (aiSaveKeyBtn) {
+      aiSaveKeyBtn.addEventListener('click', () => {
+        const key = aiApiKeyInput.value.trim();
+        if (key) {
+          localStorage.setItem('sonata_gemini_api_key', key);
+          aiSettingsOverlay.classList.add('hidden');
+          aiSettingsOverlay.style.display = '';
+          appendMessage('✅ Your custom Gemini API key has been saved. You now have unlimited access.', 'assistant');
+        }
+      });
+    }
+    
+    if (aiClearKeyBtn) {
+      aiClearKeyBtn.addEventListener('click', () => {
+        localStorage.removeItem('sonata_gemini_api_key');
+        aiApiKeyInput.value = '';
+        aiSettingsOverlay.classList.add('hidden');
+        aiSettingsOverlay.style.display = '';
+        appendMessage('🗑️ Custom API key cleared. You are back on the public Sonata pool.', 'assistant');
+      });
+    }
 
     // Toggle Panel
     const togglePanel = () => {
@@ -4777,19 +4818,24 @@ Em -  C    -  G  -  D
       // Grab current song context
       const songBody = document.getElementById('songBody');
       const context = songBody ? songBody.value : "";
+      const apiKey = localStorage.getItem('sonata_gemini_api_key') || "";
       
       try {
         const response = await fetch('/api/ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, context })
+          body: JSON.stringify({ prompt, context, apiKey })
         });
         
         typingIndicator.remove();
         
         if (response.status === 429) {
-          const errData = await response.json();
-          appendMessage(errData.error, 'assistant');
+          if (!apiKey) {
+            appendMessage("Whoa, Sonata is super popular today! Our shared public AI quota has been reached. To keep using the Co-Writer right now, click the ⚙️ settings icon above to plug in your own free Google Gemini API key.", 'assistant');
+          } else {
+            const errData = await response.json().catch(()=>({}));
+            appendMessage(errData.error || "You have hit the limit on your personal API key.", 'assistant');
+          }
           return;
         }
         

@@ -4,15 +4,15 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt, context } = req.body;
+  const { prompt, context, apiKey } = req.body;
 
   if (!prompt) {
     return res.status(400).json({ error: 'Prompt is required.' });
   }
 
-  const API_KEY = process.env.GEMINI_API_KEY;
+  const API_KEY = apiKey || process.env.GEMINI_API_KEY;
   if (!API_KEY) {
-    console.error("Missing GEMINI_API_KEY environment variable.");
+    console.error("Missing GEMINI_API_KEY environment variable and no user key provided.");
     return res.status(500).json({ error: 'AI Assistant is not configured on the server yet.' });
   }
 
