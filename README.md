@@ -42,7 +42,7 @@ Created by **Jeth Frane**, Sonata was built to replace clumsy paper binders, clu
 * 🆓 **100% Free Forever:** No paywalls, trial periods, or monthly subscriptions.
 * 🔒 **Private & Decentralized:** Your song charts belong to you. Data is stored on your device and backed up to your personal Google Drive. No centralized databases or user tracking.
 * ⚡ **Stage-Ready:** Distraction-free fullscreen presentation mode with smooth auto-scroll, customizable metronome, and true-black stage theme.
-* 🤖 **AI Co‑Writer Built-in:** Real‑time music suggestions, chord generation, and UI automation (change keys, themes, and tempo) directly via chat. Uses a mixed Bring-Your-Own-Key (BYOK) approach to ensure unlimited free usage while providing a seamless fallback.
+* 🤖 **AI Co‑Writer Built-in:** Real‑time music suggestions, chord generation, and UI automation (change keys, themes, and tempo) directly via chat. Includes a smart "Undo" feature for safe UI automation, Reply quotes for token efficiency, and a mixed Bring-Your-Own-Key (BYOK) approach to ensure unlimited free usage.
 * 📱 **Universal Responsiveness:** Designed for all screens—smartphones, iPads, tablets, laptops, and wide desktop displays.
 
 ---
@@ -99,7 +99,7 @@ Created by **Jeth Frane**, Sonata was built to replace clumsy paper binders, clu
 - **2026-08-26**: Improved 429 handling to surface billing depletion messages.
 - **2026-08-26**: Adjusted mobile FAB position to avoid overlap on small screens.
 - **2026-08-26**: Added Open Graph metadata for link previews.
-- **2026-08-26**: Added AI Co‑Writer bullet to README.
+- **2026-08-26**: Added Reply quotes, Undo actions, inline confirmations, and bot UI upgrades.
 
 
 ---

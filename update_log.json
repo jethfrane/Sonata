@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.1",
+    "date": "2026-08-26",
+    "changes": [
+      "AI Action UI: Actions now securely execute UI commands with a new 'Undo' functionality.",
+      "Inline UI Confirmations: Safely clear your AI chat history without disruptive browser popups.",
+      "Smarter Gemini: The AI Co-Writer now perfectly understands all Sonata app features, settings, and navigation.",
+      "AI UX Polish: Modern Bot icon replaced the generic stars, and settings bugs were fixed."
+    ],
+    "whatsNew": "AI UI bugfixes, 'Undo' AI actions, and a smarter Co-Writer system prompt."
+  },
+  {
     "version": "1.4.0",
     "date": "2026-08-26",
     "changes": [
