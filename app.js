@@ -4653,8 +4653,19 @@ Em -  C    -  G  -  D
       const div = document.createElement('div');
       div.className = `ai-message ${sender}`;
       
+      let actionContent = null;
+      let displayHtml = text;
+      
+      if (sender === 'assistant') {
+        const actionMatch = text.match(/<action type="replace_editor">([\s\S]*?)<\/action>/);
+        if (actionMatch) {
+            actionContent = actionMatch[1].trim();
+            displayHtml = text.replace(actionMatch[0], '').trim();
+        }
+      }
+      
       // Handle codeblocks specifically for markdown
-      let formattedText = text;
+      let formattedText = displayHtml;
       // Simple escape for html
       formattedText = formattedText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
       
@@ -4673,6 +4684,28 @@ Em -  C    -  G  -  D
       }).join('');
 
       div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
+      
+      if (actionContent) {
+          const actionBtn = document.createElement('button');
+          actionBtn.className = 'ai-action-btn button full-width';
+          actionBtn.style.marginTop = '12px';
+          actionBtn.style.background = 'var(--accent)';
+          actionBtn.style.color = '#fff';
+          actionBtn.innerHTML = '✨ Review & Apply Changes';
+          actionBtn.onclick = () => {
+              const songBody = document.getElementById('songBody');
+              if (songBody) {
+                  songBody.value = actionContent;
+                  songBody.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+              actionBtn.innerHTML = '✅ Applied! (Undo if needed)';
+              actionBtn.disabled = true;
+              actionBtn.style.background = 'var(--surface-3)';
+              actionBtn.style.color = 'var(--text)';
+          };
+          div.appendChild(actionBtn);
+      }
+      
       aiHistory.appendChild(div);
       aiHistory.scrollTop = aiHistory.scrollHeight;
       saveChat();

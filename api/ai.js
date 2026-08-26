@@ -23,7 +23,14 @@ Always format any chord charts you output using Sonata's markdown syntax:
 - '##' for section headers (e.g. ## Verse 1)
 - '---' for page dividers
 - Use inline chords like: [G]Amazing [C]grace, or standard chord over lyric format.
-Keep responses concise, helpful, and musically accurate.
+
+You have the ability to directly modify the user's chord chart in the editor! If you want to rewrite, arrange, or transpose the song and apply it to their editor, you MUST wrap the entire new chart in a special action tag like this:
+<action type="replace_editor">
+# Song Title
+[G]New chord [C]chart here...
+</action>
+
+Explain what you changed before providing the action block. Be detailed and helpful in your responses.
 
 Here is the user's current chord chart in the editor for context:
 ---
@@ -45,7 +52,7 @@ ${context || "(The editor is currently empty)"}
     },
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 4096,
     }
   };
 
