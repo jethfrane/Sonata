@@ -20,7 +20,7 @@
 
   <!-- Dynamic Favicon Early Script -->
   <script>
-    (function() {
+    (function () {
       const theme = localStorage.getItem('sonata:v12:settings') ? JSON.parse(localStorage.getItem('sonata:v12:settings')).theme : null;
       const isDark = theme === 'dark' || (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
       const iconSrc = isDark ? 'icon_dark.png' : 'icon.png';
@@ -35,7 +35,7 @@
   <meta property="twitter:card" content="summary">
   <meta property="twitter:title" content="Sonata Master">
   <meta property="twitter:description"
-    content="Professional offline tool for musicians. View charts, setlists, and interactive tools securely.">
+    content="Free online tool for musicians. View charts, setlists, and interactive tools securely.">
 
   <title>Sonata</title>
 
@@ -194,7 +194,7 @@
       object-fit: contain;
       box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 25%, transparent);
       flex-shrink: 0;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
       transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, box-shadow 0.2s ease;
       border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
     }
@@ -205,7 +205,7 @@
     }
 
     html[data-theme="dark"] .brand-logo {
-      filter: brightness(1.1) drop-shadow(0 2px 8px rgba(255,255,255,0.14));
+      filter: brightness(1.1) drop-shadow(0 2px 8px rgba(255, 255, 255, 0.14));
       border-color: color-mix(in srgb, var(--line) 80%, transparent);
     }
 
@@ -451,6 +451,7 @@
       opacity: 0;
       transition: opacity 0.25s ease;
     }
+
     .sidebar-backdrop.open {
       display: block;
       opacity: 1;
@@ -466,7 +467,7 @@
       max-width: 85vw;
       background: var(--surface);
       border-right: 1px solid var(--line);
-      box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
       z-index: 99;
       display: flex;
       flex-direction: column;
@@ -476,6 +477,7 @@
       overscroll-behavior: contain;
       padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     }
+
     .sidebar-drawer.open {
       transform: translateX(0);
     }
@@ -513,13 +515,16 @@
       transition: background 0.15s ease, color 0.15s ease;
       width: 100%;
     }
+
     .sidebar-nav-btn:hover {
       background: var(--surface-2);
     }
+
     .sidebar-nav-btn.active {
       background: color-mix(in srgb, var(--accent) 15%, var(--surface-2));
       color: var(--accent);
     }
+
     .sidebar-nav-btn::before {
       content: attr(data-icon-char);
     }
@@ -599,17 +604,18 @@
         opacity: 0;
         transform: translateY(6px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
 
-    .workspace[data-view="editor"] > .editor-panel,
-    .workspace[data-view="library"] > .library-panel,
-    .workspace[data-view="tools"] > .tools-panel,
-    .workspace[data-view="theory"] > .theory-panel,
-    .workspace[data-view="instruments"] > .instrument-panel {
+    .workspace[data-view="editor"]>.editor-panel,
+    .workspace[data-view="library"]>.library-panel,
+    .workspace[data-view="tools"]>.tools-panel,
+    .workspace[data-view="theory"]>.theory-panel,
+    .workspace[data-view="instruments"]>.instrument-panel {
       display: flex !important;
     }
 
@@ -1514,6 +1520,7 @@
       background: linear-gradient(to bottom, #16a34a 0%, #15803d 100%) !important;
       box-shadow: inset 0 -4px 0 #14532d !important;
     }
+
     .piano-key-white.key-root .key-label {
       color: #ffffff !important;
       font-weight: 800 !important;
@@ -1523,6 +1530,7 @@
       background: linear-gradient(to bottom, #dcfce7 0%, #bbf7d0 100%) !important;
       box-shadow: inset 0 -3px 0 #86efac !important;
     }
+
     .piano-key-white.key-in-scale .key-label {
       color: #14532d !important;
       font-weight: 750 !important;
@@ -1533,26 +1541,31 @@
       border: 1.5px solid #22c55e !important;
       box-shadow: 0 0 10px rgba(34, 197, 94, 0.45) !important;
     }
+
     .piano-key-black.key-root .key-label {
       color: #ffffff !important;
       font-weight: 800 !important;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
 
     .piano-key-black.key-in-scale {
       background: linear-gradient(to bottom, #064e3b 0%, #022c22 100%) !important;
       border: 1px solid #10b981 !important;
     }
+
     .piano-key-black.key-in-scale .key-label {
       color: #86efac !important;
       font-weight: 750 !important;
     }
 
     /* Playback always overrides scale highlight */
-    .piano-key-white.active, .piano-key-white:active {
+    .piano-key-white.active,
+    .piano-key-white:active {
       background: linear-gradient(to bottom, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, black) 100%) !important;
     }
-    .piano-key-white.active .key-label, .piano-key-white:active .key-label {
+
+    .piano-key-white.active .key-label,
+    .piano-key-white:active .key-label {
       color: #ffffff !important;
     }
 
@@ -1564,6 +1577,7 @@
       font-weight: 800 !important;
       box-shadow: 0 0 0 2px #4ade80, 0 2px 8px rgba(21, 128, 61, 0.6) !important;
     }
+
     .fret-cell.fret-in-scale .fret-note-marker {
       background: #86efac !important;
       color: #14532d !important;
@@ -2563,6 +2577,7 @@
       .editor-panel[data-mobile-pane="edit"] .editor-pane-left {
         display: flex !important;
       }
+
       .editor-panel[data-mobile-pane="edit"] .editor-pane-right {
         display: none !important;
       }
@@ -2570,9 +2585,11 @@
       .editor-panel[data-mobile-pane="preview"] .editor-pane-left {
         display: none !important;
       }
+
       .editor-panel[data-mobile-pane="preview"] .editor-pane-right {
         display: flex !important;
       }
+
       .editor-panel[data-mobile-pane="preview"] .desktop-preview-mode-switch {
         display: inline-flex !important;
       }
@@ -2580,9 +2597,11 @@
       .editor-panel[data-mobile-pane="split"] .editor-pane-left {
         display: flex !important;
       }
+
       .editor-panel[data-mobile-pane="split"] .editor-pane-right {
         display: flex !important;
       }
+
       .editor-panel[data-mobile-pane="split"] .desktop-preview-mode-switch {
         display: inline-flex !important;
       }
@@ -2956,9 +2975,20 @@
     }
 
     @keyframes qrScanLaser {
-      0% { top: 0; opacity: 0.8; }
-      50% { top: calc(100% - 2px); opacity: 1; }
-      100% { top: 0; opacity: 0.8; }
+      0% {
+        top: 0;
+        opacity: 0.8;
+      }
+
+      50% {
+        top: calc(100% - 2px);
+        opacity: 1;
+      }
+
+      100% {
+        top: 0;
+        opacity: 0.8;
+      }
     }
 
     /* AI Co-Writer Styles */
@@ -2980,12 +3010,12 @@
       z-index: 900;
       transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
     }
-    
+
     .ai-fab:hover {
       transform: scale(1.1);
       box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 60%, transparent);
     }
-    
+
     .ai-chat-panel {
       position: fixed;
       bottom: 90px;
@@ -3005,13 +3035,13 @@
       transition: opacity 0.3s, transform 0.3s;
       transform-origin: bottom right;
     }
-    
+
     .ai-chat-panel.hidden {
       opacity: 0;
       pointer-events: none;
       transform: scale(0.9) translateY(20px);
     }
-    
+
     .ai-chat-header {
       padding: 14px 16px;
       background: var(--surface-2);
@@ -3020,7 +3050,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    
+
     .ai-chat-history {
       flex: 1;
       padding: 16px;
@@ -3030,7 +3060,7 @@
       gap: 12px;
       font-size: 0.9rem;
     }
-    
+
     .ai-message {
       padding: 10px 14px;
       border-radius: 12px;
@@ -3038,20 +3068,20 @@
       line-height: 1.4;
       white-space: pre-wrap;
     }
-    
+
     .ai-message.assistant {
       background: var(--surface-2);
       align-self: flex-start;
       border-bottom-left-radius: 4px;
     }
-    
+
     .ai-message.user {
       background: var(--accent);
       color: #fff;
       align-self: flex-end;
       border-bottom-right-radius: 4px;
     }
-    
+
     .ai-chat-input-area {
       padding: 12px;
       border-top: 1px solid var(--line);
@@ -3059,7 +3089,7 @@
       display: flex;
       gap: 8px;
     }
-    
+
     .ai-chat-input-area textarea {
       flex: 1;
       resize: none;
@@ -3072,24 +3102,24 @@
       outline: none;
       font-family: inherit;
     }
-    
+
     .ai-chat-input-area textarea:focus {
       border-color: var(--accent);
     }
-    
+
     @media (max-width: 600px) {
       .ai-chat-panel {
         width: calc(100% - 32px);
         right: 16px;
         bottom: 86px;
       }
+
       .ai-fab {
         right: 16px;
         bottom: 16px;
       }
     }
-
-</style>
+  </style>
 </head>
 
 <body>
@@ -3106,7 +3136,8 @@
           <span id="sidebarVersion" class="brand-subtitle"></span>
         </div>
       </div>
-      <button id="sidebarCloseBtn" class="icon-button ghost" data-icon="x" type="button" aria-label="Close menu"></button>
+      <button id="sidebarCloseBtn" class="icon-button ghost" data-icon="x" type="button"
+        aria-label="Close menu"></button>
     </div>
 
     <!-- Sidebar nav (mirrors top-nav for tablet/mobile) -->
@@ -3123,30 +3154,42 @@
     <!-- Sidebar secondary actions -->
     <div class="sidebar-actions">
 
-      <button class="button ghost full-width" id="sidebarDriveSyncBtn" data-icon="cloud" type="button">Drive Sync</button>
-      <button class="button ghost full-width" id="sidebarHelpBtn" data-icon="help" type="button">Help &amp; About</button>
-      <button class="button ghost full-width" id="sidebarSettingsBtn" data-icon="settings" type="button">Settings</button>
-      <button class="button ghost full-width" id="sidebarPresentBtn" data-icon="presentation" type="button">Presentation Mode</button>
+      <button class="button ghost full-width" id="sidebarDriveSyncBtn" data-icon="cloud" type="button">Drive
+        Sync</button>
+      <button class="button ghost full-width" id="sidebarHelpBtn" data-icon="help" type="button">Help &amp;
+        About</button>
+      <button class="button ghost full-width" id="sidebarSettingsBtn" data-icon="settings"
+        type="button">Settings</button>
+      <button class="button ghost full-width" id="sidebarPresentBtn" data-icon="presentation" type="button">Presentation
+        Mode</button>
     </div>
 
     <div class="sidebar-divider"></div>
 
     <!-- Language + version in sidebar -->
     <div class="sidebar-footer">
-      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer">
-        <img id="sidebarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
-        <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);">Hi, Musician!</span>
+      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;"
+        id="sidebarProfileContainer">
+        <img id="sidebarUserAvatar"
+          src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>"
+          alt="Profile"
+          style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);"
+          title="Google Account / Sync">
+        <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);">Hi,
+          Musician!</span>
       </div>
       <label class="sidebar-label" for="langSelectSidebar">Language</label>
       <select id="langSelectSidebar" class="select" style="width:100%;"></select>
-      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button">Install App</button>
+      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button">Install
+        App</button>
     </div>
   </aside>
 
   <div class="app-shell">
     <header class="topbar">
       <!-- Hamburger — shown on tablet/mobile, hidden on desktop -->
-      <button id="menuToggleBtn" class="icon-button ghost topbar-menu-btn" data-icon="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="sidebarDrawer"></button>
+      <button id="menuToggleBtn" class="icon-button ghost topbar-menu-btn" data-icon="menu" type="button"
+        aria-label="Open menu" aria-expanded="false" aria-controls="sidebarDrawer"></button>
 
       <div class="brand">
         <img src="icon.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
@@ -3161,25 +3204,38 @@
 
       <!-- Desktop tab nav pill -->
       <nav class="top-nav" role="tablist" aria-label="Main navigation">
-        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
-        <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
-        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
-        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
-        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
+        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span
+            class="button-label">Editor</span></button>
+        <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span
+            class="button-label">Library</span></button>
+        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools
+            &amp; Export</span></button>
+        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span
+            class="button-label">Theory</span></button>
+        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span
+            class="button-label">Play</span></button>
       </nav>
 
       <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
         <div id="topbarProfileContainer" title="Google Account / Sync">
-          <img id="topbarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile">
+          <img id="topbarUserAvatar"
+            src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>"
+            alt="Profile">
           <span id="topbarUserGreeting">Hi, Musician</span>
         </div>
-        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button" title="Google Drive Sync"><span class="button-label">Drive Sync</span></button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;" title="Install App"><span class="button-label">Install App</span></button>
-        <button class="button ghost" id="helpButton" data-icon="help" type="button" title="Help & About"><span class="button-label">Help</span></button>
-        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle theme" title="Toggle Theme"></button>
-        <button class="button ghost" id="settingsButton" data-icon="settings" type="button" title="Settings"><span class="button-label">Settings</span></button>
-        <button class="button primary" id="presentationButton" data-icon="presentation" type="button" title="Presentation Mode"><span class="button-label">Present</span></button>
+        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button"
+          title="Google Drive Sync"><span class="button-label">Drive Sync</span></button>
+        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;"
+          title="Install App"><span class="button-label">Install App</span></button>
+        <button class="button ghost" id="helpButton" data-icon="help" type="button" title="Help & About"><span
+            class="button-label">Help</span></button>
+        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle theme"
+          title="Toggle Theme"></button>
+        <button class="button ghost" id="settingsButton" data-icon="settings" type="button" title="Settings"><span
+            class="button-label">Settings</span></button>
+        <button class="button primary" id="presentationButton" data-icon="presentation" type="button"
+          title="Presentation Mode"><span class="button-label">Present</span></button>
         <select id="langSelect" class="select" title="Language">
           <option value="en" selected>English</option>
           <option value="fil">Filipino</option>
@@ -3189,9 +3245,15 @@
 
       <!-- Mobile quick actions row: theme toggle + present only -->
       <div class="topbar-mobile-actions">
-        <img id="mobileUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="Profile" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
-        <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle theme"></button>
-        <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button">Present</button>
+        <img id="mobileUserAvatar"
+          src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>"
+          alt="Profile"
+          style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);"
+          title="Google Account / Sync">
+        <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button"
+          aria-label="Toggle theme"></button>
+        <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation"
+          type="button">Present</button>
       </div>
     </header>
 
@@ -3219,10 +3281,12 @@
         <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
           <div class="field" style="flex:1; min-width:180px; margin:0;">
             <label class="visually-hidden" for="songSearch">Search</label>
-            <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics..." autocomplete="off" style="margin:0;">
+            <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics..."
+              autocomplete="off" style="margin:0;">
           </div>
           <div class="select-wrapper" style="width:120px;">
-            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;" title="Sort Library">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;"
+              title="Sort Library">
               <option value="recent">Recent</option>
               <option value="title">Title</option>
               <option value="author">Author</option>
@@ -3268,7 +3332,8 @@
             <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
           </div>
           <div class="mobile-editor-mode-toggle segmented" role="tablist" id="mobileEditorModeToggle">
-            <button class="tab-button active" type="button" data-mobile-editor-pane="edit" data-icon="edit">Edit</button>
+            <button class="tab-button active" type="button" data-mobile-editor-pane="edit"
+              data-icon="edit">Edit</button>
             <button class="tab-button" type="button" data-mobile-editor-pane="preview" data-icon="eye">Preview</button>
             <button class="tab-button" type="button" data-mobile-editor-pane="split" data-icon="columns">Split</button>
           </div>
@@ -3292,7 +3357,8 @@
               <span class="muted" style="font-size:0.72rem;"># Section &bull; [Chord] inline</span>
             </div>
             <div class="editor-container">
-              <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body" placeholder=" "></textarea>
+              <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body"
+                placeholder=" "></textarea>
               <div class="editor-placeholder">
                 <h3>Welcome to Sonata!</h3>
                 <p>Type your chords and lyrics below, or click <strong>Demo</strong> above to instantly load a fully
@@ -3311,7 +3377,8 @@
             <div class="pane-header">
               <span class="pane-tag">LIVE CHART PREVIEW</span>
               <div style="display:flex; gap:4px; align-items:center;">
-                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
+                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button"
+                  title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
                 <button class="help-icon" data-help="formats" type="button">?</button>
               </div>
             </div>
@@ -3406,11 +3473,13 @@
               <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button">?</button></h2>
             </div>
             <div class="layout-row">
-              <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select" id="exportOrientation" aria-label="Orientation">
+              <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select"
+                  id="exportOrientation" aria-label="Orientation">
                   <option value="portrait">Portrait</option>
                   <option value="landscape">Landscape</option>
                 </select></div>
-              <div class="field"><label for="exportColumns">Columns</label><select class="select" id="exportColumns" aria-label="Columns">
+              <div class="field"><label for="exportColumns">Columns</label><select class="select" id="exportColumns"
+                  aria-label="Columns">
                   <option value="1">1 Column</option>
                   <option value="2">2 Columns</option>
                   <option value="3">3 Columns</option>
@@ -3418,11 +3487,11 @@
             </div>
             <div class="export-grid">
               <button class="button" id="exportTxtButton" data-icon="file-text" type="button">Export TXT</button><button
-                class="button" id="exportPngButton" data-icon="image" type="button">Export PNG</button><button class="button"
-                id="exportPdfButton" data-icon="pdf" type="button">Export PDF</button><button class="button" id="printButton"
-                data-icon="print" type="button">Print Chart</button><button class="button" id="copyButton" data-icon="copy"
-                type="button">Copy Text</button><button class="button primary" id="shareButton" data-icon="share"
-                type="button">Share Link / QR</button>
+                class="button" id="exportPngButton" data-icon="image" type="button">Export PNG</button><button
+                class="button" id="exportPdfButton" data-icon="pdf" type="button">Export PDF</button><button
+                class="button" id="printButton" data-icon="print" type="button">Print Chart</button><button
+                class="button" id="copyButton" data-icon="copy" type="button">Copy Text</button><button
+                class="button primary" id="shareButton" data-icon="share" type="button">Share Link / QR</button>
             </div>
           </div>
         </div>
@@ -3471,8 +3540,10 @@
           <!-- Key highlight selector -->
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <label style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
-            <select id="instrumentKeyRoot" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
-            <select id="instrumentKeyMode" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
+            <select id="instrumentKeyRoot" class="select"
+              style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
+            <select id="instrumentKeyMode" class="select"
+              style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
               <option value="major">Major</option>
               <option value="minor">Minor</option>
             </select>
@@ -3589,26 +3660,42 @@
 
   <!-- AI Assistant FAB and Panel -->
   <button id="aiFabButton" class="ai-fab" title="AI Co-Writer" aria-label="Open AI Assistant">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path
+        d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+    </svg>
   </button>
 
   <aside id="aiChatPanel" class="ai-chat-panel hidden">
     <div class="ai-chat-header">
       <div style="display:flex; align-items:center; gap:8px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          style="color:var(--accent);">
+          <path
+            d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        </svg>
         <h2 style="margin:0; font-size:1.1rem; font-weight:700;">AI Co-Writer</h2>
       </div>
-      <button id="aiCloseButton" class="icon-button ghost" data-icon="x" type="button" aria-label="Close AI" style="min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      <button id="aiCloseButton" class="icon-button ghost" data-icon="x" type="button" aria-label="Close AI"
+        style="min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
     <div id="aiChatHistory" class="ai-chat-history">
       <div class="ai-message assistant">
-        <p style="margin:0;">Hi! I'm your AI co-writer. I can read your current chord chart and help you write, arrange, transpose, or format lyrics. How can I help?</p>
+        <p style="margin:0;">Hi! I'm your AI co-writer. I can read your current chord chart and help you write, arrange,
+          transpose, or format lyrics. How can I help?</p>
       </div>
     </div>
     <div class="ai-chat-input-area">
-      <textarea id="aiChatInput" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2"></textarea>
+      <textarea id="aiChatInput" placeholder="Ask AI to write a bridge, add chords, format lyrics..."
+        rows="2"></textarea>
       <button id="aiSendButton" class="button primary" type="button" title="Send (Enter)">Send</button>
     </div>
   </aside>
@@ -3639,7 +3726,7 @@
       const KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const MINOR_KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
       const NOTE_TO_SEMITONE = { C: 0, "B#": 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11 };
-      const SCALE_INTERVALS = { major: [0,2,4,5,7,9,11], minor: [0,2,3,5,7,8,10] };
+      const SCALE_INTERVALS = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10] };
 
       const CIRCLE_OF_FIFTHS = [
         { major: "C", minor: "A", dim: "B", offset: 0 }, { major: "G", minor: "E", dim: "F#", offset: 7 },
@@ -3787,7 +3874,7 @@ Em -  C    -  G  -  D
           aboutTitle: "About Sonata",
           aboutConfirm: "Close",
           aboutHtml: `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p><strong>Sonata</strong> (/səˈnɑːtə/) comes from Latin <em>sonare</em>, meaning "to sound" or "a piece played."</p><p>Created by <strong>Jethro Frane</strong>, a church musician, Sonata was built to help church musicians and bands collaborate seamlessly and eliminate stage friction.</p><p style="margin-bottom:6px; font-weight:700;">Core Objectives:</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size: 0.85rem;"><li><strong>100% Offline:</strong> Works on stages with zero Wi-Fi or cellular coverage.</li><li><strong>Centralized Hub:</strong> Charts, metronomes, and theory tools in one app.</li><li><strong>Instant Transposition:</strong> Adapt to any vocal range on the fly.</li><li><strong>Number Systems:</strong> Master Nashville Numbers and Roman Numerals effortlessly.</li><li><strong>Zero-Friction Sharing:</strong> Share configurations via QR codes—no accounts.</li><li><strong>Stage Ready:</strong> True-black presentation modes that save battery and reduce glare.</li><li><strong>Robust Exports:</strong> Multi-column PDF and PNG generation.</li><li><strong>Theory Tools:</strong> Interactive Circle of 5ths and Virtual Fretboard.</li><li><strong>Setlists:</strong> Compile songs and share entire sets securely.</li><li><strong>Privacy First:</strong> Your library stays securely local on your device.</li></ul><p style="margin-top:16px; font-style:italic; font-weight:700; text-align:center; color:var(--accent); font-size:0.9rem;">"So whether you eat or drink or whatever you do, do it all for the glory of God." <br>— 1 Corinthians 10:31 (NIV)</p></div>`,
-          
+
           settingsTitle: "Settings",
           settingsConfirm: "Save Settings",
           settingsHeadingAppearance: "Appearance",
@@ -3825,7 +3912,7 @@ Em -  C    -  G  -  D
           font_rounded: "Rounded",
           font_serif: "Serif",
           font_mono: "Mono",
-          
+
           switchedTo: "Switched to ",
           themeSaved: "Theme saved",
           themeUpdated: "Theme updated: ",
@@ -3842,23 +3929,23 @@ Em -  C    -  G  -  D
           sortedToast: "Sorted: ",
           filterToast: "Filter: ",
           newSongReadyToast: "New song ready",
-          
+
           applyTransposeTitle: "Apply Transpose",
           applyTransposeMessage: "Permanently rewrite chords in editor?",
           applyTransposeConfirm: "Apply",
           applyTransposeToast: "Chords transposed permanently",
           applyTransposeToastNoSelect: "No transpose selected",
-          
+
           resetModificationsTitle: "Reset Modifications",
           resetModificationsMessage: "Reset Capo and Transpose?",
           resetModificationsConfirm: "Reset",
           resetModificationsToast: "Reset",
-          
+
           deleteSongTitle: "Delete Song",
           deleteSongMessage: "Delete this song?",
           deleteSongConfirm: "Delete",
           deleteSongToast: "Deleted",
-          
+
           deleteSetlistTitle: "Delete Setlist",
           deleteSetlistMessage: "Delete this setlist?",
           deleteSetlistConfirm: "Delete",
@@ -3959,7 +4046,7 @@ Em -  C    -  G  -  D
           aboutTitle: "Tungkol sa Sonata",
           aboutConfirm: "Isara",
           aboutHtml: `<div style="color:var(--text); font-size:0.88rem; line-height:1.6;"><p>Ang <strong>Sonata</strong> (/səˈnɑːtə/) ay nagmula sa salitang Latin na <em>sonare</em>, na ang ibig sabihin ay "tumunog" o "isang tinutugtog."</p><p>Nilikha ni <strong>Jethro Frane</strong>, isang musikero sa simbahan, ang Sonata ay binuo upang tulungan ang mga musikero at banda na magtulungan nang walang aberya at maiwasan ang kalituhan sa entablado.</p><p style="margin-bottom:6px; font-weight:700;">Pangunahing Layunin:</p><ul style="padding-left:20px; margin-top:0; color:var(--muted); font-size: 0.85rem;"><li><strong>100% Offline:</strong> Gumagana sa entablado kahit walang Wi-Fi o signal.</li><li><strong>Sentralisadong Hub:</strong> Mga chart, metronomo, at teorya sa isang app.</li><li><strong>Mabilisang Transposition:</strong> Madaling baguhin ang tono para sa sinumang mang-aawit.</li><li><strong>Number Systems:</strong> Madaling matutunan ang Nashville Numbers at Roman Numerals.</li><li><strong>Mabilisang Pagbabahagi:</strong> Ibahagi ang mga kanta gamit ang QR code—walang account na kailangan.</li><li><strong>Handa sa Entablado:</strong> May presentation mode na madilim para makatipid sa baterya at hindi nakakasilaw.</li><li><strong>Maasahang Export:</strong> Gumawa ng PDF at PNG na may maraming column.</li><li><strong>Mga Teorya ng Musika:</strong> Interactive na Circle of 5ths at Virtual Fretboard.</li><li><strong>Mga Setlist:</strong> Pagsamahin ang mga kanta at ibahagi ang buong set nang ligtas.</li><li><strong>Protektadong Data:</strong> Ang iyong aklatan ay ligtas na nakaimbak lamang sa iyong device.</li></ul><p style="margin-top:16px; font-style:italic; font-weight:700; text-align:center; color:var(--accent); font-size:0.9rem;">"Kaya nga, kung kayo'y kumakain, o umiinom, o anuman ang inyong ginagawa, gawin ninyo ang lahat sa ikaluluwalhati ng Diyos." <br>— 1 Corinto 10:31 (MBBTAG)</p></div>`,
-          
+
           settingsTitle: "Setting",
           settingsConfirm: "I-save ang mga Setting",
           settingsHeadingAppearance: "Anyo",
@@ -3997,7 +4084,7 @@ Em -  C    -  G  -  D
           font_rounded: "Mabilog",
           font_serif: "Serif",
           font_mono: "Mono",
-          
+
           switchedTo: "Pumunta sa ",
           themeSaved: "Nai-save ang Tema",
           themeUpdated: "Na-update ang Tema: ",
@@ -4014,28 +4101,28 @@ Em -  C    -  G  -  D
           sortedToast: "Nakaayos ayon sa: ",
           filterToast: "Filter: ",
           newSongReadyToast: "Handa na ang bagong kanta",
-          
+
           applyTransposeTitle: "Ilapat ang Transpose",
           applyTransposeMessage: "Permanenteng i-transposed ang chords sa editor?",
           applyTransposeConfirm: "Ilapat",
           applyTransposeToast: "Permanenteng nabago ang chords",
           applyTransposeToastNoSelect: "Walang napiling transpose",
-          
+
           resetModificationsTitle: "I-reset ang mga Pagbabago",
           resetModificationsMessage: "I-reset ang Capo at Transpose?",
           resetModificationsConfirm: "I-reset",
           resetModificationsToast: "Na-reset na",
-          
+
           deleteSongTitle: "Burahin ang Kanta",
           deleteSongMessage: "Burahin ang kantang ito?",
           deleteSongConfirm: "Burahin",
           deleteSongToast: "Nabura na",
-          
+
           deleteSetlistTitle: "Burahin ang Setlist",
           deleteSetlistMessage: "Burahin ang setlist na ito?",
           deleteSetlistConfirm: "Burahin",
           deleteSetlistToast: "Nabura na ang Setlist",
-          
+
           help_library: "Ang iyong library ng kanta ay ligtas na nakaimbak sa browser na ito offline. Gumawa ng Setlists upang pagsama-samahin ang mga kanta para sa worship.",
           help_keyOverride: "Pinipilit ang Roman Numeral at Nashville Number na kalkulahin base sa partikular na tono na ito.",
           help_capo: "Piliin ang fret kung saan mo ilalagay ang capo. Ang preview at export ay magpapakita ng aktwal na posisyon ng chords na kailangan mong tugtugin.",
@@ -4121,13 +4208,13 @@ Em -  C    -  G  -  D
             ctx.fillRect(x + 6 * cellSize, y + i * cellSize, cellSize, cellSize);
           }
           const pattern = [
-            [0,8],[2,8],[3,8],[5,8],[7,8],[8,0],[8,2],[8,4],[8,7],[8,8],
-            [9,9],[9,11],[9,13],[10,8],[10,10],[10,12],[10,14],[11,9],[11,11],[11,13],
-            [12,8],[12,10],[12,12],[12,14],[13,9],[13,11],[13,13],[14,8],[14,10],[14,12],
-            [15,9],[15,11],[15,13],[15,15],[16,8],[16,10],[16,12],[16,14],[17,9],[17,11],
-            [18,8],[18,10],[18,12],[18,14],[18,16],[19,9],[19,11],[19,13],[19,15],[20,8],
-            [8,15],[8,17],[8,19],[8,20],[9,16],[9,18],[9,20],[10,17],[10,19],[11,16],[11,18],
-            [12,17],[12,19],[13,16],[13,18],[13,20],[14,17],[14,19],[15,16],[15,18],[16,17]
+            [0, 8], [2, 8], [3, 8], [5, 8], [7, 8], [8, 0], [8, 2], [8, 4], [8, 7], [8, 8],
+            [9, 9], [9, 11], [9, 13], [10, 8], [10, 10], [10, 12], [10, 14], [11, 9], [11, 11], [11, 13],
+            [12, 8], [12, 10], [12, 12], [12, 14], [13, 9], [13, 11], [13, 13], [14, 8], [14, 10], [14, 12],
+            [15, 9], [15, 11], [15, 13], [15, 15], [16, 8], [16, 10], [16, 12], [16, 14], [17, 9], [17, 11],
+            [18, 8], [18, 10], [18, 12], [18, 14], [18, 16], [19, 9], [19, 11], [19, 13], [19, 15], [20, 8],
+            [8, 15], [8, 17], [8, 19], [8, 20], [9, 16], [9, 18], [9, 20], [10, 17], [10, 19], [11, 16], [11, 18],
+            [12, 17], [12, 19], [13, 16], [13, 18], [13, 20], [14, 17], [14, 19], [15, 16], [15, 18], [16, 17]
           ];
           pattern.forEach(([r, c]) => {
             ctx.fillRect(x + c * cellSize, y + r * cellSize, cellSize + 0.3, cellSize + 0.3);
@@ -4359,8 +4446,8 @@ Em -  C    -  G  -  D
               for (let c = -1; c <= 7; c++) {
                 if (col + c <= -1 || this.moduleCount <= col + c) continue;
                 if ((0 <= r && r <= 6 && (c === 0 || c === 6)) ||
-                    (0 <= c && c <= 6 && (r === 0 || r === 6)) ||
-                    (2 <= r && r <= 4 && 2 <= c && c <= 4)) {
+                  (0 <= c && c <= 6 && (r === 0 || r === 6)) ||
+                  (2 <= r && r <= 4 && 2 <= c && c <= 4)) {
                   this.modules[row + r][col + c] = true;
                 } else {
                   this.modules[row + r][col + c] = false;
@@ -4517,7 +4604,7 @@ Em -  C    -  G  -  D
           }
         }
 
-        QRCodeModel.createData = function(typeNumber, errorCorrectLevel, dataList) {
+        QRCodeModel.createData = function (typeNumber, errorCorrectLevel, dataList) {
           const rsBlocks = getRSBlocks(typeNumber, errorCorrectLevel);
           const buffer = new BitBuffer();
           for (let i = 0; i < dataList.length; i++) {
@@ -4540,7 +4627,7 @@ Em -  C    -  G  -  D
           return QRCodeModel.createBytes(buffer, rsBlocks);
         };
 
-        QRCodeModel.createBytes = function(buffer, rsBlocks) {
+        QRCodeModel.createBytes = function (buffer, rsBlocks) {
           let offset = 0;
           let maxDcCount = 0;
           let maxEcCount = 0;
@@ -4580,7 +4667,7 @@ Em -  C    -  G  -  D
           return data;
         };
 
-        QRCodeModel.getBCHTypeInfo = function(data) {
+        QRCodeModel.getBCHTypeInfo = function (data) {
           let d = data << 10;
           while (QRCodeModel.getBCHDigit(d) - QRCodeModel.getBCHDigit(1335) >= 0) {
             d ^= (1335 << (QRCodeModel.getBCHDigit(d) - QRCodeModel.getBCHDigit(1335)));
@@ -4588,7 +4675,7 @@ Em -  C    -  G  -  D
           return ((data << 10) | d) ^ 21522;
         };
 
-        QRCodeModel.getBCHTypeNumber = function(data) {
+        QRCodeModel.getBCHTypeNumber = function (data) {
           let d = data << 12;
           while (QRCodeModel.getBCHDigit(d) - QRCodeModel.getBCHDigit(7973) >= 0) {
             d ^= (7973 << (QRCodeModel.getBCHDigit(d) - QRCodeModel.getBCHDigit(7973)));
@@ -4596,13 +4683,13 @@ Em -  C    -  G  -  D
           return (data << 12) | d;
         };
 
-        QRCodeModel.getBCHDigit = function(data) {
+        QRCodeModel.getBCHDigit = function (data) {
           let digit = 0;
           while (data !== 0) { digit++; data >>>= 1; }
           return digit;
         };
 
-        QRCodeModel.getMask = function(maskPattern) {
+        QRCodeModel.getMask = function (maskPattern) {
           switch (maskPattern) {
             case 0: return (i, j) => (i + j) % 2 === 0;
             case 1: return (i, j) => i % 2 === 0;
@@ -4766,10 +4853,10 @@ Em -  C    -  G  -  D
               this.userEmail = cachedProfile.userEmail || null;
               this.userPicture = cachedProfile.userPicture || null;
             }
-          } catch(e) {}
+          } catch (e) { }
           this.updateProfileUI();
           this.loadCachedToken();
-          
+
           setTimeout(() => this.initTokenClientIfNeeded(), 500);
 
           const btn = document.getElementById('googleSyncButton');
@@ -4899,7 +4986,7 @@ Em -  C    -  G  -  D
           const greetingText = `Hi, ${name}!`;
           const emptySvg = 'data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="%2394a3b8" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z"/></svg>';
           const pic = (this.accessToken || this.userName || this.userEmail) ? (this.userPicture || emptySvg) : emptySvg;
-          
+
           if (UIManager.dom.sidebarProfileContainer) {
             UIManager.dom.sidebarProfileContainer.hidden = false;
             if (UIManager.dom.sidebarUserGreeting) UIManager.dom.sidebarUserGreeting.textContent = greetingText;
@@ -5982,12 +6069,12 @@ Em -  C    -  G  -  D
           return short || directUrl;
         },
         exportTxt() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".txt", "text/plain;charset=utf-8", p.text); UIManager.toast("TXT exported"); },
-        async exportPng() { 
+        async exportPng() {
           UIManager.toast("Generating PNG... (this may take a moment)");
           const shareUrl = await this.getActiveShareUrl();
-          const p = this.setlistPayloads()[0]; 
-          Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p, shareUrl)); 
-          UIManager.toast("PNG exported"); 
+          const p = this.setlistPayloads()[0];
+          Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p, shareUrl));
+          UIManager.toast("PNG exported");
         },
         renderPng(payload, shareUrl) {
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
@@ -6208,13 +6295,13 @@ Em -  C    -  G  -  D
           for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
           return new Blob([bytes], { type: "image/png" });
         },
-        async exportPdf() { 
+        async exportPdf() {
           UIManager.toast("Generating PDF... (this may take a moment)");
           const shareUrl = await this.getActiveShareUrl();
-          const payloads = this.setlistPayloads(); 
-          const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; 
-          Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads, shareUrl)); 
-          UIManager.toast("PDF exported"); 
+          const payloads = this.setlistPayloads();
+          const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title;
+          Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads, shareUrl));
+          UIManager.toast("PDF exported");
         },
         createPdf(payloads, shareUrl) {
           const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
@@ -6558,7 +6645,7 @@ Em -  C    -  G  -  D
               try {
                 const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
                 text = await new Response(stream).text();
-              } catch(e) {
+              } catch (e) {
                 text = new TextDecoder().decode(bytes);
               }
             } else {
@@ -6569,7 +6656,7 @@ Em -  C    -  G  -  D
             try {
               const fallback = decodeURIComponent(escape(atob(decodeURIComponent(String(raw)).replace(/-/g, '+').replace(/_/g, '/').replace(/\s+/g, '+'))));
               return fallback.startsWith("v3.") ? fallback.substring(3) : fallback.startsWith("v2.") ? fallback.substring(3) : fallback.startsWith("v1.") ? fallback.substring(3) : fallback;
-            } catch(err2) {
+            } catch (err2) {
               console.error("Decompress error:", err2);
               return "";
             }
@@ -6600,7 +6687,7 @@ Em -  C    -  G  -  D
               ctx.drawImage(brandImg, 144, 28, 44, 44);
               ctx.restore();
               drawnHeaderLogo = true;
-            } catch(e) {}
+            } catch (e) { }
           }
           if (!drawnHeaderLogo) {
             ctx.fillStyle = "#ffffff";
@@ -6805,7 +6892,7 @@ Em -  C    -  G  -  D
           document.querySelectorAll("[data-view]").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.view === viewName);
           });
-          try { localStorage.setItem('sonata_active_view', viewName); } catch(e) {}
+          try { localStorage.setItem('sonata_active_view', viewName); } catch (e) { }
           if (viewName === "theory") InstrumentManager.renderCircle();
           if (viewName === "instruments") {
             InstrumentManager.renderPiano();
@@ -6879,7 +6966,7 @@ Em -  C    -  G  -  D
           setLabel("#manageLibraryBtn", d.manageLibraryBtn);
           setLabel("#newSongButton", d.newSongButton);
           setPlaceholder("#songSearch", d.songSearchPlaceholder);
-          
+
           // Sort Options
           const sortSelect = document.getElementById("librarySortSelect");
           if (sortSelect) {
@@ -6938,12 +7025,12 @@ Em -  C    -  G  -  D
           setHtml(".tools-panel .metric:nth-child(2) span", d.toolsMetricActive);
           setHtml(".tools-panel .metric:nth-child(3) span", d.toolsMetricChords);
           setHtml(".tools-panel .metric:nth-child(4) span", d.toolsMetricTranspose);
-          
+
           setHtml('.tools-panel label[for="keySelect"]', `${d.toolsKeyOverride} <button class="help-icon" data-help="keyOverride" type="button">?</button>`);
           // For Capo select:
           setHtml('#capoLabel', d.toolsCapo);
           setHtml('.tools-panel label[for="transposeSelect"]', `${d.toolsTransposeSemi} <button class="help-icon" data-help="transpose" type="button">?</button>`);
-          
+
           setLabel("#applyTransposeButton", d.toolsApplyTranspose);
           setLabel("#resetTransposeButton", d.toolsReset);
 
@@ -6983,7 +7070,7 @@ Em -  C    -  G  -  D
           setLabel("#presentationExit", d.presentationExit);
           setLabel("#presScrollToggle", ScrollManager.running ? "pause" : "scroll", ScrollManager.running ? "Pause" : d.presentationScroll, true);
           setHtml(".presentation-controls-bottom span:nth-of-type(1)", d.presentationSpeed);
-          
+
           // Modals
           setText("#modalCancel", d.modalCancel);
           setText("#modalConfirm", d.modalConfirm);
@@ -7015,12 +7102,12 @@ Em -  C    -  G  -  D
             this.openModal({ title: t("aboutTitle", "About Sonata"), confirmText: t("aboutConfirm", "Close"), fields: [{ type: "custom", html: aboutHtml + changelogHtml }] });
             fetch('update_log.json').then(r => r.json()).then(logs => {
               const el = document.getElementById('changelogContent'); if (!el) return;
-              el.innerHTML = logs.map(v => `<details style="margin-bottom:6px;border:1px solid var(--line);border-radius:6px;overflow:hidden;"><summary style="padding:8px 12px;cursor:pointer;font-weight:700;font-size:0.83rem;background:var(--surface-2);color:var(--text);display:flex;justify-content:space-between;list-style:none;"><span>v${v.version}</span><span style="color:var(--muted);font-weight:400;">${v.date}</span></summary><p style="font-style:italic;color:var(--accent);margin:8px 14px 4px;font-size:0.82rem;">${v.whatsNew||''}</p><ul style="padding:0 14px 8px 28px;margin:0;line-height:1.8;">${(v.changes||[]).map(c=>`<li>${c}</li>`).join('')}</ul></details>`).join('');
+              el.innerHTML = logs.map(v => `<details style="margin-bottom:6px;border:1px solid var(--line);border-radius:6px;overflow:hidden;"><summary style="padding:8px 12px;cursor:pointer;font-weight:700;font-size:0.83rem;background:var(--surface-2);color:var(--text);display:flex;justify-content:space-between;list-style:none;"><span>v${v.version}</span><span style="color:var(--muted);font-weight:400;">${v.date}</span></summary><p style="font-style:italic;color:var(--accent);margin:8px 14px 4px;font-size:0.82rem;">${v.whatsNew || ''}</p><ul style="padding:0 14px 8px 28px;margin:0;line-height:1.8;">${(v.changes || []).map(c => `<li>${c}</li>`).join('')}</ul></details>`).join('');
             }).catch(() => { const el = document.getElementById('changelogContent'); if (el) el.textContent = 'No release notes available offline.'; });
           });
           add(this.dom.presentationButton, "click", () => { AudioEngine.playClick(); PresentationManager.open(); });
           add(this.dom.langSelect, "change", () => { AudioEngine.playClick(); StateManager.state.settings.language = this.dom.langSelect.value; StateManager.saveNow(t("languageSaved", "Language saved")); this.applyLanguage(); });
-          
+
           // Sidebar open/close
           add(this.dom.menuToggleBtn, 'click', () => { AudioEngine.playClick(); this.openSidebar(); });
           add(this.dom.sidebarCloseBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); });
@@ -7054,7 +7141,7 @@ Em -  C    -  G  -  D
           }
           document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); this.switchView(b.dataset.view); }));
           add(this.dom.copyLiveChartBtn, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
- 
+
           add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow(t("saved", "Saved")); this.toast(t("songSavedToast", "Song saved to Library")); });
           add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); this.toast(t("undoToast", "Undo")); });
           add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); this.toast(t("redoToast", "Redo")); });
@@ -7078,7 +7165,7 @@ Em -  C    -  G  -  D
           add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
           add(this.dom.scanQrBtn, "click", () => { AudioEngine.playClick(); QrScannerManager.startScan(); });
           add(this.dom.sidebarScanQrBtn, "click", () => { AudioEngine.playClick(); this.closeSidebar(); QrScannerManager.startScan(); });
- 
+
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
           add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast(t("sortedToast", "Sorted: ") + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text); });
           document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); this.toast(t("filterToast", "Filter: ") + b.textContent); }));
@@ -7096,7 +7183,7 @@ Em -  C    -  G  -  D
               const editorPanel = document.querySelector(".editor-panel");
               if (editorPanel) editorPanel.dataset.mobilePane = pane;
               document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => b.classList.toggle("active", b === btn));
-              try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch(e) {}
+              try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch (e) { }
             });
           });
           const savedMobilePane = localStorage.getItem("sonata_mobile_editor_pane") || "edit";
@@ -7704,7 +7791,7 @@ Em -  C    -  G  -  D
           document.documentElement.dataset.accent = StateManager.state.settings.accentTheme || "blue";
           if (UIManager.dom.themeToggle) Icon.set(UIManager.dom.themeToggle, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
           if (UIManager.dom.themeToggleMobile) Icon.set(UIManager.dom.themeToggleMobile, theme === "dark" ? "sun" : "moon", theme === "dark" ? "Light Mode" : "Dark Mode", true);
-          
+
           // Dynamically swap light / dark icon variants for brand logos and favicons
           const iconSrc = theme === "dark" ? "icon_dark.png" : "icon.png";
           document.querySelectorAll(".brand-logo").forEach(img => {
@@ -7952,7 +8039,7 @@ Em -  C    -  G  -  D
                 this.handleScanResult(barcodes[0].rawValue);
                 return;
               }
-            } catch (e) {}
+            } catch (e) { }
           }
 
           if (this.scanning) {
@@ -7974,7 +8061,7 @@ Em -  C    -  G  -  D
                     this.handleScanResult(barcodes[0].rawValue);
                     return;
                   }
-                } catch (e) {}
+                } catch (e) { }
               }
               if (statusEl) statusEl.textContent = "No valid QR code detected in this photo.";
             };
@@ -8016,7 +8103,7 @@ Em -  C    -  G  -  D
                 App.handleImport(data);
                 return;
               }
-            } catch (err2) {}
+            } catch (err2) { }
           }
 
           // Raw chord/song text fallback
@@ -8073,8 +8160,8 @@ Em -  C    -  G  -  D
               headerBtn.style.display = 'inline-flex';
             }
             if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
+              navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
                   registration.unregister();
                 }
               });
@@ -8230,127 +8317,127 @@ Em -  C    -  G  -  D
       document.addEventListener("DOMContentLoaded", () => App.init());
     })();
 
-/* AI Co-Writer Logic */
-(() => {
-  document.addEventListener('DOMContentLoaded', () => {
-    const aiFab = document.getElementById('aiFabButton');
-    const aiPanel = document.getElementById('aiChatPanel');
-    const aiClose = document.getElementById('aiCloseButton');
-    const aiInput = document.getElementById('aiChatInput');
-    const aiSend = document.getElementById('aiSendButton');
-    const aiHistory = document.getElementById('aiChatHistory');
-    
-    if (!aiFab || !aiPanel) return;
+    /* AI Co-Writer Logic */
+    (() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        const aiFab = document.getElementById('aiFabButton');
+        const aiPanel = document.getElementById('aiChatPanel');
+        const aiClose = document.getElementById('aiCloseButton');
+        const aiInput = document.getElementById('aiChatInput');
+        const aiSend = document.getElementById('aiSendButton');
+        const aiHistory = document.getElementById('aiChatHistory');
 
-    // Toggle Panel
-    const togglePanel = () => {
-      aiPanel.classList.toggle('hidden');
-      if (!aiPanel.classList.contains('hidden')) {
-        aiInput.focus();
-      }
-    };
-    
-    aiFab.addEventListener('click', togglePanel);
-    aiClose.addEventListener('click', () => aiPanel.classList.add('hidden'));
-    
-    // Load chat history
-    try {
-      const savedChat = localStorage.getItem('sonata_ai_chat');
-      if (savedChat) {
-        aiHistory.innerHTML = savedChat;
-      }
-    } catch(e) {}
-    
-    const saveChat = () => {
-      localStorage.setItem('sonata_ai_chat', aiHistory.innerHTML);
-    };
-    
-    const appendMessage = (text, sender) => {
-      const div = document.createElement('div');
-      div.className = `ai-message ${sender}`;
-      
-      // Handle codeblocks specifically for markdown
-      let formattedText = text;
-      // Simple escape for html
-      formattedText = formattedText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      
-      // format markdown bold/italic
-      formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-      
-      // format basic code blocks
-      formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface); padding:8px; border-radius:6px; overflow-x:auto; font-family:var(--chart-font); font-size:0.8rem; margin:8px 0; border:1px solid var(--line);">$1</pre>');
-      formattedText = formattedText.replace(/`([^`]+)`/g, '<code style="background:color-mix(in srgb, var(--text) 10%, transparent); padding:2px 4px; border-radius:4px; font-family:var(--chart-font); font-size:0.85em;">$1</code>');
-      
-      // Convert newlines to breaks outside of pre tags
-      formattedText = formattedText.split(/(<pre[\s\S]*?<\/pre>)/).map(part => {
-        if (part.startsWith('<pre')) return part;
-        return part.replace(/\n/g, '<br/>');
-      }).join('');
+        if (!aiFab || !aiPanel) return;
 
-      div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
-      aiHistory.appendChild(div);
-      aiHistory.scrollTop = aiHistory.scrollHeight;
-      saveChat();
-    };
-    
-    const askAI = async () => {
-      const prompt = aiInput.value.trim();
-      if (!prompt) return;
-      
-      appendMessage(prompt, 'user');
-      aiInput.value = '';
-      
-      const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'ai-message assistant';
-      typingIndicator.innerHTML = '<div style="margin:0; color: var(--muted);"><em>Thinking... 🎵</em></div>';
-      aiHistory.appendChild(typingIndicator);
-      aiHistory.scrollTop = aiHistory.scrollHeight;
-      
-      // Grab current song context
-      const songBody = document.getElementById('songBody');
-      const context = songBody ? songBody.value : "";
-      
-      try {
-        const response = await fetch('/api/ai', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, context })
+        // Toggle Panel
+        const togglePanel = () => {
+          aiPanel.classList.toggle('hidden');
+          if (!aiPanel.classList.contains('hidden')) {
+            aiInput.focus();
+          }
+        };
+
+        aiFab.addEventListener('click', togglePanel);
+        aiClose.addEventListener('click', () => aiPanel.classList.add('hidden'));
+
+        // Load chat history
+        try {
+          const savedChat = localStorage.getItem('sonata_ai_chat');
+          if (savedChat) {
+            aiHistory.innerHTML = savedChat;
+          }
+        } catch (e) { }
+
+        const saveChat = () => {
+          localStorage.setItem('sonata_ai_chat', aiHistory.innerHTML);
+        };
+
+        const appendMessage = (text, sender) => {
+          const div = document.createElement('div');
+          div.className = `ai-message ${sender}`;
+
+          // Handle codeblocks specifically for markdown
+          let formattedText = text;
+          // Simple escape for html
+          formattedText = formattedText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+          // format markdown bold/italic
+          formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+          // format basic code blocks
+          formattedText = formattedText.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface); padding:8px; border-radius:6px; overflow-x:auto; font-family:var(--chart-font); font-size:0.8rem; margin:8px 0; border:1px solid var(--line);">$1</pre>');
+          formattedText = formattedText.replace(/`([^`]+)`/g, '<code style="background:color-mix(in srgb, var(--text) 10%, transparent); padding:2px 4px; border-radius:4px; font-family:var(--chart-font); font-size:0.85em;">$1</code>');
+
+          // Convert newlines to breaks outside of pre tags
+          formattedText = formattedText.split(/(<pre[\s\S]*?<\/pre>)/).map(part => {
+            if (part.startsWith('<pre')) return part;
+            return part.replace(/\n/g, '<br/>');
+          }).join('');
+
+          div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
+          aiHistory.appendChild(div);
+          aiHistory.scrollTop = aiHistory.scrollHeight;
+          saveChat();
+        };
+
+        const askAI = async () => {
+          const prompt = aiInput.value.trim();
+          if (!prompt) return;
+
+          appendMessage(prompt, 'user');
+          aiInput.value = '';
+
+          const typingIndicator = document.createElement('div');
+          typingIndicator.className = 'ai-message assistant';
+          typingIndicator.innerHTML = '<div style="margin:0; color: var(--muted);"><em>Thinking... 🎵</em></div>';
+          aiHistory.appendChild(typingIndicator);
+          aiHistory.scrollTop = aiHistory.scrollHeight;
+
+          // Grab current song context
+          const songBody = document.getElementById('songBody');
+          const context = songBody ? songBody.value : "";
+
+          try {
+            const response = await fetch('/api/ai', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt, context })
+            });
+
+            typingIndicator.remove();
+
+            if (response.status === 429) {
+              const errData = await response.json();
+              appendMessage(errData.error, 'assistant');
+              return;
+            }
+
+            if (!response.ok) {
+              throw new Error('Server returned ' + response.status);
+            }
+
+            const data = await response.json();
+            appendMessage(data.reply, 'assistant');
+
+          } catch (err) {
+            typingIndicator.remove();
+            console.error(err);
+            appendMessage("Oops, something went wrong connecting to the AI. Ensure you are connected to the internet and try again.", 'assistant');
+          }
+        };
+
+        aiSend.addEventListener('click', askAI);
+        aiInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            askAI();
+          }
         });
-        
-        typingIndicator.remove();
-        
-        if (response.status === 429) {
-          const errData = await response.json();
-          appendMessage(errData.error, 'assistant');
-          return;
-        }
-        
-        if (!response.ok) {
-          throw new Error('Server returned ' + response.status);
-        }
-        
-        const data = await response.json();
-        appendMessage(data.reply, 'assistant');
-        
-      } catch (err) {
-        typingIndicator.remove();
-        console.error(err);
-        appendMessage("Oops, something went wrong connecting to the AI. Ensure you are connected to the internet and try again.", 'assistant');
-      }
-    };
-    
-    aiSend.addEventListener('click', askAI);
-    aiInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        askAI();
-      }
-    });
-  });
-})();
+      });
+    })();
 
-</script>
+  </script>
 </body>
 
 </html>
