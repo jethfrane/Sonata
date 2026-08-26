@@ -68,6 +68,7 @@
       <button class="sidebar-nav-btn" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
       <button class="sidebar-nav-btn" data-view="theory" data-icon="aperture" type="button">Theory</button>
       <button class="sidebar-nav-btn" data-view="instruments" data-icon="music" type="button">Play</button>
+      <button class="sidebar-nav-btn" data-view="about" data-icon="info" type="button">About Sonata</button>
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -76,7 +77,6 @@
     <div class="sidebar-actions">
 
       <button class="button ghost full-width" id="sidebarDriveSyncBtn" data-icon="cloud" type="button">Drive Sync</button>
-      <button class="button ghost full-width" id="sidebarHelpBtn" data-icon="help" type="button">Help &amp; About</button>
       <button class="button ghost full-width" id="sidebarSettingsBtn" data-icon="settings" type="button">Settings</button>
       <button class="button ghost full-width" id="sidebarPresentBtn" data-icon="presentation" type="button">Presentation Mode</button>
     </div>
@@ -477,6 +477,66 @@
           </div>
         </div>
       </aside>
+      <!-- 7. ABOUT PAGE -->
+      <section class="panel about-panel" aria-label="About Sonata" style="display: none;">
+        <div class="panel-heading">
+          <h2>About Sonata</h2>
+        </div>
+        <div class="panel-content" style="padding: 24px; overflow-y: auto; height: 100%;">
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <div class="brand-title" style="font-size: 2.5rem; justify-content: center; margin-bottom: 0.5rem;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 36px; height: 36px; color: var(--accent);">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+              Sonata
+            </div>
+            <p style="color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.5;">
+              Created by <strong>Jethro Frane</strong> to help church musicians collaborate seamlessly and eliminate stage friction.
+            </p>
+            <p style="margin-top:16px;font-style:italic;font-weight:700;color:var(--accent);font-size:0.9rem;">
+              "So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Cor 10:31
+            </p>
+          </div>
+
+          <div style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 3rem;">
+            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
+              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                100% Offline
+              </h3>
+              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Sonata is a Progressive Web App (PWA). Once loaded, it works entirely offline. Install it on your phone or tablet for the stage.</p>
+            </div>
+            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
+              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                AI Co-Writer
+              </h3>
+              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Powered by Gemini 1.5 Flash. Transpose, rewrite, or arrange chords instantly using the built-in AI assistant.</p>
+            </div>
+            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
+              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                Zero-Friction Sharing
+              </h3>
+              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Share songs instantly via QR codes or ultra-short links without needing accounts or centralized databases.</p>
+            </div>
+            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
+              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Stage Ready
+              </h3>
+              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Distraction-free fullscreen presentation mode with smooth auto-scroll, customizable metronome, and true-black stage theme.</p>
+            </div>
+          </div>
+
+          <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Release Notes</h3>
+          <div id="aboutChangelogContent" style="color:var(--text); font-size: 0.95rem; padding-bottom: 40px;">
+            Loading changelog...
+          </div>
+        </div>
+      </section>
 
     </main>
   </div>

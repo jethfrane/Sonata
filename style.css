@@ -564,14 +564,16 @@
     .workspace[data-view="library"] > .library-panel,
     .workspace[data-view="tools"] > .tools-panel,
     .workspace[data-view="theory"] > .theory-panel,
-    .workspace[data-view="instruments"] > .instrument-panel {
+    .workspace[data-view="instruments"] > .instrument-panel,
+    .workspace[data-view="about"] > .about-panel {
       display: flex !important;
     }
 
     .library-panel,
     .tools-panel,
     .theory-panel,
-    .instrument-panel {
+    .instrument-panel,
+    .about-panel {
       padding: var(--panel-pad);
       gap: 14px;
     }
