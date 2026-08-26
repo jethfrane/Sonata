@@ -4797,29 +4797,36 @@ Em -  C    -  G  -  D
       }
       
       if (actions.length > 0) {
-        actions.forEach(action => {
-            const actionBtn = document.createElement('button');
-            actionBtn.className = 'ai-action-btn button full-width';
-            actionBtn.style.marginTop = '12px';
-            actionBtn.style.background = 'var(--accent)';
-            actionBtn.style.color = '#fff';
-            
-            let label = "✨ Apply Action";
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'ai-action-btn button full-width';
+        actionBtn.style.marginTop = '12px';
+        actionBtn.style.background = 'var(--accent)';
+        actionBtn.style.color = '#fff';
+        
+        let label = "✨ Apply Action";
+        if (actions.length > 1) {
+            label = `✨ Apply All ${actions.length} Actions`;
+        } else {
+            const action = actions[0];
             if (action.type === 'replace_editor') label = "✨ Apply Chord Chart Updates";
             else if (action.type === 'set_theme') label = `✨ Set Theme: ${action.value}`;
             else if (action.type === 'set_tempo') label = `✨ Set Tempo: ${action.value} BPM`;
             else if (action.type === 'set_key') label = `✨ Set Key: ${action.value}`;
             else if (action.type === 'set_capo') label = `✨ Set Capo: Fret ${action.value}`;
             else if (action.type === 'navigate') label = `✨ Navigate to: ${action.value}`;
-            
-            actionBtn.innerHTML = label;
-            actionBtn.dataset.state = 'ready';
-            let previousState = null;
-            
-            actionBtn.onclick = () => {
-                try {
-                  if (actionBtn.dataset.state === 'applied') {
-                    // UNDO
+        }
+        
+        actionBtn.innerHTML = label;
+        actionBtn.dataset.state = 'ready';
+        let previousStates = new Array(actions.length).fill(null);
+        
+        actionBtn.onclick = () => {
+            try {
+              if (actionBtn.dataset.state === 'applied') {
+                // UNDO ALL (in reverse order)
+                for (let i = actions.length - 1; i >= 0; i--) {
+                    const action = actions[i];
+                    const previousState = previousStates[i];
                     if (action.type === 'replace_editor') {
                       const songBody = document.getElementById('songBody');
                       if (songBody) { songBody.value = previousState; songBody.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -4837,27 +4844,29 @@ Em -  C    -  G  -  D
                       const capoSelect = document.getElementById('capoSelect');
                       if (capoSelect) { capoSelect.value = previousState; capoSelect.dispatchEvent(new Event('change')); }
                     }
-                    
-                    actionBtn.dataset.state = 'ready';
-                    actionBtn.innerHTML = label;
-                    actionBtn.style.background = 'var(--accent)';
-                    actionBtn.style.color = '#fff';
-                  } else {
-                    // APPLY
+                }
+                actionBtn.dataset.state = 'ready';
+                actionBtn.innerHTML = label;
+                actionBtn.style.background = 'var(--accent)';
+                actionBtn.style.color = '#fff';
+              } else {
+                // APPLY ALL
+                let navigated = false;
+                actions.forEach((action, i) => {
                     if (action.type === 'replace_editor') {
                         const songBody = document.getElementById('songBody');
                         if (songBody) {
-                            previousState = songBody.value;
+                            previousStates[i] = songBody.value;
                             songBody.value = action.content;
                             songBody.dispatchEvent(new Event('input', { bubbles: true }));
                         }
                     } else if (action.type === 'set_theme') {
-                        previousState = StateManager.state.settings.theme;
+                        previousStates[i] = StateManager.state.settings.theme;
                         StateManager.state.settings.theme = action.value;
                         ThemeManager.apply();
                         UIManager.toast(`Theme set to ${action.value}`);
                     } else if (action.type === 'set_tempo') {
-                        previousState = StateManager.state.metronome.bpm;
+                        previousStates[i] = StateManager.state.metronome.bpm;
                         const bpm = parseInt(action.value);
                         if (bpm) {
                           StateManager.state.metronome.bpm = bpm;
@@ -4868,37 +4877,39 @@ Em -  C    -  G  -  D
                     } else if (action.type === 'set_key') {
                         const keySelect = document.getElementById('keySelect');
                         if (keySelect) {
-                          previousState = keySelect.value;
+                          previousStates[i] = keySelect.value;
                           keySelect.value = action.value;
                           keySelect.dispatchEvent(new Event('change'));
                         }
                     } else if (action.type === 'set_capo') {
                         const capoSelect = document.getElementById('capoSelect');
                         if (capoSelect) {
-                          previousState = capoSelect.value;
+                          previousStates[i] = capoSelect.value;
                           capoSelect.value = action.value;
                           capoSelect.dispatchEvent(new Event('change'));
                         }
                     } else if (action.type === 'navigate') {
                         UIManager.switchView(action.value);
+                        navigated = true;
                     }
-                    
-                    if (action.type !== 'navigate') {
-                      actionBtn.dataset.state = 'applied';
-                      actionBtn.innerHTML = '↩️ Undo Action';
-                      actionBtn.style.background = 'var(--surface-3)';
-                      actionBtn.style.color = 'var(--text)';
-                    } else {
-                      actionBtn.innerHTML = '✅ Navigated!';
-                      actionBtn.disabled = true;
-                      actionBtn.style.background = 'var(--surface-3)';
-                      actionBtn.style.color = 'var(--text)';
-                    }
-                  }
-                } catch(e) { console.error(e); }
-            };
-            div.appendChild(actionBtn);
-        });
+                });
+                
+                const canUndo = actions.some(a => a.type !== 'navigate');
+                if (canUndo) {
+                  actionBtn.dataset.state = 'applied';
+                  actionBtn.innerHTML = actions.length > 1 ? '↩️ Undo All Actions' : '↩️ Undo Action';
+                  actionBtn.style.background = 'var(--surface-3)';
+                  actionBtn.style.color = 'var(--text)';
+                } else {
+                  actionBtn.innerHTML = '✅ Navigated!';
+                  actionBtn.disabled = true;
+                  actionBtn.style.background = 'var(--surface-3)';
+                  actionBtn.style.color = 'var(--text)';
+                }
+              }
+            } catch(e) { console.error(e); }
+        };
+        div.appendChild(actionBtn);
       }
       
       aiHistory.appendChild(div);
