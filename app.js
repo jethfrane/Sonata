@@ -4630,6 +4630,7 @@ Em -  C    -  G  -  D
     const aiApiKeyInput = document.getElementById('aiApiKeyInput');
     const aiSaveKeyBtn = document.getElementById('aiSaveKeyButton');
     const aiClearKeyBtn = document.getElementById('aiClearKeyButton');
+    const aiClearHistoryBtn = document.getElementById('aiClearHistoryButton');
     
     if (!aiFab || !aiPanel) return;
 
@@ -4641,7 +4642,7 @@ Em -  C    -  G  -  D
           const savedKey = localStorage.getItem('sonata_gemini_api_key');
           if (savedKey) aiApiKeyInput.value = savedKey;
         } else {
-          aiSettingsOverlay.style.display = '';
+          aiSettingsOverlay.style.display = 'none';
         }
       });
     }
@@ -4652,7 +4653,7 @@ Em -  C    -  G  -  D
         if (key) {
           localStorage.setItem('sonata_gemini_api_key', key);
           aiSettingsOverlay.classList.add('hidden');
-          aiSettingsOverlay.style.display = '';
+          aiSettingsOverlay.style.display = 'none';
           appendMessage('✅ Your custom Gemini API key has been saved. You now have unlimited access.', 'assistant');
         }
       });
@@ -4663,8 +4664,21 @@ Em -  C    -  G  -  D
         localStorage.removeItem('sonata_gemini_api_key');
         aiApiKeyInput.value = '';
         aiSettingsOverlay.classList.add('hidden');
-        aiSettingsOverlay.style.display = '';
+        aiSettingsOverlay.style.display = 'none';
         appendMessage('🗑️ Custom API key cleared. You are back on the public Sonata pool.', 'assistant');
+      });
+    }
+
+    if (aiClearHistoryBtn) {
+      aiClearHistoryBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear the conversation history?')) {
+          aiHistory.innerHTML = `
+            <div class="ai-message assistant">
+              <p style="margin:0;">Hi! I'm your AI co-writer. I can read your current chord chart and help you write, arrange, transpose, or format lyrics. How can I help?</p>
+            </div>
+          `;
+          localStorage.removeItem('sonata_ai_chat');
+        }
       });
     }
 
@@ -4734,6 +4748,25 @@ Em -  C    -  G  -  D
 
       div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
       
+      if (sender === 'assistant' && text.indexOf('<action') === -1) {
+        const replyBtn = document.createElement('button');
+        replyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg> Reply`;
+        replyBtn.className = 'icon-button ghost';
+        replyBtn.style.fontSize = '0.75rem';
+        replyBtn.style.marginTop = '8px';
+        replyBtn.style.color = 'var(--muted)';
+        replyBtn.style.display = 'flex';
+        replyBtn.style.alignItems = 'center';
+        replyBtn.style.width = 'fit-content';
+        replyBtn.onclick = () => {
+          const aiInput = document.getElementById('aiChatInput');
+          const snippet = text.replace(/<[^>]*>?/gm, '').substring(0, 50).replace(/\n/g, ' ') + (text.length > 50 ? '...' : '');
+          aiInput.value = `[Replying to: "${snippet}"]\n` + aiInput.value;
+          aiInput.focus();
+        };
+        div.appendChild(replyBtn);
+      }
+      
       if (actions.length > 0) {
         actions.forEach(action => {
             const actionBtn = document.createElement('button');
@@ -4751,46 +4784,88 @@ Em -  C    -  G  -  D
             else if (action.type === 'navigate') label = `✨ Navigate to: ${action.value}`;
             
             actionBtn.innerHTML = label;
+            actionBtn.dataset.state = 'ready';
+            let previousState = null;
+            
             actionBtn.onclick = () => {
                 try {
-                  if (action.type === 'replace_editor') {
+                  if (actionBtn.dataset.state === 'applied') {
+                    // UNDO
+                    if (action.type === 'replace_editor') {
                       const songBody = document.getElementById('songBody');
-                      if (songBody) {
-                          songBody.value = action.content;
-                          songBody.dispatchEvent(new Event('input', { bubbles: true }));
-                      }
-                  } else if (action.type === 'set_theme') {
-                      StateManager.state.settings.theme = action.value;
-                      ThemeManager.apply();
-                      UIManager.toast(`Theme set to ${action.value}`);
-                  } else if (action.type === 'set_tempo') {
-                      const bpm = parseInt(action.value);
-                      if (bpm) {
-                        StateManager.state.metronome.bpm = bpm;
-                        const bpmInput = document.getElementById('metronomeBpmInput');
-                        if (bpmInput) { bpmInput.value = bpm; bpmInput.dispatchEvent(new Event('input')); }
-                        UIManager.toast(`Tempo set to ${bpm} BPM`);
-                      }
-                  } else if (action.type === 'set_key') {
+                      if (songBody) { songBody.value = previousState; songBody.dispatchEvent(new Event('input', { bubbles: true })); }
+                    } else if (action.type === 'set_theme') {
+                      StateManager.state.settings.theme = previousState; ThemeManager.apply(); UIManager.toast(`Reverted theme`);
+                    } else if (action.type === 'set_tempo') {
+                      StateManager.state.metronome.bpm = previousState; 
+                      const bpmInput = document.getElementById('metronomeBpmInput');
+                      if (bpmInput) { bpmInput.value = previousState; bpmInput.dispatchEvent(new Event('input')); }
+                      UIManager.toast(`Reverted tempo`);
+                    } else if (action.type === 'set_key') {
                       const keySelect = document.getElementById('keySelect');
-                      if (keySelect) {
-                        keySelect.value = action.value;
-                        keySelect.dispatchEvent(new Event('change'));
-                      }
-                  } else if (action.type === 'set_capo') {
+                      if (keySelect) { keySelect.value = previousState; keySelect.dispatchEvent(new Event('change')); }
+                    } else if (action.type === 'set_capo') {
                       const capoSelect = document.getElementById('capoSelect');
-                      if (capoSelect) {
-                        capoSelect.value = action.value;
-                        capoSelect.dispatchEvent(new Event('change'));
-                      }
-                  } else if (action.type === 'navigate') {
-                      UIManager.switchView(action.value);
+                      if (capoSelect) { capoSelect.value = previousState; capoSelect.dispatchEvent(new Event('change')); }
+                    }
+                    
+                    actionBtn.dataset.state = 'ready';
+                    actionBtn.innerHTML = label;
+                    actionBtn.style.background = 'var(--accent)';
+                    actionBtn.style.color = '#fff';
+                  } else {
+                    // APPLY
+                    if (action.type === 'replace_editor') {
+                        const songBody = document.getElementById('songBody');
+                        if (songBody) {
+                            previousState = songBody.value;
+                            songBody.value = action.content;
+                            songBody.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    } else if (action.type === 'set_theme') {
+                        previousState = StateManager.state.settings.theme;
+                        StateManager.state.settings.theme = action.value;
+                        ThemeManager.apply();
+                        UIManager.toast(`Theme set to ${action.value}`);
+                    } else if (action.type === 'set_tempo') {
+                        previousState = StateManager.state.metronome.bpm;
+                        const bpm = parseInt(action.value);
+                        if (bpm) {
+                          StateManager.state.metronome.bpm = bpm;
+                          const bpmInput = document.getElementById('metronomeBpmInput');
+                          if (bpmInput) { bpmInput.value = bpm; bpmInput.dispatchEvent(new Event('input')); }
+                          UIManager.toast(`Tempo set to ${bpm} BPM`);
+                        }
+                    } else if (action.type === 'set_key') {
+                        const keySelect = document.getElementById('keySelect');
+                        if (keySelect) {
+                          previousState = keySelect.value;
+                          keySelect.value = action.value;
+                          keySelect.dispatchEvent(new Event('change'));
+                        }
+                    } else if (action.type === 'set_capo') {
+                        const capoSelect = document.getElementById('capoSelect');
+                        if (capoSelect) {
+                          previousState = capoSelect.value;
+                          capoSelect.value = action.value;
+                          capoSelect.dispatchEvent(new Event('change'));
+                        }
+                    } else if (action.type === 'navigate') {
+                        UIManager.switchView(action.value);
+                    }
+                    
+                    if (action.type !== 'navigate') {
+                      actionBtn.dataset.state = 'applied';
+                      actionBtn.innerHTML = '↩️ Undo Action';
+                      actionBtn.style.background = 'var(--surface-3)';
+                      actionBtn.style.color = 'var(--text)';
+                    } else {
+                      actionBtn.innerHTML = '✅ Navigated!';
+                      actionBtn.disabled = true;
+                      actionBtn.style.background = 'var(--surface-3)';
+                      actionBtn.style.color = 'var(--text)';
+                    }
                   }
-                  
-                  actionBtn.innerHTML = '✅ Applied!';
-                  actionBtn.disabled = true;
-                  actionBtn.style.background = 'var(--surface-3)';
-                  actionBtn.style.color = 'var(--text)';
                 } catch(e) { console.error(e); }
             };
             div.appendChild(actionBtn);
