@@ -105,7 +105,7 @@
     }
 
     .app-shell {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
     }
@@ -510,7 +510,7 @@
 
     .mobile-view-switcher {
       display: none;
-      padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); min-height: calc(66px + env(safe-area-inset-bottom, 0px));
       gap: 6px;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       position: fixed;
@@ -579,7 +579,7 @@
     }
 
     .editor-panel {
-      min-height: 60vh;
+      min-height: 60dvh;
       overflow: hidden;
     }
 
@@ -1889,7 +1889,7 @@
       scroll-behavior: smooth;
       padding: clamp(16px, 4vw, 56px);
       padding-top: calc(80px + env(safe-area-inset-top));
-      padding-bottom: 50vh;
+      padding-bottom: 50dvh;
     }
 
     .presentation-text {
@@ -2498,7 +2498,7 @@
       }
 
       .workspace {
-        padding: 8px 8px calc(76px + env(safe-area-inset-bottom, 0px));
+        padding: 8px 8px calc(80px + env(safe-area-inset-bottom, 0px));
         gap: 10px;
       }
 
@@ -2661,7 +2661,7 @@
       .presentation-stage {
         padding: 14px;
         padding-top: calc(84px + env(safe-area-inset-top, 0px));
-        padding-bottom: 25vh;
+        padding-bottom: 50dvh;
       }
 
       .presentation-top {
@@ -2830,7 +2830,7 @@
       }
 
       .mobile-view-switcher {
-        padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+        padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); min-height: calc(60px + env(safe-area-inset-bottom, 0px));
         gap: 2px;
       }
 
@@ -2956,7 +2956,7 @@
       right: 24px;
       width: 360px;
       height: 500px;
-      max-height: calc(100vh - 120px);
+      max-height: calc(100dvh - 120px);
       background: color-mix(in srgb, var(--surface) 95%, transparent);
       backdrop-filter: blur(20px);
       border: 1px solid var(--line);
@@ -3045,7 +3045,7 @@
       .ai-chat-panel {
         width: calc(100% - 32px);
         right: 16px;
-        bottom: 86px;
+        bottom: calc(86px + env(safe-area-inset-bottom, 0px));
       }
       .ai-fab {
         right: 16px;

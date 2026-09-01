@@ -1320,7 +1320,7 @@ Em -  C    -  G  -  D
           if (this.accessToken) {
             try {
               google.accounts.oauth2.revoke(this.accessToken, () => { });
-            } catch (e) { }
+            } catch (e) { /* ignore */ }
           }
           this.accessToken = null;
           this.userEmail = null;
@@ -1511,8 +1511,8 @@ Em -  C    -  G  -  D
         renderSettingsUI() {
           const container = document.getElementById('settingsDriveSyncStatus');
           if (!container) return;
-          const currentClientId = this.getClientId();
-          const isCustom = localStorage.getItem('sonata_google_client_id');
+          const _currentClientId = this.getClientId();
+          const _isCustom = localStorage.getItem('sonata_google_client_id');
           if (this.accessToken) {
             container.innerHTML = `
               <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1569,7 +1569,7 @@ Em -  C    -  G  -  D
                 this.masterGain = this.ctx.createGain();
                 this.masterGain.gain.value = 1.0;
                 this.masterGain.connect(this.ctx.destination);
-              } catch (e) { }
+              } catch (e) { /* ignore */ }
             }
           }
           if (this.ctx && this.ctx.state === "suspended") this.ctx.resume().catch(() => { });
@@ -1671,7 +1671,7 @@ Em -  C    -  G  -  D
                   setTimeout(() => {
                     try { osc1.stop(); osc2.stop(); osc3.stop(); } catch (e) { }
                   }, 100);
-                } catch (e) { }
+                } catch (e) { /* ignore */ }
               }
             };
           } catch (e) { return { stop: () => { } }; }
@@ -1757,7 +1757,7 @@ Em -  C    -  G  -  D
                   setTimeout(() => {
                     oscNodes.forEach(o => { try { o.stop(); } catch (e) { } });
                   }, 50);
-                } catch (e) { }
+                } catch (e) { /* ignore */ }
               }
             };
           } catch (e) { return { stop: () => { } }; }
@@ -1885,7 +1885,7 @@ Em -  C    -  G  -  D
           }
           return rootName + chord.quality + bassName + (chord.trailingSlashes || "");
         },
-        preferFlats(chord, key) { return false; }
+        preferFlats(_chord, _key) { return false; }
       };
 
       const KeyDetector = {
@@ -2373,7 +2373,7 @@ Em -  C    -  G  -  D
           Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p, shareUrl)); 
           UIManager.toast("PNG exported"); 
         },
-        renderPng(payload, shareUrl) {
+        renderPng(payload, _shareUrl) {
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
           const orientation = UIManager.dom.exportOrientation.value;
           const scale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
@@ -3069,7 +3069,7 @@ Em -  C    -  G  -  D
         },
 
         async share(isSetlist = false) {
-          let shareData = {}; let titleText = ""; let isSet = isSetlist;
+          let shareData; let titleText = ""; let isSet = isSetlist;
 
           if (isSet) {
             const set = StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id);
@@ -3135,7 +3135,7 @@ Em -  C    -  G  -  D
               } else {
                 UIManager.toast("Native sharing not supported on this device/browser.");
               }
-            } catch (e) { }
+            } catch (e) { /* ignore */ }
           };
 
           const shareBtn = document.createElement('button');
@@ -3189,7 +3189,7 @@ Em -  C    -  G  -  D
           document.querySelectorAll("[data-view]").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.view === viewName);
           });
-          try { localStorage.setItem('sonata_active_view', viewName); } catch(e) {}
+          try { localStorage.setItem('sonata_active_view', viewName); } catch(e) { /* ignore */ }
           if (viewName === "theory") InstrumentManager.renderCircle();
           if (viewName === "instruments") {
             InstrumentManager.renderPiano();
@@ -3481,7 +3481,7 @@ Em -  C    -  G  -  D
               const editorPanel = document.querySelector(".editor-panel");
               if (editorPanel) editorPanel.dataset.mobilePane = pane;
               document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => b.classList.toggle("active", b === btn));
-              try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch(e) {}
+              try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch(e) { /* ignore */ }
             });
           });
           const savedMobilePane = localStorage.getItem("sonata_mobile_editor_pane") || "edit";
@@ -3752,7 +3752,7 @@ Em -  C    -  G  -  D
                 } else {
                   UIManager.toast("Native sharing not supported on this browser.");
                 }
-              } catch (e) { }
+              } catch (e) { /* ignore */ }
             });
 
             const noteText = document.createElement('p');
@@ -3807,7 +3807,7 @@ Em -  C    -  G  -  D
             this.toast(t("appAlreadyInstalled", "Sonata is already running as an installed app."));
             return;
           }
-          if (isIOS) {
+          if (typeof navigator !== 'undefined' && (/ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) {
             this.openModal({
               title: t("settingsInstallBtn", "Install Sonata on iOS"),
               confirmText: t("modalConfirm", "Got it"),
@@ -4851,7 +4851,7 @@ Em -  C    -  G  -  D
                 actionBtn.style.color = '#fff';
               } else {
                 // APPLY ALL
-                let navigated = false;
+
                 actions.forEach((action, i) => {
                     if (action.type === 'replace_editor') {
                         const songBody = document.getElementById('songBody');
@@ -4890,7 +4890,7 @@ Em -  C    -  G  -  D
                         }
                     } else if (action.type === 'navigate') {
                         UIManager.switchView(action.value);
-                        navigated = true;
+
                     }
                 });
                 
