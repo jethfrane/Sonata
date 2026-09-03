@@ -268,7 +268,7 @@
             <div class="pane-header">
               <span class="pane-tag">LIVE CHART PREVIEW</span>
               <div style="display:flex; gap:4px; align-items:center;">
-                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
+                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" aria-label="Copy Formatted Chart" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
                 <button class="help-icon" data-help="formats" type="button">?</button>
               </div>
             </div>
@@ -668,14 +668,14 @@
       <div class="presentation-text" id="presentationText"></div>
     </div>
     <div class="presentation-controls-bottom">
-      <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" title="Cycle Theme"></button>
+      <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" aria-label="Cycle Theme" title="Cycle Theme"></button>
       <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button"
-        title="Toggle Metronome"></button>
+        aria-label="Toggle Metronome" title="Toggle Metronome"></button>
       <div class="beat-row" id="presBeatRow" style="width: 70px; margin-left: 8px;"></div>
       <div
         style="width: 1px; height: 28px; background: color-mix(in srgb, var(--p-line) 50%, transparent); margin: 0 12px;">
       </div>
-      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" title="Auto-Scroll"></button>
+      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" aria-label="Auto-Scroll" title="Auto-Scroll"></button>
       <span style="font-size:0.7rem; font-weight:bold; color:var(--p-text); margin-left:4px;">SPD</span>
       <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30"
         style="width: 100px; accent-color: var(--p-text); margin: 0 8px;">
