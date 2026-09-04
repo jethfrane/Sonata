@@ -165,7 +165,7 @@
       <!-- 1. LIBRARY PAGE -->
       <aside class="panel library-panel" aria-label="Song library">
         <div class="panel-heading">
-          <h2>Song Library <button class="help-icon" data-help="library" type="button">?</button></h2>
+          <h2>Song Library <button class="help-icon" data-help="library" type="button" aria-label="Help">?</button></h2>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
 
             <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
@@ -269,7 +269,7 @@
               <span class="pane-tag">LIVE CHART PREVIEW</span>
               <div style="display:flex; gap:4px; align-items:center;">
                 <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
-                <button class="help-icon" data-help="formats" type="button">?</button>
+                <button class="help-icon" data-help="formats" type="button" aria-label="Help">?</button>
               </div>
             </div>
             <div class="preview-output" id="previewOutput"></div>
@@ -293,7 +293,7 @@
               <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
             </div>
             <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
-                  type="button">?</button></label><select class="select" id="keySelect"></select></div>
+                  type="button" aria-label="Help">?</button></label><select class="select" id="keySelect"></select></div>
             <div class="field">
               <label id="capoLabel" for="capoSelect"></label>
               <select class="select" id="capoSelect">
@@ -314,7 +314,7 @@
             </div>
             <div class="field">
               <label for="transposeSelect">Transpose semitones <button class="help-icon" data-help="transpose"
-                  type="button">?</button></label>
+                  type="button" aria-label="Help">?</button></label>
               <div class="transpose-box"
                 style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
                   class="icon-button" id="transposeDown" data-icon="minus" type="button"
@@ -360,7 +360,7 @@
           <!-- Card 3: Export & Layout -->
           <div class="tool-dashboard-card">
             <div class="panel-heading">
-              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button">?</button></h2>
+              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button" aria-label="Help">?</button></h2>
             </div>
             <div class="layout-row">
               <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select" id="exportOrientation" aria-label="Orientation">
@@ -395,12 +395,12 @@
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
               <button class="tab-button" type="button" data-circle-format="nashville"
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
-            </div><button class="help-icon" data-help="circle" type="button">?</button>
+            </div><button class="help-icon" data-help="circle" type="button" aria-label="Help">?</button>
           </div>
         </div>
         <div class="field" style="margin-bottom: 12px;"><label for="theoryKeyInput"
             style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
-              class="help-icon" data-help="theoryKey" type="button"
+              class="help-icon" data-help="theoryKey" type="button" aria-label="Help"
               style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
             id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor"
             autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
@@ -424,12 +424,12 @@
       <!-- 5. PLAY / INSTRUMENTS PAGE -->
       <aside class="panel instrument-panel" aria-label="Instruments">
         <div class="panel-heading" style="margin-bottom:0;">
-          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button">?</button></h2>
+          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button" aria-label="Help">?</button></h2>
           <!-- Key highlight selector -->
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <label style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
-            <select id="instrumentKeyRoot" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
-            <select id="instrumentKeyMode" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
+            <select id="instrumentKeyRoot" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;" aria-label="Root Key"></select>
+            <select id="instrumentKeyMode" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;" aria-label="Key Mode">
               <option value="major">Major</option>
               <option value="minor">Minor</option>
             </select>
@@ -442,8 +442,8 @@
           keys to sustain the note.</div>
 
         <div class="panel-heading" style="margin-top:24px;">
-          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button">?</button></h2>
-          <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;">
+          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button" aria-label="Help">?</button></h2>
+          <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;" aria-label="Fretboard Tuning">
             <option value="guitar">Guitar (EADGBE)</option>
             <option value="bass">4-Str Bass (EADG)</option>
             <option value="bass5">5-Str Bass (BEADG)</option>
@@ -457,7 +457,7 @@
           hold frets to sustain the note.</div>
 
         <div class="panel-heading" style="margin-top:24px;">
-          <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button">?</button>
+          <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button" aria-label="Help">?</button>
         </div>
         <div class="tool-card">
           <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); text-align: center;">Click to hear
@@ -659,7 +659,7 @@
           <option value="portrait">Portrait</option>
           <option value="landscape">Landscape</option>
         </select>
-        <button class="help-icon" data-help="present" type="button"
+        <button class="help-icon" data-help="present" type="button" aria-label="Help"
           style="margin-left:8px; width: 22px; height: 22px;">?</button><button class="button danger"
           id="presentationExit" data-icon="x" type="button" style="margin-left:8px;">Exit</button>
       </div>
@@ -718,7 +718,7 @@
     <div id="aiSettingsOverlay" class="hidden" style="position:absolute; top:52px; left:0; width:100%; height:calc(100% - 52px); background:var(--surface); z-index:10; display:none; flex-direction:column; padding:20px; box-sizing:border-box; overflow-y:auto;">
       <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:12px;">
         <h3 style="margin:0; color:var(--text); font-size:1.1rem;">AI Settings (BYOK)</h3>
-        <button class="help-icon" type="button" style="width: 22px; height: 22px; margin:0; flex-shrink: 0;" onclick="event.stopPropagation(); if(window.PopoverManager) PopoverManager.show(this, 'Sonata shares a free public AI pool. To ensure unlimited access and bypass public rate limits, you can easily plug in your own free Google Gemini API key. Your key is stored securely in your browser and never saved to a database.');">?</button>
+        <button class="help-icon" type="button" aria-label="Help" style="width: 22px; height: 22px; margin:0; flex-shrink: 0;" onclick="event.stopPropagation(); if(window.PopoverManager) PopoverManager.show(this, 'Sonata shares a free public AI pool. To ensure unlimited access and bypass public rate limits, you can easily plug in your own free Google Gemini API key. Your key is stored securely in your browser and never saved to a database.');">?</button>
       </div>
       <p style="color:var(--muted); font-size:0.9rem; line-height:1.5;">
         Sonata shares a free public AI pool. If you hit the limit or want <strong>unlimited access</strong>, you can plug in your own free Google Gemini API key.
