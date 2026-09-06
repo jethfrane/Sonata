@@ -1113,9 +1113,9 @@ Em -  C    -  G  -  D
           x: '<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>'
         },
         svg(name) { return '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (this.paths[name] || this.paths.file) + '</svg>'; },
-        apply(button, name, label, iconOnly) { if (!button) return; const text = label || button.textContent.trim() || button.getAttribute("aria-label") || "Action"; button.innerHTML = this.svg(name) + '<span class="' + (iconOnly ? "visually-hidden " : "") + 'button-label">' + text + '</span>'; button.dataset.icon = name; button.setAttribute("aria-label", text); button.title = button.title || text; },
+        apply(button, name, label, iconOnly) { if (!button) return; const text = label || button.textContent.trim() || button.getAttribute("aria-label") || button.getAttribute("title") || "Action"; button.innerHTML = this.svg(name) + '<span class="' + (iconOnly ? "visually-hidden " : "") + 'button-label">' + text + '</span>'; button.dataset.icon = name; button.setAttribute("aria-label", text); button.title = button.title || text; },
         set(button, name, label, iconOnly) { this.apply(button, name, label, iconOnly); },
-        decorateAll(root) { (root || document).querySelectorAll("[data-icon]").forEach(b => this.apply(b, b.dataset.icon, b.textContent.trim() || b.getAttribute("aria-label"), b.classList.contains("icon-button"))); (root || document).querySelectorAll("[data-inline-icon]").forEach(n => { n.innerHTML = this.svg(n.dataset.inlineIcon); }); }
+        decorateAll(root) { (root || document).querySelectorAll("[data-icon]").forEach(b => this.apply(b, b.dataset.icon, b.textContent.trim() || b.getAttribute("aria-label") || b.getAttribute("title"), b.classList.contains("icon-button"))); (root || document).querySelectorAll("[data-inline-icon]").forEach(n => { n.innerHTML = this.svg(n.dataset.inlineIcon); }); }
       };
 
       const GoogleDriveSync = {
@@ -3267,7 +3267,7 @@ Em -  C    -  G  -  D
           setLabel("#headerInstallBtn", d.installBtn);
 
           // Library
-          setHtml(".library-panel .panel-heading h2", `${d.libraryHeading} <button class="help-icon" data-help="library" type="button">?</button>`);
+          setHtml(".library-panel .panel-heading h2", `${d.libraryHeading} <button class="help-icon" aria-label="Help" data-help="library" type="button">?</button>`);
           setLabel("#manageLibraryBtn", d.manageLibraryBtn);
           setLabel("#newSongButton", d.newSongButton);
           setPlaceholder("#songSearch", d.songSearchPlaceholder);
@@ -3331,10 +3331,10 @@ Em -  C    -  G  -  D
           setHtml(".tools-panel .metric:nth-child(3) span", d.toolsMetricChords);
           setHtml(".tools-panel .metric:nth-child(4) span", d.toolsMetricTranspose);
           
-          setHtml('.tools-panel label[for="keySelect"]', `${d.toolsKeyOverride} <button class="help-icon" data-help="keyOverride" type="button">?</button>`);
+          setHtml('.tools-panel label[for="keySelect"]', `${d.toolsKeyOverride} <button class="help-icon" aria-label="Help" data-help="keyOverride" type="button">?</button>`);
           // For Capo select:
           setHtml('#capoLabel', d.toolsCapo);
-          setHtml('.tools-panel label[for="transposeSelect"]', `${d.toolsTransposeSemi} <button class="help-icon" data-help="transpose" type="button">?</button>`);
+          setHtml('.tools-panel label[for="transposeSelect"]', `${d.toolsTransposeSemi} <button class="help-icon" aria-label="Help" data-help="transpose" type="button">?</button>`);
           
           setLabel("#applyTransposeButton", d.toolsApplyTranspose);
           setLabel("#resetTransposeButton", d.toolsReset);
@@ -3345,7 +3345,7 @@ Em -  C    -  G  -  D
           setLabel("#tapTempoButton", d.metronomeTap);
 
           // Export Panel
-          setHtml(".tools-panel .tool-dashboard-card:nth-child(3) .panel-heading h2", `${d.exportHeading} <button class="help-icon" data-help="export" type="button">?</button>`);
+          setHtml(".tools-panel .tool-dashboard-card:nth-child(3) .panel-heading h2", `${d.exportHeading} <button class="help-icon" aria-label="Help" data-help="export" type="button">?</button>`);
           setHtml('.tools-panel label[for="exportOrientation"]', d.exportOrientation);
           setHtml('.tools-panel label[for="exportColumns"]', d.exportColumns);
           setLabel("#exportTxtButton", d.exportTxt);
@@ -3363,11 +3363,11 @@ Em -  C    -  G  -  D
           setHtml(".theory-panel .explanation-text", d.theoryHowItWorks);
 
           // Instruments Panel
-          setHtml(".instrument-panel .panel-heading:nth-of-type(1) h2", `${d.pianoHeading}<button class="help-icon" data-help="piano" type="button">?</button>`);
+          setHtml(".instrument-panel .panel-heading:nth-of-type(1) h2", `${d.pianoHeading}<button class="help-icon" aria-label="Help" data-help="piano" type="button">?</button>`);
           setHtml(".instrument-panel .explanation-text:nth-of-type(1)", d.pianoScrollText);
-          setHtml(".instrument-panel .panel-heading:nth-of-type(2) h2", `${d.fretboardHeading} <button class="help-icon" data-help="fretboard" type="button">?</button>`);
+          setHtml(".instrument-panel .panel-heading:nth-of-type(2) h2", `${d.fretboardHeading} <button class="help-icon" aria-label="Help" data-help="fretboard" type="button">?</button>`);
           setHtml(".instrument-panel .explanation-text:nth-of-type(2)", d.fretboardScrollText);
-          setHtml(".instrument-panel .panel-heading:nth-of-type(3) h2", `${d.tunerHeading}<button class="help-icon" data-help="tuner" type="button">?</button>`);
+          setHtml(".instrument-panel .panel-heading:nth-of-type(3) h2", `${d.tunerHeading}<button class="help-icon" aria-label="Help" data-help="tuner" type="button">?</button>`);
           setHtml(".instrument-panel .tool-card p", d.tunerSubtext);
           setHtml("#micTunerBtn", `<span data-inline-icon="music" style="margin-right:6px;"></span> ${Tuner.isListening ? d.tunerMicBtnStop : d.tunerMicBtnStart}`);
 
@@ -3573,7 +3573,7 @@ Em -  C    -  G  -  D
             const keyStr = key ? (key.root + (key.mode === 'minor' ? 'm' : '')) : '-';
             tableRows += `
               <tr class="manage-song-row" data-song-id="${song.id}" style="border-bottom:1px solid var(--line);">
-                <td style="padding:10px; text-align:center;"><input type="checkbox" class="manage-song-checkbox" value="${song.id}" style="width:16px; height:16px; cursor:pointer;"></td>
+                <td style="padding:10px; text-align:center;"><input type="checkbox" class="manage-song-checkbox" aria-label="Select song" value="${song.id}" style="width:16px; height:16px; cursor:pointer;"></td>
                 <td style="padding:10px; font-weight:600; color:var(--text);">${Util.escapeHtml(Util.titleOf(song))}</td>
                 <td style="padding:10px; color:var(--muted);">${Util.escapeHtml(song.artist || '-')}</td>
                 <td style="padding:10px; color:var(--muted);">${Util.escapeHtml(song.creator || '-')}</td>
@@ -3604,7 +3604,7 @@ Em -  C    -  G  -  D
                     <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem; background:var(--surface);">
                       <thead>
                         <tr style="background:var(--surface-2); border-bottom:1px solid var(--line); font-weight:600; color:var(--muted); position:sticky; top:0; z-index:1;">
-                          <th style="padding:10px; width:40px; text-align:center;"><input type="checkbox" id="selectAllSongsCheckbox" style="width:16px; height:16px; cursor:pointer;"></th>
+                          <th style="padding:10px; width:40px; text-align:center;"><input type="checkbox" id="selectAllSongsCheckbox" aria-label="Select all songs" style="width:16px; height:16px; cursor:pointer;"></th>
                           <th style="padding:10px;">Title</th>
                           <th style="padding:10px;">Author</th>
                           <th style="padding:10px;">Arranger</th>
@@ -3902,7 +3902,7 @@ Em -  C    -  G  -  D
           listHtml += `</div>`;
           this.openModal({
             title: editId ? "Edit Setlist" : "New Setlist", confirmText: "Save Setlist", fields: [
-              { type: "custom", html: `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><label class="control-label" style="margin:0;">Setlist Title</label><button class="help-icon" data-help="setlist" type="button" onclick="event.stopPropagation(); PopoverManager.show(this, 'Create a setlist to easily share multiple songs at once and navigate between them seamlessly on stage.');">?</button></div>` },
+              { type: "custom", html: `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><label class="control-label" style="margin:0;">Setlist Title</label><button class="help-icon" aria-label="Help" data-help="setlist" type="button" onclick="event.stopPropagation(); PopoverManager.show(this, 'Create a setlist to easily share multiple songs at once and navigate between them seamlessly on stage.');">?</button></div>` },
               { id: "title", label: "", type: "text", value: set.title || "Sunday Worship" },
               { type: "heading", label: "Select Songs" },
               { type: "custom", html: `<input class="input" type="search" id="slSearch" placeholder="Search songs..." onkeyup="const q = this.value.toLowerCase(); document.querySelectorAll('#slList label').forEach(l => { l.style.display = l.textContent.toLowerCase().includes(q) ? 'flex' : 'none'; });" style="margin-bottom:8px;">` },
