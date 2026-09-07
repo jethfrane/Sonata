@@ -4113,7 +4113,13 @@ Em -  C    -  G  -  D
           try {
             if (state.libraryFilter === 'setlists') {
               if (!state.setlists || state.setlists.length === 0) {
-                list.innerHTML = `<div class="empty-state">No Setlists found</div>`;
+                list.innerHTML = `<div class="empty-state">
+                  <p>No Setlists found</p>
+                  <button class="button primary" onclick="UIManager.openSetlistModal()" type="button">
+                    <span data-inline-icon="plus" style="width:16px;height:16px;margin-right:6px;"></span> Create Setlist
+                  </button>
+                </div>`;
+                Icon.decorateAll(list);
                 return;
               }
               state.setlists.forEach(set => {
@@ -4184,7 +4190,22 @@ Em -  C    -  G  -  D
             }
 
             if (songs.length === 0) {
-              list.innerHTML = `<div class="empty-state">${query ? 'No matching songs' : 'Library is empty'}</div>`;
+              if (query) {
+                list.innerHTML = `<div class="empty-state">
+                  <p>No matching songs for "${Util.escapeHtml(query)}"</p>
+                  <button class="button secondary" onclick="const s=document.getElementById('songSearch'); if(s){s.value=''; s.dispatchEvent(new Event('input'));}" type="button">
+                    <span data-inline-icon="x" style="width:16px;height:16px;margin-right:6px;"></span> Clear Search
+                  </button>
+                </div>`;
+              } else {
+                list.innerHTML = `<div class="empty-state">
+                  <p>Library is empty</p>
+                  <button class="button primary" onclick="document.getElementById('newSongButton')?.click()" type="button">
+                    <span data-inline-icon="plus" style="width:16px;height:16px;margin-right:6px;"></span> Create New Song
+                  </button>
+                </div>`;
+              }
+              Icon.decorateAll(list);
               return;
             }
 
