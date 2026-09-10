@@ -1,0 +1,11 @@
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /style.css HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /screenshots/editor.png HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] code 404, message File not found
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /_vercel/insights/script.js HTTP/1.1" 404 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /screenshots/library_dark.png HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /screenshots/presentation_mode.png HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /screenshots/play.png HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /icon.png HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:00] "GET /app.js HTTP/1.1" 200 -
+127.0.0.1 - - [10/Sep/2026 10:52:01] "GET /version.json HTTP/1.1" 200 -

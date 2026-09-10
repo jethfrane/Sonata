@@ -165,7 +165,7 @@
       <!-- 1. LIBRARY PAGE -->
       <aside class="panel library-panel" aria-label="Song library">
         <div class="panel-heading">
-          <h2>Song Library <button class="help-icon" data-help="library" type="button">?</button></h2>
+          <h2>Song Library <button class="help-icon" data-help="library" type="button" aria-label="Help: Song Library">?</button></h2>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
 
             <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
@@ -268,8 +268,8 @@
             <div class="pane-header">
               <span class="pane-tag">LIVE CHART PREVIEW</span>
               <div style="display:flex; gap:4px; align-items:center;">
-                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
-                <button class="help-icon" data-help="formats" type="button">?</button>
+                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" aria-label="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
+                <button class="help-icon" data-help="formats" type="button" aria-label="Help: Formats">?</button>
               </div>
             </div>
             <div class="preview-output" id="previewOutput"></div>
@@ -293,7 +293,7 @@
               <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
             </div>
             <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
-                  type="button">?</button></label><select class="select" id="keySelect"></select></div>
+                  type="button" aria-label="Help: Key override">?</button></label><select class="select" id="keySelect"></select></div>
             <div class="field">
               <label id="capoLabel" for="capoSelect"></label>
               <select class="select" id="capoSelect">
@@ -314,7 +314,7 @@
             </div>
             <div class="field">
               <label for="transposeSelect">Transpose semitones <button class="help-icon" data-help="transpose"
-                  type="button">?</button></label>
+                  type="button" aria-label="Help: Transpose semitones">?</button></label>
               <div class="transpose-box"
                 style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
                   class="icon-button" id="transposeDown" data-icon="minus" type="button"
@@ -360,7 +360,7 @@
           <!-- Card 3: Export & Layout -->
           <div class="tool-dashboard-card">
             <div class="panel-heading">
-              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button">?</button></h2>
+              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button" aria-label="Help: Export and Sharing">?</button></h2>
             </div>
             <div class="layout-row">
               <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select" id="exportOrientation" aria-label="Orientation">
@@ -395,12 +395,12 @@
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
               <button class="tab-button" type="button" data-circle-format="nashville"
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
-            </div><button class="help-icon" data-help="circle" type="button">?</button>
+            </div><button class="help-icon" data-help="circle" type="button" aria-label="Help: Circle of 5ths">?</button>
           </div>
         </div>
         <div class="field" style="margin-bottom: 12px;"><label for="theoryKeyInput"
             style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
-              class="help-icon" data-help="theoryKey" type="button"
+              class="help-icon" data-help="theoryKey" type="button" aria-label="Help: Active Key"
               style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
             id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor"
             autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
@@ -424,7 +424,7 @@
       <!-- 5. PLAY / INSTRUMENTS PAGE -->
       <aside class="panel instrument-panel" aria-label="Instruments">
         <div class="panel-heading" style="margin-bottom:0;">
-          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button">?</button></h2>
+          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button" aria-label="Help: Virtual Piano">?</button></h2>
           <!-- Key highlight selector -->
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
             <label style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
@@ -442,7 +442,7 @@
           keys to sustain the note.</div>
 
         <div class="panel-heading" style="margin-top:24px;">
-          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button">?</button></h2>
+          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button" aria-label="Help: Fretboard">?</button></h2>
           <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;">
             <option value="guitar">Guitar (EADGBE)</option>
             <option value="bass">4-Str Bass (EADG)</option>
@@ -457,7 +457,7 @@
           hold frets to sustain the note.</div>
 
         <div class="panel-heading" style="margin-top:24px;">
-          <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button">?</button>
+          <h2>Reference Tuner</h2><button class="help-icon" data-help="tuner" type="button" aria-label="Help: Reference Tuner">?</button>
         </div>
         <div class="tool-card">
           <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); text-align: center;">Click to hear
@@ -659,7 +659,7 @@
           <option value="portrait">Portrait</option>
           <option value="landscape">Landscape</option>
         </select>
-        <button class="help-icon" data-help="present" type="button"
+        <button class="help-icon" data-help="present" type="button" aria-label="Help: Presentation Mode"
           style="margin-left:8px; width: 22px; height: 22px;">?</button><button class="button danger"
           id="presentationExit" data-icon="x" type="button" style="margin-left:8px;">Exit</button>
       </div>
@@ -668,14 +668,14 @@
       <div class="presentation-text" id="presentationText"></div>
     </div>
     <div class="presentation-controls-bottom">
-      <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" title="Cycle Theme"></button>
-      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button"
+      <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" title="Cycle Theme" aria-label="Cycle Theme"></button>
+      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" aria-label="Toggle Metronome"
         title="Toggle Metronome"></button>
       <div class="beat-row" id="presBeatRow" style="width: 70px; margin-left: 8px;"></div>
       <div
         style="width: 1px; height: 28px; background: color-mix(in srgb, var(--p-line) 50%, transparent); margin: 0 12px;">
       </div>
-      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" title="Auto-Scroll"></button>
+      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" title="Auto-Scroll" aria-label="Auto-Scroll"></button>
       <span style="font-size:0.7rem; font-weight:bold; color:var(--p-text); margin-left:4px;">SPD</span>
       <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30"
         style="width: 100px; accent-color: var(--p-text); margin: 0 8px;">
@@ -718,7 +718,7 @@
     <div id="aiSettingsOverlay" class="hidden" style="position:absolute; top:52px; left:0; width:100%; height:calc(100% - 52px); background:var(--surface); z-index:10; display:none; flex-direction:column; padding:20px; box-sizing:border-box; overflow-y:auto;">
       <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:12px;">
         <h3 style="margin:0; color:var(--text); font-size:1.1rem;">AI Settings (BYOK)</h3>
-        <button class="help-icon" type="button" style="width: 22px; height: 22px; margin:0; flex-shrink: 0;" onclick="event.stopPropagation(); if(window.PopoverManager) PopoverManager.show(this, 'Sonata shares a free public AI pool. To ensure unlimited access and bypass public rate limits, you can easily plug in your own free Google Gemini API key. Your key is stored securely in your browser and never saved to a database.');">?</button>
+        <button class="help-icon" type="button" aria-label="Help: AI Settings" style="width: 22px; height: 22px; margin:0; flex-shrink: 0;" onclick="event.stopPropagation(); if(window.PopoverManager) PopoverManager.show(this, 'Sonata shares a free public AI pool. To ensure unlimited access and bypass public rate limits, you can easily plug in your own free Google Gemini API key. Your key is stored securely in your browser and never saved to a database.');">?</button>
       </div>
       <p style="color:var(--muted); font-size:0.9rem; line-height:1.5;">
         Sonata shares a free public AI pool. If you hit the limit or want <strong>unlimited access</strong>, you can plug in your own free Google Gemini API key.
