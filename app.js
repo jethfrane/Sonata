@@ -3267,7 +3267,7 @@ Em -  C    -  G  -  D
           setLabel("#headerInstallBtn", d.installBtn);
 
           // Library
-          setHtml(".library-panel .panel-heading h2", `${d.libraryHeading} <button class="help-icon" data-help="library" type="button">?</button>`);
+          setHtml(".library-panel .panel-heading h2", `${d.libraryHeading} <button class="help-icon" data-help="library" type="button" aria-label="Help: Song Library">?</button>`);
           setLabel("#manageLibraryBtn", d.manageLibraryBtn);
           setLabel("#newSongButton", d.newSongButton);
           setPlaceholder("#songSearch", d.songSearchPlaceholder);
@@ -3331,10 +3331,10 @@ Em -  C    -  G  -  D
           setHtml(".tools-panel .metric:nth-child(3) span", d.toolsMetricChords);
           setHtml(".tools-panel .metric:nth-child(4) span", d.toolsMetricTranspose);
           
-          setHtml('.tools-panel label[for="keySelect"]', `${d.toolsKeyOverride} <button class="help-icon" data-help="keyOverride" type="button">?</button>`);
+          setHtml('.tools-panel label[for="keySelect"]', `${d.toolsKeyOverride} <button class="help-icon" data-help="keyOverride" type="button" aria-label="Help: Key override">?</button>`);
           // For Capo select:
           setHtml('#capoLabel', d.toolsCapo);
-          setHtml('.tools-panel label[for="transposeSelect"]', `${d.toolsTransposeSemi} <button class="help-icon" data-help="transpose" type="button">?</button>`);
+          setHtml('.tools-panel label[for="transposeSelect"]', `${d.toolsTransposeSemi} <button class="help-icon" data-help="transpose" type="button" aria-label="Help: Transpose semitones">?</button>`);
           
           setLabel("#applyTransposeButton", d.toolsApplyTranspose);
           setLabel("#resetTransposeButton", d.toolsReset);
@@ -3345,7 +3345,7 @@ Em -  C    -  G  -  D
           setLabel("#tapTempoButton", d.metronomeTap);
 
           // Export Panel
-          setHtml(".tools-panel .tool-dashboard-card:nth-child(3) .panel-heading h2", `${d.exportHeading} <button class="help-icon" data-help="export" type="button">?</button>`);
+          setHtml(".tools-panel .tool-dashboard-card:nth-child(3) .panel-heading h2", `${d.exportHeading} <button class="help-icon" data-help="export" type="button" aria-label="Help: Export and Sharing">?</button>`);
           setHtml('.tools-panel label[for="exportOrientation"]', d.exportOrientation);
           setHtml('.tools-panel label[for="exportColumns"]', d.exportColumns);
           setLabel("#exportTxtButton", d.exportTxt);
@@ -3363,11 +3363,11 @@ Em -  C    -  G  -  D
           setHtml(".theory-panel .explanation-text", d.theoryHowItWorks);
 
           // Instruments Panel
-          setHtml(".instrument-panel .panel-heading:nth-of-type(1) h2", `${d.pianoHeading}<button class="help-icon" data-help="piano" type="button">?</button>`);
+          setHtml(".instrument-panel .panel-heading:nth-of-type(1) h2", `${d.pianoHeading}<button class="help-icon" data-help="piano" type="button" aria-label="Help: Virtual Piano">?</button>`);
           setHtml(".instrument-panel .explanation-text:nth-of-type(1)", d.pianoScrollText);
-          setHtml(".instrument-panel .panel-heading:nth-of-type(2) h2", `${d.fretboardHeading} <button class="help-icon" data-help="fretboard" type="button">?</button>`);
+          setHtml(".instrument-panel .panel-heading:nth-of-type(2) h2", `${d.fretboardHeading} <button class="help-icon" data-help="fretboard" type="button" aria-label="Help: Fretboard">?</button>`);
           setHtml(".instrument-panel .explanation-text:nth-of-type(2)", d.fretboardScrollText);
-          setHtml(".instrument-panel .panel-heading:nth-of-type(3) h2", `${d.tunerHeading}<button class="help-icon" data-help="tuner" type="button">?</button>`);
+          setHtml(".instrument-panel .panel-heading:nth-of-type(3) h2", `${d.tunerHeading}<button class="help-icon" data-help="tuner" type="button" aria-label="Help: Reference Tuner">?</button>`);
           setHtml(".instrument-panel .tool-card p", d.tunerSubtext);
           setHtml("#micTunerBtn", `<span data-inline-icon="music" style="margin-right:6px;"></span> ${Tuner.isListening ? d.tunerMicBtnStop : d.tunerMicBtnStart}`);
 
@@ -3902,7 +3902,7 @@ Em -  C    -  G  -  D
           listHtml += `</div>`;
           this.openModal({
             title: editId ? "Edit Setlist" : "New Setlist", confirmText: "Save Setlist", fields: [
-              { type: "custom", html: `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><label class="control-label" style="margin:0;">Setlist Title</label><button class="help-icon" data-help="setlist" type="button" onclick="event.stopPropagation(); PopoverManager.show(this, 'Create a setlist to easily share multiple songs at once and navigate between them seamlessly on stage.');">?</button></div>` },
+              { type: "custom", html: `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><label class="control-label" style="margin:0;">Setlist Title</label><button class="help-icon" data-help="setlist" type="button" aria-label="Help: Setlists" onclick="event.stopPropagation(); PopoverManager.show(this, 'Create a setlist to easily share multiple songs at once and navigate between them seamlessly on stage.');">?</button></div>` },
               { id: "title", label: "", type: "text", value: set.title || "Sunday Worship" },
               { type: "heading", label: "Select Songs" },
               { type: "custom", html: `<input class="input" type="search" id="slSearch" placeholder="Search songs..." onkeyup="const q = this.value.toLowerCase(); document.querySelectorAll('#slList label').forEach(l => { l.style.display = l.textContent.toLowerCase().includes(q) ? 'flex' : 'none'; });" style="margin-bottom:8px;">` },
