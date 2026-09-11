@@ -3219,6 +3219,8 @@ Em -  C    -  G  -  D
           if (this.dom.saveSongButton) this.dom.saveSongButton.title = `Save (${mod}S)`;
           if (this.dom.undoSongButton) this.dom.undoSongButton.title = `Undo (${mod}Z)`;
           if (this.dom.redoSongButton) this.dom.redoSongButton.title = `Redo (${isMac ? mod + shift + 'Z' : 'Ctrl+Y'})`;
+          const saveKeyHint = document.getElementById('saveKeyHint');
+          if (saveKeyHint) saveKeyHint.textContent = isMac ? '⌘S' : 'Ctrl+S';
 
           window.addEventListener("keydown", (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
@@ -3746,7 +3748,12 @@ Em -  C    -  G  -  D
         previewText(song, activeKey, rawTextOnly) {
           const body = song.body || "";
           if (!body.trim() && !rawTextOnly) {
-            return `<div class="empty-state" style="padding: 60px 20px;"><div class="empty-state-icon">📝</div><div class="empty-state-title">Start writing your first song</div><div class="empty-state-desc">Type chords above lyrics or in [brackets]. Your formatted chart will render here in real-time.</div><button class="button secondary" type="button" onclick="document.getElementById('loadDemoButton')?.click()">Load Demo Song</button></div>`;
+            return `<div class="empty-state chart-empty-state">
+              <div class="empty-state-icon"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
+              <div class="empty-state-title">Live Chart Preview</div>
+              <div class="empty-state-desc">Your formatted chord chart will render here in real-time as you type, with transposition, Roman numerals, or Nashville numbers.</div>
+              <button class="button secondary compact empty-state-action" type="button" onclick="document.getElementById('loadDemoButton')?.click()">Load Demo Song</button>
+            </div>`;
           }
           const lines = body.split('\n'); const mode = StateManager.state.previewMode; const effectiveTranspose = StateManager.state.transposeDelta - StateManager.state.capo;
           let resultLines = [];
@@ -3777,7 +3784,20 @@ Em -  C    -  G  -  D
           this.updateAnalysis();
           InstrumentManager.syncKeySelectors();
         },
-        setStatus(message) { if (!this.dom.saveStatus) return; this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : message; window.clearTimeout(this.statusTimer); this.statusTimer = window.setTimeout(() => { if (this.dom.saveStatus) this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : (StateManager.state.dirty ? "Autosaving" : "Ready"); }, 1800); },
+        setStatus(message) {
+          if (!this.dom.saveStatus) return;
+          const isReadOnly = Boolean(StateManager.activeSong()?.readonly);
+          this.dom.saveStatus.innerHTML = isReadOnly ? '<span class="badge">Read Only</span> Preview' : message;
+          const msgLower = (message || "").toLowerCase();
+          this.dom.saveStatus.className = 'status-line ' + (msgLower.includes('saving') ? 'saving' : (msgLower.includes('saved') || msgLower.includes('ready') ? 'saved' : 'editing'));
+          window.clearTimeout(this.statusTimer);
+          this.statusTimer = window.setTimeout(() => {
+            if (!this.dom.saveStatus) return;
+            const dirty = Boolean(StateManager.state.dirty);
+            this.dom.saveStatus.innerHTML = isReadOnly ? '<span class="badge">Read Only</span> Preview' : (dirty ? "Autosaving" : "Ready");
+            this.dom.saveStatus.className = 'status-line ' + (dirty ? 'saving' : 'saved');
+          }, 1800);
+        },
 
         openManageLibrary() {
           const songs = StateManager.state.songs;
@@ -4355,9 +4375,9 @@ Em -  C    -  G  -  D
           const bar = document.getElementById('editorMetadataBar');
           if (!bar) return;
           if (!song) { bar.style.display = 'none'; return; }
-          const parts = [];
-          if (song.artist) parts.push(`<strong>Author:</strong> ${Util.escapeHtml(song.artist)}`);
-          if (song.creator) parts.push(`<strong>Arranger:</strong> ${Util.escapeHtml(song.creator)}`);
+          const chips = [];
+          if (song.artist) chips.push(`<span class="meta-chip" title="Author"><span class="meta-chip-label">Author</span><span class="meta-chip-val">${Util.escapeHtml(song.artist)}</span></span>`);
+          if (song.creator) chips.push(`<span class="meta-chip" title="Arranger"><span class="meta-chip-label">Arranger</span><span class="meta-chip-val">${Util.escapeHtml(song.creator)}</span></span>`);
 
           const key = KeyDetector.activeKey(song, StateManager.state.detectedKey);
           if (key) {
@@ -4365,11 +4385,11 @@ Em -  C    -  G  -  D
             if (StateManager.state.capo) {
               keyStr += ` (Capo ${StateManager.state.capo})`;
             }
-            parts.push(`<strong>Key:</strong> ${keyStr}`);
+            chips.push(`<span class="meta-chip meta-chip-key" title="Musical Key"><span class="meta-chip-label">Key</span><span class="meta-chip-val">${keyStr}</span></span>`);
           }
 
-          if (parts.length > 0) {
-            bar.innerHTML = parts.join('  •  ');
+          if (chips.length > 0) {
+            bar.innerHTML = chips.join('');
             bar.style.display = 'flex';
           } else {
             bar.style.display = 'none';
@@ -4389,7 +4409,27 @@ Em -  C    -  G  -  D
           UIManager.dom.songTitle?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.title = UIManager.dom.songTitle.value; StateManager.touch(song); UIManager.renderLibrarySoon(); UIManager.updateAnalysis(); });
           UIManager.dom.songTitle?.addEventListener("blur", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; if (!song.title.trim()) song.title = "Untitled Song"; UIManager.dom.songTitle.value = Util.titleOf(song); StateManager.touch(song); UIManager.renderAll(); });
           UIManager.dom.songBody?.addEventListener("input", () => { const song = StateManager.activeSong(); if (!song || song.readonly) return; song.body = UIManager.dom.songBody.value; StateManager.touch(song); UIManager.updateAnalysisSoon(); this.updateDemoButtonState(); this.scheduleHistory(UIManager.dom.songBody.value); });
-          document.querySelector('.editor-placeholder')?.addEventListener('click', () => UIManager.dom.songBody?.focus());
+          document.querySelector('.editor-placeholder')?.addEventListener('click', (e) => {
+            if (!e.target.closest('.syntax-chip') && !e.target.closest('#placeholderDemoBtn')) {
+              UIManager.dom.songBody?.focus();
+            }
+          });
+          document.querySelectorAll('.syntax-chip').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const snippet = btn.getAttribute('data-insert');
+              if (!snippet || !UIManager.dom.songBody) return;
+              const ta = UIManager.dom.songBody;
+              ta.value = (ta.value ? ta.value + "\n" : "") + snippet;
+              ta.dispatchEvent(new Event("input"));
+              ta.focus();
+              showToast("Inserted template syntax", "info");
+            });
+          });
+          document.getElementById('placeholderDemoBtn')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('loadDemoButton')?.click();
+          });
           UIManager.dom.songBody?.addEventListener("keydown", (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
               e.preventDefault();

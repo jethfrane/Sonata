@@ -4,6 +4,11 @@
     "date": "2026-09-11",
     "changes": [
       "Responsive Layout: Tablet & mobile navigation collapse under 1024px into a slide-out drawer, with a dedicated mobile Google Sync status pill.",
+      "Desktop & Laptop Full Viewport IDE: Split editor and preview panes stretch to fill 100% of the viewport height with zero wasted space and independent internal scrolling.",
+      "Interactive Syntax Quick-Start: Clickable syntax chips in empty editor to quickly insert headers, chords, dividers, and rehearsal notes with instant preview.",
+      "Metadata Chips: Replaced plain text author/arranger/key bar with sleek, formatted metadata tag chips.",
+      "Live Status Indicator: Dynamic status badge with a live dot reflecting Saved (green), Autosaving (pulsing blue), and Editing (amber) states.",
+      "Chart Preview Polish: Fixed text wrapping in chart empty state, replaced plain emoji with modern SVG illustrations, and added thin custom desktop scrollbars.",
       "Destructive Action Confirmations: Safe modal dialogs before deleting songs, loading demos, or clearing unsaved charts.",
       "Unsaved Changes Guard: Browser beforeunload warning and in-app navigation dialog (Save & Leave, Discard, Cancel) preventing accidental loss of work.",
       "Toast Notification System: Modern, non-blocking bottom-center toast alerts for save, cloud sync, export, transposition, and song deletion.",
@@ -13,7 +18,7 @@
       "Transpose Undo Stack: Integrated chord transposition into the 50-step undo/redo history stack.",
       "Cross-Platform Shortcut Hints: Dynamically detects macOS (⌘S, ⌘Z) vs Windows/Linux (Ctrl+S, Ctrl+Z) for keyboard shortcuts, with a global Cmd/Ctrl+S save listener."
     ],
-    "whatsNew": "Comprehensive UI/UX overhaul: unsaved changes protection, destructive action modals, mobile responsive navigation, floating presentation exit, toast notifications, and WCAG AA accessibility improvements."
+    "whatsNew": "Comprehensive UI/UX overhaul: desktop & laptop full-height split IDE, interactive syntax quick-start, metadata chips, live status badge, unsaved changes protection, destructive action modals, and mobile responsive navigation."
   },
   {
     "version": "1.4.1",

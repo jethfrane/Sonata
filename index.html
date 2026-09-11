@@ -206,11 +206,13 @@
         </div>
         <div class="editor-toolbar">
           <div class="toolbar">
-            <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save</button>
-            <button class="button" id="undoSongButton" data-icon="rotate-ccw" type="button"
-              title="Undo (Ctrl+Z)">Undo</button>
-            <button class="button" id="redoSongButton" data-icon="rotate" type="button"
-              title="Redo (Ctrl+Y)">Redo</button>
+            <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save <kbd class="key-hint" id="saveKeyHint" style="margin-left:5px; font-size:0.68rem; opacity:0.85; font-family:var(--chart-font); background:rgba(255,255,255,0.25); padding:1px 5px; border-radius:3px;">⌘S</kbd></button>
+            <div class="history-group">
+              <button class="button icon-button ghost" id="undoSongButton" data-icon="rotate-ccw" type="button"
+                title="Undo (⌘Z / Ctrl+Z)" aria-label="Undo" style="min-width:32px; height:32px; padding:0;"></button>
+              <button class="button icon-button ghost" id="redoSongButton" data-icon="rotate" type="button"
+                title="Redo (⌘⇧Z / Ctrl+Y)" aria-label="Redo" style="min-width:32px; height:32px; padding:0;"></button>
+            </div>
             <button class="button primary" id="importSharedButton" data-icon="download" type="button"
               style="display:none;">Save to Library</button>
             <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
@@ -230,7 +232,7 @@
             <button class="tab-button" type="button" data-mobile-editor-pane="preview" data-icon="eye">Preview</button>
             <button class="tab-button" type="button" data-mobile-editor-pane="split" data-icon="columns">Split</button>
           </div>
-          <div class="status-line" id="saveStatus" aria-live="polite">Ready</div>
+          <div class="status-line saved" id="saveStatus" aria-live="polite">Ready</div>
         </div>
 
         <div class="setlist-nav" id="setlistNav">
@@ -252,16 +254,23 @@
             <div class="editor-container">
               <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body" placeholder=" "></textarea>
               <div class="editor-placeholder">
-                <h3>Welcome to Sonata!</h3>
-                <p>Type your chords and lyrics below, or click <strong>Demo</strong> above to instantly load a fully
-                  formatted example.</p>
-                <ul>
-                  <li><code># </code> Header (e.g., # Verse 1)</li>
-                  <li><code>## </code> Subheader (e.g., ## Build)</li>
-                  <li><code>---</code> Creates a solid divider line</li>
-                  <li><code>[G]</code> Creates inline chords</li>
-                  <li><code>&gt; </code> Creates a safe comment/note</li>
-                </ul>
+                <div class="quickstart-card">
+                  <div class="quickstart-header">
+                    <span class="quickstart-badge">QUICK START</span>
+                    <h3>Start Writing Your Song</h3>
+                    <p>Type chords above lyrics or use inline brackets like <code>[G]</code>. Click syntax tags to insert:</p>
+                  </div>
+                  <div class="quickstart-tags">
+                    <button type="button" class="syntax-chip" data-insert="# Verse 1&#10;"><code>#</code> Section Header</button>
+                    <button type="button" class="syntax-chip" data-insert="## Chorus&#10;"><code>##</code> Subheader</button>
+                    <button type="button" class="syntax-chip" data-insert="[G]"><code>[G]</code> Inline Chord</button>
+                    <button type="button" class="syntax-chip" data-insert="---&#10;"><code>---</code> Divider Line</button>
+                    <button type="button" class="syntax-chip" data-insert="&gt; Note: "><code>&gt;</code> Stage Note</button>
+                  </div>
+                  <div class="quickstart-actions">
+                    <button class="button primary compact" id="placeholderDemoBtn" type="button">Load Demo Song</button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

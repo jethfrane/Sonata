@@ -118,7 +118,11 @@ Created by **Jeth Frane**, Sonata was built to replace clumsy paper binders, clu
 ## 📦 Release History
 
 - **v1.5.0 (2026-09-11)**:
+  - **Desktop & Laptop Full Viewport IDE:** Full 100% viewport split editor eliminating empty space, with independent internal scrolling and custom thin scrollbars.
   - **Responsive Layout:** Tablet & mobile navigation collapse under 1024px into a slide-out drawer, with a dedicated mobile Google Sync status pill.
+  - **Interactive Syntax Quick-Start:** Clickable syntax chips in empty editor to quickly insert headers, chords, dividers, and rehearsal notes with real-time preview.
+  - **Metadata Chips & Live Status Dot:** Replaced plain text author/arranger/key bar with sleek metadata chips, plus a live indicator dot reflecting Saved (green), Autosaving (pulsing blue), and Editing (amber).
+  - **Chart Preview Polish:** Fixed text wrapping on chart empty state and added modern SVG music illustrations.
   - **Destructive Action Confirmations:** Safe modal dialogs before deleting songs, loading demos, or clearing unsaved charts.
   - **Unsaved Changes Guard:** Browser `beforeunload` warning and in-app navigation dialog (*Save & Leave*, *Discard*, *Cancel*) preventing accidental loss of work.
   - **Toast Notification System:** Modern, non-blocking bottom-center toast alerts for save, cloud sync, export, transposition, and song deletion.
