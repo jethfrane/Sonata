@@ -1,5 +1,21 @@
 [
   {
+    "version": "1.5.0",
+    "date": "2026-09-11",
+    "changes": [
+      "Responsive Layout: Tablet & mobile navigation collapse under 1024px into a slide-out drawer, with a dedicated mobile Google Sync status pill.",
+      "Destructive Action Confirmations: Safe modal dialogs before deleting songs, loading demos, or clearing unsaved charts.",
+      "Unsaved Changes Guard: Browser beforeunload warning and in-app navigation dialog (Save & Leave, Discard, Cancel) preventing accidental loss of work.",
+      "Toast Notification System: Modern, non-blocking bottom-center toast alerts for save, cloud sync, export, transposition, and song deletion.",
+      "Stage Presentation Polish: Floating, high-visibility 'Exit Presentation' button with 3-second auto-fade, plus keyboard shortcut hints.",
+      "Mobile Transpose Stepper: Intuitive minus/plus stepper controls for mobile screens alongside the transpose slider.",
+      "Accessibility & Contrast (WCAG AA): High-contrast active tab styling in dark mode, visible keyboard focus rings, descriptive ARIA labels across all icon buttons, and 44px minimum touch targets on metronome controls.",
+      "Transpose Undo Stack: Integrated chord transposition into the 50-step undo/redo history stack.",
+      "Cross-Platform Shortcut Hints: Dynamically detects macOS (⌘S, ⌘Z) vs Windows/Linux (Ctrl+S, Ctrl+Z) for keyboard shortcuts, with a global Cmd/Ctrl+S save listener."
+    ],
+    "whatsNew": "Comprehensive UI/UX overhaul: unsaved changes protection, destructive action modals, mobile responsive navigation, floating presentation exit, toast notifications, and WCAG AA accessibility improvements."
+  },
+  {
     "version": "1.4.1",
     "date": "2026-08-26",
     "changes": [

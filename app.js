@@ -1283,11 +1283,16 @@ Em -  C    -  G  -  D
           const greetingText = `Hi, ${name}!`;
           const emptySvg = 'data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="%2394a3b8" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z"/></svg>';
           const pic = (this.accessToken || this.userName || this.userEmail) ? (this.userPicture || emptySvg) : emptySvg;
+          const picAlt = (this.userName && !this.userName.includes('@')) ? `${this.userName}'s profile picture` : "User profile picture";
           
           if (UIManager.dom.sidebarProfileContainer) {
             UIManager.dom.sidebarProfileContainer.hidden = false;
             if (UIManager.dom.sidebarUserGreeting) UIManager.dom.sidebarUserGreeting.textContent = greetingText;
-            if (UIManager.dom.sidebarUserAvatar) UIManager.dom.sidebarUserAvatar.src = pic;
+            if (UIManager.dom.sidebarUserAvatar) {
+              UIManager.dom.sidebarUserAvatar.src = pic;
+              UIManager.dom.sidebarUserAvatar.alt = picAlt;
+              UIManager.dom.sidebarUserAvatar.setAttribute("aria-label", picAlt);
+            }
           }
           if (UIManager.dom.topbarProfileContainer) {
             UIManager.dom.topbarProfileContainer.hidden = false;
@@ -1295,11 +1300,17 @@ Em -  C    -  G  -  D
               UIManager.dom.topbarUserGreeting.textContent = greetingText;
               UIManager.dom.topbarUserGreeting.style.display = 'inline';
             }
-            if (UIManager.dom.topbarUserAvatar) UIManager.dom.topbarUserAvatar.src = pic;
+            if (UIManager.dom.topbarUserAvatar) {
+              UIManager.dom.topbarUserAvatar.src = pic;
+              UIManager.dom.topbarUserAvatar.alt = picAlt;
+              UIManager.dom.topbarUserAvatar.setAttribute("aria-label", picAlt);
+            }
           }
           if (UIManager.dom.mobileUserAvatar) {
             UIManager.dom.mobileUserAvatar.hidden = false;
             UIManager.dom.mobileUserAvatar.src = pic;
+            UIManager.dom.mobileUserAvatar.alt = picAlt;
+            UIManager.dom.mobileUserAvatar.setAttribute("aria-label", picAlt);
           }
         },
 
@@ -1310,7 +1321,7 @@ Em -  C    -  G  -  D
               this.updateUI("Connecting...", "secondary");
               this.tokenClient.requestAccessToken({ prompt: '' });
             } else {
-              UIManager.toast("Google Identity Services loading... please try again.");
+              UIManager.toast("Google Identity Services loading... please try again.", "info");
               resolve(false);
             }
           });
@@ -1328,7 +1339,7 @@ Em -  C    -  G  -  D
           localStorage.removeItem('sonata_google_token');
           localStorage.removeItem('sonata_google_token_expiry');
           this.updateUI("Drive Sync", "secondary");
-          UIManager.toast("Disconnected from Google Drive");
+          UIManager.toast("Disconnected from Google Drive", "info");
         },
 
         get lastSyncedTime() {
@@ -1354,7 +1365,8 @@ Em -  C    -  G  -  D
           }
           this.isSyncing = true;
           this.updateUI("Syncing...", "secondary");
-          UIManager.toast("Syncing with Google Drive...");
+          document.querySelectorAll('#googleSyncButton, #googleSyncButtonMobile, #sidebarDriveSyncBtn').forEach(b => b.classList.add('sync-in-progress'));
+          UIManager.toast("Syncing with Google Drive...", "info");
 
           try {
             // Use direct fetch instead of gapi.client.drive (discovery doc can fail silently)
@@ -1367,7 +1379,7 @@ Em -  C    -  G  -  D
             if (listResp.status === 401) {
               this.accessToken = null;
               localStorage.removeItem('sonata_google_token');
-              UIManager.toast("Session expired. Please sync again.");
+              UIManager.toast("Session expired. Please sync again.", "error");
               this.updateUI("Drive Sync", "secondary");
               this.isSyncing = false;
               return;
@@ -1392,13 +1404,14 @@ Em -  C    -  G  -  D
             }
             this.lastSyncedTime = Util.now();
             this.updateUI("● Synced", "primary");
-            UIManager.toast("Drive Sync Complete");
+            showToast("Synced with Google Drive", "success");
           } catch (err) {
             console.error("Sync error:", err);
-            UIManager.toast("Drive Sync Failed: " + (err.message || "Unknown error"));
+            showToast("Sync failed. Check connection.", "error");
             this.updateUI("Sync Failed", "danger");
           } finally {
             this.isSyncing = false;
+            document.querySelectorAll('#googleSyncButton, #googleSyncButtonMobile, #sidebarDriveSyncBtn').forEach(b => b.classList.remove('sync-in-progress'));
           }
         },
 
@@ -1792,10 +1805,19 @@ Em -  C    -  G  -  D
       };
 
       const StateManager = {
+        hasUnsavedChanges: false,
         state: { songs: [], setlists: [], deletedIds: [], activeId: null, sharedSong: null, activeSetlist: { id: null, index: 0 }, settings: Object.assign({}, DEFAULT_SETTINGS), capo: 0, query: "", libraryFilter: "all", previewMode: "original", circleFormat: "roman", transposeDelta: 0, detectedKey: null, dirty: false },
         init() { this.state.settings = StorageManager.loadSettings(); this.state.songs = StorageManager.loadSongs(); this.state.setlists = StorageManager.loadSetlists(); this.state.deletedIds = StorageManager.loadDeletedIds(); const sId = StorageManager.loadActiveId(); this.state.activeId = this.state.songs.some(s => s.id === sId) ? sId : (this.state.songs[0]?.id || null); },
         activeSong() { return this.state.activeId === 'shared' && this.state.sharedSong ? this.state.sharedSong : (this.state.songs.find(s => s.id === this.state.activeId) || this.state.songs[0] || null); },
-        touch(song) { if (!song || song.readonly) return; song.updatedAt = Util.now(); this.state.dirty = true; App.scheduleSave(); GoogleDriveSync.scheduleUpload(); },
+        touch(song) {
+          if (!song || song.readonly) return;
+          song.updatedAt = Util.now();
+          this.state.dirty = true;
+          this.hasUnsavedChanges = true;
+          window.hasUnsavedChanges = true;
+          App.scheduleSave();
+          GoogleDriveSync.scheduleUpload();
+        },
         saveNow(msg) {
           const a = this.activeSong();
           if (a && !a.readonly) a.savedSnapshot = a.body;
@@ -1805,16 +1827,20 @@ Em -  C    -  G  -  D
           StorageManager.saveDeletedIds(this.state.deletedIds);
           if (this.state.activeId && this.state.activeId !== 'shared') StorageManager.saveActiveId(this.state.activeId);
           this.state.dirty = false;
+          if (msg !== "Autosaved") {
+            this.hasUnsavedChanges = false;
+            window.hasUnsavedChanges = false;
+          }
           UIManager.setStatus(msg || "Saved");
           if (typeof GoogleDriveSync !== 'undefined' && GoogleDriveSync.accessToken) {
             GoogleDriveSync.scheduleUpload();
           }
         },
-        setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
-        createSong() { const now = Util.now(); const autoName = (StateManager.state.settings.autoFillArranger && GoogleDriveSync.userName) ? GoogleDriveSync.userName : ""; const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: autoName, body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.exitSetlist(); this.saveNow("New song created"); return s; },
-        loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.touch(s); this.saveNow("Demo loaded"); return s; },
-        deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.deletedIds.includes(a.id)) this.state.deletedIds.push(a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.saveNow("Deleted"); },
-        revertActive() { const a = this.activeSong(); if (!a || a.readonly) return; a.body = a.savedSnapshot || ""; this.touch(a); this.saveNow("Restored"); Editor.loadActiveSong(); UIManager.renderAll(); },
+        setActive(id) { if (id === 'shared') return; const song = this.state.songs.find(i => i.id === id); if (!song) return; this.state.activeId = id; song.lastOpenedAt = Util.now(); this.state.sharedSong = null; this.hasUnsavedChanges = false; window.hasUnsavedChanges = false; StorageManager.saveActiveId(id); this.saveNow("Opened"); },
+        createSong() { const now = Util.now(); const autoName = (StateManager.state.settings.autoFillArranger && GoogleDriveSync.userName) ? GoogleDriveSync.userName : ""; const s = { id: Util.uid(), title: "", artist: "", description: "", links: [], creator: autoName, body: "", savedSnapshot: "", manualKey: "auto", isFavorite: false, createdAt: now, updatedAt: now, lastOpenedAt: now }; this.state.songs.unshift(s); this.state.activeId = s.id; this.state.transposeDelta = 0; this.state.capo = 0; this.state.sharedSong = null; this.hasUnsavedChanges = false; window.hasUnsavedChanges = false; this.exitSetlist(); this.saveNow("New song created"); return s; },
+        loadDemo() { const s = this.activeSong(); if (!s || s.readonly) return; Object.assign(s, { title: "Amazing Grace (My Chains Are Gone)", body: DEMO_SONG, artist: "John Newton", creator: "Chris Tomlin / Trad.", description: "Classic hymn arranged for contemporary worship. Build on Chorus 2.", links: [{ name: "YouTube", url: "https://youtu.be/Jbe7OruLk8I" }], manualKey: "G:major" }); this.state.capo = 0; this.state.transposeDelta = 0; this.hasUnsavedChanges = false; window.hasUnsavedChanges = false; this.touch(s); this.saveNow("Demo loaded"); return s; },
+        deleteActive() { const a = this.activeSong(); if (!a || a.readonly) return; this.state.songs = this.state.songs.filter(s => s.id !== a.id); if (!this.state.deletedIds.includes(a.id)) this.state.deletedIds.push(a.id); if (!this.state.songs.length) this.createSong(); else this.state.activeId = this.state.songs[0].id; this.hasUnsavedChanges = false; window.hasUnsavedChanges = false; this.saveNow("Deleted"); },
+        revertActive() { const a = this.activeSong(); if (!a || a.readonly) return; a.body = a.savedSnapshot || ""; this.hasUnsavedChanges = false; window.hasUnsavedChanges = false; this.touch(a); this.saveNow("Restored"); Editor.loadActiveSong(); UIManager.renderAll(); },
         importShared() { if (!this.state.sharedSong) return; const s = { ...this.state.sharedSong, id: Util.uid(), readonly: false }; this.state.songs.unshift(s); this.state.sharedSong = null; this.state.activeId = s.id; this.saveNow("Saved to Library"); return s; },
         exitShared() { this.state.sharedSong = null; this.state.activeId = this.state.songs[0]?.id || null; if (!this.state.activeId) this.createSong(); },
         playSetlist(id, index = 0) { const set = this.state.setlists.find(s => s.id === id); if (!set || !set.items.length) return; this.state.activeSetlist = { id, index }; this.state.sharedSong = null; this.setActive(set.items[index].songId); UIManager.updateSetlistNav(); },
@@ -1977,6 +2003,11 @@ Em -  C    -  G  -  D
             if (UIManager.dom.theoryKeyInput) {
               const rootName = KEY_ROOTS[tonic] || 'C';
               UIManager.dom.theoryKeyInput.value = `${rootName} ${baseAk.mode || 'major'}`;
+            }
+            const stepVal = document.getElementById('transposeStepperValue') || UIManager.dom.transposeStepperValue;
+            if (stepVal) {
+              const d = StateManager.state.transposeDelta || 0;
+              stepVal.textContent = d > 0 ? '+' + d : String(d);
             }
             this.renderPiano();
             this.renderFretboard(UIManager.dom.fretboardTuning?.value || 'guitar');
@@ -2365,13 +2396,13 @@ Em -  C    -  G  -  D
           const short = await this.shortenUrl(directUrl).catch(() => null);
           return short || directUrl;
         },
-        exportTxt() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".txt", "text/plain;charset=utf-8", p.text); UIManager.toast("TXT exported"); },
+        exportTxt() { const p = this.setlistPayloads()[0]; Util.download(Util.slug(p.title) + ".txt", "text/plain;charset=utf-8", p.text); showToast("Exported as TXT", "success"); },
         async exportPng() { 
-          UIManager.toast("Generating PNG... (this may take a moment)");
+          UIManager.toast("Generating PNG... (this may take a moment)", "info");
           const shareUrl = await this.getActiveShareUrl();
           const p = this.setlistPayloads()[0]; 
           Util.download(Util.slug(p.title) + ".png", "image/png", this.renderPng(p, shareUrl)); 
-          UIManager.toast("PNG exported"); 
+          showToast("Exported as PNG", "success"); 
         },
         renderPng(payload, _shareUrl) {
           const columns = parseInt(UIManager.dom.exportColumns.value, 10) || 1;
@@ -2593,12 +2624,12 @@ Em -  C    -  G  -  D
           return new Blob([bytes], { type: "image/png" });
         },
         async exportPdf() { 
-          UIManager.toast("Generating PDF... (this may take a moment)");
+          UIManager.toast("Generating PDF... (this may take a moment)", "info");
           const shareUrl = await this.getActiveShareUrl();
           const payloads = this.setlistPayloads(); 
           const name = payloads.length > 1 ? (StateManager.state.setlists.find(s => s.id === StateManager.state.activeSetlist.id)?.title || 'Setlist') : payloads[0].title; 
           Util.download(Util.slug(name) + ".pdf", "application/pdf", this.createPdf(payloads, shareUrl)); 
-          UIManager.toast("PDF exported"); 
+          showToast("Exported as PDF", "success"); 
         },
         createPdf(payloads, shareUrl) {
           const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || "#1967d2";
@@ -3180,10 +3211,56 @@ Em -  C    -  G  -  D
         dom: {}, modalAction: null,
         renderLibrarySoon() { SongLibrary.render(); },
         updateAnalysisSoon() { this.updateAnalysis(); },
-        cache() { ["brandVersion", "googleSyncButton", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
-        init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
-        switchView(viewName) {
+        cache() { ["brandVersion", "googleSyncButton", "googleSyncButtonMobile", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "floatingPresentationExit", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "transposeStepperValue", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar", "aiFabButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        setupShortcutsAndGuards() {
+          const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+          const mod = isMac ? '⌘' : 'Ctrl+';
+          const shift = isMac ? '⇧' : 'Shift+';
+          if (this.dom.saveSongButton) this.dom.saveSongButton.title = `Save (${mod}S)`;
+          if (this.dom.undoSongButton) this.dom.undoSongButton.title = `Undo (${mod}Z)`;
+          if (this.dom.redoSongButton) this.dom.redoSongButton.title = `Redo (${isMac ? mod + shift + 'Z' : 'Ctrl+Y'})`;
+
+          window.addEventListener("keydown", (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+              e.preventDefault();
+              if (this.dom.saveSongButton && this.dom.saveSongButton.style.display !== 'none') {
+                this.dom.saveSongButton.click();
+              }
+            }
+          });
+
+          window.addEventListener("beforeunload", (e) => {
+            if (StateManager.hasUnsavedChanges) {
+              e.preventDefault();
+              e.returnValue = '';
+            }
+          });
+        },
+        init() { this.cache(); Icon.decorateAll(document); this.populateKeySelect(); this.populateTransposeSelect(); this.setupShortcutsAndGuards(); this.bind(); InstrumentManager.init(); if (this.dom.langSelect) { this.dom.langSelect.value = StateManager.state.settings.language || "en"; } this.applyLanguage(); },
+        switchView(viewName, force = false) {
           const workspace = document.querySelector(".workspace");
+          const currentView = workspace ? workspace.dataset.view : "editor";
+          if (!force && StateManager.hasUnsavedChanges && currentView === "editor" && viewName !== "editor") {
+            this.openModal({
+              title: "Unsaved Changes",
+              message: "You have unsaved changes. Leave without saving?",
+              confirmText: "Save & Leave",
+              secondaryText: "Discard",
+              cancelText: "Cancel",
+              onConfirm: () => {
+                StateManager.saveNow("Saved");
+                StateManager.hasUnsavedChanges = false;
+                showToast("Song saved successfully", "success");
+                this.switchView(viewName, true);
+              },
+              onSecondary: () => {
+                StateManager.revertActive();
+                StateManager.hasUnsavedChanges = false;
+                this.switchView(viewName, true);
+              }
+            });
+            return;
+          }
           if (workspace) workspace.dataset.view = viewName;
           // Sync active state for all [data-view] buttons (top-nav, mobile-switcher, sidebar)
           document.querySelectorAll("[data-view]").forEach(btn => {
@@ -3440,40 +3517,81 @@ Em -  C    -  G  -  D
           document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); this.switchView(b.dataset.view); }));
           add(this.dom.copyLiveChartBtn, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
  
-          add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow(t("saved", "Saved")); this.toast(t("songSavedToast", "Song saved to Library")); });
-          add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); this.toast(t("undoToast", "Undo")); });
-          add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); this.toast(t("redoToast", "Redo")); });
-          add(this.dom.importSharedButton, "click", () => { AudioEngine.playClick(); StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); this.toast(t("savedToLibraryToast", "Saved to Library")); });
+          add(this.dom.saveSongButton, "click", () => { AudioEngine.playClick(); StateManager.saveNow(t("saved", "Saved")); StateManager.hasUnsavedChanges = false; showToast("Song saved successfully", "success"); });
+          add(this.dom.undoSongButton, "click", () => { AudioEngine.playClick(); Editor.undo(); this.toast(t("undoToast", "Undo"), "info"); });
+          add(this.dom.redoSongButton, "click", () => { AudioEngine.playClick(); Editor.redo(); this.toast(t("redoToast", "Redo"), "info"); });
+          add(this.dom.importSharedButton, "click", () => { AudioEngine.playClick(); StateManager.importShared(); Editor.loadActiveSong(); this.renderAll(); showToast("Saved to Library", "success"); });
           add(this.dom.exitSharedButton, "click", () => { AudioEngine.playClick(); StateManager.exitShared(); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.infoSongButton, "click", () => { AudioEngine.playClick(); this.openSongInfo(); });
           add(this.dom.loadDemoButton, "click", () => {
             AudioEngine.playClick();
-            this.openModal({
-              title: t("loadDemoTitle", "Load Demo"),
-              message: t("loadDemoMessage", "Load demo song? This will replace your current song content."),
-              confirmText: t("loadDemoConfirm", "Load Demo"),
-              onConfirm: () => {
-                StateManager.loadDemo();
-                Editor.loadActiveSong();
-                this.renderAll();
-                this.toast(t("demoLoadedToast", "Demo song loaded"));
-              }
-            });
+            const song = StateManager.activeSong();
+            const hasChangesOrContent = StateManager.hasUnsavedChanges || (song && song.body && song.body.trim().length > 0);
+            if (hasChangesOrContent) {
+              this.openModal({
+                title: t("loadDemoTitle", "Load Demo"),
+                message: "Load demo song? Your unsaved changes will be lost.",
+                confirmText: t("loadDemoConfirm", "Load Demo"),
+                destructive: true,
+                onConfirm: () => {
+                  StateManager.loadDemo();
+                  StateManager.hasUnsavedChanges = false;
+                  Editor.loadActiveSong();
+                  this.renderAll();
+                  showToast("Demo song loaded", "success");
+                }
+              });
+            } else {
+              StateManager.loadDemo();
+              StateManager.hasUnsavedChanges = false;
+              Editor.loadActiveSong();
+              this.renderAll();
+              showToast("Demo song loaded", "success");
+            }
           });
           add(this.dom.manageLibraryBtn, "click", () => { AudioEngine.playClick(); this.openManageLibrary(); });
           add(this.dom.scanQrBtn, "click", () => { AudioEngine.playClick(); QrScannerManager.startScan(); });
           add(this.dom.sidebarScanQrBtn, "click", () => { AudioEngine.playClick(); this.closeSidebar(); QrScannerManager.startScan(); });
  
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
-          add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast(t("sortedToast", "Sorted: ") + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text); });
-          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); this.toast(t("filterToast", "Filter: ") + b.textContent); }));
-          add(this.dom.newSongButton, "click", () => { AudioEngine.playClick(); if (StateManager.state.libraryFilter === 'setlists') { this.openSetlistModal(); return; } StateManager.createSong(); Editor.loadActiveSong(); this.switchView('editor'); this.renderAll(); this.toast(t("newSongReadyToast", "New song ready")); });
+          add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast(t("sortedToast", "Sorted: ") + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text, "info"); });
+          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); this.toast(t("filterToast", "Filter: ") + b.textContent, "info"); }));
+          add(this.dom.newSongButton, "click", () => {
+            AudioEngine.playClick();
+            if (StateManager.state.libraryFilter === 'setlists') {
+              this.openSetlistModal();
+              return;
+            }
+            if (StateManager.hasUnsavedChanges) {
+              this.openModal({
+                title: "New Song",
+                message: "Create new song? Your unsaved changes will be lost.",
+                confirmText: "Create New",
+                destructive: true,
+                onConfirm: () => {
+                  StateManager.createSong();
+                  StateManager.hasUnsavedChanges = false;
+                  Editor.loadActiveSong();
+                  this.switchView('editor', true);
+                  this.renderAll();
+                  showToast("New song ready", "success");
+                }
+              });
+              return;
+            }
+            StateManager.createSong();
+            StateManager.hasUnsavedChanges = false;
+            Editor.loadActiveSong();
+            this.switchView('editor', true);
+            this.renderAll();
+            showToast("New song ready", "success");
+          });
 
           add(this.dom.slPrev, "click", () => { AudioEngine.playClick(); const s = StateManager.state.activeSetlist; StateManager.playSetlist(s.id, Math.max(0, s.index - 1)); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.slNext, "click", () => { AudioEngine.playClick(); const s = StateManager.state.activeSetlist; const set = StateManager.state.setlists.find(x => x.id === s.id); StateManager.playSetlist(s.id, Math.min(set.items.length - 1, s.index + 1)); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.slExit, "click", () => { AudioEngine.playClick(); StateManager.exitSetlist(); Editor.loadActiveSong(); this.renderAll(); });
 
-          document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.previewMode = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(i => i.classList.toggle("active", i === b)); this.updateAnalysis(); this.toast("Layout: " + b.textContent); }));
+          document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.previewMode = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(i => i.classList.toggle("active", i === b)); this.updateAnalysis(); this.toast("Layout: " + b.textContent, "info"); }));
           document.querySelectorAll("[data-mobile-editor-pane]").forEach(btn => {
             add(btn, "click", () => {
               AudioEngine.playClick();
@@ -3493,17 +3611,101 @@ Em -  C    -  G  -  D
           document.querySelectorAll("[data-circle-format]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.circleFormat = b.dataset.circleFormat; document.querySelectorAll("[data-circle-format]").forEach(i => i.classList.toggle("active", i === b)); InstrumentManager.renderCircle(); }));
 
           add(this.dom.keySelect, "change", () => { const song = StateManager.activeSong(); if (!song || song.readonly) { this.updateAnalysis(); return; } song.manualKey = this.dom.keySelect.value; StateManager.touch(song); StateManager.saveNow(t("keySaved", "Key saved")); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); });
-          add(this.dom.theoryKeyInput, "change", (e) => { const match = e.target.value.trim().match(/^([A-Ga-g][#bB]?)\s*(m|min|minor|maj|major|)?$/i); if (match) { let root = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase(); if (root.length === 2 && root[1] === 'B') root = root[0] + 'b'; let mode = (match[2] && match[2].toLowerCase().startsWith('m') && !match[2].toLowerCase().startsWith('maj')) ? 'minor' : 'major'; if (NOTE_TO_SEMITONE.hasOwnProperty(root)) { const song = StateManager.activeSong(); if (song && !song.readonly) { song.manualKey = `${root}:${mode}`; StateManager.touch(song); StateManager.saveNow(t("keyUpdated", "Key updated")); this.renderAll(); InstrumentManager.syncKeySelectors(); this.toast(t("keySetTo", "Key set to ") + `${root} ${mode}`); return; } } } this.toast(t("invalidKeyToast", "Invalid key. Try format 'G' or 'C#m'")); InstrumentManager.syncKeySelectors(); });
+          add(this.dom.theoryKeyInput, "change", (e) => { const match = e.target.value.trim().match(/^([A-Ga-g][#bB]?)\s*(m|min|minor|maj|major|)?$/i); if (match) { let root = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase(); if (root.length === 2 && root[1] === 'B') root = root[0] + 'b'; let mode = (match[2] && match[2].toLowerCase().startsWith('m') && !match[2].toLowerCase().startsWith('maj')) ? 'minor' : 'major'; if (NOTE_TO_SEMITONE.hasOwnProperty(root)) { const song = StateManager.activeSong(); if (song && !song.readonly) { song.manualKey = `${root}:${mode}`; StateManager.touch(song); StateManager.saveNow(t("keyUpdated", "Key updated")); this.renderAll(); InstrumentManager.syncKeySelectors(); this.toast(t("keySetTo", "Key set to ") + `${root} ${mode}`, "info"); return; } } } this.toast(t("invalidKeyToast", "Invalid key. Try format 'G' or 'C#m'"), "error"); InstrumentManager.syncKeySelectors(); });
 
-          add(this.dom.capoSelect, "change", () => { StateManager.state.capo = parseInt(this.dom.capoSelect.value, 10); this.updateAnalysis(); this.toast(t("capoToast", "Capo ") + StateManager.state.capo); });
-          add(this.dom.transposeSelect, "change", () => { StateManager.state.transposeDelta = Util.clamp(parseInt(this.dom.transposeSelect.value, 10) || 0, -24, 24); this.updateAnalysis(); InstrumentManager.syncKeySelectors(); });
+          add(this.dom.capoSelect, "change", () => { StateManager.state.capo = parseInt(this.dom.capoSelect.value, 10); this.updateAnalysis(); this.toast(t("capoToast", "Capo ") + StateManager.state.capo, "info"); });
+          add(this.dom.transposeSelect, "change", () => {
+            StateManager.state.transposeDelta = Util.clamp(parseInt(this.dom.transposeSelect.value, 10) || 0, -24, 24);
+            const stepVal = document.getElementById('transposeStepperValue') || this.dom.transposeStepperValue;
+            if (stepVal) {
+              const d = StateManager.state.transposeDelta;
+              stepVal.textContent = d > 0 ? "+" + d : String(d);
+            }
+            this.updateAnalysis();
+            InstrumentManager.syncKeySelectors();
+          });
           add(this.dom.transposeDown, "click", () => { AudioEngine.playClick(); this.bumpTranspose(-1); }); add(this.dom.transposeUp, "click", () => { AudioEngine.playClick(); this.bumpTranspose(1); });
-          add(this.dom.applyTransposeButton, "click", () => { AudioEngine.playClick(); const song = StateManager.activeSong(); if (!song || song.readonly) return; const delta = StateManager.state.transposeDelta; if (!delta) { this.toast(t("applyTransposeToastNoSelect", "No transpose selected")); return; } this.openModal({ title: t("applyTransposeTitle", "Apply Transpose"), message: t("applyTransposeMessage", "Permanently rewrite chords in editor?"), confirmText: t("applyTransposeConfirm", "Apply"), onConfirm: () => { song.body = TransposeEngine.transposeText(song.body, delta, KeyDetector.activeKey(song, StateManager.state.detectedKey || KeyDetector.detect(song.body))); StateManager.state.transposeDelta = 0; InstrumentManager.syncKeySelectors(); UIManager.renderAll(); this.toast(t("applyTransposeToast", "Chords transposed permanently")); } }); });
-          add(this.dom.resetTransposeButton, "click", () => { AudioEngine.playClick(); this.openModal({ title: t("resetModificationsTitle", "Reset Modifications"), message: t("resetModificationsMessage", "Reset Capo and Transpose?"), confirmText: t("resetModificationsConfirm", "Reset"), onConfirm: () => { StateManager.state.transposeDelta = 0; if (this.dom.transposeSelect) this.dom.transposeSelect.value = "0"; StateManager.state.capo = 0; if (this.dom.capoSelect) this.dom.capoSelect.value = "0"; this.updateAnalysis(); InstrumentManager.syncKeySelectors(); this.toast(t("resetModificationsToast", "Reset")); } }); });
+          add(this.dom.applyTransposeButton, "click", () => {
+            AudioEngine.playClick();
+            const song = StateManager.activeSong();
+            if (!song || song.readonly) return;
+            const delta = StateManager.state.transposeDelta;
+            if (!delta) {
+              showToast(t("applyTransposeToastNoSelect", "No transpose selected"), "warning");
+              return;
+            }
+            this.openModal({
+              title: t("applyTransposeTitle", "Apply Transpose"),
+              message: t("applyTransposeMessage", "Permanently rewrite chords in editor?"),
+              confirmText: t("applyTransposeConfirm", "Apply"),
+              onConfirm: () => {
+                Editor.pushHistory(song.body);
+                song.body = TransposeEngine.transposeText(song.body, delta, KeyDetector.activeKey(song, StateManager.state.detectedKey || KeyDetector.detect(song.body)));
+                StateManager.state.transposeDelta = 0;
+                if (this.dom.transposeSelect) this.dom.transposeSelect.value = "0";
+                const stepVal = document.getElementById('transposeStepperValue') || this.dom.transposeStepperValue;
+                if (stepVal) stepVal.textContent = "0";
+                StateManager.touch(song);
+                StateManager.saveNow(t("saved", "Saved"));
+                StateManager.hasUnsavedChanges = false;
+                InstrumentManager.syncKeySelectors();
+                UIManager.renderAll();
+                showToast("Transposed by " + (delta > 0 ? "+" + delta : delta) + " semitones", "info");
+              }
+            });
+          });
+          add(this.dom.resetTransposeButton, "click", () => {
+            AudioEngine.playClick();
+            this.openModal({
+              title: t("resetModificationsTitle", "Reset Modifications"),
+              message: t("resetModificationsMessage", "Reset Capo and Transpose?"),
+              confirmText: t("resetModificationsConfirm", "Reset"),
+              onConfirm: () => {
+                StateManager.state.transposeDelta = 0;
+                if (this.dom.transposeSelect) this.dom.transposeSelect.value = "0";
+                const stepVal = document.getElementById('transposeStepperValue') || this.dom.transposeStepperValue;
+                if (stepVal) stepVal.textContent = "0";
+                StateManager.state.capo = 0;
+                if (this.dom.capoSelect) this.dom.capoSelect.value = "0";
+                this.updateAnalysis();
+                InstrumentManager.syncKeySelectors();
+                showToast(t("resetModificationsToast", "Reset"), "info");
+              }
+            });
+          });
 
           add(this.dom.exportTxtButton, "click", () => { AudioEngine.playClick(); ExportManager.exportTxt(); }); add(this.dom.exportPngButton, "click", () => { AudioEngine.playClick(); ExportManager.exportPng(); }); add(this.dom.exportPdfButton, "click", () => { AudioEngine.playClick(); ExportManager.exportPdf(); }); add(this.dom.printButton, "click", () => { AudioEngine.playClick(); ExportManager.print(); }); add(this.dom.copyButton, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
           add(this.dom.shareButton, "click", () => { AudioEngine.playClick(); ExportManager.share(Boolean(StateManager.state.activeSetlist.id)); });
-          add(this.dom.modalCancel, "click", () => { AudioEngine.playClick(); this.dom.modalHost.hidden = true; }); add(this.dom.modalBackdrop, "click", () => { this.dom.modalHost.hidden = true; }); add(this.dom.modalConfirm, "click", () => { AudioEngine.playClick(); if (!this.modalAction) return; const values = {}; this.dom.modalFields.querySelectorAll("[data-field-id]").forEach(input => { values[input.dataset.fieldId] = input.value; }); this.dom.modalHost.hidden = true; if (typeof this.modalAction.onConfirm === "function") this.modalAction.onConfirm(values); });
+          add(this.dom.floatingPresentationExit, "click", () => { AudioEngine.playClick(); PresentationManager.close(); });
+          add(this.dom.googleSyncButtonMobile, "click", () => GoogleDriveSync.performSync());
+          add(this.dom.modalCancel, "click", () => { AudioEngine.playClick(); this.closeModal(true); });
+          add(this.dom.modalHost, "click", (e) => {
+            if (e.target === this.dom.modalHost || e.target === this.dom.modalBackdrop) {
+              this.closeModal(true);
+            }
+          });
+          const modalActionsHost = document.getElementById("modalActions");
+          if (modalActionsHost) {
+            modalActionsHost.addEventListener("click", (e) => {
+              if (e.target && e.target.id === "modalSecondary") {
+                AudioEngine.playClick();
+                const act = this.modalAction;
+                this.closeModal(false);
+                if (act && typeof act.onSecondary === "function") act.onSecondary();
+              }
+            });
+          }
+          add(this.dom.modalConfirm, "click", () => {
+            AudioEngine.playClick();
+            if (!this.modalAction) return;
+            const values = {};
+            this.dom.modalFields.querySelectorAll("[data-field-id]").forEach(input => {
+              values[input.dataset.fieldId] = input.value;
+            });
+            const act = this.modalAction;
+            this.closeModal(false);
+            if (typeof act.onConfirm === "function") act.onConfirm(values);
+          });
 
           add(this.dom.presentationExit, "click", () => { AudioEngine.playClick(); PresentationManager.close(); }); add(this.dom.presentationFontDown, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(-4); }); add(this.dom.presentationFontUp, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(4); }); add(this.dom.presentationOrientation, "change", () => PresentationManager.setOrientation(this.dom.presentationOrientation.value));
           add(this.dom.presThemeToggle, "click", () => { AudioEngine.playClick(); PresentationManager.cycleTheme(); }); add(this.dom.presMetronomeToggle, "click", () => { AudioEngine.playClick(); MetronomeManager.toggle(); });
@@ -3542,7 +3744,11 @@ Em -  C    -  G  -  D
           if (this.dom.previewOutput) this.dom.previewOutput.innerHTML = this.previewText(song, active, false);
         },
         previewText(song, activeKey, rawTextOnly) {
-          const body = song.body || ""; const lines = body.split('\n'); const mode = StateManager.state.previewMode; const effectiveTranspose = StateManager.state.transposeDelta - StateManager.state.capo;
+          const body = song.body || "";
+          if (!body.trim() && !rawTextOnly) {
+            return `<div class="empty-state" style="padding: 60px 20px;"><div class="empty-state-icon">📝</div><div class="empty-state-title">Start writing your first song</div><div class="empty-state-desc">Type chords above lyrics or in [brackets]. Your formatted chart will render here in real-time.</div><button class="button secondary" type="button" onclick="document.getElementById('loadDemoButton')?.click()">Load Demo Song</button></div>`;
+          }
+          const lines = body.split('\n'); const mode = StateManager.state.previewMode; const effectiveTranspose = StateManager.state.transposeDelta - StateManager.state.capo;
           let resultLines = [];
           lines.forEach(originalLine => {
             const isChordLine = ChordParser.isChordLine(originalLine);
@@ -3562,7 +3768,15 @@ Em -  C    -  G  -  D
           });
           return resultLines.join('\n');
         },
-        bumpTranspose(delta) { const next = Util.clamp((parseInt(StateManager.state.transposeDelta, 10) || 0) + delta, -24, 24); StateManager.state.transposeDelta = next; if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(next); this.updateAnalysis(); InstrumentManager.syncKeySelectors(); },
+        bumpTranspose(delta) {
+          const next = Util.clamp((parseInt(StateManager.state.transposeDelta, 10) || 0) + delta, -24, 24);
+          StateManager.state.transposeDelta = next;
+          if (this.dom.transposeSelect) this.dom.transposeSelect.value = String(next);
+          const stepVal = document.getElementById('transposeStepperValue') || this.dom.transposeStepperValue;
+          if (stepVal) stepVal.textContent = next > 0 ? "+" + next : String(next);
+          this.updateAnalysis();
+          InstrumentManager.syncKeySelectors();
+        },
         setStatus(message) { if (!this.dom.saveStatus) return; this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : message; window.clearTimeout(this.statusTimer); this.statusTimer = window.setTimeout(() => { if (this.dom.saveStatus) this.dom.saveStatus.innerHTML = StateManager.activeSong()?.readonly ? '<span class="badge">Read Only</span> Preview' : (StateManager.state.dirty ? "Autosaving" : "Ready"); }, 1800); },
 
         openManageLibrary() {
@@ -3925,13 +4139,142 @@ Em -  C    -  G  -  D
           window.__setLinkManager.render();
           document.getElementById('setAddLinkBtn').addEventListener('click', window.__setLinkManager.addLink);
         },
-        closeModal() {
+        closeModal(fromCancel = false) {
           if (this.dom.modalHost) this.dom.modalHost.hidden = true;
+          if (fromCancel && this.modalAction && typeof this.modalAction.onCancel === "function") {
+            this.modalAction.onCancel();
+          }
           this.modalAction = null;
         },
-        openModal(options) { this.modalAction = options; this.dom.modalTitle.textContent = options.title || ""; this.dom.modalMessage.textContent = options.message || ""; this.dom.modalFields.innerHTML = ""; (options.fields || []).forEach(f => { if (f.type === "custom") { const w = document.createElement("div"); w.innerHTML = f.html; this.dom.modalFields.appendChild(w); return; } if (f.type === "heading") { const h = document.createElement("div"); h.className = "settings-heading"; h.textContent = f.label; this.dom.modalFields.appendChild(h); return; } const w = document.createElement("div"); w.className = "settings-field"; if (f.label) { const l = document.createElement("label"); l.textContent = f.label; l.htmlFor = "modal-" + f.id; w.appendChild(l); } if (f.type === "select") { const s = document.createElement("select"); s.className = "select"; s.id = "modal-" + f.id; s.dataset.fieldId = f.id; (f.options || []).forEach(o => { const node = document.createElement("option"); node.value = o.value; node.textContent = o.label; s.appendChild(node); }); s.value = f.value; w.appendChild(s); } else if (f.type === "range") { const r = document.createElement("div"); r.className = "range-row"; const i = document.createElement("input"); i.type = "range"; i.id = "modal-" + f.id; i.dataset.fieldId = f.id; i.min = f.min; i.max = f.max; i.step = f.step || 1; i.value = f.value; const o = document.createElement("span"); o.className = "range-value"; const update = () => { o.textContent = i.value + (f.suffix || ""); }; i.addEventListener("input", update); update(); r.append(i, o); w.appendChild(r); } else { const i = document.createElement("input"); i.className = "input"; i.id = "modal-" + f.id; i.dataset.fieldId = f.id; i.type = f.type || "text"; i.value = f.value || ""; w.appendChild(i); } this.dom.modalFields.appendChild(w); }); this.dom.modalConfirm.textContent = options.confirmText || "Done"; this.dom.modalConfirm.classList.toggle("danger", Boolean(options.destructive)); this.dom.modalConfirm.classList.toggle("primary", !options.destructive); this.dom.modalHost.hidden = false; const focusable = this.dom.modalFields.querySelector("input, select, textarea") || this.dom.modalConfirm; setTimeout(() => focusable.focus(), 30); },
-        toast(message) { const node = document.createElement("div"); node.className = "toast"; node.textContent = message; this.dom.toastHost.appendChild(node); setTimeout(() => { node.style.opacity = "0"; node.style.transform = "translateY(8px)"; }, 2200); setTimeout(() => node.remove(), 2800); }
+        openModal(options) {
+          this.modalAction = options;
+          this.dom.modalTitle.textContent = options.title || "";
+          this.dom.modalMessage.textContent = options.message || "";
+          this.dom.modalFields.innerHTML = "";
+          (options.fields || []).forEach(f => {
+            if (f.type === "custom") {
+              const w = document.createElement("div");
+              w.innerHTML = f.html;
+              this.dom.modalFields.appendChild(w);
+              return;
+            }
+            if (f.type === "heading") {
+              const h = document.createElement("div");
+              h.className = "settings-heading";
+              h.textContent = f.label;
+              this.dom.modalFields.appendChild(h);
+              return;
+            }
+            const w = document.createElement("div");
+            w.className = "settings-field";
+            if (f.label) {
+              const l = document.createElement("label");
+              l.textContent = f.label;
+              l.htmlFor = "modal-" + f.id;
+              w.appendChild(l);
+            }
+            if (f.type === "select") {
+              const s = document.createElement("select");
+              s.className = "select";
+              s.id = "modal-" + f.id;
+              s.dataset.fieldId = f.id;
+              (f.options || []).forEach(o => {
+                const node = document.createElement("option");
+                node.value = o.value;
+                node.textContent = o.label;
+                s.appendChild(node);
+              });
+              s.value = f.value;
+              w.appendChild(s);
+            } else if (f.type === "range") {
+              const r = document.createElement("div");
+              r.className = "range-row";
+              const i = document.createElement("input");
+              i.type = "range";
+              i.id = "modal-" + f.id;
+              i.dataset.fieldId = f.id;
+              i.min = f.min;
+              i.max = f.max;
+              i.step = f.step || 1;
+              i.value = f.value;
+              const o = document.createElement("span");
+              o.className = "range-value";
+              const update = () => { o.textContent = i.value + (f.suffix || ""); };
+              i.addEventListener("input", update);
+              update();
+              r.append(i, o);
+              w.appendChild(r);
+            } else {
+              const i = document.createElement("input");
+              i.className = "input";
+              i.id = "modal-" + f.id;
+              i.dataset.fieldId = f.id;
+              i.type = f.type || "text";
+              i.value = f.value || "";
+              w.appendChild(i);
+            }
+            this.dom.modalFields.appendChild(w);
+          });
+          this.dom.modalConfirm.textContent = options.confirmText || "Done";
+          this.dom.modalConfirm.classList.toggle("danger", Boolean(options.destructive));
+          this.dom.modalConfirm.classList.toggle("primary", !options.destructive);
+          if (this.dom.modalCancel) {
+            this.dom.modalCancel.textContent = options.cancelText || "Cancel";
+          }
+          let secBtn = document.getElementById("modalSecondary");
+          if (options.secondaryText) {
+            if (!secBtn) {
+              secBtn = document.createElement("button");
+              secBtn.id = "modalSecondary";
+              secBtn.className = "button danger";
+              secBtn.type = "button";
+              const actions = document.getElementById("modalActions");
+              if (actions) actions.insertBefore(secBtn, this.dom.modalConfirm);
+            }
+            secBtn.textContent = options.secondaryText;
+            secBtn.style.display = "";
+          } else if (secBtn) {
+            secBtn.style.display = "none";
+          }
+          this.dom.modalHost.hidden = false;
+          const focusable = this.dom.modalFields.querySelector("input, select, textarea") || this.dom.modalConfirm;
+          setTimeout(() => focusable.focus(), 30);
+        },
+        toast(message, type = null, duration = 3000) {
+          showToast(message, type, duration);
+        }
       };
+
+      function showToast(message, type = null, duration = 3000) {
+        const host = document.getElementById("toastHost") || (typeof UIManager !== 'undefined' && UIManager.dom ? UIManager.dom.toastHost : null);
+        if (!host) return;
+        if (!type) {
+          const lower = String(message).toLowerCase();
+          if (lower.includes('saved') || lower.includes('success') || lower.includes('synced') || lower.includes('exported') || lower.includes('ready') || lower.includes('copied')) {
+            type = 'success';
+          } else if (lower.includes('fail') || lower.includes('error') || lower.includes('cannot') || lower.includes('invalid') || lower.includes('expired')) {
+            type = 'error';
+          } else if (lower.includes('warning') || lower.includes('caution')) {
+            type = 'warning';
+          } else {
+            type = 'info';
+          }
+        }
+        const node = document.createElement("div");
+        node.className = `toast toast-${type}`;
+        let icon = '✓';
+        if (type === 'error') icon = '✕';
+        else if (type === 'info') icon = 'ℹ';
+        else if (type === 'warning') icon = '⚠';
+        node.innerHTML = `<span class="toast-icon" style="display:inline-flex;align-items:center;font-weight:700;">${icon}</span> <span>${Util.escapeHtml(message)}</span>`;
+        host.appendChild(node);
+        setTimeout(() => {
+          node.style.opacity = "0";
+          node.style.transform = "translateY(12px)";
+        }, Math.max(duration - 300, 500));
+        setTimeout(() => node.remove(), duration);
+      }
+      window.showToast = showToast;
 
       const Editor = {
         undoStack: [],
@@ -4034,13 +4377,11 @@ Em -  C    -  G  -  D
         },
 
         updateDemoButtonState() {
-          const song = StateManager.activeSong();
           const demoBtn = UIManager.dom.loadDemoButton || document.getElementById('loadDemoButton');
           if (demoBtn) {
-            const hasContent = song && song.body && song.body.trim().length > 0;
-            demoBtn.disabled = hasContent;
-            demoBtn.style.opacity = hasContent ? '0.5' : '1';
-            demoBtn.style.pointerEvents = hasContent ? 'none' : 'auto';
+            demoBtn.disabled = false;
+            demoBtn.style.opacity = '1';
+            demoBtn.style.pointerEvents = 'auto';
           }
         },
 
@@ -4061,6 +4402,8 @@ Em -  C    -  G  -  D
         },
         loadActiveSong() {
           const song = StateManager.activeSong(); if (!song) return;
+          StateManager.hasUnsavedChanges = false;
+          window.hasUnsavedChanges = false;
           if (UIManager.dom.songTitle) UIManager.dom.songTitle.value = Util.titleOf(song);
           if (UIManager.dom.songBody) UIManager.dom.songBody.value = song.body || "";
           if (UIManager.dom.keySelect) UIManager.dom.keySelect.value = song.manualKey || "auto";
@@ -4113,13 +4456,13 @@ Em -  C    -  G  -  D
           try {
             if (state.libraryFilter === 'setlists') {
               if (!state.setlists || state.setlists.length === 0) {
-                list.innerHTML = `<div class="empty-state">No Setlists found</div>`;
+                list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">No Setlists yet</div><div class="empty-state-desc">Create a setlist to organize songs for worship services or gigs.</div><button class="button primary" type="button" onclick="UIManager.openSetlistModal()">Create Setlist</button></div>`;
                 return;
               }
               state.setlists.forEach(set => {
                 const card = document.createElement('div');
                 card.className = 'song-card' + (set.id === state.activeSetlist?.id ? ' active' : '');
-                card.innerHTML = `<div><p class="song-card-title">${Icon.svg('list')} ${Util.escapeHtml(set.title || 'Untitled Setlist')}</p><p class="song-card-meta">${(set.items || []).length} songs • ${Util.formatDate(set.date || set.updatedAt)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost" data-action="play" type="button" title="Play">${Icon.svg('play')}</button><button class="icon-button ghost" data-action="edit" type="button" title="Edit">${Icon.svg('edit')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+                card.innerHTML = `<div><p class="song-card-title">${Icon.svg('list')} ${Util.escapeHtml(set.title || 'Untitled Setlist')}</p><p class="song-card-meta">${(set.items || []).length} songs • ${Util.formatDate(set.date || set.updatedAt)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost" data-action="play" type="button" title="Play" aria-label="Play setlist">${Icon.svg('play')}</button><button class="icon-button ghost" data-action="edit" type="button" title="Edit" aria-label="Edit setlist">${Icon.svg('edit')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share" aria-label="Share setlist">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete" aria-label="Delete setlist">${Icon.svg('trash')}</button></div>`;
                 card.addEventListener('click', (e) => {
                   const actionBtn = e.target.closest('button[data-action]');
                   if (actionBtn) {
@@ -4136,19 +4479,19 @@ Em -  C    -  G  -  D
                           StateManager.saveNow(t("deleteSetlistToast", "Setlist Deleted"));
                           if (state.activeSetlist?.id === set.id) StateManager.exitSetlist();
                           this.render();
-                          UIManager.toast(t("deleteSetlistToast", "Setlist Deleted"));
+                          showToast(t("deleteSetlistToast", "Setlist Deleted"), "info");
                         }
                       });
                     }
                     if (action === 'edit') UIManager.openSetlistModal(set.id);
                     if (action === 'share') { StateManager.playSetlist(set.id); ExportManager.share(true); }
-                    if (action === 'play') { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + (set.title || "Setlist")); }
+                    if (action === 'play') { StateManager.playSetlist(set.id); Editor.loadActiveSong(); UIManager.switchView('editor'); UIManager.renderAll(); UIManager.toast("Playing Setlist: " + (set.title || "Setlist"), "info"); }
                   } else {
                     StateManager.playSetlist(set.id);
                     Editor.loadActiveSong();
                     UIManager.switchView('editor');
                     UIManager.renderAll();
-                    UIManager.toast("Playing Setlist: " + (set.title || "Setlist"));
+                    UIManager.toast("Playing Setlist: " + (set.title || "Setlist"), "info");
                   }
                 });
                 list.appendChild(card);
@@ -4184,7 +4527,11 @@ Em -  C    -  G  -  D
             }
 
             if (songs.length === 0) {
-              list.innerHTML = `<div class="empty-state">${query ? 'No matching songs' : 'Library is empty'}</div>`;
+              if (query) {
+                list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-title">No songs match your search</div><div class="empty-state-desc">We couldn't find anything matching "${Util.escapeHtml(query)}". Try a different keyword or title.</div><button class="button secondary" type="button" onclick="document.getElementById('songSearch').value = ''; StateManager.state.query = ''; SongLibrary.render();">Clear Search</button></div>`;
+              } else {
+                list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🎵</div><div class="empty-state-title">Your library is empty</div><div class="empty-state-desc">Start building your song repertoire or load the sample demo song to explore.</div><div style="display:flex;gap:8px;"><button class="button primary" type="button" onclick="document.getElementById('newSongButton')?.click()">Create Song</button><button class="button secondary" type="button" onclick="StateManager.loadDemo(); Editor.loadActiveSong(); UIManager.renderAll(); UIManager.switchView('editor'); showToast('Demo song loaded', 'success');">Load Demo</button></div></div>`;
+              }
               return;
             }
 
@@ -4199,7 +4546,7 @@ Em -  C    -  G  -  D
                 const key = KeyDetector.activeKey(song, null);
                 if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
               }
-              card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View in Editor">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete">${Icon.svg('trash')}</button></div>`;
+              card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite" aria-label="${song.isFavorite ? 'Unstar song' : 'Star song'}">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View in Editor" aria-label="View song in editor">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share" aria-label="Share song">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete" aria-label="Delete song">${Icon.svg('trash')}</button></div>`;
               card.addEventListener('click', (e) => {
                 const actionBtn = e.target.closest('button[data-action]');
                 if (actionBtn) {
@@ -4209,20 +4556,20 @@ Em -  C    -  G  -  D
                     song.isFavorite = !song.isFavorite;
                     StateManager.saveNow(t("favoriteToggled", "Favorite Toggled"));
                     this.render();
-                    UIManager.toast(song.isFavorite ? t("addedToFavorites", "Added to Favorites") : t("removedFromFavorites", "Removed from Favorites"));
+                    UIManager.toast(song.isFavorite ? t("addedToFavorites", "Added to Favorites") : t("removedFromFavorites", "Removed from Favorites"), "info");
                   }
                   if (action === 'delete') {
                     StateManager.setActive(song.id);
                     UIManager.openModal({
                       title: t("deleteSongTitle", "Delete Song"),
-                      message: t("deleteSongMessage", "Delete this song?"),
+                      message: `Delete '${Util.titleOf(song)}'? This action cannot be undone.`,
                       confirmText: t("deleteSongConfirm", "Delete"),
                       destructive: true,
                       onConfirm: () => {
                         StateManager.deleteActive();
                         Editor.loadActiveSong();
                         UIManager.renderAll();
-                        UIManager.toast(t("deleteSongToast", "Deleted"));
+                        showToast("Song deleted", "info");
                       }
                     });
                   }
@@ -4235,14 +4582,14 @@ Em -  C    -  G  -  D
                     Editor.loadActiveSong();
                     UIManager.switchView('editor');
                     UIManager.renderAll();
-                    UIManager.toast("Opened: " + Util.titleOf(song));
+                    UIManager.toast("Opened: " + Util.titleOf(song), "info");
                   }
                 } else {
                   StateManager.setActive(song.id);
                   Editor.loadActiveSong();
                   UIManager.switchView('editor');
                   UIManager.renderAll();
-                  UIManager.toast("Opened: " + Util.titleOf(song));
+                  UIManager.toast("Opened: " + Util.titleOf(song), "info");
                 }
               });
               list.appendChild(card);
@@ -4478,9 +4825,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.3.0";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.3.0";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.3.0";
+                if (versionEl) versionEl.textContent = "v1.5.0";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.0";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.0";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {
