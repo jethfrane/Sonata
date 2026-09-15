@@ -4502,7 +4502,15 @@ Em -  C    -  G  -  D
               state.setlists.forEach(set => {
                 const card = document.createElement('div');
                 card.className = 'song-card' + (set.id === state.activeSetlist?.id ? ' active' : '');
+                card.setAttribute('role', 'button');
+                card.setAttribute('tabindex', '0');
                 card.innerHTML = `<div><p class="song-card-title">${Icon.svg('list')} ${Util.escapeHtml(set.title || 'Untitled Setlist')}</p><p class="song-card-meta">${(set.items || []).length} songs • ${Util.formatDate(set.date || set.updatedAt)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost" data-action="play" type="button" title="Play" aria-label="Play setlist">${Icon.svg('play')}</button><button class="icon-button ghost" data-action="edit" type="button" title="Edit" aria-label="Edit setlist">${Icon.svg('edit')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share" aria-label="Share setlist">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete" aria-label="Delete setlist">${Icon.svg('trash')}</button></div>`;
+                card.addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (e.target === card) card.click();
+                  }
+                });
                 card.addEventListener('click', (e) => {
                   const actionBtn = e.target.closest('button[data-action]');
                   if (actionBtn) {
@@ -4579,6 +4587,8 @@ Em -  C    -  G  -  D
               if (!song) return;
               const card = document.createElement('div');
               card.className = 'song-card' + (song.id === StateManager.state.activeId ? ' active' : '');
+              card.setAttribute('role', 'button');
+              card.setAttribute('tabindex', '0');
               let metaText = Util.formatDate(song.updatedAt);
               if (sortVal === 'author' && song.artist) metaText = `${song.artist} • ${metaText}`;
               else if (sortVal === 'arranger' && song.creator) metaText = `${song.creator} • ${metaText}`;
@@ -4587,6 +4597,12 @@ Em -  C    -  G  -  D
                 if (key) metaText = `Key: ${key.root}${key.mode === 'minor' ? 'm' : ''} • ${metaText}`;
               }
               card.innerHTML = `<div><p class="song-card-title">${Util.escapeHtml(Util.titleOf(song))}</p><p class="song-card-meta">${Util.escapeHtml(metaText)}</p></div><div class="song-card-actions" style="display:flex;gap:4px;"><button class="icon-button ghost ${song.isFavorite ? 'active' : ''}" data-action="fav" style="color:var(--warning);" type="button" title="Favorite" aria-label="${song.isFavorite ? 'Unstar song' : 'Star song'}">${song.isFavorite ? Icon.svg('star-filled') : Icon.svg('star')}</button><button class="icon-button ghost" data-action="view" type="button" title="View in Editor" aria-label="View song in editor">${Icon.svg('file-text')}</button><button class="icon-button ghost" data-action="share" type="button" title="Share" aria-label="Share song">${Icon.svg('share')}</button><button class="icon-button ghost danger" data-action="delete" type="button" title="Delete" aria-label="Delete song">${Icon.svg('trash')}</button></div>`;
+              card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (e.target === card) card.click();
+                }
+              });
               card.addEventListener('click', (e) => {
                 const actionBtn = e.target.closest('button[data-action]');
                 if (actionBtn) {
