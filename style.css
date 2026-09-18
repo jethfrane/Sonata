@@ -3179,6 +3179,13 @@
       }
     }
 
+    /* Keep the header actions visible on narrow phones. */
+    @media (max-width: 420px) {
+      .version-badge {
+        display: none;
+      }
+    }
+
     /* ── 7. Ultra-Compact Mobile (< 360px) ── */
     @media (max-width: 360px) {
       .topbar {

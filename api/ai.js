@@ -4,13 +4,49 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt, context, apiKey } = req.body;
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON body.' });
+    }
+  }
 
-  if (!prompt) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return res.status(400).json({ error: 'Request body must be a JSON object.' });
+  }
+
+  const { prompt, context, apiKey } = body;
+
+  if (typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: 'Prompt is required.' });
   }
 
-  const API_KEY = apiKey || process.env.GEMINI_API_KEY;
+  if (prompt.length > 10000) {
+    return res.status(400).json({ error: 'Prompt exceeds maximum allowed length of 10,000 characters.' });
+  }
+
+  let safeContext = '';
+  if (context !== undefined && context !== null) {
+    if (typeof context !== 'string') {
+      return res.status(400).json({ error: 'Context must be a string.' });
+    }
+    if (context.length > 50000) {
+      return res.status(400).json({ error: 'Context exceeds maximum allowed length of 50,000 characters.' });
+    }
+    safeContext = context;
+  }
+
+  let safeApiKey = '';
+  if (apiKey !== undefined && apiKey !== null) {
+    if (typeof apiKey !== 'string' || apiKey.length > 256) {
+      return res.status(400).json({ error: 'Invalid API key format.' });
+    }
+    safeApiKey = apiKey.trim();
+  }
+
+  const API_KEY = safeApiKey || process.env.GEMINI_API_KEY;
   if (!API_KEY) {
     console.error("Missing GEMINI_API_KEY environment variable and no user key provided.");
     return res.status(500).json({ error: 'AI Assistant is not configured on the server yet.' });
@@ -52,7 +88,7 @@ Explain what you are doing before providing the action tags. Be detailed and hel
 
 Here is the user's current chord chart in the editor for context:
 ---
-${context || "(The editor is currently empty)"}
+${safeContext || "(The editor is currently empty)"}
 ---`;
 
   const payload = {
@@ -74,13 +110,18 @@ ${context || "(The editor is currently empty)"}
     }
   };
 
+  const controller = new AbortController();
+  const timeoutMs = 25000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
 
     // Handle Rate Limiting gracefully
@@ -98,15 +139,15 @@ ${context || "(The editor is currently empty)"}
       }
 
       return res.status(429).json({ 
-        error: customError,
-        details: errorText
+        error: customError
       });
     }
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API Error:", errorText);
-      return res.status(response.status).json({ error: 'Failed to communicate with AI server.', details: errorText });
+      const statusCode = response.status >= 400 && response.status < 600 ? response.status : 502;
+      return res.status(statusCode).json({ error: 'Failed to communicate with AI server.' });
     }
 
     const data = await response.json();
@@ -115,7 +156,12 @@ ${context || "(The editor is currently empty)"}
     return res.status(200).json({ reply: replyText });
 
   } catch (error) {
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: 'AI request timed out. Please try again.' });
+    }
     console.error("Server Error:", error);
     return res.status(500).json({ error: 'An unexpected error occurred while contacting the AI.' });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
