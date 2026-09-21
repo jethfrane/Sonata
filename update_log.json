@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.5.2",
+    "date": "2026-09-21",
+    "changes": [
+      "Corrected the 1.5.1 desktop layout: Virtual Piano, full-width Fretboard, and Reference Tuner are now separate rows so the complete guitar neck stays usable.",
+      "Reduced the desktop Circle of Fifths to a contained reference size, while retaining its readable controls and mobile-safe layout.",
+      "Repaired Google Drive sign-in handling by removing duplicate OAuth click requests and showing Google account selection on a new connection.",
+      "Sidebar navigation now closes after a destination is chosen, leaving the selected workspace unobstructed.",
+      "Removed interface click sounds and added output limiting plus gentler Circle chord levels to prevent harsh or clipped playback."
+    ],
+    "whatsNew": "A corrective release focused on dependable Drive sign-in, responsive instrument space, quieter controls, and safe audio levels."
+  },
+  {
     "version": "1.5.1",
     "date": "2026-09-21",
     "changes": [

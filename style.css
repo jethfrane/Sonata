@@ -1507,7 +1507,7 @@
     .circle-container {
       position: relative;
       width: 100%;
-      max-width: 460px;
+      max-width: 420px;
       aspect-ratio: 1/1;
       margin: 0 auto;
       border-radius: 50%;
@@ -2552,7 +2552,7 @@
         display: none !important;
       }
 
-      /* Theory becomes a clear controls-and-reference workspace on desktop. */
+      /* Theory keeps a readable reference without consuming the entire viewport. */
       .workspace[data-view="theory"] > .theory-panel {
         display: grid !important;
         grid-template-columns: minmax(230px, 0.52fr) minmax(400px, 1fr);
@@ -2569,47 +2569,41 @@
       .theory-panel > .circle-container {
         grid-column: 2;
         grid-row: 2 / span 3;
-        width: min(100%, 560px);
-        max-width: 560px;
+        width: min(100%, 420px);
+        max-width: 420px;
         align-self: center;
         justify-self: center;
       }
       .theory-panel > .explanation-text { grid-column: 1 / -1; }
 
-      /* Make the instruments immediately useful instead of a long, clipped column. */
+      /* Each instrument gets a complete row. The fretboard must never be squeezed
+         into half a card, where its right-hand frets become inaccessible. */
       .workspace[data-view="instruments"] > .instrument-panel {
-        display: grid !important;
-        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-        grid-template-areas:
-          "piano-title fret-title"
-          "piano fret"
-          "piano-note fret-note"
-          "tuner-title tuner-title"
-          "tuner tuner";
+        display: flex !important;
+        flex-direction: column;
         align-content: start;
-        column-gap: 16px;
         row-gap: 10px;
       }
 
-      .instrument-panel > :nth-child(1) { grid-area: piano-title; }
-      .instrument-panel > :nth-child(2) { grid-area: piano; margin-bottom: 0; }
-      .instrument-panel > :nth-child(3) { grid-area: piano-note; }
-      .instrument-panel > :nth-child(4) { grid-area: fret-title; margin-top: 0 !important; }
-      .instrument-panel > :nth-child(5) { grid-area: fret; margin-bottom: 0; }
-      .instrument-panel > :nth-child(6) { grid-area: fret-note; }
-      .instrument-panel > :nth-child(7) { grid-area: tuner-title; margin-top: 8px !important; }
-      .instrument-panel > :nth-child(8) { grid-area: tuner; }
+      .instrument-panel > * {
+        flex: 0 0 auto;
+      }
+
+      .instrument-panel > :nth-child(2),
+      .instrument-panel > :nth-child(5) { margin-bottom: 0; }
+
+      .instrument-panel > :nth-child(4),
+      .instrument-panel > :nth-child(7) { margin-top: 18px !important; }
 
       .instrument-panel .piano-scroll {
-        height: clamp(150px, 21vh, 190px);
+        height: clamp(170px, 23vh, 210px);
       }
 
       .instrument-panel .fretboard-container {
-        padding: 12px 14px 18px;
+        padding: 14px 16px 20px;
       }
 
       .instrument-panel .explanation-text {
-        min-height: 58px;
         margin: 0 !important;
       }
     }

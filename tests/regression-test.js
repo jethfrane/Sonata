@@ -712,6 +712,26 @@ test('Demo song load synchronizes instrumentKeyRoot and theoryKeyInput to G majo
 });
 
 // -----------------------------------------------------------------------------
+// 8. Corrective Release Safeguards
+// -----------------------------------------------------------------------------
+console.log('\nSuite 8: Drive Sync and Audio Safeguards');
+
+test('Drive Sync has one handler per control and a deliberate first-time OAuth prompt', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
+  const sidebarHandlers = appJs.match(/add\(this\.dom\.sidebarDriveSyncBtn,\s*["']click["']/g) || [];
+  assert.strictEqual(sidebarHandlers.length, 1, 'Sidebar Drive Sync must not trigger duplicate OAuth requests');
+  assert.strictEqual(appJs.includes('this.dom.googleSyncButton?.click()'), false, 'Sidebar must not re-trigger the desktop sync handler');
+  assert.strictEqual(appJs.includes("prompt: this.accessToken ? '' : 'select_account consent'"), true, 'First-time Drive Sync must show the account chooser');
+});
+
+test('Interface click sounds are disabled and musical output is limited', () => {
+  const appJs = fs.readFileSync(path.join(__dirname, '../app.js'), 'utf8');
+  assert.strictEqual(appJs.includes('uiSounds: false'), true, 'New installations must default UI sounds to off');
+  assert.strictEqual(appJs.includes('playClick() { return; }'), true, 'UI clicks must remain silent for existing users too');
+  assert.strictEqual(appJs.includes('createDynamicsCompressor'), true, 'Musical output must include a limiter to avoid clipping');
+});
+
+// -----------------------------------------------------------------------------
 // Summary
 // -----------------------------------------------------------------------------
 setTimeout(() => {

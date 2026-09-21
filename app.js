@@ -14,7 +14,7 @@
       UI_FONT_OPTIONS = [{ value: "system", label: "System" }, { value: "rounded", label: "Rounded" }, { value: "serif", label: "Serif" }, { value: "mono", label: "Mono" }];
       CHART_FONT_OPTIONS = [{ value: "mono", label: "Mono" }, { value: "system", label: "System" }, { value: "serif", label: "Serif" }];
       ACCENT_THEMES = [{ value: "blue", label: "Blue" }, { value: "teal", label: "Teal" }, { value: "rose", label: "Rose" }, { value: "amber", label: "Amber" }, { value: "violet", label: "Violet" }, { value: "graphite", label: "Graphite" }];
-      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: true, haptics: true, autoScrollSpeed: 30, language: "en", autoFillArranger: true };
+      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: false, haptics: true, autoScrollSpeed: 30, language: "en", autoFillArranger: true };
       FONT_STACKS = { system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', rounded: '"SF Pro Rounded", Nunito, sans-serif', serif: 'Georgia, serif', mono: 'ui-monospace, Menlo, Consolas, monospace' };
       STORAGE_KEYS = { songs: "sonata:v12:songs", settings: "sonata:v12:settings", activeSong: "sonata:v12:active", setlists: "sonata:v12:setlists" };
 
@@ -1157,15 +1157,9 @@ Em -  C    -  G  -  D
           
           setTimeout(() => this.initTokenClientIfNeeded(), 500);
 
-          const btn = document.getElementById('googleSyncButton');
-          btn?.addEventListener('click', () => {
-            AudioEngine.playClick();
-            if (this.accessToken) {
-              this.performSync();
-            } else {
-              this.signIn();
-            }
-          });
+          // UIManager owns the click listeners for desktop, mobile, sidebar, and
+          // account avatars. Keeping a second listener here caused duplicate OAuth
+          // popups and intermittent Drive sign-in failures.
         },
 
         initTokenClientIfNeeded() {
@@ -1320,7 +1314,9 @@ Em -  C    -  G  -  D
             this.resolveSignIn = resolve;
             if (this.initTokenClientIfNeeded()) {
               this.updateUI("Connecting...", "secondary");
-              this.tokenClient.requestAccessToken({ prompt: '' });
+              // A deliberate account picker is reliable for first-time sign-in;
+              // silent requests can fail before a Google session/grant exists.
+              this.tokenClient.requestAccessToken({ prompt: this.accessToken ? '' : 'select_account consent' });
             } else {
               UIManager.toast("Google Identity Services loading... please try again.", "info");
               resolve(false);
@@ -1581,8 +1577,15 @@ Em -  C    -  G  -  D
               try {
                 this.ctx = new AudioContext();
                 this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = 1.0;
-                this.masterGain.connect(this.ctx.destination);
+                this.masterGain.gain.value = 0.62;
+                const limiter = this.ctx.createDynamicsCompressor();
+                limiter.threshold.value = -12;
+                limiter.knee.value = 12;
+                limiter.ratio.value = 8;
+                limiter.attack.value = 0.003;
+                limiter.release.value = 0.18;
+                this.masterGain.connect(limiter);
+                limiter.connect(this.ctx.destination);
               } catch (e) { /* ignore */ }
             }
           }
@@ -1780,14 +1783,17 @@ Em -  C    -  G  -  D
           const root = this.midiToFreq(midiBase);
           let third = this.midiToFreq(midiBase + (quality === 'minor' || quality === 'diminished' ? 3 : 4));
           let fifth = this.midiToFreq(midiBase + (quality === 'diminished' ? 6 : 7));
-          const n1 = this.playPianoNote(root, 0.45);
+          const n1 = this.playPianoNote(root, 0.28);
           let n2, n3;
-          setTimeout(() => { n2 = this.playPianoNote(third, 0.38); }, 15);
-          setTimeout(() => { n3 = this.playPianoNote(fifth, 0.38); }, 30);
+          setTimeout(() => { n2 = this.playPianoNote(third, 0.22); }, 15);
+          setTimeout(() => { n3 = this.playPianoNote(fifth, 0.22); }, 30);
           return { stop: () => { if (n1) n1.stop(); if (n2) n2.stop(); if (n3) n3.stop(); } };
         },
         playMetronome(accent) { this.init(); if (!this.ctx || this.ctx.state !== "running") return; try { const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); const vol = Util.clamp(StateManager.state.settings.metronomeVolume, 0, 1); osc.type = 'square'; osc.frequency.value = accent ? 1320 : 880; gain.gain.setValueAtTime(0.001, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(vol * (accent ? 0.35 : 0.2), this.ctx.currentTime + 0.005); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.065); } catch (e) { } },
-        playClick() { if (!StateManager.state.settings.uiSounds) return; this.init(); if (!this.ctx || this.ctx.state !== "running") return; try { const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(600, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.05); gain.gain.setValueAtTime(0.1, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05); osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.05); } catch (e) { } },
+        // Navigation and controls are intentionally silent. Instrument notes and
+        // metronome playback remain available, but interface clicks do not compete
+        // with a musician's listening environment.
+        playClick() { return; },
         vibrate(duration = 10) { if (StateManager.state.settings.haptics && navigator.vibrate) try { navigator.vibrate(duration); } catch (e) { } }
       };
 
@@ -3635,7 +3641,6 @@ Em -  C    -  G  -  D
             if (el) add(el, "click", () => GoogleDriveSync.performSync());
           });
           // Sidebar action buttons (mirror desktop buttons)
-          add(this.dom.sidebarDriveSyncBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.googleSyncButton?.click(); });
           add(this.dom.sidebarSettingsBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.settingsButton?.click(); });
           add(this.dom.sidebarPresentBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); PresentationManager.open(); });
           add(this.dom.headerInstallBtn, 'click', () => { AudioEngine.playClick(); this.showInstallPrompt(); });
@@ -3654,7 +3659,11 @@ Em -  C    -  G  -  D
               this.applyLanguage();
             });
           }
-          document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); this.switchView(b.dataset.view); }));
+          document.querySelectorAll("[data-view]").forEach(b => add(b, "click", () => {
+            AudioEngine.playClick();
+            this.switchView(b.dataset.view);
+            if (b.closest('#sidebarDrawer')) this.closeSidebar();
+          }));
           add(this.dom.copyLiveChartBtn, "click", () => { AudioEngine.playClick(); ExportManager.copy(); });
           add(this.dom.previewOutput, "click", (e) => {
             if (e.target.closest('#previewEmptyDemoBtn')) {
@@ -5125,9 +5134,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.5.1";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.5.1";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.1";
+                if (versionEl) versionEl.textContent = "v1.5.2";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.2";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.2";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {
