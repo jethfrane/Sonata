@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.5.1",
+    "date": "2026-09-21",
+    "changes": [
+      "Standardized the desktop Play workspace: Virtual Piano and Fretboard now sit side by side, so both instruments are visible immediately instead of being buried in a long vertical stack.",
+      "Improved instrument card spacing, sizing, and horizontal scroll treatment while retaining piano, fretboard, tuner, key highlighting, and tuning controls.",
+      "Expanded the Circle of Fifths into a larger desktop reference layout with controls placed beside it for easier reading.",
+      "Restored desktop access to the full sidebar menu, including Settings, About Sonata, language, sync, presentation, and install actions.",
+      "Fixed view isolation so each Sonata workspace displays only its active page."
+    ],
+    "whatsNew": "A cleaner desktop workspace: larger theory reference, visible instruments, and complete navigation from every screen."
+  },
+  {
     "version": "1.5.0",
     "date": "2026-09-11",
     "changes": [

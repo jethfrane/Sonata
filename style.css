@@ -1507,7 +1507,7 @@
     .circle-container {
       position: relative;
       width: 100%;
-      max-width: 400px;
+      max-width: 460px;
       aspect-ratio: 1/1;
       margin: 0 auto;
       border-radius: 50%;
@@ -2523,8 +2523,9 @@
         display: flex !important;
       }
 
-      .topbar-menu-btn {
-        display: none !important;
+      /* Keep the complete menu reachable on desktop too. */
+      .topbar .topbar-menu-btn {
+        display: inline-flex !important;
       }
 
       .topbar-mobile-actions {
@@ -2543,12 +2544,73 @@
         display: inline-flex !important;
       }
 
-      /* Secondary tools live in the accessible slide-out sidebar drawer */
+      /* Secondary tools remain available from the always-visible menu button. */
       #helpButton,
       #settingsButton,
       #langSelect,
       #headerInstallBtn {
         display: none !important;
+      }
+
+      /* Theory becomes a clear controls-and-reference workspace on desktop. */
+      .workspace[data-view="theory"] > .theory-panel {
+        display: grid !important;
+        grid-template-columns: minmax(230px, 0.52fr) minmax(400px, 1fr);
+        grid-template-rows: auto auto auto auto auto;
+        align-content: start;
+        column-gap: clamp(24px, 4vw, 56px);
+        row-gap: 12px;
+      }
+
+      .theory-panel > :nth-child(1) { grid-column: 1 / -1; }
+      .theory-panel > :nth-child(2) { grid-column: 1; grid-row: 2; }
+      .theory-panel > :nth-child(3) { grid-column: 1; grid-row: 3; }
+      .theory-panel > :nth-child(4) { grid-column: 1; grid-row: 4; }
+      .theory-panel > .circle-container {
+        grid-column: 2;
+        grid-row: 2 / span 3;
+        width: min(100%, 560px);
+        max-width: 560px;
+        align-self: center;
+        justify-self: center;
+      }
+      .theory-panel > .explanation-text { grid-column: 1 / -1; }
+
+      /* Make the instruments immediately useful instead of a long, clipped column. */
+      .workspace[data-view="instruments"] > .instrument-panel {
+        display: grid !important;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        grid-template-areas:
+          "piano-title fret-title"
+          "piano fret"
+          "piano-note fret-note"
+          "tuner-title tuner-title"
+          "tuner tuner";
+        align-content: start;
+        column-gap: 16px;
+        row-gap: 10px;
+      }
+
+      .instrument-panel > :nth-child(1) { grid-area: piano-title; }
+      .instrument-panel > :nth-child(2) { grid-area: piano; margin-bottom: 0; }
+      .instrument-panel > :nth-child(3) { grid-area: piano-note; }
+      .instrument-panel > :nth-child(4) { grid-area: fret-title; margin-top: 0 !important; }
+      .instrument-panel > :nth-child(5) { grid-area: fret; margin-bottom: 0; }
+      .instrument-panel > :nth-child(6) { grid-area: fret-note; }
+      .instrument-panel > :nth-child(7) { grid-area: tuner-title; margin-top: 8px !important; }
+      .instrument-panel > :nth-child(8) { grid-area: tuner; }
+
+      .instrument-panel .piano-scroll {
+        height: clamp(150px, 21vh, 190px);
+      }
+
+      .instrument-panel .fretboard-container {
+        padding: 12px 14px 18px;
+      }
+
+      .instrument-panel .explanation-text {
+        min-height: 58px;
+        margin: 0 !important;
       }
     }
 

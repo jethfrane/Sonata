@@ -5125,9 +5125,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.5.0";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.5.0";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.0";
+                if (versionEl) versionEl.textContent = "v1.5.1";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.1";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.1";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {
