@@ -581,7 +581,6 @@
     .editor-panel {
       min-height: 60dvh;
       overflow: hidden;
-      display: flex;
       flex-direction: column;
     }
 
