@@ -722,6 +722,7 @@ test('Drive Sync has one handler per control and a deliberate first-time OAuth p
   assert.strictEqual(sidebarHandlers.length, 1, 'Sidebar Drive Sync must not trigger duplicate OAuth requests');
   assert.strictEqual(appJs.includes('this.dom.googleSyncButton?.click()'), false, 'Sidebar must not re-trigger the desktop sync handler');
   assert.strictEqual(appJs.includes("prompt: this.accessToken ? '' : 'select_account consent'"), true, 'First-time Drive Sync must show the account chooser');
+  assert.strictEqual(appJs.includes("window.location.protocol !== 'https:'"), true, 'Drive Sync must reject local file previews before OAuth begins');
 });
 
 test('Interface click sounds are disabled and musical output is limited', () => {

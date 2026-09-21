@@ -1310,6 +1310,12 @@ Em -  C    -  G  -  D
         },
 
         signIn() {
+          // Google OAuth cannot authorize an app opened directly from disk. Keep
+          // local file previews from sending users to Google's opaque 400 screen.
+          if (window.location.protocol !== 'https:') {
+            UIManager.toast('Google Drive Sync needs the published HTTPS Sonata site. Open sonata.jethrofrane.xyz in Chrome or Safari.', 'info');
+            return Promise.resolve(false);
+          }
           return new Promise((resolve) => {
             this.resolveSignIn = resolve;
             if (this.initTokenClientIfNeeded()) {
@@ -5134,9 +5140,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.5.2";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.5.2";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.2";
+                if (versionEl) versionEl.textContent = "v1.5.3";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.3";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.3";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {

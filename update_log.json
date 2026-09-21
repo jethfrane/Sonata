@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.3",
+    "date": "2026-09-21",
+    "changes": [
+      "Google Drive Sync now detects local file previews and directs users to the published HTTPS Sonata site before attempting OAuth.",
+      "This prevents Google’s misleading Error 400 authorization screen when Sonata is opened directly from disk or inside an unsupported embedded browser."
+    ],
+    "whatsNew": "Drive Sync now starts only from a valid web origin."
+  },
+  {
     "version": "1.5.2",
     "date": "2026-09-21",
     "changes": [
