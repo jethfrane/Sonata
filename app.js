@@ -3412,7 +3412,9 @@ Em -  C    -  G  -  D
           if (workspace) workspace.dataset.view = viewName;
           // Sync active state for all [data-view] buttons (top-nav, mobile-switcher, sidebar)
           document.querySelectorAll("[data-view]").forEach(btn => {
-            btn.classList.toggle("active", btn.dataset.view === viewName);
+            const isActive = btn.dataset.view === viewName;
+            btn.classList.toggle("active", isActive);
+            btn.setAttribute("aria-selected", isActive ? "true" : "false");
           });
           try { localStorage.setItem('sonata_active_view', viewName); } catch(e) { /* ignore */ }
           if (viewName === "theory") {
@@ -3644,7 +3646,15 @@ Em -  C    -  G  -  D
           add(this.dom.sidebarDriveSyncBtn, "click", () => { this.closeSidebar(); GoogleDriveSync.performSync(); });
           ['topbarUserAvatar', 'sidebarUserAvatar', 'mobileUserAvatar', 'topbarProfileContainer', 'sidebarProfileContainer'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) add(el, "click", () => GoogleDriveSync.performSync());
+            if (el) {
+              add(el, "click", () => GoogleDriveSync.performSync());
+              add(el, "keydown", (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  GoogleDriveSync.performSync();
+                }
+              });
+            }
           });
           // Sidebar action buttons (mirror desktop buttons)
           add(this.dom.sidebarSettingsBtn, 'click', () => { AudioEngine.playClick(); this.closeSidebar(); this.dom.settingsButton?.click(); });
@@ -3715,7 +3725,17 @@ Em -  C    -  G  -  D
  
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
           add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast(t("sortedToast", "Sorted: ") + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text, "info"); });
-          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); this.toast(t("filterToast", "Filter: ") + b.textContent, "info"); }));
+          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => {
+            AudioEngine.playClick();
+            StateManager.state.libraryFilter = b.dataset.libraryFilter;
+            document.querySelectorAll("[data-library-filter]").forEach(i => {
+              const isActive = i === b;
+              i.classList.toggle("active", isActive);
+              i.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+            this.renderLibrarySoon();
+            this.toast(t("filterToast", "Filter: ") + b.textContent, "info");
+          }));
           add(this.dom.newSongButton, "click", () => {
             AudioEngine.playClick();
             if (StateManager.state.libraryFilter === 'setlists') {
@@ -3751,14 +3771,28 @@ Em -  C    -  G  -  D
           add(this.dom.slNext, "click", () => { AudioEngine.playClick(); const s = StateManager.state.activeSetlist; const set = StateManager.state.setlists.find(x => x.id === s.id); StateManager.playSetlist(s.id, Math.min(set.items.length - 1, s.index + 1)); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.slExit, "click", () => { AudioEngine.playClick(); StateManager.exitSetlist(); Editor.loadActiveSong(); this.renderAll(); });
 
-          document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.previewMode = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(i => i.classList.toggle("active", i === b)); this.updateAnalysis(); this.toast("Layout: " + b.textContent, "info"); }));
+          document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => {
+            AudioEngine.playClick();
+            StateManager.state.previewMode = b.dataset.previewMode;
+            document.querySelectorAll("[data-preview-mode]").forEach(i => {
+              const isActive = i === b;
+              i.classList.toggle("active", isActive);
+              i.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+            this.updateAnalysis();
+            this.toast("Layout: " + b.textContent, "info");
+          }));
           document.querySelectorAll("[data-mobile-editor-pane]").forEach(btn => {
             add(btn, "click", () => {
               AudioEngine.playClick();
               const pane = btn.dataset.mobileEditorPane;
               const editorPanel = document.querySelector(".editor-panel");
               if (editorPanel) editorPanel.dataset.mobilePane = pane;
-              document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => b.classList.toggle("active", b === btn));
+              document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => {
+                const isActive = b === btn;
+                b.classList.toggle("active", isActive);
+                b.setAttribute("aria-selected", isActive ? "true" : "false");
+              });
               try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch(e) { /* ignore */ }
             });
           });
@@ -3766,9 +3800,20 @@ Em -  C    -  G  -  D
           const editorPanel = document.querySelector(".editor-panel");
           if (editorPanel) editorPanel.dataset.mobilePane = savedMobilePane;
           document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => {
-            b.classList.toggle("active", b.dataset.mobileEditorPane === savedMobilePane);
+            const isActive = b.dataset.mobileEditorPane === savedMobilePane;
+            b.classList.toggle("active", isActive);
+            b.setAttribute("aria-selected", isActive ? "true" : "false");
           });
-          document.querySelectorAll("[data-circle-format]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.circleFormat = b.dataset.circleFormat; document.querySelectorAll("[data-circle-format]").forEach(i => i.classList.toggle("active", i === b)); InstrumentManager.renderCircle(); }));
+          document.querySelectorAll("[data-circle-format]").forEach(b => add(b, "click", () => {
+            AudioEngine.playClick();
+            StateManager.state.circleFormat = b.dataset.circleFormat;
+            document.querySelectorAll("[data-circle-format]").forEach(i => {
+              const isActive = i === b;
+              i.classList.toggle("active", isActive);
+              i.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+            InstrumentManager.renderCircle();
+          }));
 
           add(this.dom.keySelect, "change", () => { const song = StateManager.activeSong(); if (!song || song.readonly) { this.updateAnalysis(); return; } song.manualKey = this.dom.keySelect.value; StateManager.touch(song); StateManager.saveNow(t("keySaved", "Key saved")); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); });
           add(this.dom.theoryKeyInput, "change", (e) => { const match = e.target.value.trim().match(/^([A-Ga-g][#bB]?)\s*(m|min|minor|maj|major|)?$/i); if (match) { let root = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase(); if (root.length === 2 && root[1] === 'B') root = root[0] + 'b'; let mode = (match[2] && match[2].toLowerCase().startsWith('m') && !match[2].toLowerCase().startsWith('maj')) ? 'minor' : 'major'; if (NOTE_TO_SEMITONE.hasOwnProperty(root)) { const song = StateManager.activeSong(); if (song && !song.readonly) { song.manualKey = `${root}:${mode}`; StateManager.touch(song); StateManager.saveNow(t("keyUpdated", "Key updated")); this.renderAll(); InstrumentManager.syncKeySelectors(); this.toast(t("keySetTo", "Key set to ") + `${root} ${mode}`, "info"); return; } } } this.toast(t("invalidKeyToast", "Invalid key. Try format 'G' or 'C#m'"), "error"); InstrumentManager.syncKeySelectors(); });

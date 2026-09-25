@@ -68,12 +68,12 @@
 
     <!-- Sidebar nav (mirrors top-nav for tablet/mobile) -->
     <nav class="sidebar-nav" role="tablist" aria-label="Main navigation">
-      <button class="sidebar-nav-btn active" data-view="editor" data-icon="edit" type="button">Editor</button>
-      <button class="sidebar-nav-btn" data-view="library" data-icon="library" type="button">Library</button>
-      <button class="sidebar-nav-btn" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
-      <button class="sidebar-nav-btn" data-view="theory" data-icon="aperture" type="button">Theory</button>
-      <button class="sidebar-nav-btn" data-view="instruments" data-icon="music" type="button">Play</button>
-      <button class="sidebar-nav-btn" data-view="about" data-icon="info" type="button">About Sonata</button>
+      <button class="sidebar-nav-btn active" data-view="editor" data-icon="edit" type="button" role="tab" aria-selected="true">Editor</button>
+      <button class="sidebar-nav-btn" data-view="library" data-icon="library" type="button" role="tab" aria-selected="false">Library</button>
+      <button class="sidebar-nav-btn" data-view="tools" data-icon="sliders" type="button" role="tab" aria-selected="false">Tools &amp; Export</button>
+      <button class="sidebar-nav-btn" data-view="theory" data-icon="aperture" type="button" role="tab" aria-selected="false">Theory</button>
+      <button class="sidebar-nav-btn" data-view="instruments" data-icon="music" type="button" role="tab" aria-selected="false">Play</button>
+      <button class="sidebar-nav-btn" data-view="about" data-icon="info" type="button" role="tab" aria-selected="false">About Sonata</button>
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -90,7 +90,7 @@
 
     <!-- Language + version in sidebar -->
     <div class="sidebar-footer">
-      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer">
+      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer" role="button" tabindex="0">
         <img id="sidebarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
         <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);">Hi, Musician!</span>
       </div>
@@ -118,16 +118,16 @@
 
       <!-- Desktop tab nav pill -->
       <nav class="top-nav" role="tablist" aria-label="Main navigation">
-        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
-        <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
-        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
-        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
-        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
+        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button" role="tab" aria-selected="true"><span class="button-label">Editor</span></button>
+        <button class="top-nav-btn" data-view="library" data-icon="library" type="button" role="tab" aria-selected="false"><span class="button-label">Library</span></button>
+        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button" role="tab" aria-selected="false"><span class="button-label">Tools &amp; Export</span></button>
+        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button" role="tab" aria-selected="false"><span class="button-label">Theory</span></button>
+        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button" role="tab" aria-selected="false"><span class="button-label">Play</span></button>
       </nav>
 
       <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
-        <div id="topbarProfileContainer" title="Google Account / Sync">
+        <div id="topbarProfileContainer" title="Google Account / Sync" role="button" tabindex="0">
           <img id="topbarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture">
           <span id="topbarUserGreeting">Hi, Musician</span>
         </div>
@@ -146,19 +146,19 @@
 
       <!-- Mobile quick actions row: sync + theme toggle + present -->
       <div class="topbar-mobile-actions">
-        <img id="mobileUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
+        <img id="mobileUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync" role="button" tabindex="0">
         <button class="icon-button ghost" id="googleSyncButtonMobile" data-icon="cloud" type="button" aria-label="Drive Sync" title="Drive Sync"></button>
         <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
         <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button" aria-label="Presentation Mode" title="Presentation Mode">Present</button>
       </div>
     </header>
 
-    <nav class="mobile-view-switcher" aria-label="Mobile navigation">
-      <button class="tab-button active" type="button" data-view="editor" data-icon="edit">Editor</button>
-      <button class="tab-button" type="button" data-view="library" data-icon="library">Library</button>
-      <button class="tab-button" type="button" data-view="tools" data-icon="sliders">Tools</button>
-      <button class="tab-button" type="button" data-view="theory" data-icon="aperture">Theory</button>
-      <button class="tab-button" type="button" data-view="instruments" data-icon="music">Play</button>
+    <nav class="mobile-view-switcher" role="tablist" aria-label="Mobile navigation">
+      <button class="tab-button active" type="button" data-view="editor" data-icon="edit" role="tab" aria-selected="true">Editor</button>
+      <button class="tab-button" type="button" data-view="library" data-icon="library" role="tab" aria-selected="false">Library</button>
+      <button class="tab-button" type="button" data-view="tools" data-icon="sliders" role="tab" aria-selected="false">Tools</button>
+      <button class="tab-button" type="button" data-view="theory" data-icon="aperture" role="tab" aria-selected="false">Theory</button>
+      <button class="tab-button" type="button" data-view="instruments" data-icon="music" role="tab" aria-selected="false">Play</button>
     </nav>
 
     <main class="workspace" data-view="editor">
@@ -189,9 +189,9 @@
             </select>
           </div>
           <div class="segmented" role="tablist">
-            <button class="tab-button active" type="button" data-library-filter="all">All</button>
-            <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
-            <button class="tab-button" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
+            <button class="tab-button active" type="button" data-library-filter="all" role="tab" aria-selected="true">All</button>
+            <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star" role="tab" aria-selected="false">Favorites</button>
+            <button class="tab-button" type="button" data-library-filter="setlists" data-icon="list" role="tab" aria-selected="false">Setlists</button>
           </div>
         </div>
         <div class="library-list" id="libraryList" aria-live="polite"></div>
@@ -221,16 +221,16 @@
               Preview</button>
           </div>
           <div class="desktop-preview-mode-switch segmented" role="tablist">
-            <button class="tab-button active" type="button" data-preview-mode="original">Song</button>
-            <button class="tab-button" type="button" data-preview-mode="transposed">Transposed</button>
-            <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
-            <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
-            <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
+            <button class="tab-button active" type="button" data-preview-mode="original" role="tab" aria-selected="true">Song</button>
+            <button class="tab-button" type="button" data-preview-mode="transposed" role="tab" aria-selected="false">Transposed</button>
+            <button class="tab-button" type="button" data-preview-mode="roman" role="tab" aria-selected="false">Roman</button>
+            <button class="tab-button" type="button" data-preview-mode="nashville" role="tab" aria-selected="false">Nashville</button>
+            <button class="tab-button" type="button" data-preview-mode="lyrics" role="tab" aria-selected="false">Lyrics</button>
           </div>
           <div class="mobile-editor-mode-toggle segmented" role="tablist" id="mobileEditorModeToggle">
-            <button class="tab-button active" type="button" data-mobile-editor-pane="edit" data-icon="edit">Edit</button>
-            <button class="tab-button" type="button" data-mobile-editor-pane="preview" data-icon="eye">Preview</button>
-            <button class="tab-button" type="button" data-mobile-editor-pane="split" data-icon="columns">Split</button>
+            <button class="tab-button active" type="button" data-mobile-editor-pane="edit" data-icon="edit" role="tab" aria-selected="true">Edit</button>
+            <button class="tab-button" type="button" data-mobile-editor-pane="preview" data-icon="eye" role="tab" aria-selected="false">Preview</button>
+            <button class="tab-button" type="button" data-mobile-editor-pane="split" data-icon="columns" role="tab" aria-selected="false">Split</button>
           </div>
           <div class="status-line saved" id="saveStatus" aria-live="polite">Ready</div>
         </div>
@@ -400,10 +400,10 @@
         <div class="panel-heading">
           <h2>Circle of 5th's</h2>
           <div style="display:flex; gap:8px; align-items:center;">
-            <div class="segmented" style="padding:2px; display:inline-flex;">
-              <button class="tab-button active" type="button" data-circle-format="roman"
+            <div class="segmented" role="tablist" style="padding:2px; display:inline-flex;">
+              <button class="tab-button active" type="button" data-circle-format="roman" role="tab" aria-selected="true"
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
-              <button class="tab-button" type="button" data-circle-format="nashville"
+              <button class="tab-button" type="button" data-circle-format="nashville" role="tab" aria-selected="false"
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
             </div><button class="help-icon" data-help="circle" type="button" aria-label="Help with Circle of Fifths">?</button>
           </div>
