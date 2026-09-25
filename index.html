@@ -350,7 +350,7 @@
               <button class="icon-button" id="metronomeDown" data-icon="minus" type="button"
                 aria-label="Slower"></button>
               <input class="input" id="metronomeBpmInput" type="number" min="30" max="500" step="1" value="90"
-                style="text-align: center; padding: 0 4px; font-weight: 700; font-size: 1rem;">
+                style="text-align: center; padding: 0 4px; font-weight: 700; font-size: 1rem;" aria-label="Metronome BPM input">
               <button class="icon-button" id="metronomeUp" data-icon="plus" type="button" aria-label="Faster"></button>
               <select class="select" id="metronomeBeats" aria-label="Beats" style="padding: 0 6px; font-weight: 600;">
                 <option value="2">2</option>
@@ -752,7 +752,7 @@
       </div>
     </div>
     <div class="ai-chat-input-area">
-      <textarea id="aiChatInput" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2"></textarea>
+      <textarea id="aiChatInput" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2" aria-label="Message to AI co-writer"></textarea>
       <button id="aiSendButton" class="button primary" type="button" title="Send (Enter)">Send</button>
     </div>
   </aside>
