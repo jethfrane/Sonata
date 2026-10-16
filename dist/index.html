@@ -2169,15 +2169,59 @@
       right: 0;
       z-index: 1210;
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: calc(10px + max(0px, env(safe-area-inset-top))) 16px 10px;
+      background: color-mix(in srgb, var(--p-surface) 92%, transparent);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid color-mix(in srgb, var(--p-line) 50%, transparent);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .presentation-header-row {
+      display: flex;
       align-items: center;
       justify-content: space-between;
+      width: 100%;
       gap: 12px;
-      padding: 10px 16px calc(10px + max(0px, env(safe-area-inset-top)));
-      background: color-mix(in srgb, var(--p-surface) 85%, transparent);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border-bottom: 1px solid color-mix(in srgb, var(--p-line) 50%, transparent);
-      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .presentation-title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pres-setlist-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .pres-setlist-nav .button {
+      min-height: 28px;
+      min-width: 28px;
+      padding: 0 6px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      background: var(--p-surface);
+      color: var(--p-text);
+      border-color: var(--p-line);
+    }
+
+    .pres-setlist-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--p-accent);
+      background: color-mix(in srgb, var(--p-accent) 15%, transparent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
 
     .presentation-title {
@@ -2186,8 +2230,23 @@
       white-space: nowrap;
       text-overflow: ellipsis;
       font-weight: 760;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       color: var(--p-text);
+    }
+
+    .presentation-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .presentation-controls::-webkit-scrollbar {
+      display: none;
     }
 
     .presentation-controls .button {
@@ -2197,11 +2256,15 @@
     }
 
     .presentation-notation-switch {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      white-space: nowrap;
       background: color-mix(in srgb, var(--p-surface) 90%, transparent);
       border-color: var(--p-line);
       overflow-x: auto;
-      max-width: 100%;
       scrollbar-width: none;
+      flex-shrink: 0;
     }
 
     .presentation-notation-switch::-webkit-scrollbar {
@@ -2213,6 +2276,8 @@
       min-height: 28px;
       padding: 0 10px;
       font-size: 0.76rem;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .presentation-notation-switch .tab-button.active {
@@ -2220,13 +2285,66 @@
       color: #ffffff;
     }
 
+    .presentation-action-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .pres-transpose-stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: color-mix(in srgb, var(--p-surface) 80%, transparent);
+      border: 1px solid var(--p-line);
+      border-radius: 6px;
+      padding: 2px;
+    }
+
+    .pres-transpose-stepper .button {
+      min-height: 26px;
+      min-width: 26px;
+      padding: 0 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: transparent;
+      border: none;
+      color: var(--p-text);
+    }
+
+    .pres-key-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0 5px;
+      color: var(--p-accent);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pres-font-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .pres-font-group .button {
+      min-height: 28px;
+      padding: 0 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
     .presentation-stage {
       flex: 1;
-      overflow: auto;
+      overflow-y: auto;
+      overflow-x: hidden;
       scroll-behavior: smooth;
-      padding: clamp(16px, 4vw, 56px);
-      padding-top: calc(80px + env(safe-area-inset-top));
-      padding-bottom: 50dvh;
+      padding: 16px 20px;
+      padding-top: calc(142px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+      -webkit-overflow-scrolling: touch;
+      cursor: default;
     }
 
     .presentation-text {
@@ -2250,53 +2368,96 @@
 
     .presentation-controls-bottom {
       position: absolute;
-      bottom: max(24px, env(safe-area-inset-bottom));
+      bottom: max(16px, env(safe-area-inset-bottom, 0px));
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      background: color-mix(in srgb, var(--p-surface) 85%, transparent);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      flex-wrap: nowrap;
+      white-space: nowrap;
+      gap: 6px;
+      padding: 6px 14px;
+      background: color-mix(in srgb, var(--p-surface) 92%, transparent);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
       border: 1px solid color-mix(in srgb, var(--p-line) 50%, transparent);
       border-radius: 999px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+      transition: opacity 0.35s ease, transform 0.35s ease;
       z-index: 1210;
+      max-width: calc(100vw - 20px);
     }
 
     .presentation-controls-bottom .icon-button {
       border: none;
       background: transparent;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       color: var(--p-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
-    /* Floating Exit Button for Presentation Mode */
+    .pres-dock-divider {
+      width: 1px;
+      height: 22px;
+      background: color-mix(in srgb, var(--p-line) 60%, transparent);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .pres-speed-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--p-muted);
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .presentation-controls-bottom input[type="range"],
+    .pres-speed-slider {
+      width: 75px !important;
+      max-width: 75px !important;
+      flex: 0 0 75px !important;
+      accent-color: var(--p-accent);
+      margin: 0 4px;
+      cursor: pointer;
+    }
+
+    .pres-speed-value {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--p-text);
+      font-variant-numeric: tabular-nums;
+      min-width: 20px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Floating Exit Button: only visible when controls are in idle mode */
     .presentation-floating-exit {
       position: fixed;
       top: calc(14px + max(0px, env(safe-area-inset-top)));
       right: calc(16px + max(0px, env(safe-area-inset-right)));
       z-index: 1220;
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.85);
       color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 0.85rem;
+      padding: 6px 14px;
+      font-size: 0.8rem;
       font-weight: 700;
       cursor: pointer;
-      display: inline-flex;
+      display: none;
       align-items: center;
       gap: 6px;
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
-      transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
+      transition: opacity 0.3s ease, transform 0.3s ease;
       touch-action: manipulation;
     }
 
@@ -2311,15 +2472,15 @@
     }
 
     .presentation.idle .presentation-floating-exit {
-      opacity: 0;
-      transform: translateY(-10px);
-      pointer-events: none;
-    }
-
-    .presentation:hover .presentation-floating-exit {
-      opacity: 1;
+      display: inline-flex;
+      opacity: 0.35;
       transform: translateY(0);
       pointer-events: auto;
+    }
+
+    .presentation.idle .presentation-floating-exit:hover,
+    .presentation.idle .presentation-floating-exit:focus {
+      opacity: 1;
     }
 
     .presentation.idle .presentation-top {
@@ -3178,46 +3339,48 @@
       }
 
       .presentation-text {
-        font-size: calc(var(--presentation-font) * 0.55) !important;
+        font-size: clamp(14px, calc(var(--presentation-font) * 0.72), 32px);
       }
 
       .presentation-stage {
-        padding: 14px;
-        padding-top: calc(84px + env(safe-area-inset-top, 0px));
-        padding-bottom: 50dvh;
+        padding: 12px 14px;
+        padding-top: calc(140px + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px));
       }
 
       .presentation-top {
-        padding: 8px 10px;
-        flex-direction: column;
+        padding: calc(8px + max(0px, env(safe-area-inset-top, 0px))) 10px 8px;
         gap: 6px;
+      }
+
+      .presentation-title {
+        font-size: 0.98rem;
       }
 
       .presentation-controls {
-        display: flex;
-        justify-content: space-between;
-        gap: 4px;
-        width: 100%;
-      }
-
-      .presentation-controls .button {
-        font-size: 0.75rem;
-        padding: 0 8px;
-        min-height: 32px;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
       }
 
       .presentation-controls-bottom {
-        padding: 6px 10px;
-        gap: 6px;
+        padding: 4px 10px;
+        gap: 4px;
         bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-        flex-wrap: wrap;
-        justify-content: center;
-        max-width: 95vw;
+        flex-wrap: nowrap !important;
+        max-width: calc(100vw - 16px);
       }
 
       .presentation-controls-bottom .icon-button {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
+      }
+
+      .presentation-controls-bottom input[type="range"],
+      .pres-speed-slider {
+        width: 55px !important;
+        max-width: 55px !important;
+        flex: 0 0 55px !important;
       }
 
       .circle-container {
@@ -3434,7 +3597,18 @@
       }
 
       .presentation-stage {
-        padding-top: 56px;
+        padding-top: calc(72px + env(safe-area-inset-top, 0px));
+        padding-bottom: 70px;
+      }
+
+      .presentation-top {
+        padding: calc(4px + max(0px, env(safe-area-inset-top, 0px))) 10px 4px;
+        gap: 4px;
+      }
+
+      .presentation-controls-bottom {
+        bottom: 6px;
+        padding: 3px 8px;
       }
     }
 
@@ -3471,6 +3645,12 @@
     .ai-fab:hover {
       transform: scale(1.1);
       box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+
+    .ai-fab[aria-expanded="true"] {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transform: scale(0.6) !important;
     }
 
     @media (max-width: 480px) {
@@ -4373,8 +4553,19 @@
 
   <section class="presentation" id="presentation" data-pres-theme="stage" hidden aria-label="Presentation mode">
     <button class="presentation-floating-exit" id="floatingPresentationExit" type="button" aria-label="Exit presentation">✕ Exit</button>
-    <div class="presentation-top">
-      <div class="presentation-title" id="presentationTitle">Sonata</div>
+    <div class="presentation-top" id="presentationTop">
+      <div class="presentation-header-row">
+        <div class="presentation-title-group">
+          <div class="pres-setlist-nav" id="presSetlistNav" style="display: none;">
+            <button class="button secondary compact" id="presSlPrev" data-icon="arrow-left" type="button" aria-label="Previous song in setlist">‹</button>
+            <span id="presSlIndicator" class="pres-setlist-badge">1/1</span>
+            <button class="button secondary compact" id="presSlNext" data-icon="arrow-right" type="button" aria-label="Next song in setlist">›</button>
+          </div>
+          <div class="presentation-title" id="presentationTitle">Sonata</div>
+        </div>
+        <button class="button danger compact" id="presentationExit" data-icon="x" type="button" aria-label="Exit presentation">Exit</button>
+      </div>
+
       <div class="presentation-controls">
         <div class="presentation-notation-switch segmented" id="presentationNotationSwitch" role="tablist" aria-label="Stage notation mode">
           <button class="tab-button active" role="tab" aria-selected="true" aria-controls="presentationText" type="button" data-pres-notation="original">Song</button>
@@ -4383,35 +4574,37 @@
           <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="nashville">Nashville</button>
           <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="lyrics">Lyrics</button>
         </div>
-        <button class="button" id="presentationFontDown" data-icon="type-minus" type="button" aria-label="Decrease presentation font size">A-</button><button
-          class="button" id="presentationFontUp" data-icon="type-plus" type="button" aria-label="Increase presentation font size">A+</button>
-        <select class="select" id="presentationOrientation" aria-label="Presentation orientation" style="width: auto; min-width: 90px;">
-          <option value="auto">Auto</option>
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
-        </select>
-        <button class="help-icon" data-help="present" type="button" aria-label="Help with Presentation Mode"
-          style="margin-left:8px; width: 22px; height: 22px;">?</button><button class="button danger"
-          id="presentationExit" data-icon="x" type="button" style="margin-left:8px;">Exit</button>
+        <div class="presentation-action-tools">
+          <div class="pres-transpose-stepper" id="presTransposeGroup" title="Quick Transpose in Stage Mode">
+            <button class="button compact" id="presTransposeDown" type="button" aria-label="Transpose down 1 semitone">♭</button>
+            <span id="presKeyBadge" class="pres-key-badge" title="Active Key">Key</span>
+            <button class="button compact" id="presTransposeUp" type="button" aria-label="Transpose up 1 semitone">♯</button>
+          </div>
+          <div class="pres-font-group">
+            <button class="button compact" id="presentationFontDown" data-icon="type-minus" type="button" aria-label="Decrease font size">A-</button>
+            <button class="button compact" id="presentationFontUp" data-icon="type-plus" type="button" aria-label="Increase font size">A+</button>
+          </div>
+          <select class="select compact" id="presentationOrientation" aria-label="Presentation orientation">
+            <option value="auto">Auto</option>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+          <button class="help-icon" data-help="present" type="button" aria-label="Help with Presentation Mode">?</button>
+        </div>
       </div>
     </div>
-    <div class="presentation-stage" id="presentationStage">
+    <div class="presentation-stage" id="presentationStage" tabindex="0" role="region" aria-label="Chord chart display area">
       <div class="presentation-text" id="presentationText"></div>
     </div>
-    <div class="presentation-controls-bottom">
+    <div class="presentation-controls-bottom" id="presentationControlsBottom" role="toolbar" aria-label="Stage audio and scroll controls">
       <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" aria-label="Cycle Presentation Theme" title="Cycle Theme"></button>
-      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" aria-label="Toggle Presentation Metronome"
-        title="Toggle Metronome"></button>
-      <div class="beat-row" id="presBeatRow" style="width: 70px; margin-left: 8px;"></div>
-      <div
-        style="width: 1px; height: 28px; background: color-mix(in srgb, var(--p-line) 50%, transparent); margin: 0 12px;">
-      </div>
-      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" aria-label="Toggle Auto-Scroll" title="Auto-Scroll"></button>
-      <span style="font-size:0.7rem; font-weight:bold; color:var(--p-text); margin-left:4px;">SPD</span>
-      <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30"
-        style="width: 100px; accent-color: var(--p-text); margin: 0 8px;" aria-label="Scroll speed">
-      <span id="presScrollSpeedLabel"
-        style="font-size:0.75rem; font-weight:bold; color:var(--p-text); font-variant-numeric: tabular-nums;">30</span>
+      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" aria-label="Toggle Presentation Metronome" title="Toggle Metronome"></button>
+      <div class="beat-row" id="presBeatRow" style="width: 44px;"></div>
+      <div class="pres-dock-divider"></div>
+      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" aria-label="Toggle Auto-Scroll" title="Toggle Auto-Scroll"></button>
+      <span class="pres-speed-label">SPD</span>
+      <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30" class="pres-speed-slider" aria-label="Auto-scroll speed">
+      <span id="presScrollSpeedLabel" class="pres-speed-value">30</span>
     </div>
   </section>
 
@@ -6061,7 +6254,7 @@ Em -  C    -  G  -  D
       };
 
 
-      window.AudioEngine = {
+      const AudioEngine = window.AudioEngine = {
         ctx: null,
         masterGain: null,
         init() {
@@ -6578,7 +6771,7 @@ Em -  C    -  G  -  D
       const KeyDetector = {
         detect(textOrChords) {
           const chords = Array.isArray(textOrChords) ? textOrChords : ChordParser.extractChords(textOrChords || "");
-          if (!chords.length) return { root: "C", mode: "major", name: "Unknown", confidence: 0 };
+          if (!chords.length) return { root: "C", mode: "major", tonic: 0, name: "Unknown", confidence: 0 };
           const cands = []; for (let t = 0; t < 12; t++) { cands.push(this.score(chords, t, "major")); cands.push(this.score(chords, t, "minor")); }
           cands.sort((a, b) => b.score - a.score); const best = cands[0];
           const rootName = this.nameFor(best.tonic, best.mode);
@@ -6631,7 +6824,15 @@ Em -  C    -  G  -  D
           const mode = (rawMode.startsWith("m") && !rawMode.startsWith("maj")) ? "minor" : "major";
           return { root, mode, tonic: NOTE_TO_SEMITONE[root], name: root + " " + mode };
         },
-        activeKey(song, detected) { return this.parseKey(song?.manualKey) || detected || { root: "C", mode: "major", tonic: 0, name: "C major" }; },
+        activeKey(song, detected) {
+          const manual = this.parseKey(song?.manualKey);
+          if (manual) return manual;
+          if (detected && detected.tonic !== undefined && detected.name !== "Unknown") return detected;
+          if (detected && detected.tonic !== undefined && detected.name === "Unknown") {
+            return { ...detected, name: (detected.root || "C") + " " + (detected.mode || "major") };
+          }
+          return { root: "C", mode: "major", tonic: 0, name: "C major" };
+        },
         getKeyFamily(keyInput) {
           const parsed = this.parseKey(keyInput) || { root: "C", mode: "major", tonic: 0, name: "C major" };
           const isMinor = parsed.mode === "minor";
@@ -6679,8 +6880,33 @@ Em -  C    -  G  -  D
             });
           }).join("\n");
         },
-        romanChord(c, key) { const parsed = typeof c === "string" ? ChordParser.parse(c) : c; if (!parsed) return typeof c === "string" ? c : "?"; const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key; const base = (parsedKey.mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(parsed.rootValue - parsedKey.tonic, 12)] || "?"; const q = ChordParser.classify(parsed); let num = base.replace(/[IVX]+/g, m => (q === "minor" || q === "diminished") ? m.toLowerCase() : m.toUpperCase()) + this.rSuffix(parsed.quality, q); if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) num += "/" + ((parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - parsedKey.tonic, 12)] || "?"); return num + (parsed.trailingSlashes || ""); },
-        nashChord(c, key) { const parsed = typeof c === "string" ? ChordParser.parse(c) : c; if (!parsed) return typeof c === "string" ? c : "?"; const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key; let num = (parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.rootValue - parsedKey.tonic, 12)] || "?"; num += this.nSuffix(parsed.quality); if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) num += "/" + ((parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - parsedKey.tonic, 12)] || "?"); return num + (parsed.trailingSlashes || ""); },
+        romanChord(c, key) {
+          const parsed = typeof c === "string" ? ChordParser.parse(c) : c;
+          if (!parsed) return typeof c === "string" ? c : "?";
+          const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key;
+          const tonic = (parsedKey && typeof parsedKey.tonic === "number") ? parsedKey.tonic : 0;
+          const mode = (parsedKey && parsedKey.mode) || "major";
+          const base = (mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(parsed.rootValue - tonic, 12)] || "?";
+          const q = ChordParser.classify(parsed);
+          let num = base.replace(/[IVX]+/g, m => (q === "minor" || q === "diminished") ? m.toLowerCase() : m.toUpperCase()) + this.rSuffix(parsed.quality, q);
+          if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) {
+            num += "/" + ((mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - tonic, 12)] || "?");
+          }
+          return num + (parsed.trailingSlashes || "");
+        },
+        nashChord(c, key) {
+          const parsed = typeof c === "string" ? ChordParser.parse(c) : c;
+          if (!parsed) return typeof c === "string" ? c : "?";
+          const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key;
+          const tonic = (parsedKey && typeof parsedKey.tonic === "number") ? parsedKey.tonic : 0;
+          const mode = (parsedKey && parsedKey.mode) || "major";
+          let num = (mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.rootValue - tonic, 12)] || "?";
+          num += this.nSuffix(parsed.quality);
+          if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) {
+            num += "/" + ((mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - tonic, 12)] || "?");
+          }
+          return num + (parsed.trailingSlashes || "");
+        },
         rSuffix(q, className) { const lower = (q || "").replace(/\u00b0/g, "dim").toLowerCase(); if (!q || lower === "m" || lower === "min" || lower === "maj") return ""; if (className === "diminished" && lower === "dim") return "dim"; if (className === "augmented" && (lower === "aug" || q === "+")) return "aug"; if (/^(m|min)(6|7|9|11|13)/.test(lower)) return lower.replace(/^(m|min)/, ""); return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q; },
         nSuffix(q) { const lower = (q || "").replace(/\u00b0/g, "dim").toLowerCase(); if (!q || lower === "maj") return ""; if (lower === "min") return "m"; return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q; }
       };
@@ -6987,8 +7213,10 @@ Em -  C    -  G  -  D
             row.className = 'fret-string';
             const gauge = tuningData.gauges[stringIdx] || 2.0;
             const isWound = stringIdx >= tuningData.woundIdx;
-            row.style.setProperty('--string-gauge', gauge + 'px');
-            row.style.setProperty('--string-color', isWound ? 'linear-gradient(to bottom, #d8ba72, #9a803c, #5c4c1e)' : 'linear-gradient(to bottom, #fcfcfc, #c0c0c0, #727272)');
+            if (row.style && typeof row.style.setProperty === 'function') {
+              row.style.setProperty('--string-gauge', gauge + 'px');
+              row.style.setProperty('--string-color', isWound ? 'linear-gradient(to bottom, #d8ba72, #9a803c, #5c4c1e)' : 'linear-gradient(to bottom, #fcfcfc, #c0c0c0, #727272)');
+            }
 
             for (let fret = 0; fret <= 15; fret++) {
               const cell = document.createElement('div');
@@ -7089,11 +7317,34 @@ Em -  C    -  G  -  D
       };
 
       const ScrollManager = {
-        frame: 0, lastTime: 0, running: false, target: "presentation",
-        start(target) { if (this.running) return; this.target = target || "presentation"; this.running = true; this.lastTime = performance.now(); UIManager.updateScrollControls(); this.frame = requestAnimationFrame(this.tick.bind(this)); },
-        stop() { this.running = false; cancelAnimationFrame(this.frame); UIManager.updateScrollControls(); },
+        frame: 0, lastTime: 0, running: false, target: "presentation", userInteracting: false, resumeTimer: null,
+        start(target) { if (this.running) return; this.target = target || "presentation"; this.running = true; this.userInteracting = false; this.lastTime = performance.now(); UIManager.updateScrollControls(); this.frame = requestAnimationFrame(this.tick.bind(this)); },
+        stop() { this.running = false; cancelAnimationFrame(this.frame); clearTimeout(this.resumeTimer); this.userInteracting = false; UIManager.updateScrollControls(); },
         toggle(target) { if (this.running && this.target === target) this.stop(); else { this.stop(); this.start(target); } },
-        tick(time) { if (!this.running) return; const stage = UIManager.dom.presentationStage; if (!stage) { this.stop(); return; } const delta = Math.min(64, time - this.lastTime) / 1000; this.lastTime = time; stage.scrollTop += (StateManager.state.settings.autoScrollSpeed || 30) * delta; if (stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 2) { this.stop(); return; } this.frame = requestAnimationFrame(this.tick.bind(this)); }
+        pauseForUser() {
+          if (!this.running) return;
+          this.userInteracting = true;
+          clearTimeout(this.resumeTimer);
+          this.resumeTimer = setTimeout(() => {
+            this.userInteracting = false;
+            this.lastTime = performance.now();
+          }, 1200);
+        },
+        tick(time) {
+          if (!this.running) return;
+          if (this.userInteracting) {
+            this.lastTime = time;
+            this.frame = requestAnimationFrame(this.tick.bind(this));
+            return;
+          }
+          const stage = UIManager.dom.presentationStage;
+          if (!stage) { this.stop(); return; }
+          const delta = Math.min(64, time - this.lastTime) / 1000;
+          this.lastTime = time;
+          stage.scrollTop += (StateManager.state.settings.autoScrollSpeed || 30) * delta;
+          if (stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 2) { this.stop(); return; }
+          this.frame = requestAnimationFrame(this.tick.bind(this));
+        }
       };
 
       const MetronomeManager = {
@@ -7123,7 +7374,7 @@ Em -  C    -  G  -  D
           if (aiPanel) aiPanel.classList.add("hidden");
           const aiFab = document.getElementById("aiFabButton");
           if (aiFab) aiFab.setAttribute("aria-expanded", "false");
-          if (UIManager.dom.presentationTitle) UIManager.dom.presentationTitle.textContent = Util.titleOf(song);
+          this.updateHeader();
           this.renderStage();
           if (UIManager.dom.presentation) UIManager.dom.presentation.hidden = false;
           if (UIManager.dom.presentationStage) UIManager.dom.presentationStage.scrollTop = 0;
@@ -7136,6 +7387,70 @@ Em -  C    -  G  -  D
               if (res && typeof res.catch === "function") res.catch(() => { });
             } catch (e) { }
           }
+        },
+        updateHeader() {
+          const song = StateManager.activeSong();
+          if (!song) return;
+          if (UIManager.dom.presentationTitle) UIManager.dom.presentationTitle.textContent = Util.titleOf(song);
+          this.updateKeyBadge();
+          this.updateSetlistNav();
+        },
+        updateKeyBadge() {
+          const song = StateManager.activeSong();
+          const ak = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          const badge = document.getElementById("presKeyBadge");
+          if (badge) {
+            const d = StateManager.state.transposeDelta || 0;
+            const deltaStr = d !== 0 ? ` (${d > 0 ? '+' + d : d})` : '';
+            badge.textContent = `${ak?.name || 'Key'}${deltaStr}`;
+          }
+        },
+        updateSetlistNav() {
+          const nav = document.getElementById("presSetlistNav");
+          if (!nav) return;
+          const s = StateManager.state.activeSetlist;
+          if (!s?.id) {
+            nav.style.display = "none";
+            return;
+          }
+          const set = StateManager.state.setlists.find(x => x.id === s.id);
+          if (!set || !set.items?.length) {
+            nav.style.display = "none";
+            return;
+          }
+          nav.style.display = "inline-flex";
+          const indicator = document.getElementById("presSlIndicator");
+          if (indicator) indicator.textContent = `${s.index + 1}/${set.items.length}`;
+          const prevBtn = document.getElementById("presSlPrev");
+          const nextBtn = document.getElementById("presSlNext");
+          if (prevBtn) prevBtn.disabled = s.index <= 0;
+          if (nextBtn) nextBtn.disabled = s.index >= set.items.length - 1;
+        },
+        stepSetlist(delta) {
+          const s = StateManager.state.activeSetlist;
+          if (!s?.id) return;
+          const set = StateManager.state.setlists.find(x => x.id === s.id);
+          if (!set || !set.items?.length) return;
+          const newIdx = Util.clamp(s.index + delta, 0, set.items.length - 1);
+          if (newIdx === s.index) return;
+          StateManager.playSetlist(s.id, newIdx);
+          Editor.loadActiveSong();
+          UIManager.renderAll();
+          this.open();
+        },
+        transpose(delta) {
+          StateManager.state.transposeDelta = Util.clamp((StateManager.state.transposeDelta || 0) + delta, -24, 24);
+          if (UIManager.dom.transposeSelect) UIManager.dom.transposeSelect.value = String(StateManager.state.transposeDelta);
+          const stepVal = document.getElementById('transposeStepperValue') || UIManager.dom.transposeStepperValue;
+          if (stepVal) {
+            const d = StateManager.state.transposeDelta;
+            stepVal.textContent = d > 0 ? '+' + d : String(d);
+          }
+          UIManager.updateAnalysis();
+          this.renderStage();
+          this.updateKeyBadge();
+          const ak = KeyDetector.activeKey(StateManager.activeSong(), StateManager.state.detectedKey);
+          UIManager.toast("Transposed to: " + (ak?.name || "Key"));
         },
         renderStage() {
           const song = StateManager.activeSong();
@@ -7153,10 +7468,21 @@ Em -  C    -  G  -  D
             btn.classList.toggle("active", isAct);
             btn.setAttribute("aria-selected", isAct ? "true" : "false");
           });
+          this.updateKeyBadge();
         },
         setNotationMode(mode) {
           this.stageNotationMode = mode || "original";
           this.renderStage();
+        },
+        toggleIdle() {
+          clearTimeout(this.idleTimer);
+          if (!UIManager.dom.presentation) return;
+          const isNowIdle = UIManager.dom.presentation.classList.toggle("idle");
+          if (!isNowIdle) {
+            this.idleTimer = setTimeout(() => {
+              if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle");
+            }, 3500);
+          }
         },
         close() {
           ScrollManager.stop();
@@ -7182,7 +7508,7 @@ Em -  C    -  G  -  D
         setOrientation(value) { StateManager.state.settings.presentationOrientation = value; this.applySettings(); StateManager.saveNow("Orientation saved"); },
         cycleTheme() { this.themeIndex = (this.themeIndex + 1) % this.themes.length; UIManager.dom.presentation.dataset.presTheme = this.themes[this.themeIndex]; UIManager.toast("Theme: " + this.themes[this.themeIndex].charAt(0).toUpperCase() + this.themes[this.themeIndex].slice(1)); },
         applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--presentation-font", s.presentationFontSize + "px"); if (UIManager.dom.presentationOrientation) UIManager.dom.presentationOrientation.value = s.presentationOrientation; if (UIManager.dom.presentation) { UIManager.dom.presentation.classList.toggle("orientation-portrait", s.presentationOrientation === "portrait"); UIManager.dom.presentation.classList.toggle("orientation-landscape", s.presentationOrientation === "landscape"); } },
-        startIdleTimer() { clearTimeout(this.idleTimer); if (UIManager.dom.presentation) UIManager.dom.presentation.classList.remove("idle"); this.idleTimer = setTimeout(() => { if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle"); }, 3000); }
+        startIdleTimer() { clearTimeout(this.idleTimer); if (UIManager.dom.presentation) UIManager.dom.presentation.classList.remove("idle"); this.idleTimer = setTimeout(() => { if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle"); }, 3500); }
       };
 
       const ExportManager = {
@@ -8040,7 +8366,7 @@ Em -  C    -  G  -  D
         dom: {}, modalAction: null,
         renderLibrarySoon() { SongLibrary.render(); },
         updateAnalysisSoon() { this.updateAnalysis(); },
-        cache() { ["brandVersion", "googleSyncButton", "googleSyncButtonMobile", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "floatingPresentationExit", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "transposeStepperValue", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar", "aiFabButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["brandVersion", "googleSyncButton", "googleSyncButtonMobile", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "floatingPresentationExit", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "transposeStepperValue", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "presSetlistNav", "presSlPrev", "presSlIndicator", "presSlNext", "presTransposeGroup", "presTransposeDown", "presKeyBadge", "presTransposeUp", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar", "aiFabButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         setupShortcutsAndGuards() {
           const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
           const mod = isMac ? '⌘' : 'Ctrl+';
@@ -8147,6 +8473,14 @@ Em -  C    -  G  -  D
                 }).catch(() => { cl.textContent = 'No release notes available offline.'; });
             }
           }
+          const aiFab = this.dom.aiFabButton || document.getElementById('aiFabButton');
+          const aiPanel = document.getElementById('aiChatPanel');
+          if (viewName === 'editor') {
+            if (aiFab) aiFab.style.display = '';
+          } else {
+            if (aiFab) aiFab.style.display = 'none';
+            if (aiPanel) aiPanel.classList.add('hidden');
+          }
           // Close sidebar if open
           this.closeSidebar();
         },
@@ -8154,13 +8488,13 @@ Em -  C    -  G  -  D
           this.dom.sidebarDrawer?.classList.add('open');
           this.dom.sidebarBackdrop?.classList.add('open');
           this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'true');
-          document.body.style.overflow = 'hidden';
+          if (document.body?.style) document.body.style.overflow = 'hidden';
         },
         closeSidebar() {
           this.dom.sidebarDrawer?.classList.remove('open');
           this.dom.sidebarBackdrop?.classList.remove('open');
           this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = '';
+          if (document.body?.style) document.body.style.overflow = '';
         },
         applyLanguage() {
           const lang = StateManager.state?.settings?.language || "en";
@@ -8218,12 +8552,12 @@ Em -  C    -  G  -  D
           
           // Sort Options
           const sortSelect = document.getElementById("librarySortSelect");
-          if (sortSelect) {
-            sortSelect.options[0].text = d.librarySortRecent;
-            sortSelect.options[1].text = d.librarySortTitle;
-            sortSelect.options[2].text = d.librarySortAuthor;
-            sortSelect.options[3].text = d.librarySortArranger;
-            sortSelect.options[4].text = d.librarySortKey;
+          if (sortSelect && sortSelect.options) {
+            if (sortSelect.options[0]) sortSelect.options[0].text = d.librarySortRecent;
+            if (sortSelect.options[1]) sortSelect.options[1].text = d.librarySortTitle;
+            if (sortSelect.options[2]) sortSelect.options[2].text = d.librarySortAuthor;
+            if (sortSelect.options[3]) sortSelect.options[3].text = d.librarySortArranger;
+            if (sortSelect.options[4]) sortSelect.options[4].text = d.librarySortKey;
           }
 
           // Library Filters
@@ -8643,10 +8977,63 @@ Em -  C    -  G  -  D
             if (typeof act.onConfirm === "function") act.onConfirm(values);
           });
 
-          add(this.dom.presentationExit, "click", () => { AudioEngine.playClick(); PresentationManager.close(); }); add(this.dom.presentationFontDown, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(-4); }); add(this.dom.presentationFontUp, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(4); }); add(this.dom.presentationOrientation, "change", () => PresentationManager.setOrientation(this.dom.presentationOrientation.value));
-          add(this.dom.presThemeToggle, "click", () => { AudioEngine.playClick(); PresentationManager.cycleTheme(); }); add(this.dom.presMetronomeToggle, "click", () => { AudioEngine.playClick(); MetronomeManager.toggle(); });
-          add(this.dom.presScrollToggle, "click", () => { AudioEngine.playClick(); ScrollManager.toggle("presentation"); }); add(this.dom.presScrollSpeed, "input", () => { StateManager.state.settings.autoScrollSpeed = Util.clamp(this.dom.presScrollSpeed.value, 0, 180); this.updateScrollControls(); StateManager.saveNow("Scroll speed saved"); });
-          add(this.dom.presentation, "mousemove", () => PresentationManager.startIdleTimer()); add(this.dom.presentation, "touchstart", () => PresentationManager.startIdleTimer(), { passive: true });
+          add(this.dom.presentationExit, "click", () => { AudioEngine.playClick(); PresentationManager.close(); });
+          add(this.dom.presentationFontDown, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(-4); });
+          add(this.dom.presentationFontUp, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(4); });
+          add(this.dom.presentationOrientation, "change", () => PresentationManager.setOrientation(this.dom.presentationOrientation.value));
+          add(this.dom.presTransposeDown, "click", () => { AudioEngine.playClick(); PresentationManager.transpose(-1); });
+          add(this.dom.presTransposeUp, "click", () => { AudioEngine.playClick(); PresentationManager.transpose(1); });
+          add(this.dom.presSlPrev, "click", () => { AudioEngine.playClick(); PresentationManager.stepSetlist(-1); });
+          add(this.dom.presSlNext, "click", () => { AudioEngine.playClick(); PresentationManager.stepSetlist(1); });
+          let lastStageTouchTime = 0;
+          let isTouchDragging = false;
+          let touchStartY = 0;
+          let touchStartX = 0;
+
+          add(this.dom.presentationStage, "touchstart", (e) => {
+            ScrollManager.pauseForUser();
+            isTouchDragging = false;
+            if (e.touches && e.touches[0]) {
+              touchStartY = e.touches[0].clientY;
+              touchStartX = e.touches[0].clientX;
+            }
+          }, { passive: true });
+
+          add(this.dom.presentationStage, "touchmove", (e) => {
+            if (e.touches && e.touches[0]) {
+              if (Math.abs(e.touches[0].clientY - touchStartY) > 10 || Math.abs(e.touches[0].clientX - touchStartX) > 10) {
+                isTouchDragging = true;
+              }
+            }
+          }, { passive: true });
+
+          add(this.dom.presentationStage, "touchend", (e) => {
+            lastStageTouchTime = Date.now();
+            if (!isTouchDragging) {
+              if (e.target.closest('button, select, input, a, .segmented, .presentation-controls, .presentation-header-row, .presentation-controls-bottom')) return;
+              PresentationManager.toggleIdle();
+            }
+          }, { passive: true });
+
+          add(this.dom.presentationStage, "click", (e) => {
+            if (Date.now() - lastStageTouchTime < 450) return;
+            if (e.target.closest('button, select, input, a, .segmented, .presentation-controls, .presentation-header-row, .presentation-controls-bottom')) return;
+            PresentationManager.toggleIdle();
+          });
+
+          add(this.dom.presentationStage, "wheel", () => {
+            ScrollManager.pauseForUser();
+          }, { passive: true });
+
+          add(this.dom.presThemeToggle, "click", () => { AudioEngine.playClick(); PresentationManager.cycleTheme(); });
+          add(this.dom.presMetronomeToggle, "click", () => { AudioEngine.playClick(); MetronomeManager.toggle(); });
+          add(this.dom.presScrollToggle, "click", () => { AudioEngine.playClick(); ScrollManager.toggle("presentation"); });
+          add(this.dom.presScrollSpeed, "input", () => {
+            StateManager.state.settings.autoScrollSpeed = Util.clamp(this.dom.presScrollSpeed.value, 0, 180);
+            this.updateScrollControls();
+            StateManager.saveNow("Scroll speed saved");
+          });
+          add(this.dom.presentation, "mousemove", () => PresentationManager.startIdleTimer());
 
           document.querySelectorAll(".help-icon").forEach(btn => add(btn, 'click', (e) => { e.stopPropagation(); AudioEngine.playClick(); if (HELP_TEXTS[btn.dataset.help]) PopoverManager.show(btn, HELP_TEXTS[btn.dataset.help]); }));
 
@@ -9921,9 +10308,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.5.4";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.5.4";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.4";
+                if (versionEl) versionEl.textContent = "v1.5.5";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.5";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.5";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {

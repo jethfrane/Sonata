@@ -1,5 +1,5 @@
-// Sonata Service Worker - v1.5.4
-const CACHE_NAME = 'sonata-cache-v1.5.4';
+// Sonata Service Worker - v1.5.5
+const CACHE_NAME = 'sonata-cache-v1.5.5';
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -17,8 +17,4 @@ self.addEventListener('activate', (event) => {
       return self.clients.claim();
     })
   );
-});
-
-self.addEventListener('fetch', (event) => {
-  // Pass through all requests normally
 });

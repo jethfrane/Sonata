@@ -668,8 +668,19 @@
 
   <section class="presentation" id="presentation" data-pres-theme="stage" hidden aria-label="Presentation mode">
     <button class="presentation-floating-exit" id="floatingPresentationExit" type="button" aria-label="Exit presentation">✕ Exit</button>
-    <div class="presentation-top">
-      <div class="presentation-title" id="presentationTitle">Sonata</div>
+    <div class="presentation-top" id="presentationTop">
+      <div class="presentation-header-row">
+        <div class="presentation-title-group">
+          <div class="pres-setlist-nav" id="presSetlistNav" style="display: none;">
+            <button class="button secondary compact" id="presSlPrev" data-icon="arrow-left" type="button" aria-label="Previous song in setlist">‹</button>
+            <span id="presSlIndicator" class="pres-setlist-badge">1/1</span>
+            <button class="button secondary compact" id="presSlNext" data-icon="arrow-right" type="button" aria-label="Next song in setlist">›</button>
+          </div>
+          <div class="presentation-title" id="presentationTitle">Sonata</div>
+        </div>
+        <button class="button danger compact" id="presentationExit" data-icon="x" type="button" aria-label="Exit presentation">Exit</button>
+      </div>
+
       <div class="presentation-controls">
         <div class="presentation-notation-switch segmented" id="presentationNotationSwitch" role="tablist" aria-label="Stage notation mode">
           <button class="tab-button active" role="tab" aria-selected="true" aria-controls="presentationText" type="button" data-pres-notation="original">Song</button>
@@ -678,35 +689,37 @@
           <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="nashville">Nashville</button>
           <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="lyrics">Lyrics</button>
         </div>
-        <button class="button" id="presentationFontDown" data-icon="type-minus" type="button" aria-label="Decrease presentation font size">A-</button><button
-          class="button" id="presentationFontUp" data-icon="type-plus" type="button" aria-label="Increase presentation font size">A+</button>
-        <select class="select" id="presentationOrientation" aria-label="Presentation orientation" style="width: auto; min-width: 90px;">
-          <option value="auto">Auto</option>
-          <option value="portrait">Portrait</option>
-          <option value="landscape">Landscape</option>
-        </select>
-        <button class="help-icon" data-help="present" type="button" aria-label="Help with Presentation Mode"
-          style="margin-left:8px; width: 22px; height: 22px;">?</button><button class="button danger"
-          id="presentationExit" data-icon="x" type="button" style="margin-left:8px;">Exit</button>
+        <div class="presentation-action-tools">
+          <div class="pres-transpose-stepper" id="presTransposeGroup" title="Quick Transpose in Stage Mode">
+            <button class="button compact" id="presTransposeDown" type="button" aria-label="Transpose down 1 semitone">♭</button>
+            <span id="presKeyBadge" class="pres-key-badge" title="Active Key">Key</span>
+            <button class="button compact" id="presTransposeUp" type="button" aria-label="Transpose up 1 semitone">♯</button>
+          </div>
+          <div class="pres-font-group">
+            <button class="button compact" id="presentationFontDown" data-icon="type-minus" type="button" aria-label="Decrease font size">A-</button>
+            <button class="button compact" id="presentationFontUp" data-icon="type-plus" type="button" aria-label="Increase font size">A+</button>
+          </div>
+          <select class="select compact" id="presentationOrientation" aria-label="Presentation orientation">
+            <option value="auto">Auto</option>
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+          <button class="help-icon" data-help="present" type="button" aria-label="Help with Presentation Mode">?</button>
+        </div>
       </div>
     </div>
-    <div class="presentation-stage" id="presentationStage">
+    <div class="presentation-stage" id="presentationStage" tabindex="0" role="region" aria-label="Chord chart display area">
       <div class="presentation-text" id="presentationText"></div>
     </div>
-    <div class="presentation-controls-bottom">
+    <div class="presentation-controls-bottom" id="presentationControlsBottom" role="toolbar" aria-label="Stage audio and scroll controls">
       <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" aria-label="Cycle Presentation Theme" title="Cycle Theme"></button>
-      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" aria-label="Toggle Presentation Metronome"
-        title="Toggle Metronome"></button>
-      <div class="beat-row" id="presBeatRow" style="width: 70px; margin-left: 8px;"></div>
-      <div
-        style="width: 1px; height: 28px; background: color-mix(in srgb, var(--p-line) 50%, transparent); margin: 0 12px;">
-      </div>
-      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" aria-label="Toggle Auto-Scroll" title="Auto-Scroll"></button>
-      <span style="font-size:0.7rem; font-weight:bold; color:var(--p-text); margin-left:4px;">SPD</span>
-      <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30"
-        style="width: 100px; accent-color: var(--p-text); margin: 0 8px;" aria-label="Scroll speed">
-      <span id="presScrollSpeedLabel"
-        style="font-size:0.75rem; font-weight:bold; color:var(--p-text); font-variant-numeric: tabular-nums;">30</span>
+      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" aria-label="Toggle Presentation Metronome" title="Toggle Metronome"></button>
+      <div class="beat-row" id="presBeatRow" style="width: 44px;"></div>
+      <div class="pres-dock-divider"></div>
+      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" aria-label="Toggle Auto-Scroll" title="Toggle Auto-Scroll"></button>
+      <span class="pres-speed-label">SPD</span>
+      <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30" class="pres-speed-slider" aria-label="Auto-scroll speed">
+      <span id="presScrollSpeedLabel" class="pres-speed-value">30</span>
     </div>
   </section>
 

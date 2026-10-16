@@ -1581,7 +1581,7 @@ Em -  C    -  G  -  D
       };
 
 
-      window.AudioEngine = {
+      const AudioEngine = window.AudioEngine = {
         ctx: null,
         masterGain: null,
         init() {
@@ -2098,7 +2098,7 @@ Em -  C    -  G  -  D
       const KeyDetector = {
         detect(textOrChords) {
           const chords = Array.isArray(textOrChords) ? textOrChords : ChordParser.extractChords(textOrChords || "");
-          if (!chords.length) return { root: "C", mode: "major", name: "Unknown", confidence: 0 };
+          if (!chords.length) return { root: "C", mode: "major", tonic: 0, name: "Unknown", confidence: 0 };
           const cands = []; for (let t = 0; t < 12; t++) { cands.push(this.score(chords, t, "major")); cands.push(this.score(chords, t, "minor")); }
           cands.sort((a, b) => b.score - a.score); const best = cands[0];
           const rootName = this.nameFor(best.tonic, best.mode);
@@ -2151,7 +2151,15 @@ Em -  C    -  G  -  D
           const mode = (rawMode.startsWith("m") && !rawMode.startsWith("maj")) ? "minor" : "major";
           return { root, mode, tonic: NOTE_TO_SEMITONE[root], name: root + " " + mode };
         },
-        activeKey(song, detected) { return this.parseKey(song?.manualKey) || detected || { root: "C", mode: "major", tonic: 0, name: "C major" }; },
+        activeKey(song, detected) {
+          const manual = this.parseKey(song?.manualKey);
+          if (manual) return manual;
+          if (detected && detected.tonic !== undefined && detected.name !== "Unknown") return detected;
+          if (detected && detected.tonic !== undefined && detected.name === "Unknown") {
+            return { ...detected, name: (detected.root || "C") + " " + (detected.mode || "major") };
+          }
+          return { root: "C", mode: "major", tonic: 0, name: "C major" };
+        },
         getKeyFamily(keyInput) {
           const parsed = this.parseKey(keyInput) || { root: "C", mode: "major", tonic: 0, name: "C major" };
           const isMinor = parsed.mode === "minor";
@@ -2199,8 +2207,33 @@ Em -  C    -  G  -  D
             });
           }).join("\n");
         },
-        romanChord(c, key) { const parsed = typeof c === "string" ? ChordParser.parse(c) : c; if (!parsed) return typeof c === "string" ? c : "?"; const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key; const base = (parsedKey.mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(parsed.rootValue - parsedKey.tonic, 12)] || "?"; const q = ChordParser.classify(parsed); let num = base.replace(/[IVX]+/g, m => (q === "minor" || q === "diminished") ? m.toLowerCase() : m.toUpperCase()) + this.rSuffix(parsed.quality, q); if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) num += "/" + ((parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - parsedKey.tonic, 12)] || "?"); return num + (parsed.trailingSlashes || ""); },
-        nashChord(c, key) { const parsed = typeof c === "string" ? ChordParser.parse(c) : c; if (!parsed) return typeof c === "string" ? c : "?"; const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key; let num = (parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.rootValue - parsedKey.tonic, 12)] || "?"; num += this.nSuffix(parsed.quality); if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) num += "/" + ((parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - parsedKey.tonic, 12)] || "?"); return num + (parsed.trailingSlashes || ""); },
+        romanChord(c, key) {
+          const parsed = typeof c === "string" ? ChordParser.parse(c) : c;
+          if (!parsed) return typeof c === "string" ? c : "?";
+          const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key;
+          const tonic = (parsedKey && typeof parsedKey.tonic === "number") ? parsedKey.tonic : 0;
+          const mode = (parsedKey && parsedKey.mode) || "major";
+          const base = (mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(parsed.rootValue - tonic, 12)] || "?";
+          const q = ChordParser.classify(parsed);
+          let num = base.replace(/[IVX]+/g, m => (q === "minor" || q === "diminished") ? m.toLowerCase() : m.toUpperCase()) + this.rSuffix(parsed.quality, q);
+          if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) {
+            num += "/" + ((mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - tonic, 12)] || "?");
+          }
+          return num + (parsed.trailingSlashes || "");
+        },
+        nashChord(c, key) {
+          const parsed = typeof c === "string" ? ChordParser.parse(c) : c;
+          if (!parsed) return typeof c === "string" ? c : "?";
+          const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key;
+          const tonic = (parsedKey && typeof parsedKey.tonic === "number") ? parsedKey.tonic : 0;
+          const mode = (parsedKey && parsedKey.mode) || "major";
+          let num = (mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.rootValue - tonic, 12)] || "?";
+          num += this.nSuffix(parsed.quality);
+          if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) {
+            num += "/" + ((mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - tonic, 12)] || "?");
+          }
+          return num + (parsed.trailingSlashes || "");
+        },
         rSuffix(q, className) { const lower = (q || "").replace(/\u00b0/g, "dim").toLowerCase(); if (!q || lower === "m" || lower === "min" || lower === "maj") return ""; if (className === "diminished" && lower === "dim") return "dim"; if (className === "augmented" && (lower === "aug" || q === "+")) return "aug"; if (/^(m|min)(6|7|9|11|13)/.test(lower)) return lower.replace(/^(m|min)/, ""); return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q; },
         nSuffix(q) { const lower = (q || "").replace(/\u00b0/g, "dim").toLowerCase(); if (!q || lower === "maj") return ""; if (lower === "min") return "m"; return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q; }
       };
@@ -2507,8 +2540,10 @@ Em -  C    -  G  -  D
             row.className = 'fret-string';
             const gauge = tuningData.gauges[stringIdx] || 2.0;
             const isWound = stringIdx >= tuningData.woundIdx;
-            row.style.setProperty('--string-gauge', gauge + 'px');
-            row.style.setProperty('--string-color', isWound ? 'linear-gradient(to bottom, #d8ba72, #9a803c, #5c4c1e)' : 'linear-gradient(to bottom, #fcfcfc, #c0c0c0, #727272)');
+            if (row.style && typeof row.style.setProperty === 'function') {
+              row.style.setProperty('--string-gauge', gauge + 'px');
+              row.style.setProperty('--string-color', isWound ? 'linear-gradient(to bottom, #d8ba72, #9a803c, #5c4c1e)' : 'linear-gradient(to bottom, #fcfcfc, #c0c0c0, #727272)');
+            }
 
             for (let fret = 0; fret <= 15; fret++) {
               const cell = document.createElement('div');
@@ -2609,11 +2644,34 @@ Em -  C    -  G  -  D
       };
 
       const ScrollManager = {
-        frame: 0, lastTime: 0, running: false, target: "presentation",
-        start(target) { if (this.running) return; this.target = target || "presentation"; this.running = true; this.lastTime = performance.now(); UIManager.updateScrollControls(); this.frame = requestAnimationFrame(this.tick.bind(this)); },
-        stop() { this.running = false; cancelAnimationFrame(this.frame); UIManager.updateScrollControls(); },
+        frame: 0, lastTime: 0, running: false, target: "presentation", userInteracting: false, resumeTimer: null,
+        start(target) { if (this.running) return; this.target = target || "presentation"; this.running = true; this.userInteracting = false; this.lastTime = performance.now(); UIManager.updateScrollControls(); this.frame = requestAnimationFrame(this.tick.bind(this)); },
+        stop() { this.running = false; cancelAnimationFrame(this.frame); clearTimeout(this.resumeTimer); this.userInteracting = false; UIManager.updateScrollControls(); },
         toggle(target) { if (this.running && this.target === target) this.stop(); else { this.stop(); this.start(target); } },
-        tick(time) { if (!this.running) return; const stage = UIManager.dom.presentationStage; if (!stage) { this.stop(); return; } const delta = Math.min(64, time - this.lastTime) / 1000; this.lastTime = time; stage.scrollTop += (StateManager.state.settings.autoScrollSpeed || 30) * delta; if (stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 2) { this.stop(); return; } this.frame = requestAnimationFrame(this.tick.bind(this)); }
+        pauseForUser() {
+          if (!this.running) return;
+          this.userInteracting = true;
+          clearTimeout(this.resumeTimer);
+          this.resumeTimer = setTimeout(() => {
+            this.userInteracting = false;
+            this.lastTime = performance.now();
+          }, 1200);
+        },
+        tick(time) {
+          if (!this.running) return;
+          if (this.userInteracting) {
+            this.lastTime = time;
+            this.frame = requestAnimationFrame(this.tick.bind(this));
+            return;
+          }
+          const stage = UIManager.dom.presentationStage;
+          if (!stage) { this.stop(); return; }
+          const delta = Math.min(64, time - this.lastTime) / 1000;
+          this.lastTime = time;
+          stage.scrollTop += (StateManager.state.settings.autoScrollSpeed || 30) * delta;
+          if (stage.scrollTop + stage.clientHeight >= stage.scrollHeight - 2) { this.stop(); return; }
+          this.frame = requestAnimationFrame(this.tick.bind(this));
+        }
       };
 
       const MetronomeManager = {
@@ -2643,7 +2701,7 @@ Em -  C    -  G  -  D
           if (aiPanel) aiPanel.classList.add("hidden");
           const aiFab = document.getElementById("aiFabButton");
           if (aiFab) aiFab.setAttribute("aria-expanded", "false");
-          if (UIManager.dom.presentationTitle) UIManager.dom.presentationTitle.textContent = Util.titleOf(song);
+          this.updateHeader();
           this.renderStage();
           if (UIManager.dom.presentation) UIManager.dom.presentation.hidden = false;
           if (UIManager.dom.presentationStage) UIManager.dom.presentationStage.scrollTop = 0;
@@ -2656,6 +2714,70 @@ Em -  C    -  G  -  D
               if (res && typeof res.catch === "function") res.catch(() => { });
             } catch (e) { }
           }
+        },
+        updateHeader() {
+          const song = StateManager.activeSong();
+          if (!song) return;
+          if (UIManager.dom.presentationTitle) UIManager.dom.presentationTitle.textContent = Util.titleOf(song);
+          this.updateKeyBadge();
+          this.updateSetlistNav();
+        },
+        updateKeyBadge() {
+          const song = StateManager.activeSong();
+          const ak = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          const badge = document.getElementById("presKeyBadge");
+          if (badge) {
+            const d = StateManager.state.transposeDelta || 0;
+            const deltaStr = d !== 0 ? ` (${d > 0 ? '+' + d : d})` : '';
+            badge.textContent = `${ak?.name || 'Key'}${deltaStr}`;
+          }
+        },
+        updateSetlistNav() {
+          const nav = document.getElementById("presSetlistNav");
+          if (!nav) return;
+          const s = StateManager.state.activeSetlist;
+          if (!s?.id) {
+            nav.style.display = "none";
+            return;
+          }
+          const set = StateManager.state.setlists.find(x => x.id === s.id);
+          if (!set || !set.items?.length) {
+            nav.style.display = "none";
+            return;
+          }
+          nav.style.display = "inline-flex";
+          const indicator = document.getElementById("presSlIndicator");
+          if (indicator) indicator.textContent = `${s.index + 1}/${set.items.length}`;
+          const prevBtn = document.getElementById("presSlPrev");
+          const nextBtn = document.getElementById("presSlNext");
+          if (prevBtn) prevBtn.disabled = s.index <= 0;
+          if (nextBtn) nextBtn.disabled = s.index >= set.items.length - 1;
+        },
+        stepSetlist(delta) {
+          const s = StateManager.state.activeSetlist;
+          if (!s?.id) return;
+          const set = StateManager.state.setlists.find(x => x.id === s.id);
+          if (!set || !set.items?.length) return;
+          const newIdx = Util.clamp(s.index + delta, 0, set.items.length - 1);
+          if (newIdx === s.index) return;
+          StateManager.playSetlist(s.id, newIdx);
+          Editor.loadActiveSong();
+          UIManager.renderAll();
+          this.open();
+        },
+        transpose(delta) {
+          StateManager.state.transposeDelta = Util.clamp((StateManager.state.transposeDelta || 0) + delta, -24, 24);
+          if (UIManager.dom.transposeSelect) UIManager.dom.transposeSelect.value = String(StateManager.state.transposeDelta);
+          const stepVal = document.getElementById('transposeStepperValue') || UIManager.dom.transposeStepperValue;
+          if (stepVal) {
+            const d = StateManager.state.transposeDelta;
+            stepVal.textContent = d > 0 ? '+' + d : String(d);
+          }
+          UIManager.updateAnalysis();
+          this.renderStage();
+          this.updateKeyBadge();
+          const ak = KeyDetector.activeKey(StateManager.activeSong(), StateManager.state.detectedKey);
+          UIManager.toast("Transposed to: " + (ak?.name || "Key"));
         },
         renderStage() {
           const song = StateManager.activeSong();
@@ -2673,10 +2795,21 @@ Em -  C    -  G  -  D
             btn.classList.toggle("active", isAct);
             btn.setAttribute("aria-selected", isAct ? "true" : "false");
           });
+          this.updateKeyBadge();
         },
         setNotationMode(mode) {
           this.stageNotationMode = mode || "original";
           this.renderStage();
+        },
+        toggleIdle() {
+          clearTimeout(this.idleTimer);
+          if (!UIManager.dom.presentation) return;
+          const isNowIdle = UIManager.dom.presentation.classList.toggle("idle");
+          if (!isNowIdle) {
+            this.idleTimer = setTimeout(() => {
+              if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle");
+            }, 3500);
+          }
         },
         close() {
           ScrollManager.stop();
@@ -2702,7 +2835,7 @@ Em -  C    -  G  -  D
         setOrientation(value) { StateManager.state.settings.presentationOrientation = value; this.applySettings(); StateManager.saveNow("Orientation saved"); },
         cycleTheme() { this.themeIndex = (this.themeIndex + 1) % this.themes.length; UIManager.dom.presentation.dataset.presTheme = this.themes[this.themeIndex]; UIManager.toast("Theme: " + this.themes[this.themeIndex].charAt(0).toUpperCase() + this.themes[this.themeIndex].slice(1)); },
         applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--presentation-font", s.presentationFontSize + "px"); if (UIManager.dom.presentationOrientation) UIManager.dom.presentationOrientation.value = s.presentationOrientation; if (UIManager.dom.presentation) { UIManager.dom.presentation.classList.toggle("orientation-portrait", s.presentationOrientation === "portrait"); UIManager.dom.presentation.classList.toggle("orientation-landscape", s.presentationOrientation === "landscape"); } },
-        startIdleTimer() { clearTimeout(this.idleTimer); if (UIManager.dom.presentation) UIManager.dom.presentation.classList.remove("idle"); this.idleTimer = setTimeout(() => { if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle"); }, 3000); }
+        startIdleTimer() { clearTimeout(this.idleTimer); if (UIManager.dom.presentation) UIManager.dom.presentation.classList.remove("idle"); this.idleTimer = setTimeout(() => { if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle"); }, 3500); }
       };
 
       const ExportManager = {
@@ -3560,7 +3693,7 @@ Em -  C    -  G  -  D
         dom: {}, modalAction: null,
         renderLibrarySoon() { SongLibrary.render(); },
         updateAnalysisSoon() { this.updateAnalysis(); },
-        cache() { ["brandVersion", "googleSyncButton", "googleSyncButtonMobile", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "floatingPresentationExit", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "transposeStepperValue", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar", "aiFabButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
+        cache() { ["brandVersion", "googleSyncButton", "googleSyncButtonMobile", "headerInstallBtn", "themeToggle", "settingsButton", "helpButton", "presentationButton", "floatingPresentationExit", "songSearch", "librarySortSelect", "libraryList", "songTitle", "songBody", "saveSongButton", "undoSongButton", "redoSongButton", "manageLibraryBtn", "scanQrBtn", "sidebarScanQrBtn", "importSharedButton", "infoSongButton", "loadDemoButton", "exitSharedButton", "saveStatus", "wordCount", "detectedKey", "activeKey", "chordCount", "transposeLabel", "keySelect", "capoSelect", "transposeDown", "transposeSelect", "transposeUp", "transposeStepperValue", "applyTransposeButton", "resetTransposeButton", "metronomeBpmRange", "metronomeBpmInput", "metronomeDown", "metronomeBeats", "metronomeUp", "beatRow", "metronomeToggle", "tapTempoButton", "metronomeStatus", "previewOutput", "copyLiveChartBtn", "exportOrientation", "exportColumns", "exportTxtButton", "exportPngButton", "exportPdfButton", "printButton", "copyButton", "shareButton", "modalHost", "modalBackdrop", "modalTitle", "modalMessage", "modalFields", "modalCancel", "modalConfirm", "toastHost", "presentation", "presentationTitle", "presentationFontDown", "presentationFontUp", "presentationOrientation", "presentationExit", "presentationStage", "presentationText", "presThemeToggle", "presMetronomeToggle", "presBeatRow", "presScrollToggle", "presScrollSpeed", "presScrollSpeedLabel", "presSetlistNav", "presSlPrev", "presSlIndicator", "presSlNext", "presTransposeGroup", "presTransposeDown", "presKeyBadge", "presTransposeUp", "printArea", "printTitle", "printBody", "printFooter", "circleRotateToggle", "circleHighlightToggle", "circleContainer", "fretboardTuning", "fretboardGrid", "theoryKeyInput", "theoryKeyOptions", "pianoKeyboard", "tunerReferenceButtons", "micTunerBtn", "tunerDisplay", "tunerNote", "tunerCents", "tunerNeedle", "setlistNav", "slPrev", "slTitle", "slNext", "slExit", "newSongButton", "langSelect", "langSelectSidebar", "appVersion", "sidebarVersion", "capoLabel", "menuToggleBtn", "sidebarDrawer", "sidebarBackdrop", "sidebarCloseBtn", "sidebarDriveSyncBtn", "sidebarSettingsBtn", "sidebarPresentBtn", "sidebarInstallBtn", "themeToggleMobile", "presentationButtonMobile", "instrumentKeyRoot", "instrumentKeyMode", "sidebarProfileContainer", "sidebarUserAvatar", "sidebarUserGreeting", "topbarProfileContainer", "topbarUserAvatar", "topbarUserGreeting", "mobileUserAvatar", "aiFabButton"].forEach(id => { const el = document.getElementById(id); if (el) this.dom[id] = el; }); },
         setupShortcutsAndGuards() {
           const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
           const mod = isMac ? '⌘' : 'Ctrl+';
@@ -3667,6 +3800,14 @@ Em -  C    -  G  -  D
                 }).catch(() => { cl.textContent = 'No release notes available offline.'; });
             }
           }
+          const aiFab = this.dom.aiFabButton || document.getElementById('aiFabButton');
+          const aiPanel = document.getElementById('aiChatPanel');
+          if (viewName === 'editor') {
+            if (aiFab) aiFab.style.display = '';
+          } else {
+            if (aiFab) aiFab.style.display = 'none';
+            if (aiPanel) aiPanel.classList.add('hidden');
+          }
           // Close sidebar if open
           this.closeSidebar();
         },
@@ -3674,13 +3815,13 @@ Em -  C    -  G  -  D
           this.dom.sidebarDrawer?.classList.add('open');
           this.dom.sidebarBackdrop?.classList.add('open');
           this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'true');
-          document.body.style.overflow = 'hidden';
+          if (document.body?.style) document.body.style.overflow = 'hidden';
         },
         closeSidebar() {
           this.dom.sidebarDrawer?.classList.remove('open');
           this.dom.sidebarBackdrop?.classList.remove('open');
           this.dom.menuToggleBtn?.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = '';
+          if (document.body?.style) document.body.style.overflow = '';
         },
         applyLanguage() {
           const lang = StateManager.state?.settings?.language || "en";
@@ -3738,12 +3879,12 @@ Em -  C    -  G  -  D
           
           // Sort Options
           const sortSelect = document.getElementById("librarySortSelect");
-          if (sortSelect) {
-            sortSelect.options[0].text = d.librarySortRecent;
-            sortSelect.options[1].text = d.librarySortTitle;
-            sortSelect.options[2].text = d.librarySortAuthor;
-            sortSelect.options[3].text = d.librarySortArranger;
-            sortSelect.options[4].text = d.librarySortKey;
+          if (sortSelect && sortSelect.options) {
+            if (sortSelect.options[0]) sortSelect.options[0].text = d.librarySortRecent;
+            if (sortSelect.options[1]) sortSelect.options[1].text = d.librarySortTitle;
+            if (sortSelect.options[2]) sortSelect.options[2].text = d.librarySortAuthor;
+            if (sortSelect.options[3]) sortSelect.options[3].text = d.librarySortArranger;
+            if (sortSelect.options[4]) sortSelect.options[4].text = d.librarySortKey;
           }
 
           // Library Filters
@@ -4163,10 +4304,63 @@ Em -  C    -  G  -  D
             if (typeof act.onConfirm === "function") act.onConfirm(values);
           });
 
-          add(this.dom.presentationExit, "click", () => { AudioEngine.playClick(); PresentationManager.close(); }); add(this.dom.presentationFontDown, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(-4); }); add(this.dom.presentationFontUp, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(4); }); add(this.dom.presentationOrientation, "change", () => PresentationManager.setOrientation(this.dom.presentationOrientation.value));
-          add(this.dom.presThemeToggle, "click", () => { AudioEngine.playClick(); PresentationManager.cycleTheme(); }); add(this.dom.presMetronomeToggle, "click", () => { AudioEngine.playClick(); MetronomeManager.toggle(); });
-          add(this.dom.presScrollToggle, "click", () => { AudioEngine.playClick(); ScrollManager.toggle("presentation"); }); add(this.dom.presScrollSpeed, "input", () => { StateManager.state.settings.autoScrollSpeed = Util.clamp(this.dom.presScrollSpeed.value, 0, 180); this.updateScrollControls(); StateManager.saveNow("Scroll speed saved"); });
-          add(this.dom.presentation, "mousemove", () => PresentationManager.startIdleTimer()); add(this.dom.presentation, "touchstart", () => PresentationManager.startIdleTimer(), { passive: true });
+          add(this.dom.presentationExit, "click", () => { AudioEngine.playClick(); PresentationManager.close(); });
+          add(this.dom.presentationFontDown, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(-4); });
+          add(this.dom.presentationFontUp, "click", () => { AudioEngine.playClick(); PresentationManager.changeFont(4); });
+          add(this.dom.presentationOrientation, "change", () => PresentationManager.setOrientation(this.dom.presentationOrientation.value));
+          add(this.dom.presTransposeDown, "click", () => { AudioEngine.playClick(); PresentationManager.transpose(-1); });
+          add(this.dom.presTransposeUp, "click", () => { AudioEngine.playClick(); PresentationManager.transpose(1); });
+          add(this.dom.presSlPrev, "click", () => { AudioEngine.playClick(); PresentationManager.stepSetlist(-1); });
+          add(this.dom.presSlNext, "click", () => { AudioEngine.playClick(); PresentationManager.stepSetlist(1); });
+          let lastStageTouchTime = 0;
+          let isTouchDragging = false;
+          let touchStartY = 0;
+          let touchStartX = 0;
+
+          add(this.dom.presentationStage, "touchstart", (e) => {
+            ScrollManager.pauseForUser();
+            isTouchDragging = false;
+            if (e.touches && e.touches[0]) {
+              touchStartY = e.touches[0].clientY;
+              touchStartX = e.touches[0].clientX;
+            }
+          }, { passive: true });
+
+          add(this.dom.presentationStage, "touchmove", (e) => {
+            if (e.touches && e.touches[0]) {
+              if (Math.abs(e.touches[0].clientY - touchStartY) > 10 || Math.abs(e.touches[0].clientX - touchStartX) > 10) {
+                isTouchDragging = true;
+              }
+            }
+          }, { passive: true });
+
+          add(this.dom.presentationStage, "touchend", (e) => {
+            lastStageTouchTime = Date.now();
+            if (!isTouchDragging) {
+              if (e.target.closest('button, select, input, a, .segmented, .presentation-controls, .presentation-header-row, .presentation-controls-bottom')) return;
+              PresentationManager.toggleIdle();
+            }
+          }, { passive: true });
+
+          add(this.dom.presentationStage, "click", (e) => {
+            if (Date.now() - lastStageTouchTime < 450) return;
+            if (e.target.closest('button, select, input, a, .segmented, .presentation-controls, .presentation-header-row, .presentation-controls-bottom')) return;
+            PresentationManager.toggleIdle();
+          });
+
+          add(this.dom.presentationStage, "wheel", () => {
+            ScrollManager.pauseForUser();
+          }, { passive: true });
+
+          add(this.dom.presThemeToggle, "click", () => { AudioEngine.playClick(); PresentationManager.cycleTheme(); });
+          add(this.dom.presMetronomeToggle, "click", () => { AudioEngine.playClick(); MetronomeManager.toggle(); });
+          add(this.dom.presScrollToggle, "click", () => { AudioEngine.playClick(); ScrollManager.toggle("presentation"); });
+          add(this.dom.presScrollSpeed, "input", () => {
+            StateManager.state.settings.autoScrollSpeed = Util.clamp(this.dom.presScrollSpeed.value, 0, 180);
+            this.updateScrollControls();
+            StateManager.saveNow("Scroll speed saved");
+          });
+          add(this.dom.presentation, "mousemove", () => PresentationManager.startIdleTimer());
 
           document.querySelectorAll(".help-icon").forEach(btn => add(btn, 'click', (e) => { e.stopPropagation(); AudioEngine.playClick(); if (HELP_TEXTS[btn.dataset.help]) PopoverManager.show(btn, HELP_TEXTS[btn.dataset.help]); }));
 
@@ -5441,9 +5635,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.5.4";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.5.4";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.4";
+                if (versionEl) versionEl.textContent = "v1.5.5";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.5";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.5";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {

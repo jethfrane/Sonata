@@ -3,7 +3,7 @@
 > **The modern, distraction-free chord chart editor and musical toolkit for musicians, bands, and worship teams.**
 
 [![Live on Vercel](https://img.shields.io/badge/Live%20Demo-Vercel-black?style=flat-square&logo=vercel)](https://jethfrane-sonata.vercel.app)
-[![Version](https://img.shields.io/badge/Version-1.5.4-blue?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/Version-1.5.5-blue?style=flat-square)](#)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](#)
 [![No Subscriptions](https://img.shields.io/badge/Cost-100%25%20Free-brightgreen?style=flat-square)](#)
 

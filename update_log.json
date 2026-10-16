@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.5.5",
+    "date": "2026-10-16",
+    "whatsNew": "Stage Mode Responsive Overhaul, Touch Interaction Hardening, In-Stage Transposition & Setlist Controls, Theory Circle Robustness",
+    "changes": [
+      "Re-engineered Present / Stage Mode top bar and controls layout to eliminate header overlap on all mobile screen sizes (320px–430px) and landscape orientations.",
+      "Added active in-stage transposition steppers (♭ / ♯) with real-time key badge updates, allowing musicians to transpose without leaving full screen.",
+      "Added on-stage setlist navigation (‹ Prev / Next ›) with counter badge for fluid setlist progression during live performances.",
+      "Fixed mobile bottom dock layout collisions by defeating input[type='range'] specificity override, ensuring the auto-scroll speed slider stays compact and within viewports.",
+      "Added thumb-pause autoscroll protection and drag vs tap discrimination to prevent accidental mode toggles while scrolling on touch devices.",
+      "Fixed Circle of Fifths Roman numeral and Nashville number rendering by ensuring KeyDetector always provides a valid fallback tonic, eliminating '?' glyphs on empty charts.",
+      "Scoped the AI Co-Writer floating button to display exclusively on the Editor tab and auto-hide when the drawer opens, preventing touch interference with the Virtual Piano, Fretboard, and Tools."
+    ]
+  },
+  {
     "version": "1.5.4",
     "date": "2026-10-16",
     "whatsNew": "Enharmonic Key Spelling, Circle of Fifths F# / Gb Precision, Stage Notation Switcher, Roman Slash Bass Degrees & Accessibility Hardening",
