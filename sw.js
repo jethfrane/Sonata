@@ -1,4 +1,5 @@
-// Sonata Service Worker - Disabled / Self-Destruct
+// Sonata Service Worker - v1.5.4
+const CACHE_NAME = 'sonata-cache-v1.5.4';
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });

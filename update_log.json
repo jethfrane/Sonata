@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.5.4",
+    "date": "2026-10-16",
+    "whatsNew": "Enharmonic Key Spelling, Circle of Fifths F# / Gb Precision, Stage Notation Switcher, Roman Slash Bass Degrees & Accessibility Hardening",
+    "changes": [
+      "Fixed Circle of Fifths sharp & enharmonic key family resolution so F# major accurately highlights F#, B, C#, and D#m (and Gb major highlights Gb, Cb, Db, Ebm).",
+      "Added full flat/sharp key support in Key Override alongside a persistent ♯ / ♭ Enharmonic Preference toggle in transposition controls.",
+      "Preserved active notation tab across Present / Stage Mode and added an on-stage notation switcher (Song, Transposed, Roman, Nashville, Lyrics).",
+      "Refined Roman Numeral slash chord bass notes to render as unambiguous scale-degree numerals (e.g. G/B -> I/3, D/F# -> V/7, G/F -> I/b7).",
+      "Normalized modal/drawer z-index layering, auto-collapsed the AI Co-Writer drawer when modals open, and added a 15s AbortController timeout with retry UI.",
+      "Hardened mobile split-editor switching, WCAG AA dark-mode contrast, Escape key dismissal, and ARIA roles/labels across tabs, piano keys, and Circle of Fifths wedges."
+    ]
+  },
+  {
     "version": "1.5.3",
     "date": "2026-09-21",
     "changes": [

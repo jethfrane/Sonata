@@ -14,24 +14,32 @@
       UI_FONT_OPTIONS = [{ value: "system", label: "System" }, { value: "rounded", label: "Rounded" }, { value: "serif", label: "Serif" }, { value: "mono", label: "Mono" }];
       CHART_FONT_OPTIONS = [{ value: "mono", label: "Mono" }, { value: "system", label: "System" }, { value: "serif", label: "Serif" }];
       ACCENT_THEMES = [{ value: "blue", label: "Blue" }, { value: "teal", label: "Teal" }, { value: "rose", label: "Rose" }, { value: "amber", label: "Amber" }, { value: "violet", label: "Violet" }, { value: "graphite", label: "Graphite" }];
-      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: false, haptics: true, autoScrollSpeed: 30, language: "en", autoFillArranger: true };
+      DEFAULT_SETTINGS = { theme: "light", accentTheme: "blue", uiFontFamily: "system", chartFontFamily: "mono", appFontSize: 15, editorFontSize: 15, previewFontSize: 14, editorLineHeight: 1.6, presentationFontSize: 42, metronomeVolume: 0.55, presentationOrientation: "auto", metronomeBpm: 90, metronomeBeats: 4, uiSounds: false, haptics: true, autoScrollSpeed: 30, language: "en", autoFillArranger: true, enharmonicPref: "auto" };
       FONT_STACKS = { system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', rounded: '"SF Pro Rounded", Nunito, sans-serif', serif: 'Georgia, serif', mono: 'ui-monospace, Menlo, Consolas, monospace' };
       STORAGE_KEYS = { songs: "sonata:v12:songs", settings: "sonata:v12:settings", activeSong: "sonata:v12:active", setlists: "sonata:v12:setlists" };
 
       const SHARP_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-      const FLAT_NOTES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
-      const KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
-      const MINOR_KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+      const FLAT_NOTES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+      const KEY_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+      const MINOR_KEY_ROOTS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+      const ALL_KEY_ROOTS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
+      const ALL_MINOR_KEY_ROOTS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B"];
       const NOTE_TO_SEMITONE = { C: 0, "B#": 0, "C#": 1, Db: 1, D: 2, "D#": 3, Eb: 3, E: 4, Fb: 4, "E#": 5, F: 5, "F#": 6, Gb: 6, G: 7, "G#": 8, Ab: 8, A: 9, "A#": 10, Bb: 10, B: 11, Cb: 11 };
       const SCALE_INTERVALS = { major: [0,2,4,5,7,9,11], minor: [0,2,3,5,7,8,10] };
 
       const CIRCLE_OF_FIFTHS = [
-        { major: "C", minor: "A", dim: "B", offset: 0 }, { major: "G", minor: "E", dim: "F#", offset: 7 },
-        { major: "D", minor: "B", dim: "C#", offset: 2 }, { major: "A", minor: "F#", dim: "G#", offset: 9 },
-        { major: "E", minor: "C#", dim: "Eb", offset: 4 }, { major: "B", minor: "G#", dim: "Bb", offset: 11 },
-        { major: "F#", minor: "Eb", dim: "F", offset: 6 }, { major: "C#", minor: "Bb", dim: "C", offset: 1 },
-        { major: "G#", minor: "F", dim: "G", offset: 8 }, { major: "Eb", minor: "C", dim: "D", offset: 3 },
-        { major: "Bb", minor: "G", dim: "A", offset: 10 }, { major: "F", minor: "D", dim: "E", offset: 5 }
+        { major: "C", minor: "A", dim: "B", offset: 0 },
+        { major: "G", minor: "E", dim: "F#", offset: 7 },
+        { major: "D", minor: "B", dim: "C#", offset: 2 },
+        { major: "A", minor: "F#", dim: "G#", offset: 9 },
+        { major: "E", minor: "C#", dim: "D#", sharpDim: "D#", flatDim: "Eb", offset: 4 },
+        { major: "B", sharpMajor: "B", flatMajor: "Cb", minor: "G#", sharpMinor: "G#", flatMinor: "Ab", dim: "A#", sharpDim: "A#", flatDim: "Bb", offset: 11 },
+        { major: "F#", sharpMajor: "F#", flatMajor: "Gb", minor: "D#", sharpMinor: "D#", flatMinor: "Eb", dim: "E#", sharpDim: "E#", flatDim: "F", offset: 6 },
+        { major: "Db", sharpMajor: "C#", flatMajor: "Db", minor: "Bb", sharpMinor: "A#", flatMinor: "Bb", dim: "C", sharpDim: "B#", flatDim: "C", offset: 1 },
+        { major: "Ab", sharpMajor: "G#", flatMajor: "Ab", minor: "F", sharpMinor: "E#", flatMinor: "F", dim: "G", offset: 8 },
+        { major: "Eb", minor: "C", dim: "D", offset: 3 },
+        { major: "Bb", minor: "G", dim: "A", offset: 10 },
+        { major: "F", minor: "D", dim: "E", offset: 5 }
       ];
 
       const DEMO_SONG = `# Amazing Grace (My Chains Are Gone)
@@ -2028,29 +2036,63 @@ Em -  C    -  G  -  D
       };
 
       const TransposeEngine = {
-        transposeText(text, steps, key) {
-          if (!steps) return text || "";
+        transposeText(text, steps, key, overridePref) {
+          const prefSetting = StateManager.state?.settings?.enharmonicPref || (typeof localStorage !== "undefined" ? localStorage.getItem("sonata_enharmonic_pref") : null) || "auto";
+          if (!steps && overridePref === undefined && prefSetting === "auto") return text || "";
           return (text || "").split("\n").map(line => {
             if (line.trim().startsWith('>') || line.trim().startsWith('//')) return line;
-            if (/\[[^\]]+\]/.test(line)) return line.replace(/\[([^\]]+)\]/g, (match, inner) => { const c = ChordParser.parse(inner.trim()); return c ? "[" + this.transposeChord(c, steps, key) + "]" : match; });
+            if (/\[[^\]]+\]/.test(line)) return line.replace(/\[([^\]]+)\]/g, (match, inner) => { const c = ChordParser.parse(inner.trim()); return c ? "[" + this.transposeChord(c, steps, key, overridePref) + "]" : match; });
             if (!ChordParser.isChordLine(line)) return line;
             return line.replace(/\S+/g, token => {
               if (/^-+$/.test(token) || token === "-") return token;
-              const p = ChordParser.parseToken(token); return p ? p.leading + this.transposeChord(p, steps, key) + p.trailing : token;
+              const p = ChordParser.parseToken(token); return p ? p.leading + this.transposeChord(p, steps, key, overridePref) + p.trailing : token;
             });
           }).join("\n");
         },
-        transposeChord(chord, steps, key) {
-          const rootVal = Util.mod(chord.rootValue + steps, 12);
-          const rootName = FLAT_NOTES[rootVal];
+        transposeChord(chord, steps = 0, key = null, overridePref = undefined) {
+          const parsed = typeof chord === "string" ? ChordParser.parse(chord) : chord;
+          if (!parsed) return typeof chord === "string" ? chord : "";
+          const useFlats = this.preferFlats(parsed, key, overridePref, steps);
+          const noteTable = useFlats ? FLAT_NOTES : SHARP_NOTES;
+          const rootVal = Util.mod(parsed.rootValue + steps, 12);
+          const rootName = noteTable[rootVal];
           let bassName = "";
-          if (chord.bass) {
-            const bassVal = Util.mod(chord.bassValue + steps, 12);
-            bassName = "/" + FLAT_NOTES[bassVal];
+          if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) {
+            const bassVal = Util.mod(parsed.bassValue + steps, 12);
+            bassName = "/" + noteTable[bassVal];
           }
-          return rootName + chord.quality + bassName + (chord.trailingSlashes || "");
+          return rootName + parsed.quality + bassName + (parsed.trailingSlashes || "");
         },
-        preferFlats(_chord, _key) { return false; }
+        preferFlats(chord, key, overridePref, steps = 0) {
+          if (typeof overridePref === "boolean") return overridePref;
+          if (overridePref === "flat" || overridePref === "flats" || overridePref === "b") return true;
+          if (overridePref === "sharp" || overridePref === "sharps" || overridePref === "#") return false;
+          if (typeof key === "boolean") return key;
+          if (key === "flat" || key === "flats" || key === "b") return true;
+          if (key === "sharp" || key === "sharps" || key === "#") return false;
+          if (key && typeof key === "object" && typeof key.preferFlats === "boolean") return key.preferFlats;
+
+          const pref = StateManager.state?.settings?.enharmonicPref || (typeof localStorage !== "undefined" ? localStorage.getItem("sonata_enharmonic_pref") : null) || "auto";
+          if (pref === "flat") return true;
+          if (pref === "sharp") return false;
+
+          const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key;
+          if (parsedKey && parsedKey.root) {
+            if (parsedKey.root.includes("b")) return true;
+            if (parsedKey.root.includes("#")) return false;
+            const mode = parsedKey.mode || "major";
+            const targetTonic = typeof parsedKey.tonic === "number" ? Util.mod(parsedKey.tonic + (steps || 0), 12) : (NOTE_TO_SEMITONE[parsedKey.root] ?? 0);
+            if (mode === "minor") {
+              return [2, 7, 0, 5, 10, 3].includes(targetTonic);
+            }
+            return [5, 10, 3, 8, 1].includes(targetTonic);
+          }
+          if (chord && typeof chord.root === "string") {
+            if (chord.root.includes("b")) return true;
+            if (chord.root.includes("#")) return false;
+          }
+          return false;
+        }
       };
 
       const KeyDetector = {
@@ -2059,7 +2101,8 @@ Em -  C    -  G  -  D
           if (!chords.length) return { root: "C", mode: "major", name: "Unknown", confidence: 0 };
           const cands = []; for (let t = 0; t < 12; t++) { cands.push(this.score(chords, t, "major")); cands.push(this.score(chords, t, "minor")); }
           cands.sort((a, b) => b.score - a.score); const best = cands[0];
-          return { ...best, root: this.nameFor(best.tonic, best.mode), name: this.nameFor(best.tonic, best.mode) + " " + best.mode, confidence: Math.round(Util.clamp((best.score - (cands[1]?.score || 0) + 1) * 12, 0, 99)) };
+          const rootName = this.nameFor(best.tonic, best.mode);
+          return { ...best, root: rootName, name: rootName + " " + best.mode, confidence: Math.round(Util.clamp((best.score - (cands[1]?.score || 0) + 1) * 12, 0, 99)) };
         },
         score(chords, tonic, mode) {
           const prof = mode === "major" ? { 0: 3, 2: 1.35, 4: 1.2, 5: 1.55, 7: 2.25, 9: 1.45, 11: 0.65, 3: 0.45, 8: 0.35, 10: 0.5 } : { 0: 3, 2: 0.7, 3: 1.75, 5: 1.45, 7: 1.55, 8: 1.45, 10: 1.35, 11: 0.55 };
@@ -2080,9 +2123,63 @@ Em -  C    -  G  -  D
           });
           return { tonic, mode, score };
         },
-        nameFor(s, m) { return m === "minor" ? MINOR_KEY_ROOTS[s] : KEY_ROOTS[s]; },
-        parseKey(value) { if (!value || value === "auto") return null; const parts = value.split(":"); return NOTE_TO_SEMITONE.hasOwnProperty(parts[0]) ? { root: parts[0], mode: parts[1], tonic: NOTE_TO_SEMITONE[parts[0]], name: parts[0] + " " + parts[1] } : null; },
-        activeKey(song, detected) { return this.parseKey(song?.manualKey) || detected || { root: "C", mode: "major", tonic: 0, name: "C major" }; }
+        nameFor(s, m, overridePref) {
+          const idx = Util.mod(s, 12);
+          const pref = overridePref || StateManager.state?.settings?.enharmonicPref || (typeof localStorage !== "undefined" ? localStorage.getItem("sonata_enharmonic_pref") : null) || "auto";
+          if (pref === "flat") return FLAT_NOTES[idx];
+          if (pref === "sharp") return SHARP_NOTES[idx];
+          return m === "minor" ? MINOR_KEY_ROOTS[idx] : KEY_ROOTS[idx];
+        },
+        parseKey(value) {
+          if (!value || value === "auto") return null;
+          if (typeof value === "object" && value.root && typeof value.tonic === "number") return value;
+          const cleaned = String(value).trim().replace(/♯/g, "#").replace(/♭/g, "b");
+          if (cleaned.includes(":")) {
+            const parts = cleaned.split(":");
+            let root = parts[0].trim();
+            root = root.charAt(0).toUpperCase() + root.slice(1).toLowerCase();
+            const mode = (parts[1] || "major").trim().toLowerCase() === "minor" ? "minor" : "major";
+            return NOTE_TO_SEMITONE.hasOwnProperty(root)
+              ? { root, mode, tonic: NOTE_TO_SEMITONE[root], name: root + " " + mode }
+              : null;
+          }
+          const match = cleaned.match(/^([A-Ga-g][#b]?)\s*(m|min|minor|maj|major)?$/i);
+          if (!match) return null;
+          const root = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+          if (!NOTE_TO_SEMITONE.hasOwnProperty(root)) return null;
+          const rawMode = (match[2] || "").toLowerCase();
+          const mode = (rawMode.startsWith("m") && !rawMode.startsWith("maj")) ? "minor" : "major";
+          return { root, mode, tonic: NOTE_TO_SEMITONE[root], name: root + " " + mode };
+        },
+        activeKey(song, detected) { return this.parseKey(song?.manualKey) || detected || { root: "C", mode: "major", tonic: 0, name: "C major" }; },
+        getKeyFamily(keyInput) {
+          const parsed = this.parseKey(keyInput) || { root: "C", mode: "major", tonic: 0, name: "C major" };
+          const isMinor = parsed.mode === "minor";
+          const useFlats = parsed.root.includes("b") ? true : (parsed.root.includes("#") ? false : TransposeEngine.preferFlats(null, parsed));
+          const targetIndex = CIRCLE_OF_FIFTHS.findIndex(k => NOTE_TO_SEMITONE[isMinor ? k.minor : k.major] === parsed.tonic);
+          if (targetIndex === -1) return [];
+          const pickMajor = (w) => useFlats ? (w.flatMajor || w.major) : (w.sharpMajor || w.major);
+          const pickMinor = (w) => (useFlats ? (w.flatMinor || w.minor) : (w.sharpMinor || w.minor)) + "m";
+          const pickDim = (w) => (useFlats ? (w.flatDim || w.dim) : (w.sharpDim || w.dim)) + "°";
+          const centerWedge = CIRCLE_OF_FIFTHS[targetIndex];
+          const ccwWedge = CIRCLE_OF_FIFTHS[Util.mod(targetIndex - 1, 12)];
+          const cwWedge = CIRCLE_OF_FIFTHS[Util.mod(targetIndex + 1, 12)];
+          const family = isMinor
+            ? [pickMinor(centerWedge), pickMinor(ccwWedge), pickMinor(cwWedge), pickMajor(centerWedge)]
+            : [pickMajor(centerWedge), pickMajor(ccwWedge), pickMajor(cwWedge), pickMinor(centerWedge)];
+          Object.defineProperties(family, {
+            tonic: { value: isMinor ? pickMinor(centerWedge) : pickMajor(centerWedge), enumerable: false },
+            subdominant: { value: isMinor ? pickMinor(ccwWedge) : pickMajor(ccwWedge), enumerable: false },
+            dominant: { value: isMinor ? pickMinor(cwWedge) : pickMajor(cwWedge), enumerable: false },
+            relativeMinor: { value: pickMinor(centerWedge), enumerable: false },
+            relativeMajor: { value: pickMajor(centerWedge), enumerable: false },
+            neighbors: { value: isMinor ? [pickMinor(ccwWedge), pickMinor(cwWedge)] : [pickMajor(ccwWedge), pickMajor(cwWedge)], enumerable: false },
+            diminished: { value: pickDim(centerWedge), enumerable: false },
+            preferFlats: { value: useFlats, enumerable: false },
+            wedgeIndex: { value: targetIndex, enumerable: false }
+          });
+          return family;
+        }
       };
 
       const FormatEngine = {
@@ -2102,20 +2199,21 @@ Em -  C    -  G  -  D
             });
           }).join("\n");
         },
-        romanChord(c, key) { const base = (key.mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(c.rootValue - key.tonic, 12)] || "?"; const q = ChordParser.classify(c); let num = base.replace(/[IVX]+/g, m => (q === "minor" || q === "diminished") ? m.toLowerCase() : m.toUpperCase()) + this.rSuffix(c.quality, q); if (c.bass) num += "/" + ((key.mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(c.bassValue - key.tonic, 12)] || "?"); return num + (c.trailingSlashes || ""); },
-        nashChord(c, key) { let num = (key.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(c.rootValue - key.tonic, 12)] || "?"; num += this.nSuffix(c.quality); if (c.bass) num += "/" + ((key.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(c.bassValue - key.tonic, 12)] || "?"); return num + (c.trailingSlashes || ""); },
+        romanChord(c, key) { const parsed = typeof c === "string" ? ChordParser.parse(c) : c; if (!parsed) return typeof c === "string" ? c : "?"; const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key; const base = (parsedKey.mode === "minor" ? this.rMinorMap : this.rMajorMap)[Util.mod(parsed.rootValue - parsedKey.tonic, 12)] || "?"; const q = ChordParser.classify(parsed); let num = base.replace(/[IVX]+/g, m => (q === "minor" || q === "diminished") ? m.toLowerCase() : m.toUpperCase()) + this.rSuffix(parsed.quality, q); if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) num += "/" + ((parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - parsedKey.tonic, 12)] || "?"); return num + (parsed.trailingSlashes || ""); },
+        nashChord(c, key) { const parsed = typeof c === "string" ? ChordParser.parse(c) : c; if (!parsed) return typeof c === "string" ? c : "?"; const parsedKey = typeof key === "string" ? KeyDetector.parseKey(key) : key; let num = (parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.rootValue - parsedKey.tonic, 12)] || "?"; num += this.nSuffix(parsed.quality); if (parsed.bass && parsed.bassValue !== null && parsed.bassValue !== undefined) num += "/" + ((parsedKey.mode === "minor" ? this.minorMap : this.majorMap)[Util.mod(parsed.bassValue - parsedKey.tonic, 12)] || "?"); return num + (parsed.trailingSlashes || ""); },
         rSuffix(q, className) { const lower = (q || "").replace(/\u00b0/g, "dim").toLowerCase(); if (!q || lower === "m" || lower === "min" || lower === "maj") return ""; if (className === "diminished" && lower === "dim") return "dim"; if (className === "augmented" && (lower === "aug" || q === "+")) return "aug"; if (/^(m|min)(6|7|9|11|13)/.test(lower)) return lower.replace(/^(m|min)/, ""); return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q; },
         nSuffix(q) { const lower = (q || "").replace(/\u00b0/g, "dim").toLowerCase(); if (!q || lower === "maj") return ""; if (lower === "min") return "m"; return q === "M7" ? "maj7" : q === "M9" ? "maj9" : q; }
       };
 
       const InstrumentManager = {
         manualOverride: false,
+        theoryKeyOverride: null,
         init() {
           this.renderCircle();
           // Populate instrument key root dropdown
           const rootSel = UIManager.dom.instrumentKeyRoot || document.getElementById('instrumentKeyRoot');
           if (rootSel && rootSel.options.length === 0) {
-            KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootSel.appendChild(o); });
+            ALL_KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootSel.appendChild(o); });
           }
           // Sync key selectors to current song key
           this.syncKeySelectors(true);
@@ -2125,28 +2223,33 @@ Em -  C    -  G  -  D
         },
         syncKeySelectors(force = false) {
           if (this.manualOverride && !force) return;
-          if (force) this.manualOverride = false;
+          if (force) {
+            this.manualOverride = false;
+            this.theoryKeyOverride = null;
+          }
           const song = StateManager.activeSong();
-          const baseAk = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          const baseAk = this.theoryKeyOverride || KeyDetector.activeKey(song, StateManager.state.detectedKey);
           if (baseAk) {
             let tonic = baseAk.tonic;
-            if (StateManager.state.transposeDelta) {
+            let rootName = baseAk.root || KeyDetector.nameFor(tonic, baseAk.mode);
+            if (StateManager.state.transposeDelta && !this.theoryKeyOverride) {
               tonic = Util.mod(tonic + StateManager.state.transposeDelta, 12);
+              const useFlats = TransposeEngine.preferFlats(null, baseAk, undefined, StateManager.state.transposeDelta);
+              rootName = (useFlats ? FLAT_NOTES : SHARP_NOTES)[tonic] || KeyDetector.nameFor(tonic, baseAk.mode);
             }
             const rootEl = UIManager.dom.instrumentKeyRoot || document.getElementById('instrumentKeyRoot');
             const modeEl = UIManager.dom.instrumentKeyMode || document.getElementById('instrumentKeyMode');
             const theoryInput = UIManager.dom.theoryKeyInput || document.getElementById('theoryKeyInput');
             if (rootEl) {
               if (rootEl.options.length === 0) {
-                KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootEl.appendChild(o); });
+                ALL_KEY_ROOTS.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rootEl.appendChild(o); });
               }
-              rootEl.value = KEY_ROOTS[tonic] || 'C';
+              rootEl.value = ALL_KEY_ROOTS.includes(rootName) ? rootName : (KEY_ROOTS[tonic] || 'C');
             }
             if (modeEl) {
               modeEl.value = baseAk.mode || 'major';
             }
             if (theoryInput) {
-              const rootName = KEY_ROOTS[tonic] || 'C';
               theoryInput.value = `${rootName} ${baseAk.mode || 'major'}`;
             }
             const stepVal = document.getElementById('transposeStepperValue') || UIManager.dom.transposeStepperValue;
@@ -2199,14 +2302,18 @@ Em -  C    -  G  -  D
           const container = UIManager.dom.circleContainer; if (!container) return;
           const autoRotate = UIManager.dom.circleRotateToggle?.checked ?? true;
           const highlight = UIManager.dom.circleHighlightToggle?.checked ?? true;
-          const activeKey = KeyDetector.activeKey(StateManager.activeSong(), StateManager.state.detectedKey);
-          const isMinorSelected = activeKey && activeKey.mode === 'minor';
+          const activeKey = this.theoryKeyOverride || KeyDetector.activeKey(StateManager.activeSong(), StateManager.state.detectedKey);
+          const isMinorSelected = Boolean(activeKey && activeKey.mode === 'minor');
+          const useFlats = activeKey?.root?.includes('b') ? true : (activeKey?.root?.includes('#') ? false : TransposeEngine.preferFlats(null, activeKey));
 
           let baseRotation = 0, targetIndex = -1;
-          if (activeKey) { targetIndex = CIRCLE_OF_FIFTHS.findIndex(k => NOTE_TO_SEMITONE[isMinorSelected ? k.minor : k.major] === activeKey.tonic); if (targetIndex >= 0 && autoRotate) baseRotation = -(targetIndex * 30); }
+          if (activeKey) {
+            targetIndex = CIRCLE_OF_FIFTHS.findIndex(k => NOTE_TO_SEMITONE[isMinorSelected ? k.minor : k.major] === activeKey.tonic);
+            if (targetIndex >= 0 && autoRotate) baseRotation = -(targetIndex * 30);
+          }
 
-          let svg = `<svg viewBox="0 0 360 360" width="100%" height="100%" style="transform: rotate(${baseRotation}deg); transition: transform 0.5s ease;">`;
-          svg += `<style>.slice{cursor:pointer;stroke:var(--line);stroke-width:1px;transition:fill 0.2s, opacity 0.3s;} .slice-major{fill:color-mix(in srgb, var(--accent) 15%, var(--surface-2));} .slice-minor{fill:color-mix(in srgb, var(--accent-2) 15%, var(--surface-3));} .slice-dim{fill:color-mix(in srgb, var(--warning) 15%, var(--surface-3));} .slice:hover{filter:brightness(0.9);} html[data-theme="dark"] .slice:hover{filter:brightness(1.2);} .slice.active-key.slice-major{fill:var(--accent);} .slice.active-key.slice-minor{fill:var(--accent-2);} .slice.active-key.slice-dim{fill:var(--warning);} .slice-text{font-family:var(--ui-font);text-anchor:middle;dominant-baseline:middle;fill:var(--text);font-weight:600;pointer-events:none;} .slice-num{fill:var(--muted);font-weight:700;} .active-key + .slice-text, .active-key + .slice-text .slice-num{fill:#fff !important;} .dimmed{opacity:0.15;}</style>`;
+          let svg = `<svg viewBox="0 0 360 360" width="100%" height="100%" role="group" aria-label="Interactive Circle of Fifths" style="transform: rotate(${baseRotation}deg); transition: transform 0.5s ease;">`;
+          svg += `<style>.slice{cursor:pointer;stroke:var(--line);stroke-width:1px;transition:fill 0.2s, opacity 0.3s;} .slice-major{fill:color-mix(in srgb, var(--accent) 15%, var(--surface-2));} .slice-minor{fill:color-mix(in srgb, var(--accent-2) 15%, var(--surface-3));} .slice-dim{fill:color-mix(in srgb, var(--warning) 15%, var(--surface-3));} .slice:hover{filter:brightness(0.9);} html[data-theme="dark"] .slice:hover{filter:brightness(1.2);} .slice.active-key.slice-major{fill:var(--accent);} .slice.active-key.slice-minor{fill:var(--accent-2);} .slice.active-key.slice-dim{fill:var(--warning);} .slice.family-key.slice-major:not(.active-key){fill:color-mix(in srgb, var(--accent) 34%, var(--surface-2));} .slice.family-key.slice-minor:not(.active-key){fill:color-mix(in srgb, var(--accent-2) 34%, var(--surface-3));} .slice-text{font-family:var(--ui-font);text-anchor:middle;dominant-baseline:middle;fill:var(--text);font-weight:600;pointer-events:none;} .slice-num{fill:var(--muted);font-weight:700;} .active-key + .slice-text, .active-key + .slice-text .slice-num{fill:#fff !important;} .dimmed{opacity:0.15;}</style>`;
 
           const cx = 180, cy = 180;
           const outerWedge = this.wedgePath(cx, cy, 178, 122, -15, 15);
@@ -2221,30 +2328,53 @@ Em -  C    -  G  -  D
             return false;
           };
 
+          const isPrimaryFamily = (i, ringType) => {
+            if (targetIndex === -1) return false;
+            let diff = i - targetIndex; if (diff < -6) diff += 12; if (diff > 5) diff -= 12;
+            if (!isMinorSelected) {
+              if (ringType === 'major') return diff >= -1 && diff <= 1;
+              if (ringType === 'minor') return diff === 0;
+            } else {
+              if (ringType === 'minor') return diff >= -1 && diff <= 1;
+              if (ringType === 'major') return diff === 0;
+            }
+            return false;
+          };
+
           CIRCLE_OF_FIFTHS.forEach((key, i) => {
             const rot = i * 30; const textRot = -(rot + baseRotation);
-            const outerKeyStr = isMinorSelected ? key.minor : key.major; const outerType = isMinorSelected ? 'minor' : 'major';
-            const midKeyStr = isMinorSelected ? key.major : key.minor; const midType = isMinorSelected ? 'major' : 'minor';
+            const majRoot = useFlats ? (key.flatMajor || key.major) : (key.sharpMajor || key.major);
+            const minRoot = useFlats ? (key.flatMinor || key.minor) : (key.sharpMinor || key.minor);
+            const dimRoot = useFlats ? (key.flatDim || key.dim) : (key.sharpDim || key.dim);
+
+            const outerKeyStr = isMinorSelected ? minRoot : majRoot; const outerType = isMinorSelected ? 'minor' : 'major';
+            const midKeyStr = isMinorSelected ? majRoot : minRoot; const midType = isMinorSelected ? 'major' : 'minor';
 
             const isOutActive = activeKey.tonic === NOTE_TO_SEMITONE[outerKeyStr] && activeKey.mode === outerType;
             const isMidActive = activeKey.tonic === NOTE_TO_SEMITONE[midKeyStr] && activeKey.mode === midType;
+            const isOutFamily = isPrimaryFamily(i, outerType);
+            const isMidFamily = isPrimaryFamily(i, midType);
 
             const fmt = StateManager.state.circleFormat === 'roman' ? 'romanChord' : 'nashChord';
             const rOut = FormatEngine[fmt]({ rootValue: NOTE_TO_SEMITONE[outerKeyStr], quality: outerType === 'minor' ? "m" : "" }, activeKey);
             const rMid = FormatEngine[fmt]({ rootValue: NOTE_TO_SEMITONE[midKeyStr], quality: midType === 'minor' ? "m" : "" }, activeKey);
-            const rDim = FormatEngine[fmt]({ rootValue: NOTE_TO_SEMITONE[key.dim], quality: "dim" }, activeKey);
+            const rDim = FormatEngine[fmt]({ rootValue: NOTE_TO_SEMITONE[dimRoot], quality: "dim" }, activeKey);
+
+            const outLabel = `${outerKeyStr}${isMinorSelected ? 'm' : ''}`;
+            const midLabel = `${midKeyStr}${isMinorSelected ? '' : 'm'}`;
+            const dimLabel = `${dimRoot}°`;
 
             svg += `<g transform="rotate(${rot}, 180, 180)">
-                      <path class="slice slice-${outerType} ${isOutActive ? 'active-key' : ''} ${!isDiatonic(i, outerType) ? 'dimmed' : ''}" d="${outerWedge}" data-midi="${60 + key.offset + (isMinorSelected ? -3 : 0)}" data-quality="${outerType}" />
-                      <text x="180" y="30" class="slice-text ${!isDiatonic(i, outerType) ? 'dimmed' : ''}" style="font-size:16px;" transform="rotate(${textRot}, 180, 30)"><tspan x="180" dy="-2">${outerKeyStr}${isMinorSelected ? 'm' : ''}</tspan><tspan x="180" dy="16" class="slice-num" style="font-size:11px;">${rOut}</tspan></text>
+                      <path class="slice slice-${outerType} ${isOutActive ? 'active-key' : ''} ${isOutFamily ? 'family-key' : ''} ${!isDiatonic(i, outerType) ? 'dimmed' : ''}" d="${outerWedge}" role="button" tabindex="0" aria-label="${outLabel} (${rOut})" data-key="${outLabel}" data-midi="${60 + key.offset + (isMinorSelected ? -3 : 0)}" data-quality="${outerType}" />
+                      <text x="180" y="30" class="slice-text ${!isDiatonic(i, outerType) ? 'dimmed' : ''}" style="font-size:16px;" transform="rotate(${textRot}, 180, 30)"><tspan x="180" dy="-2">${outLabel}</tspan><tspan x="180" dy="16" class="slice-num" style="font-size:11px;">${rOut}</tspan></text>
                   </g>`;
             svg += `<g transform="rotate(${rot}, 180, 180)">
-                      <path class="slice slice-${midType} ${isMidActive ? 'active-key' : ''} ${!isDiatonic(i, midType) ? 'dimmed' : ''}" d="${midWedge}" data-midi="${60 + key.offset + (isMinorSelected ? 0 : -3)}" data-quality="${midType}" />
-                      <text x="180" y="80" class="slice-text ${!isDiatonic(i, midType) ? 'dimmed' : ''}" style="font-size:14px;" transform="rotate(${textRot}, 180, 80)"><tspan x="180" dy="-2">${midKeyStr}${isMinorSelected ? '' : 'm'}</tspan><tspan x="180" dy="14" class="slice-num" style="font-size:10px;">${rMid}</tspan></text>
+                      <path class="slice slice-${midType} ${isMidActive ? 'active-key' : ''} ${isMidFamily ? 'family-key' : ''} ${!isDiatonic(i, midType) ? 'dimmed' : ''}" d="${midWedge}" role="button" tabindex="0" aria-label="${midLabel} (${rMid})" data-key="${midLabel}" data-midi="${60 + key.offset + (isMinorSelected ? 0 : -3)}" data-quality="${midType}" />
+                      <text x="180" y="80" class="slice-text ${!isDiatonic(i, midType) ? 'dimmed' : ''}" style="font-size:14px;" transform="rotate(${textRot}, 180, 80)"><tspan x="180" dy="-2">${midLabel}</tspan><tspan x="180" dy="14" class="slice-num" style="font-size:10px;">${rMid}</tspan></text>
                   </g>`;
             svg += `<g transform="rotate(${rot}, 180, 180)">
-                      <path class="slice slice-dim ${!isDiatonic(i, 'dim') ? 'dimmed' : ''}" d="${innerWedge}" data-midi="${60 + key.offset - 1}" data-quality="diminished" />
-                      <text x="180" y="118.5" class="slice-text ${!isDiatonic(i, 'dim') ? 'dimmed' : ''}" style="font-size:9.5px;" transform="rotate(${textRot}, 180, 118.5)"><tspan x="180" dy="-2.5">${key.dim}°</tspan><tspan x="180" dy="11" class="slice-num" style="font-size:7px;">${rDim}</tspan></text>
+                      <path class="slice slice-dim ${!isDiatonic(i, 'dim') ? 'dimmed' : ''}" d="${innerWedge}" role="button" tabindex="0" aria-label="${dimLabel} (${rDim})" data-key="${dimLabel}" data-midi="${60 + key.offset - 1}" data-quality="diminished" />
+                      <text x="180" y="118.5" class="slice-text ${!isDiatonic(i, 'dim') ? 'dimmed' : ''}" style="font-size:9.5px;" transform="rotate(${textRot}, 180, 118.5)"><tspan x="180" dy="-2.5">${dimLabel}</tspan><tspan x="180" dy="11" class="slice-num" style="font-size:7px;">${rDim}</tspan></text>
                   </g>`;
           });
           svg += `<circle cx="180" cy="180" r="42" fill="var(--surface)" stroke="var(--line)" /></svg>`;
@@ -2254,12 +2384,16 @@ Em -  C    -  G  -  D
             const play = (e) => { e.preventDefault(); AudioEngine.vibrate(10); if (activeNode) activeNode.stop(); activeNode = AudioEngine.playChord(parseInt(s.dataset.midi, 10), s.dataset.quality); };
             const stop = (e) => { e.preventDefault(); };
             s.addEventListener('mousedown', play); s.addEventListener('touchstart', play, { passive: false }); s.addEventListener('mouseup', stop); s.addEventListener('mouseleave', stop); s.addEventListener('touchend', stop);
+            s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { play(e); } });
           });
         },
         renderPiano() {
           const keyboard = UIManager.dom.pianoKeyboard; if (!keyboard) return; keyboard.innerHTML = '';
           const { tonic, scaleSet } = this.getScaleSet();
-          const notes = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'G#', 'A', 'Bb', 'B'];
+          const rootEl = UIManager.dom.instrumentKeyRoot || document.getElementById('instrumentKeyRoot');
+          const modeEl = UIManager.dom.instrumentKeyMode || document.getElementById('instrumentKeyMode');
+          const useFlats = TransposeEngine.preferFlats(null, { root: rootEl?.value || 'C', mode: modeEl?.value || 'major', tonic });
+          const notes = useFlats ? FLAT_NOTES : SHARP_NOTES;
           for (let octave = 3; octave <= 5; octave++) {
             for (let i = 0; i < 12; i++) {
               const isBlack = notes[i].includes('#') || notes[i].includes('b');
@@ -2269,6 +2403,10 @@ Em -  C    -  G  -  D
               if (pc === tonic) cls += ' key-root';
               else if (scaleSet.has(pc)) cls += ' key-in-scale';
               key.className = cls;
+              key.setAttribute('role', 'button');
+              key.setAttribute('tabindex', '0');
+              key.setAttribute('aria-label', `Play ${notes[i]}${octave}`);
+              key.setAttribute('data-note', `${notes[i]}${octave}`);
               const label = document.createElement('span');
               label.className = 'key-label';
               label.textContent = notes[i];
@@ -2276,7 +2414,7 @@ Em -  C    -  G  -  D
               const midi = (octave * 12) + i + 12;
               let activeNode = null;
               const play = (e) => {
-                if (e.type === 'touchstart') e.preventDefault();
+                if (e.type === 'touchstart' || e.type === 'keydown') e.preventDefault();
                 key.classList.add('active');
                 if (activeNode) activeNode.stop();
                 activeNode = AudioEngine.playPianoNote(AudioEngine.midiToFreq(midi), 0.6);
@@ -2290,6 +2428,8 @@ Em -  C    -  G  -  D
               key.addEventListener('mouseup', stop);
               key.addEventListener('mouseleave', stop);
               key.addEventListener('touchend', stop);
+              key.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') play(e); });
+              key.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') stop(e); });
               keyboard.appendChild(key);
             }
           }
@@ -2492,14 +2632,77 @@ Em -  C    -  G  -  D
       };
 
       const PresentationManager = {
-        idleTimer: null, themes: ["stage", "dark", "light"], themeIndex: 0,
-        open() { const song = StateManager.activeSong(); if (!song) return; UIManager.dom.presentationTitle.textContent = Util.titleOf(song); UIManager.dom.presentationText.innerHTML = UIManager.previewText(song, KeyDetector.activeKey(song, StateManager.state.detectedKey), false); UIManager.dom.presentation.hidden = false; UIManager.dom.presentationStage.scrollTop = 0; this.applySettings(); this.startIdleTimer(); const req = UIManager.dom.presentation.requestFullscreen || UIManager.dom.presentation.webkitRequestFullscreen; if (req) { try { const res = req.call(UIManager.dom.presentation); if (res && typeof res.catch === "function") res.catch(() => { }); } catch (e) { } } },
-        close() { ScrollManager.stop(); UIManager.dom.presentation.hidden = true; clearTimeout(this.idleTimer); UIManager.dom.presentation.classList.remove("idle"); if (document.fullscreenElement && document.exitFullscreen) { document.exitFullscreen().catch(() => { }); } },
+        idleTimer: null, themes: ["stage", "dark", "light"], themeIndex: 0, savedNotationTab: null, stageNotationMode: null,
+        open() {
+          const song = StateManager.activeSong();
+          if (!song) return;
+          this.savedNotationTab = StateManager.state.previewMode || "original";
+          this.stageNotationMode = this.savedNotationTab;
+          StateManager.state.currentNotationTab = this.savedNotationTab;
+          const aiPanel = document.getElementById("aiChatPanel");
+          if (aiPanel) aiPanel.classList.add("hidden");
+          const aiFab = document.getElementById("aiFabButton");
+          if (aiFab) aiFab.setAttribute("aria-expanded", "false");
+          if (UIManager.dom.presentationTitle) UIManager.dom.presentationTitle.textContent = Util.titleOf(song);
+          this.renderStage();
+          if (UIManager.dom.presentation) UIManager.dom.presentation.hidden = false;
+          if (UIManager.dom.presentationStage) UIManager.dom.presentationStage.scrollTop = 0;
+          this.applySettings();
+          this.startIdleTimer();
+          const req = UIManager.dom.presentation?.requestFullscreen || UIManager.dom.presentation?.webkitRequestFullscreen;
+          if (req) {
+            try {
+              const res = req.call(UIManager.dom.presentation);
+              if (res && typeof res.catch === "function") res.catch(() => { });
+            } catch (e) { }
+          }
+        },
+        renderStage() {
+          const song = StateManager.activeSong();
+          if (!song) return;
+          const prevMode = StateManager.state.previewMode;
+          const modeToRender = this.stageNotationMode || prevMode || "original";
+          StateManager.state.previewMode = modeToRender;
+          const ak = KeyDetector.activeKey(song, StateManager.state.detectedKey);
+          if (UIManager.dom.presentationText) {
+            UIManager.dom.presentationText.innerHTML = UIManager.previewText(song, ak, false);
+          }
+          StateManager.state.previewMode = prevMode;
+          document.querySelectorAll("[data-pres-notation]").forEach(btn => {
+            const isAct = btn.dataset.presNotation === modeToRender;
+            btn.classList.toggle("active", isAct);
+            btn.setAttribute("aria-selected", isAct ? "true" : "false");
+          });
+        },
+        setNotationMode(mode) {
+          this.stageNotationMode = mode || "original";
+          this.renderStage();
+        },
+        close() {
+          ScrollManager.stop();
+          if (UIManager.dom.presentation) {
+            UIManager.dom.presentation.hidden = true;
+            UIManager.dom.presentation.classList.remove("idle");
+          }
+          clearTimeout(this.idleTimer);
+          const restored = this.savedNotationTab || StateManager.state.previewMode || "original";
+          StateManager.state.previewMode = restored;
+          StateManager.state.currentNotationTab = restored;
+          document.querySelectorAll("[data-preview-mode]").forEach(btn => {
+            const isAct = btn.dataset.previewMode === restored;
+            btn.classList.toggle("active", isAct);
+            btn.setAttribute("aria-selected", isAct ? "true" : "false");
+          });
+          UIManager.updateAnalysis();
+          if (document.fullscreenElement && document.exitFullscreen) {
+            document.exitFullscreen().catch(() => { });
+          }
+        },
         changeFont(delta) { StateManager.state.settings.presentationFontSize = Util.clamp(StateManager.state.settings.presentationFontSize + delta, 16, 140); this.applySettings(); StateManager.saveNow("Font saved"); UIManager.toast("Font Size: " + StateManager.state.settings.presentationFontSize + "px"); },
         setOrientation(value) { StateManager.state.settings.presentationOrientation = value; this.applySettings(); StateManager.saveNow("Orientation saved"); },
         cycleTheme() { this.themeIndex = (this.themeIndex + 1) % this.themes.length; UIManager.dom.presentation.dataset.presTheme = this.themes[this.themeIndex]; UIManager.toast("Theme: " + this.themes[this.themeIndex].charAt(0).toUpperCase() + this.themes[this.themeIndex].slice(1)); },
-        applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--presentation-font", s.presentationFontSize + "px"); UIManager.dom.presentationOrientation.value = s.presentationOrientation; UIManager.dom.presentation.classList.toggle("orientation-portrait", s.presentationOrientation === "portrait"); UIManager.dom.presentation.classList.toggle("orientation-landscape", s.presentationOrientation === "landscape"); },
-        startIdleTimer() { clearTimeout(this.idleTimer); UIManager.dom.presentation.classList.remove("idle"); this.idleTimer = setTimeout(() => { UIManager.dom.presentation.classList.add("idle"); }, 3000); }
+        applySettings() { const s = StateManager.state.settings; document.documentElement.style.setProperty("--presentation-font", s.presentationFontSize + "px"); if (UIManager.dom.presentationOrientation) UIManager.dom.presentationOrientation.value = s.presentationOrientation; if (UIManager.dom.presentation) { UIManager.dom.presentation.classList.toggle("orientation-portrait", s.presentationOrientation === "portrait"); UIManager.dom.presentation.classList.toggle("orientation-landscape", s.presentationOrientation === "landscape"); } },
+        startIdleTimer() { clearTimeout(this.idleTimer); if (UIManager.dom.presentation) UIManager.dom.presentation.classList.remove("idle"); this.idleTimer = setTimeout(() => { if (UIManager.dom.presentation) UIManager.dom.presentation.classList.add("idle"); }, 3000); }
       };
 
       const ExportManager = {
@@ -3374,6 +3577,34 @@ Em -  C    -  G  -  D
               if (this.dom.saveSongButton && this.dom.saveSongButton.style.display !== 'none') {
                 this.dom.saveSongButton.click();
               }
+              return;
+            }
+            if (e.key === "Escape") {
+              if (typeof PopoverManager !== "undefined" && PopoverManager.activePopover) {
+                PopoverManager.hide();
+                return;
+              }
+              if (this.dom.modalHost && !this.dom.modalHost.hidden) {
+                e.preventDefault();
+                this.closeModal(true);
+                return;
+              }
+              const aiPanel = document.getElementById("aiChatPanel");
+              if (aiPanel && !aiPanel.classList.contains("hidden")) {
+                e.preventDefault();
+                aiPanel.classList.add("hidden");
+                this.dom.aiFabButton?.setAttribute("aria-expanded", "false");
+                return;
+              }
+              if (this.dom.presentation && !this.dom.presentation.hidden) {
+                e.preventDefault();
+                PresentationManager.close();
+                return;
+              }
+              if (this.dom.sidebarDrawer && this.dom.sidebarDrawer.classList.contains("open")) {
+                e.preventDefault();
+                this.closeSidebar();
+              }
             }
           });
 
@@ -3412,7 +3643,11 @@ Em -  C    -  G  -  D
           if (workspace) workspace.dataset.view = viewName;
           // Sync active state for all [data-view] buttons (top-nav, mobile-switcher, sidebar)
           document.querySelectorAll("[data-view]").forEach(btn => {
-            btn.classList.toggle("active", btn.dataset.view === viewName);
+            const isAct = btn.dataset.view === viewName;
+            btn.classList.toggle("active", isAct);
+            if (btn.getAttribute("role") === "tab") {
+              btn.setAttribute("aria-selected", isAct ? "true" : "false");
+            }
           });
           try { localStorage.setItem('sonata_active_view', viewName); } catch(e) { /* ignore */ }
           if (viewName === "theory") {
@@ -3715,7 +3950,7 @@ Em -  C    -  G  -  D
  
           add(this.dom.songSearch, "input", () => { StateManager.state.query = this.dom.songSearch.value; this.renderLibrarySoon(); });
           add(this.dom.librarySortSelect, "change", () => { this.renderLibrarySoon(); this.toast(t("sortedToast", "Sorted: ") + this.dom.librarySortSelect.options[this.dom.librarySortSelect.selectedIndex].text, "info"); });
-          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => i.classList.toggle("active", i === b)); this.renderLibrarySoon(); this.toast(t("filterToast", "Filter: ") + b.textContent, "info"); }));
+          document.querySelectorAll("[data-library-filter]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.libraryFilter = b.dataset.libraryFilter; document.querySelectorAll("[data-library-filter]").forEach(i => { const isAct = i === b; i.classList.toggle("active", isAct); i.setAttribute("aria-selected", isAct ? "true" : "false"); }); this.renderLibrarySoon(); this.toast(t("filterToast", "Filter: ") + b.textContent, "info"); }));
           add(this.dom.newSongButton, "click", () => {
             AudioEngine.playClick();
             if (StateManager.state.libraryFilter === 'setlists') {
@@ -3751,14 +3986,42 @@ Em -  C    -  G  -  D
           add(this.dom.slNext, "click", () => { AudioEngine.playClick(); const s = StateManager.state.activeSetlist; const set = StateManager.state.setlists.find(x => x.id === s.id); StateManager.playSetlist(s.id, Math.min(set.items.length - 1, s.index + 1)); Editor.loadActiveSong(); this.renderAll(); });
           add(this.dom.slExit, "click", () => { AudioEngine.playClick(); StateManager.exitSetlist(); Editor.loadActiveSong(); this.renderAll(); });
 
-          document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.previewMode = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(i => i.classList.toggle("active", i === b)); this.updateAnalysis(); this.toast("Layout: " + b.textContent, "info"); }));
+          document.querySelectorAll("[data-preview-mode]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.previewMode = b.dataset.previewMode; StateManager.state.currentNotationTab = b.dataset.previewMode; document.querySelectorAll("[data-preview-mode]").forEach(i => { const isAct = i === b; i.classList.toggle("active", isAct); i.setAttribute("aria-selected", isAct ? "true" : "false"); }); this.updateAnalysis(); this.toast("Layout: " + b.textContent, "info"); }));
+          document.querySelectorAll("[data-pres-notation]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); PresentationManager.setNotationMode(b.dataset.presNotation); }));
+          document.querySelectorAll("[data-enharmonic-pref]").forEach(b => add(b, "click", () => {
+            AudioEngine.playClick();
+            const pref = b.dataset.enharmonicPref || "auto";
+            StateManager.state.settings.enharmonicPref = pref;
+            try { localStorage.setItem("sonata_enharmonic_pref", pref); } catch (e) { /* ignore */ }
+            document.querySelectorAll("[data-enharmonic-pref]").forEach(i => {
+              const isAct = i === b;
+              i.classList.toggle("active", isAct);
+              i.setAttribute("aria-selected", isAct ? "true" : "false");
+            });
+            StateManager.saveNow("Enharmonic preference saved");
+            this.updateAnalysis();
+            InstrumentManager.renderCircle();
+            InstrumentManager.syncKeySelectors();
+            this.toast("Accidental spelling: " + b.textContent.trim(), "info");
+          }));
+          const savedEnharmonic = localStorage.getItem("sonata_enharmonic_pref") || StateManager.state?.settings?.enharmonicPref || "auto";
+          if (StateManager.state?.settings) StateManager.state.settings.enharmonicPref = savedEnharmonic;
+          document.querySelectorAll("[data-enharmonic-pref]").forEach(i => {
+            const isAct = i.dataset.enharmonicPref === savedEnharmonic;
+            i.classList.toggle("active", isAct);
+            i.setAttribute("aria-selected", isAct ? "true" : "false");
+          });
           document.querySelectorAll("[data-mobile-editor-pane]").forEach(btn => {
             add(btn, "click", () => {
               AudioEngine.playClick();
               const pane = btn.dataset.mobileEditorPane;
               const editorPanel = document.querySelector(".editor-panel");
               if (editorPanel) editorPanel.dataset.mobilePane = pane;
-              document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => b.classList.toggle("active", b === btn));
+              document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => {
+                const isAct = b === btn;
+                b.classList.toggle("active", isAct);
+                b.setAttribute("aria-selected", isAct ? "true" : "false");
+              });
               try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch(e) { /* ignore */ }
             });
           });
@@ -3766,12 +4029,45 @@ Em -  C    -  G  -  D
           const editorPanel = document.querySelector(".editor-panel");
           if (editorPanel) editorPanel.dataset.mobilePane = savedMobilePane;
           document.querySelectorAll("[data-mobile-editor-pane]").forEach(b => {
-            b.classList.toggle("active", b.dataset.mobileEditorPane === savedMobilePane);
+            const isAct = b.dataset.mobileEditorPane === savedMobilePane;
+            b.classList.toggle("active", isAct);
+            b.setAttribute("aria-selected", isAct ? "true" : "false");
           });
-          document.querySelectorAll("[data-circle-format]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.circleFormat = b.dataset.circleFormat; document.querySelectorAll("[data-circle-format]").forEach(i => i.classList.toggle("active", i === b)); InstrumentManager.renderCircle(); }));
+          document.querySelectorAll("[data-circle-format]").forEach(b => add(b, "click", () => { AudioEngine.playClick(); StateManager.state.circleFormat = b.dataset.circleFormat; document.querySelectorAll("[data-circle-format]").forEach(i => { const isAct = i === b; i.classList.toggle("active", isAct); i.setAttribute("aria-selected", isAct ? "true" : "false"); }); InstrumentManager.renderCircle(); }));
 
-          add(this.dom.keySelect, "change", () => { const song = StateManager.activeSong(); if (!song || song.readonly) { this.updateAnalysis(); return; } song.manualKey = this.dom.keySelect.value; StateManager.touch(song); StateManager.saveNow(t("keySaved", "Key saved")); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); });
-          add(this.dom.theoryKeyInput, "change", (e) => { const match = e.target.value.trim().match(/^([A-Ga-g][#bB]?)\s*(m|min|minor|maj|major|)?$/i); if (match) { let root = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase(); if (root.length === 2 && root[1] === 'B') root = root[0] + 'b'; let mode = (match[2] && match[2].toLowerCase().startsWith('m') && !match[2].toLowerCase().startsWith('maj')) ? 'minor' : 'major'; if (NOTE_TO_SEMITONE.hasOwnProperty(root)) { const song = StateManager.activeSong(); if (song && !song.readonly) { song.manualKey = `${root}:${mode}`; StateManager.touch(song); StateManager.saveNow(t("keyUpdated", "Key updated")); this.renderAll(); InstrumentManager.syncKeySelectors(); this.toast(t("keySetTo", "Key set to ") + `${root} ${mode}`, "info"); return; } } } this.toast(t("invalidKeyToast", "Invalid key. Try format 'G' or 'C#m'"), "error"); InstrumentManager.syncKeySelectors(); });
+          add(this.dom.keySelect, "change", () => { InstrumentManager.theoryKeyOverride = null; const song = StateManager.activeSong(); if (!song || song.readonly) { InstrumentManager.theoryKeyOverride = KeyDetector.parseKey(this.dom.keySelect.value); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); return; } song.manualKey = this.dom.keySelect.value; StateManager.touch(song); StateManager.saveNow(t("keySaved", "Key saved")); this.updateAnalysis(); InstrumentManager.renderCircle(); InstrumentManager.syncKeySelectors(); });
+          const handleTheoryKeyChange = (e, isCommit) => {
+            const parsed = KeyDetector.parseKey(e.target.value);
+            if (parsed) {
+              InstrumentManager.theoryKeyOverride = parsed;
+              const song = StateManager.activeSong();
+              if (song && !song.readonly) {
+                song.manualKey = `${parsed.root}:${parsed.mode}`;
+                if (isCommit) {
+                  StateManager.touch(song);
+                  StateManager.saveNow(t("keyUpdated", "Key updated"));
+                }
+              }
+              this.updateAnalysis();
+              InstrumentManager.renderCircle();
+              if (isCommit) {
+                InstrumentManager.syncKeySelectors();
+                this.toast(t("keySetTo", "Key set to ") + `${parsed.root} ${parsed.mode}`, "info");
+              }
+              return;
+            }
+            if (isCommit) {
+              this.toast(t("invalidKeyToast", "Invalid key. Try format 'G' or 'C#m'"), "error");
+              InstrumentManager.syncKeySelectors();
+            }
+          };
+          add(this.dom.theoryKeyInput, "change", (e) => handleTheoryKeyChange(e, true));
+          add(this.dom.theoryKeyInput, "input", (e) => {
+            const val = (e.target.value || "").trim();
+            if (/^[A-Ga-g][#b♯♭]?\s+(major|minor)$/i.test(val)) {
+              handleTheoryKeyChange(e, false);
+            }
+          });
 
           add(this.dom.capoSelect, "change", () => { StateManager.state.capo = parseInt(this.dom.capoSelect.value, 10); this.updateAnalysis(); this.toast(t("capoToast", "Capo ") + StateManager.state.capo, "info"); });
           add(this.dom.transposeSelect, "change", () => {
@@ -3878,7 +4174,7 @@ Em -  C    -  G  -  D
           add(this.dom.metronomeDown, "click", () => { AudioEngine.playClick(); MetronomeManager.setBpm(StateManager.state.settings.metronomeBpm - 1); }); add(this.dom.metronomeUp, "click", () => { AudioEngine.playClick(); MetronomeManager.setBpm(StateManager.state.settings.metronomeBpm + 1); }); add(this.dom.metronomeBeats, "change", () => MetronomeManager.setBeats(this.dom.metronomeBeats.value));
           add(this.dom.metronomeToggle, "click", () => { AudioEngine.playClick(); MetronomeManager.toggle(); }); add(this.dom.tapTempoButton, "click", () => { AudioEngine.playClick(); MetronomeManager.tap(); });
         },
-        populateKeySelect() { if (!this.dom.keySelect || !this.dom.theoryKeyOptions) return; this.dom.keySelect.innerHTML = '<option value="auto">Auto</option>'; this.dom.theoryKeyOptions.innerHTML = "";[{ mode: "major", roots: KEY_ROOTS }, { mode: "minor", roots: MINOR_KEY_ROOTS }].forEach(group => group.roots.forEach(root => { const label = root + " " + group.mode; this.dom.keySelect.innerHTML += `<option value="${root}:${group.mode}">${label}</option>`; this.dom.theoryKeyOptions.innerHTML += `<option value="${label}"></option>`; })); },
+        populateKeySelect() { if (!this.dom.keySelect || !this.dom.theoryKeyOptions) return; this.dom.keySelect.innerHTML = '<option value="auto">Auto</option>'; this.dom.theoryKeyOptions.innerHTML = "";[{ mode: "major", roots: ALL_KEY_ROOTS }, { mode: "minor", roots: ALL_MINOR_KEY_ROOTS }].forEach(group => group.roots.forEach(root => { const label = root + " " + group.mode; this.dom.keySelect.innerHTML += `<option value="${root}:${group.mode}">${label}</option>`; this.dom.theoryKeyOptions.innerHTML += `<option value="${label}"></option>`; })); },
         populateTransposeSelect() { if (!this.dom.transposeSelect) return; this.dom.transposeSelect.innerHTML = ""; for (let value = -24; value <= 24; value += 1) this.dom.transposeSelect.innerHTML += `<option value="${value}">${value > 0 ? "+" + value : value}</option>`; },
         updateScrollControls() { const speed = StateManager.state.settings.autoScrollSpeed; if (this.dom.presScrollSpeed) this.dom.presScrollSpeed.value = speed; if (this.dom.presScrollSpeedLabel) this.dom.presScrollSpeedLabel.textContent = speed; if (this.dom.presScrollToggle) Icon.set(this.dom.presScrollToggle, ScrollManager.running ? "pause" : "scroll", ScrollManager.running ? "Pause" : "Scroll", true); },
         updateSetlistNav() {
@@ -4365,6 +4661,11 @@ Em -  C    -  G  -  D
           this.modalAction = null;
         },
         openModal(options) {
+          const aiPanel = document.getElementById("aiChatPanel");
+          if (aiPanel && !aiPanel.classList.contains("hidden")) {
+            aiPanel.classList.add("hidden");
+            this.dom.aiFabButton?.setAttribute("aria-expanded", "false");
+          }
           this.modalAction = options;
           this.dom.modalTitle.textContent = options.title || "";
           this.dom.modalMessage.textContent = options.message || "";
@@ -5113,7 +5414,7 @@ Em -  C    -  G  -  D
         async init() {
           try {
             const isIOS = /ipad|iphone|ipod/.test(navigator.userAgent.toLowerCase()) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+            const isStandalone = window.navigator?.standalone || window.matchMedia?.('(display-mode: standalone)')?.matches;
 
             const headerBtn = document.getElementById('headerInstallBtn');
             if (headerBtn && !isStandalone) {
@@ -5140,9 +5441,9 @@ Em -  C    -  G  -  D
                 if (sidebarVersionEl) sidebarVersionEl.textContent = vStr;
               })
               .catch(() => {
-                if (versionEl) versionEl.textContent = "v1.5.3";
-                if (brandVersionEl) brandVersionEl.textContent = "v1.5.3";
-                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.3";
+                if (versionEl) versionEl.textContent = "v1.5.4";
+                if (brandVersionEl) brandVersionEl.textContent = "v1.5.4";
+                if (sidebarVersionEl) sidebarVersionEl.textContent = "v1.5.4";
               });
             // Populate sidebar language select options
             if (UIManager.dom.langSelectSidebar && UIManager.dom.langSelect) {
@@ -5274,7 +5575,7 @@ Em -  C    -  G  -  D
         }
       };
 
-      window.SonataAPI = { StateManager, ThemeManager, UIManager };
+      window.SonataAPI = { StateManager, ThemeManager, UIManager, ChordParser, TransposeEngine, KeyDetector, FormatEngine, PresentationManager, InstrumentManager };
       document.addEventListener("DOMContentLoaded", () => App.init());
     })();
 
@@ -5375,14 +5676,18 @@ Em -  C    -  G  -  D
 
     // Toggle Panel
     const togglePanel = () => {
-      aiPanel.classList.toggle('hidden');
-      if (!aiPanel.classList.contains('hidden')) {
+      const isHidden = aiPanel.classList.toggle('hidden');
+      aiFab.setAttribute('aria-expanded', isHidden ? 'false' : 'true');
+      if (!isHidden) {
         aiInput.focus();
       }
     };
     
     aiFab.addEventListener('click', togglePanel);
-    aiClose.addEventListener('click', () => aiPanel.classList.add('hidden'));
+    aiClose.addEventListener('click', () => {
+      aiPanel.classList.add('hidden');
+      aiFab.setAttribute('aria-expanded', 'false');
+    });
     
     // Load chat history
     try {
@@ -5396,9 +5701,12 @@ Em -  C    -  G  -  D
       localStorage.setItem('sonata_ai_chat', aiHistory.innerHTML);
     };
     
-    const appendMessage = (text, sender) => {
+    const appendMessage = (text, sender, options = {}) => {
       const div = document.createElement('div');
-      div.className = `ai-message ${sender}`;
+      div.className = `ai-message ${sender}${options.isError ? ' ai-message-error' : ''}`;
+      if (options.isError) {
+        div.setAttribute('role', 'alert');
+      }
       
       const actions = [];
       let displayHtml = text;
@@ -5438,9 +5746,21 @@ Em -  C    -  G  -  D
       }).join('');
 
       div.innerHTML = `<div style="margin:0;">${formattedText}</div>`;
-      
-      if (sender === 'assistant' && text.indexOf('<action') === -1) {
+
+      if (options.retryPrompt) {
+        const retryBtn = document.createElement('button');
+        retryBtn.type = 'button';
+        retryBtn.className = 'button secondary compact ai-retry-btn';
+        retryBtn.style.marginTop = '8px';
+        retryBtn.textContent = 'Retry';
+        retryBtn.addEventListener('click', () => {
+          div.remove();
+          askAI(options.retryPrompt);
+        });
+        div.appendChild(retryBtn);
+      } else if (sender === 'assistant' && text.indexOf('<action') === -1) {
         const replyBtn = document.createElement('button');
+        replyBtn.type = 'button';
         replyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polyline points="9 17 4 12 9 7"></polyline><path d="M20 18v-2a4 4 0 0 0-4-4H4"></path></svg> Reply`;
         replyBtn.className = 'icon-button ghost';
         replyBtn.style.fontSize = '0.75rem';
@@ -5449,17 +5769,18 @@ Em -  C    -  G  -  D
         replyBtn.style.display = 'flex';
         replyBtn.style.alignItems = 'center';
         replyBtn.style.width = 'fit-content';
-        replyBtn.onclick = () => {
-          const aiInput = document.getElementById('aiChatInput');
+        replyBtn.addEventListener('click', () => {
+          const aiInputEl = document.getElementById('aiChatInput');
           const snippet = text.replace(/<[^>]*>?/gm, '').substring(0, 50).replace(/\n/g, ' ') + (text.length > 50 ? '...' : '');
-          aiInput.value = `[Replying to: "${snippet}"]\n` + aiInput.value;
-          aiInput.focus();
-        };
+          aiInputEl.value = `[Replying to: "${snippet}"]\n` + aiInputEl.value;
+          aiInputEl.focus();
+        });
         div.appendChild(replyBtn);
       }
       
       if (actions.length > 0) {
         const actionBtn = document.createElement('button');
+        actionBtn.type = 'button';
         actionBtn.className = 'ai-action-btn button full-width';
         actionBtn.style.marginTop = '12px';
         actionBtn.style.background = 'var(--accent)';
@@ -5482,7 +5803,7 @@ Em -  C    -  G  -  D
         actionBtn.dataset.state = 'ready';
         let previousStates = new Array(actions.length).fill(null);
         
-        actionBtn.onclick = () => {
+        actionBtn.addEventListener('click', () => {
             try {
               if (actionBtn.dataset.state === 'applied') {
                 // UNDO ALL (in reverse order)
@@ -5513,7 +5834,6 @@ Em -  C    -  G  -  D
                 actionBtn.style.color = '#fff';
               } else {
                 // APPLY ALL
-
                 actions.forEach((action, i) => {
                     if (action.type === 'replace_editor') {
                         const songBody = document.getElementById('songBody');
@@ -5552,7 +5872,6 @@ Em -  C    -  G  -  D
                         }
                     } else if (action.type === 'navigate') {
                         UIManager.switchView(action.value);
-
                     }
                 });
                 
@@ -5570,7 +5889,7 @@ Em -  C    -  G  -  D
                 }
               }
             } catch(e) { console.error(e); }
-        };
+        });
         div.appendChild(actionBtn);
       }
       
@@ -5579,15 +5898,17 @@ Em -  C    -  G  -  D
       saveChat();
     };
     
-    const askAI = async () => {
-      const prompt = aiInput.value.trim();
+    const askAI = async (retryText = null) => {
+      const prompt = typeof retryText === 'string' && retryText.trim() ? retryText.trim() : aiInput.value.trim();
       if (!prompt) return;
       
-      appendMessage(prompt, 'user');
-      aiInput.value = '';
+      if (typeof retryText !== 'string' || !retryText.trim()) {
+        appendMessage(prompt, 'user');
+        aiInput.value = '';
+      }
       
       const typingIndicator = document.createElement('div');
-      typingIndicator.className = 'ai-message assistant';
+      typingIndicator.className = 'ai-message assistant ai-thinking';
       typingIndicator.innerHTML = '<div style="margin:0; color: var(--muted);"><em>Thinking... 🎵</em></div>';
       aiHistory.appendChild(typingIndicator);
       aiHistory.scrollTop = aiHistory.scrollHeight;
@@ -5596,22 +5917,26 @@ Em -  C    -  G  -  D
       const songBody = document.getElementById('songBody');
       const context = songBody ? songBody.value : "";
       const apiKey = localStorage.getItem('sonata_gemini_api_key') || "";
+      const timeoutMs = window.__SONATA_AI_TIMEOUT_MS || 15000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       
       try {
         const response = await fetch('/api/ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, context, apiKey })
+          body: JSON.stringify({ prompt, context, apiKey }),
+          signal: controller.signal
         });
-        
+        clearTimeout(timeoutId);
         typingIndicator.remove();
         
         if (response.status === 429) {
           if (!apiKey) {
-            appendMessage("Whoa, Sonata is super popular today! Our shared public AI quota has been reached. To keep using the Co-Writer right now, click the ⚙️ settings icon above to plug in your own free Google Gemini API key.", 'assistant');
+            appendMessage("Whoa, Sonata is super popular today! Our shared public AI quota has been reached. To keep using the Co-Writer right now, click the ⚙️ settings icon above to plug in your own free Google Gemini API key.", 'assistant', { isError: true, retryPrompt: prompt });
           } else {
             const errData = await response.json().catch(()=>({}));
-            appendMessage(errData.error || "You have hit the limit on your personal API key.", 'assistant');
+            appendMessage(errData.error || "You have hit the limit on your personal API key.", 'assistant', { isError: true, retryPrompt: prompt });
           }
           return;
         }
@@ -5625,13 +5950,20 @@ Em -  C    -  G  -  D
         appendMessage(data.reply, 'assistant');
         
       } catch (err) {
+        clearTimeout(timeoutId);
         typingIndicator.remove();
-        console.error(err);
-        appendMessage(`Oops, AI error: ${err.message}. Ensure you are connected to the internet or check API keys.`, 'assistant');
+        const isAbort = err && (err.name === 'AbortError' || String(err.message || '').toLowerCase().includes('abort'));
+        const friendlyMsg = isAbort
+          ? 'AI request timed out after 15 seconds. Please check your connection or API key and try again.'
+          : `AI error: ${err.message || 'Unable to reach AI service'}. Ensure you are connected to the internet or check your API key.`;
+        appendMessage(friendlyMsg, 'assistant', { isError: true, retryPrompt: prompt });
       }
     };
     
-    aiSend.addEventListener('click', askAI);
+    if (window.SonataAPI) {
+      window.SonataAPI.askAI = askAI;
+    }
+    aiSend.addEventListener('click', () => askAI());
     aiInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();

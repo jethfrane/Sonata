@@ -60,7 +60,7 @@
         <img src="icon.png" alt="Sonata" class="brand-logo" width="32" height="32" aria-hidden="true" />
         <div class="brand-text">
           <span class="brand-title">Sonata</span>
-          <span id="sidebarVersion" class="brand-subtitle"></span>
+          <span id="sidebarVersion" class="brand-subtitle">v1.5.4</span>
         </div>
       </div>
       <button id="sidebarCloseBtn" class="icon-button ghost" data-icon="x" type="button" aria-label="Close menu"></button>
@@ -68,12 +68,12 @@
 
     <!-- Sidebar nav (mirrors top-nav for tablet/mobile) -->
     <nav class="sidebar-nav" role="tablist" aria-label="Main navigation">
-      <button class="sidebar-nav-btn active" data-view="editor" data-icon="edit" type="button">Editor</button>
-      <button class="sidebar-nav-btn" data-view="library" data-icon="library" type="button">Library</button>
-      <button class="sidebar-nav-btn" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
-      <button class="sidebar-nav-btn" data-view="theory" data-icon="aperture" type="button">Theory</button>
-      <button class="sidebar-nav-btn" data-view="instruments" data-icon="music" type="button">Play</button>
-      <button class="sidebar-nav-btn" data-view="about" data-icon="info" type="button">About Sonata</button>
+      <button class="sidebar-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-editor" data-view="editor" data-icon="edit" type="button">Editor</button>
+      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-library" data-view="library" data-icon="library" type="button">Library</button>
+      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-tools" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
+      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-theory" data-view="theory" data-icon="aperture" type="button">Theory</button>
+      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-instruments" data-view="instruments" data-icon="music" type="button">Play</button>
+      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-about" data-view="about" data-icon="info" type="button">About Sonata</button>
     </nav>
 
     <div class="sidebar-divider"></div>
@@ -95,7 +95,7 @@
         <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);">Hi, Musician!</span>
       </div>
       <label class="sidebar-label" for="langSelectSidebar">Language</label>
-      <select id="langSelectSidebar" class="select" style="width:100%;"></select>
+      <select id="langSelectSidebar" class="select" style="width:100%;" aria-label="Language"></select>
       <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button">Install App</button>
     </div>
   </aside>
@@ -110,7 +110,7 @@
         <div class="brand-text">
           <div style="display:flex; align-items:center; gap:6px;">
             <h1 class="brand-title">Sonata</h1>
-            <span class="version-badge" id="brandVersion">v1.5.3</span>
+            <span class="version-badge" id="brandVersion">v1.5.4</span>
           </div>
           <p class="brand-subtitle">Offline tool for musicians</p>
         </div>
@@ -118,11 +118,11 @@
 
       <!-- Desktop tab nav pill -->
       <nav class="top-nav" role="tablist" aria-label="Main navigation">
-        <button class="top-nav-btn active" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
-        <button class="top-nav-btn" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
-        <button class="top-nav-btn" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
-        <button class="top-nav-btn" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
-        <button class="top-nav-btn" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
+        <button class="top-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-editor" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
+        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-library" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
+        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-tools" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
+        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-theory" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
+        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-instruments" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
       </nav>
 
       <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
@@ -137,7 +137,7 @@
         <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle dark mode" title="Toggle Theme"></button>
         <button class="button ghost" id="settingsButton" data-icon="settings" type="button" title="Settings"><span class="button-label">Settings</span></button>
         <button class="button primary" id="presentationButton" data-icon="presentation" type="button" title="Presentation Mode"><span class="button-label">Present</span></button>
-        <select id="langSelect" class="select" title="Language">
+        <select id="langSelect" class="select" title="Language" aria-label="Language">
           <option value="en" selected>English</option>
           <option value="fil">Filipino</option>
         </select>
@@ -153,18 +153,18 @@
       </div>
     </header>
 
-    <nav class="mobile-view-switcher" aria-label="Mobile navigation">
-      <button class="tab-button active" type="button" data-view="editor" data-icon="edit">Editor</button>
-      <button class="tab-button" type="button" data-view="library" data-icon="library">Library</button>
-      <button class="tab-button" type="button" data-view="tools" data-icon="sliders">Tools</button>
-      <button class="tab-button" type="button" data-view="theory" data-icon="aperture">Theory</button>
-      <button class="tab-button" type="button" data-view="instruments" data-icon="music">Play</button>
+    <nav class="mobile-view-switcher" role="tablist" aria-label="Mobile navigation">
+      <button class="tab-button active" role="tab" aria-selected="true" aria-controls="panel-editor" type="button" data-view="editor" data-icon="edit">Editor</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-library" type="button" data-view="library" data-icon="library">Library</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-tools" type="button" data-view="tools" data-icon="sliders">Tools</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-theory" type="button" data-view="theory" data-icon="aperture">Theory</button>
+      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-instruments" type="button" data-view="instruments" data-icon="music">Play</button>
     </nav>
 
     <main class="workspace" data-view="editor">
 
       <!-- 1. LIBRARY PAGE -->
-      <aside class="panel library-panel" aria-label="Song library">
+      <aside class="panel library-panel" id="panel-library" role="tabpanel" aria-label="Song library">
         <div class="panel-heading">
           <h2>Song Library <button class="help-icon" data-help="library" type="button" aria-label="Help with Song Library">?</button></h2>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
@@ -180,7 +180,7 @@
             <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics..." autocomplete="off" style="margin:0;">
           </div>
           <div class="select-wrapper" style="width:120px;">
-            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;" title="Sort Library">
+            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;" title="Sort Library" aria-label="Sort Library">
               <option value="recent">Recent</option>
               <option value="title">Title</option>
               <option value="author">Author</option>
@@ -188,17 +188,17 @@
               <option value="key">Key</option>
             </select>
           </div>
-          <div class="segmented" role="tablist">
-            <button class="tab-button active" type="button" data-library-filter="all">All</button>
-            <button class="tab-button" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
-            <button class="tab-button" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
+          <div class="segmented" role="tablist" aria-label="Library filter">
+            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="libraryList" type="button" data-library-filter="all">All</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="libraryList" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="libraryList" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
           </div>
         </div>
         <div class="library-list" id="libraryList" aria-live="polite"></div>
       </aside>
 
       <!-- 2. EDITOR PAGE (SPLIT VIEW ON DESKTOP) -->
-      <section class="panel editor-panel" aria-label="Song editor">
+      <section class="panel editor-panel" id="panel-editor" data-mobile-pane="edit" role="tabpanel" aria-label="Song editor">
         <label class="visually-hidden" for="songTitle">Song title</label>
         <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
         <div id="editorMetadataBar"
@@ -220,17 +220,16 @@
             <button class="button" id="exitSharedButton" data-icon="x" type="button" style="display:none;">Close
               Preview</button>
           </div>
-          <div class="desktop-preview-mode-switch segmented" role="tablist">
-            <button class="tab-button active" type="button" data-preview-mode="original">Song</button>
-            <button class="tab-button" type="button" data-preview-mode="transposed">Transposed</button>
-            <button class="tab-button" type="button" data-preview-mode="roman">Roman</button>
-            <button class="tab-button" type="button" data-preview-mode="nashville">Nashville</button>
-            <button class="tab-button" type="button" data-preview-mode="lyrics">Lyrics</button>
+          <div class="desktop-preview-mode-switch segmented" role="tablist" aria-label="Chart notation mode">
+            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="previewOutput" type="button" data-preview-mode="original">Song</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="transposed">Transposed</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="roman">Roman</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="nashville">Nashville</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="lyrics">Lyrics</button>
           </div>
-          <div class="mobile-editor-mode-toggle segmented" role="tablist" id="mobileEditorModeToggle">
-            <button class="tab-button active" type="button" data-mobile-editor-pane="edit" data-icon="edit">Edit</button>
-            <button class="tab-button" type="button" data-mobile-editor-pane="preview" data-icon="eye">Preview</button>
-            <button class="tab-button" type="button" data-mobile-editor-pane="split" data-icon="columns">Split</button>
+          <div class="mobile-editor-mode-toggle segmented" role="tablist" id="mobileEditorModeToggle" aria-label="Mobile editor view mode">
+            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="editorPaneLeft" type="button" data-mobile-editor-pane="edit" data-icon="edit">Edit Chart</button>
+            <button class="tab-button" role="tab" aria-selected="false" aria-controls="editorPaneRight" type="button" data-mobile-editor-pane="preview" data-icon="eye">Live Preview</button>
           </div>
           <div class="status-line saved" id="saveStatus" aria-live="polite">Ready</div>
         </div>
@@ -246,7 +245,7 @@
         </div>
 
         <div class="editor-split-container">
-          <div class="editor-pane-left">
+          <div class="editor-pane-left" id="editorPaneLeft">
             <div class="pane-header">
               <span class="pane-tag">CHORD &amp; LYRIC EDITOR</span>
               <span class="muted" style="font-size:0.72rem;"># Section &bull; [Chord] inline</span>
@@ -274,7 +273,7 @@
               </div>
             </div>
           </div>
-          <div class="editor-pane-right">
+          <div class="editor-pane-right" id="editorPaneRight">
             <div class="pane-header">
               <span class="pane-tag">LIVE CHART PREVIEW</span>
               <div style="display:flex; gap:4px; align-items:center;">
@@ -288,7 +287,8 @@
       </section>
 
       <!-- 3. TOOLS & EXPORT PAGE -->
-      <aside class="panel tools-panel" aria-label="Music tools">
+      <!-- 3. TOOLS & EXPORT PAGE -->
+      <aside class="panel tools-panel" id="panel-tools" role="tabpanel" aria-label="Music tools">
         <div class="tools-grid-layout">
           <!-- Card 1: Music Analysis & Transposition -->
           <div class="tool-dashboard-card">
@@ -303,10 +303,18 @@
               <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
             </div>
             <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
-                  type="button" aria-label="Help with Key override">?</button></label><select class="select" id="keySelect"></select></div>
+                  type="button" aria-label="Help with Key override">?</button></label><select class="select" id="keySelect" aria-label="Key override"></select></div>
             <div class="field">
-              <label id="capoLabel" for="capoSelect"></label>
-              <select class="select" id="capoSelect">
+              <label for="enharmonicPrefGroup" id="enharmonicPrefLabel">Enharmonic spelling (♯ / ♭)</label>
+              <div class="segmented" id="enharmonicPrefGroup" role="tablist" aria-label="Enharmonic spelling preference" style="width:100%; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr));">
+                <button class="tab-button active" role="tab" aria-selected="true" aria-controls="previewOutput" type="button" data-enharmonic-pref="auto">Auto</button>
+                <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-enharmonic-pref="sharp">♯ Sharp</button>
+                <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-enharmonic-pref="flat">♭ Flat</button>
+              </div>
+            </div>
+            <div class="field">
+              <label id="capoLabel" for="capoSelect">Capo</label>
+              <select class="select" id="capoSelect" aria-label="Capo">
                 <option value="0">No Capo</option>
                 <option value="1">Capo 1</option>
                 <option value="2">Capo 2</option>
@@ -328,7 +336,7 @@
               <div class="transpose-box"
                 style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
                   class="icon-button ghost" id="transposeDown" data-icon="minus" type="button"
-                  aria-label="Transpose down"></button><select class="select" id="transposeSelect"
+                  aria-label="Transpose down"></button><select class="select" id="transposeSelect" aria-label="Transpose semitones"
                   style="text-align:center; font-weight: 600;"></select><span class="transpose-stepper-value" id="transposeStepperValue" aria-live="polite">0</span><button class="icon-button ghost" id="transposeUp"
                   data-icon="plus" type="button" aria-label="Transpose up"></button></div>
             </div>
@@ -349,7 +357,7 @@
               style="display:grid; grid-template-columns: 36px minmax(0, 1fr) 36px 64px; gap:8px; align-items:center;">
               <button class="icon-button" id="metronomeDown" data-icon="minus" type="button"
                 aria-label="Slower"></button>
-              <input class="input" id="metronomeBpmInput" type="number" min="30" max="500" step="1" value="90"
+              <input class="input" id="metronomeBpmInput" type="number" min="30" max="500" step="1" value="90" aria-label="Metronome BPM value"
                 style="text-align: center; padding: 0 4px; font-weight: 700; font-size: 1rem;">
               <button class="icon-button" id="metronomeUp" data-icon="plus" type="button" aria-label="Faster"></button>
               <select class="select" id="metronomeBeats" aria-label="Beats" style="padding: 0 6px; font-weight: 600;">
@@ -396,14 +404,14 @@
       </aside>
 
       <!-- 4. THEORY PAGE -->
-      <aside class="panel theory-panel" aria-label="Music Theory">
+      <aside class="panel theory-panel" id="panel-theory" role="tabpanel" aria-label="Music Theory">
         <div class="panel-heading">
           <h2>Circle of 5th's</h2>
           <div style="display:flex; gap:8px; align-items:center;">
-            <div class="segmented" style="padding:2px; display:inline-flex;">
-              <button class="tab-button active" type="button" data-circle-format="roman"
+            <div class="segmented" role="tablist" aria-label="Circle notation format" style="padding:2px; display:inline-flex;">
+              <button class="tab-button active" role="tab" aria-selected="true" aria-controls="circleContainer" type="button" data-circle-format="roman"
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
-              <button class="tab-button" type="button" data-circle-format="nashville"
+              <button class="tab-button" role="tab" aria-selected="false" aria-controls="circleContainer" type="button" data-circle-format="nashville"
                 style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
             </div><button class="help-icon" data-help="circle" type="button" aria-label="Help with Circle of Fifths">?</button>
           </div>
@@ -412,7 +420,7 @@
             style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
               class="help-icon" data-help="theoryKey" type="button" aria-label="Help with Theory Key Selection"
               style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
-            id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor"
+            id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor" aria-label="Active Key"
             autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
         <div class="field"
           style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 8px;">
@@ -425,35 +433,35 @@
             id="circleHighlightToggle" checked
             style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
         </div>
-        <div class="circle-container" id="circleContainer"></div>
+        <div class="circle-container" id="circleContainer" role="region" aria-label="Interactive Circle of Fifths"></div>
         <div class="explanation-text"><strong>How it works:</strong> The Circle organizes keys mathematically. Toggle
           'Highlight Key Family' to instantly reveal the 7 diatonic chords (I, ii, iii, IV, V, vi, vii°) that
           naturally belong in your active song.</div>
       </aside>
 
       <!-- 5. PLAY / INSTRUMENTS PAGE -->
-      <aside class="panel instrument-panel" aria-label="Instruments">
+      <aside class="panel instrument-panel" id="panel-instruments" role="tabpanel" aria-label="Instruments">
         <div class="panel-heading" style="margin-bottom:0;">
           <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button" aria-label="Help with Virtual Piano">?</button></h2>
           <!-- Key highlight selector -->
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <label style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
-            <select id="instrumentKeyRoot" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
-            <select id="instrumentKeyMode" class="select" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
+            <label for="instrumentKeyRoot" style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
+            <select id="instrumentKeyRoot" class="select" aria-label="Highlight key root" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
+            <select id="instrumentKeyMode" class="select" aria-label="Highlight key mode" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
               <option value="major">Major</option>
               <option value="minor">Minor</option>
             </select>
           </div>
         </div>
         <div class="piano-container">
-          <div class="piano-scroll" id="pianoKeyboard"></div>
+          <div class="piano-scroll" id="pianoKeyboard" role="group" aria-label="Virtual Piano Keyboard"></div>
         </div>
         <div class="explanation-text" style="margin-top:0;">Scroll horizontally to view more octaves. Touch and hold
           keys to sustain the note.</div>
 
         <div class="panel-heading" style="margin-top:24px;">
           <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button" aria-label="Help with Fretboard">?</button></h2>
-          <select class="select" id="fretboardTuning" style="width:auto; height:30px; font-size:0.75rem;">
+          <select class="select" id="fretboardTuning" aria-label="Fretboard tuning" style="width:auto; height:30px; font-size:0.75rem;">
             <option value="guitar">Guitar (EADGBE)</option>
             <option value="bass">4-Str Bass (EADG)</option>
             <option value="bass5">5-Str Bass (BEADG)</option>
@@ -461,7 +469,7 @@
           </select>
         </div>
         <div class="fretboard-container">
-          <div class="fretboard" id="fretboardGrid"></div>
+          <div class="fretboard" id="fretboardGrid" role="group" aria-label="Interactive Fretboard"></div>
         </div>
         <div class="explanation-text" style="margin-top:0;">The leftmost column is the open string (nut). Touch and
           hold frets to sustain the note.</div>
@@ -493,7 +501,7 @@
         </div>
       </aside>
       <!-- 7. ABOUT PAGE -->
-      <section class="panel about-panel" aria-label="About Sonata" style="display: none;">
+      <section class="panel about-panel" id="panel-about" role="tabpanel" aria-label="About Sonata" style="display: none;">
         <div class="panel-heading">
           <h2>About Sonata</h2>
         </div>
@@ -519,19 +527,19 @@
             <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Interface Showcase</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
               <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/editor.png" alt="Split Editor" style="width: 100%; height: auto; display: block;">
+                <img src="screenshots/editor.png" alt="Sonata v1.5.4 Split Chord and Lyric Editor with live transposition and Nashville number preview" style="width: 100%; height: auto; display: block;">
                 <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">📝 Split Editor (Light Mode)</figcaption>
               </figure>
               <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/library_dark.png" alt="Song Library" style="width: 100%; height: auto; display: block;">
+                <img src="screenshots/library_dark.png" alt="Sonata v1.5.4 Song Library and Setlist Manager in dark mode" style="width: 100%; height: auto; display: block;">
                 <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">📚 Song Library (Dark Mode)</figcaption>
               </figure>
               <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/presentation_mode.png" alt="Presentation Mode" style="width: 100%; height: auto; display: block;">
+                <img src="screenshots/presentation_mode.png" alt="Sonata v1.5.4 Stage Presentation Mode with auto-scroll and metronome controls" style="width: 100%; height: auto; display: block;">
                 <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">🎭 Stage Presentation Mode</figcaption>
               </figure>
               <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/play.png" alt="Virtual Instruments" style="width: 100%; height: auto; display: block;">
+                <img src="screenshots/play.png" alt="Sonata v1.5.4 Virtual Piano, Guitar Fretboard, and Chromatic Tuner" style="width: 100%; height: auto; display: block;">
                 <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">🎹 Virtual Instruments & Tuner</figcaption>
               </figure>
             </div>
@@ -663,9 +671,16 @@
     <div class="presentation-top">
       <div class="presentation-title" id="presentationTitle">Sonata</div>
       <div class="presentation-controls">
-        <button class="button" id="presentationFontDown" data-icon="type-minus" type="button">A-</button><button
-          class="button" id="presentationFontUp" data-icon="type-plus" type="button">A+</button>
-        <select class="select" id="presentationOrientation" style="width: auto; min-width: 90px;">
+        <div class="presentation-notation-switch segmented" id="presentationNotationSwitch" role="tablist" aria-label="Stage notation mode">
+          <button class="tab-button active" role="tab" aria-selected="true" aria-controls="presentationText" type="button" data-pres-notation="original">Song</button>
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="transposed">Transposed</button>
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="roman">Roman</button>
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="nashville">Nashville</button>
+          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="lyrics">Lyrics</button>
+        </div>
+        <button class="button" id="presentationFontDown" data-icon="type-minus" type="button" aria-label="Decrease presentation font size">A-</button><button
+          class="button" id="presentationFontUp" data-icon="type-plus" type="button" aria-label="Increase presentation font size">A+</button>
+        <select class="select" id="presentationOrientation" aria-label="Presentation orientation" style="width: auto; min-width: 90px;">
           <option value="auto">Auto</option>
           <option value="portrait">Portrait</option>
           <option value="landscape">Landscape</option>
@@ -702,11 +717,11 @@
   </section>
 
   <!-- AI Assistant FAB and Panel -->
-  <button id="aiFabButton" class="ai-fab" title="AI Co-Writer" aria-label="Open AI Assistant">
+  <button id="aiFabButton" class="ai-fab" type="button" title="AI Co-Writer" aria-label="Open AI Assistant" aria-expanded="false" aria-controls="aiChatPanel">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
   </button>
 
-  <aside id="aiChatPanel" class="ai-chat-panel hidden">
+  <aside id="aiChatPanel" class="ai-chat-panel hidden" role="dialog" aria-label="AI Co-Writer">
     <div class="ai-chat-header">
       <div style="display:flex; align-items:center; gap:8px;">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
@@ -743,16 +758,16 @@
       </div>
       <label for="aiApiKeyInput" style="font-size:0.85rem; font-weight:bold; color:var(--text); margin-bottom:6px; display:block;">Your Gemini API Key</label>
       <input type="password" id="aiApiKeyInput" class="input" placeholder="AIzaSy..." style="margin-bottom:16px; width:100%;">
-      <button id="aiSaveKeyButton" class="button primary" style="width:100%; justify-content:center;">Save Key</button>
-      <button id="aiClearKeyButton" class="button ghost danger" style="width:100%; justify-content:center; margin-top:8px;">Clear Key</button>
+      <button id="aiSaveKeyButton" class="button primary" type="button" style="width:100%; justify-content:center;">Save Key</button>
+      <button id="aiClearKeyButton" class="button ghost danger" type="button" style="width:100%; justify-content:center; margin-top:8px;">Clear Key</button>
     </div>
-    <div id="aiChatHistory" class="ai-chat-history">
+    <div id="aiChatHistory" class="ai-chat-history" aria-live="polite">
       <div class="ai-message assistant">
         <p style="margin:0;">Hi! I'm your AI co-writer. I can read your current chord chart and help you write, arrange, transpose, or format lyrics. How can I help?</p>
       </div>
     </div>
     <div class="ai-chat-input-area">
-      <textarea id="aiChatInput" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2"></textarea>
+      <textarea id="aiChatInput" aria-label="Ask AI Co-Writer" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2"></textarea>
       <button id="aiSendButton" class="button primary" type="button" title="Send (Enter)">Send</button>
     </div>
   </aside>

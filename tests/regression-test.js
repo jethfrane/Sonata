@@ -733,6 +733,236 @@ test('Interface click sounds are disabled and musical output is limited', () => 
 });
 
 // -----------------------------------------------------------------------------
+// Load Real SonataAPI Modules from app.js for Suites 9–13
+// -----------------------------------------------------------------------------
+const domListeners = [];
+const origDocAddEventListener = global.document.addEventListener;
+global.document.addEventListener = (type, fn) => {
+  if (type === 'DOMContentLoaded') domListeners.push(fn);
+};
+try {
+  Object.defineProperty(global, 'navigator', {
+    value: { platform: 'MacIntel', userAgent: 'Mozilla/5.0', maxTouchPoints: 0, standalone: false },
+    configurable: true,
+    writable: true
+  });
+} catch (_) {}
+global.window.navigator = global.navigator || { platform: 'MacIntel', userAgent: 'Mozilla/5.0', maxTouchPoints: 0, standalone: false };
+global.window.matchMedia = () => ({ matches: false });
+global.URLSearchParams = URLSearchParams;
+global.requestAnimationFrame = () => 1;
+global.cancelAnimationFrame = () => {};
+
+// Provide enhanced mock DOM elements for AI drawer & Circle of Fifths
+function createRichMockElement(tag = 'div', id = '') {
+  const classes = new Set();
+  const attrs = {};
+  const listeners = {};
+  const el = {
+    id,
+    tagName: tag.toUpperCase(),
+    value: '',
+    textContent: '',
+    innerHTML: '',
+    hidden: false,
+    disabled: false,
+    dataset: {},
+    style: {},
+    children: [],
+    options: [],
+    classList: {
+      add: (...c) => c.forEach(x => classes.add(x)),
+      remove: (...c) => c.forEach(x => classes.delete(x)),
+      toggle: (c, force) => {
+        if (force === undefined) {
+          if (classes.has(c)) { classes.delete(c); return false; }
+          classes.add(c); return true;
+        }
+        if (force) classes.add(c); else classes.delete(c);
+        return Boolean(force);
+      },
+      contains: (c) => classes.has(c),
+      replace: (o, n) => { classes.delete(o); classes.add(n); }
+    },
+    setAttribute: (k, v) => { attrs[k] = String(v); },
+    getAttribute: (k) => (attrs.hasOwnProperty(k) ? attrs[k] : null),
+    addEventListener: (t, fn) => { (listeners[t] = listeners[t] || []).push(fn); },
+    removeEventListener: () => {},
+    dispatchEvent: (ev) => { (listeners[ev.type] || []).forEach(fn => fn(ev)); },
+    appendChild: (child) => {
+      child.parentNode = el;
+      el.children.push(child);
+      return child;
+    },
+    remove: () => {
+      if (el.parentNode && Array.isArray(el.parentNode.children)) {
+        el.parentNode.children = el.parentNode.children.filter(c => c !== el);
+      }
+    },
+    querySelectorAll: () => [],
+    querySelector: () => null,
+    focus: () => {},
+    click: () => { (listeners.click || []).forEach(fn => fn({ preventDefault: () => {}, stopPropagation: () => {}, target: el })); }
+  };
+  return el;
+}
+
+global.document.createElement = (tag) => createRichMockElement(tag);
+global.document.getElementById = (id) => {
+  if (!domNodes[id]) domNodes[id] = createRichMockElement('div', id);
+  return domNodes[id];
+};
+
+require('../app.js');
+domListeners.forEach(fn => {
+  try { fn(); } catch (e) { /* ignore non-critical boot mocks */ }
+});
+global.document.addEventListener = origDocAddEventListener;
+
+const {
+  StateManager: RealStateManager,
+  KeyDetector: RealKeyDetector,
+  TransposeEngine: RealTransposeEngine,
+  FormatEngine: RealFormatEngine,
+  PresentationManager: RealPresentationManager,
+  InstrumentManager: RealInstrumentManager,
+  askAI: RealAskAI
+} = global.window.SonataAPI;
+
+// -----------------------------------------------------------------------------
+// 9. Circle of Fifths Sharp & Enharmonic Key Resolution
+// -----------------------------------------------------------------------------
+console.log('\nSuite 9: Circle of Fifths Sharp & Enharmonic Key Resolution');
+
+test('F# major returns family [F#, B, C#, D#m] and does not truncate to F major', () => {
+  const family = RealKeyDetector.getKeyFamily('F# major');
+  assert.deepStrictEqual([...family], ['F#', 'B', 'C#', 'D#m']);
+  assert.notDeepStrictEqual([...family], ['F', 'Bb', 'C', 'Dm']);
+  assert.strictEqual(family.relativeMinor, 'D#m');
+
+  // Verify SVG Circle of Fifths active wedge when F# major is selected
+  RealInstrumentManager.theoryKeyOverride = RealKeyDetector.parseKey('F#:major');
+  RealInstrumentManager.renderCircle();
+  const svgHtml = global.document.getElementById('circleContainer').innerHTML;
+  assert.ok(svgHtml.includes('active-key') && svgHtml.includes('data-key="F#"'), 'Circle SVG must mark F# as active-key');
+  assert.ok(svgHtml.includes('data-key="D#m"'), 'Circle SVG must render relative minor D#m for F# major');
+});
+
+test('Gb major returns family [Gb, Cb, Db, Ebm]', () => {
+  const family = RealKeyDetector.getKeyFamily('Gb major');
+  assert.deepStrictEqual([...family], ['Gb', 'Cb', 'Db', 'Ebm']);
+  assert.strictEqual(family.relativeMinor, 'Ebm');
+});
+
+test('C#m returns relative major E and neighbors F#m, G#m', () => {
+  const family = RealKeyDetector.getKeyFamily('C#m');
+  assert.strictEqual(family.relativeMajor, 'E');
+  assert.deepStrictEqual(family.neighbors, ['F#m', 'G#m']);
+  assert.deepStrictEqual([...family], ['C#m', 'F#m', 'G#m', 'E']);
+});
+
+// -----------------------------------------------------------------------------
+// 10. Enharmonic Transposition & Flat/Sharp Preference
+// -----------------------------------------------------------------------------
+console.log('\nSuite 10: Enharmonic Transposition & Flat/Sharp Preference');
+
+test('Transposing C major (C, F, G, Am) up +1 semitone with preferFlats = true yields Db, Gb, Ab, Bbm', () => {
+  const out = RealTransposeEngine.transposeText('C F G Am', 1, 'C:major', true);
+  assert.strictEqual(out, 'Db Gb Ab Bbm');
+});
+
+test('Transposing C major up +1 semitone with preferFlats = false yields C#, F#, G#, A#m', () => {
+  const out = RealTransposeEngine.transposeText('C F G Am', 1, 'C:major', false);
+  assert.strictEqual(out, 'C# F# G# A#m');
+});
+
+test('Transposing F major (F, Bb, C, Dm) up +1 semitone in flat mode yields Gb, B, Db, Ebm', () => {
+  const out = RealTransposeEngine.transposeText('F Bb C Dm', 1, 'F:major', true);
+  assert.strictEqual(out, 'Gb B Db Ebm');
+});
+
+// -----------------------------------------------------------------------------
+// 11. Present Mode State Persistence
+// -----------------------------------------------------------------------------
+console.log('\nSuite 11: Present Mode State Persistence');
+
+test('Setting notation tab to roman, entering Present Mode, and exiting restores roman tab', () => {
+  RealStateManager.state.songs = [{
+    id: 'pres-test-1',
+    title: 'Amazing Grace',
+    body: 'G C/G G\nAmazing grace',
+    manualKey: 'G:major'
+  }];
+  RealStateManager.state.activeId = 'pres-test-1';
+  RealStateManager.state.previewMode = 'roman';
+  RealStateManager.state.currentNotationTab = 'roman';
+
+  RealPresentationManager.open();
+  // Even if user switches notation mode inside stage view, exiting restores prior editor tab
+  RealPresentationManager.setNotationMode('lyrics');
+  RealPresentationManager.close();
+
+  assert.strictEqual(RealStateManager.state.previewMode, 'roman', 'previewMode must be restored to roman');
+  assert.strictEqual(RealStateManager.state.currentNotationTab, 'roman', 'currentNotationTab must be restored to roman');
+});
+
+// -----------------------------------------------------------------------------
+// 12. Roman Numeral Slash Chord Formatting
+// -----------------------------------------------------------------------------
+console.log('\nSuite 12: Roman Numeral Slash Chord Formatting');
+
+test('In key of G, G/B formats as I/3 and D/F# formats as V/7', () => {
+  const keyG = RealKeyDetector.parseKey('G:major');
+  assert.strictEqual(RealFormatEngine.romanChord('G/B', keyG), 'I/3');
+  assert.strictEqual(RealFormatEngine.romanChord('D/F#', keyG), 'V/7');
+});
+
+test('In key of C, C/E formats as I/3, F/A formats as IV/6, and G/B formats as V/7', () => {
+  const keyC = RealKeyDetector.parseKey('C:major');
+  assert.strictEqual(RealFormatEngine.romanChord('C/E', keyC), 'I/3');
+  assert.strictEqual(RealFormatEngine.romanChord('F/A', keyC), 'IV/6');
+  assert.strictEqual(RealFormatEngine.romanChord('G/B', keyC), 'V/7');
+});
+
+test('Non-diatonic bass G/F in G formats as I/b7', () => {
+  const keyG = RealKeyDetector.parseKey('G:major');
+  assert.strictEqual(RealFormatEngine.romanChord('G/F', keyG), 'I/b7');
+});
+
+// -----------------------------------------------------------------------------
+// 13. AI Drawer Timeout & Error Recovery
+// -----------------------------------------------------------------------------
+console.log('\nSuite 13: AI Drawer Timeout & Error Recovery');
+
+asyncTest('Rejected /api/ai fetch or AbortError removes Thinking indicator and renders retryable error state', async () => {
+  const origFetch = global.fetch;
+  const aiHistory = global.document.getElementById('aiChatHistory');
+  const aiInput = global.document.getElementById('aiChatInput');
+  aiHistory.children = [];
+  aiInput.value = 'Suggest a bridge progression in G';
+
+  global.fetch = async () => {
+    const err = new Error('The operation was aborted');
+    err.name = 'AbortError';
+    throw err;
+  };
+
+  try {
+    await RealAskAI();
+    const hasThinking = aiHistory.children.some(c => c.className && c.className.includes('ai-thinking'));
+    assert.strictEqual(hasThinking, false, 'Thinking indicator must be removed on AbortError');
+
+    const errorNode = aiHistory.children.find(c => c.className && c.className.includes('ai-message-error'));
+    assert.ok(errorNode, 'Must render an error message element in aiChatHistory');
+    assert.ok(errorNode.innerHTML.includes('timed out'), 'Error message must mention timeout');
+    const retryBtn = errorNode.children.find(c => c.textContent === 'Retry');
+    assert.ok(retryBtn, 'Error message must include a Retry button');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+
+// -----------------------------------------------------------------------------
 // Summary
 // -----------------------------------------------------------------------------
 setTimeout(() => {
