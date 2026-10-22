@@ -1,791 +1,431 @@
 <!doctype html>
 <html lang="en" data-theme="light">
-
 <head>
   <meta charset="utf-8">
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sonata · Chord charts &amp; music tools</title>
+  <meta name="description" content="Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app for musicians and worship teams.">
+  <meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0f17" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#f6f7f9">
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Open Graph / Link Preview Metadata -->
-  <meta property="og:title" content="Sonata - Music Workspace">
-  <meta property="og:description" content="A smart, markdown-based chord chart editor and music workspace with AI co-writer.">
-  <meta property="og:image" content="https://jethfrane-sonata.vercel.app/icon.png">
-  <meta property="og:url" content="https://jethfrane-sonata.vercel.app">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Sonata">
+  <link rel="canonical" href="https://sonata.jethrofrane.xyz/">
+  <meta property="og:title" content="Sonata · Chord charts & music tools">
+  <meta property="og:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
+  <meta property="og:image" content="https://sonata.jethrofrane.xyz/icons/og-image.png">
+  <meta property="og:url" content="https://sonata.jethrofrane.xyz/">
   <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary">
-
-  <!-- Standard Favicons for Browser Tabs -->
-  <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="icon.png">
-  <link rel="shortcut icon" href="icon.png">
-
-  <!-- Apple Touch Icon (for iOS / Safari Home Screen) -->
-  <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
-
-  <!-- Dynamic Favicon Early Script -->
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/app.css">
   <script>
-    (function() {
-      const theme = localStorage.getItem('sonata:v12:settings') ? JSON.parse(localStorage.getItem('sonata:v12:settings')).theme : null;
-      const isDark = theme === 'dark' || (!theme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      const iconSrc = isDark ? 'icon_dark.png' : 'icon.png';
-      document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').forEach(l => l.href = iconSrc);
+    // Apply the saved theme before first paint so there is no flash.
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem("sonata:v12:settings") || "{}");
+        var t = s.theme === "dark" || s.theme === "light" ? s.theme : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.dataset.theme = t;
+        document.documentElement.dataset.accent = s.accentTheme || "blue";
+        if (s.language === "fil") document.documentElement.lang = "fil";
+      } catch (e) {}
     })();
   </script>
-
-  <title>Sonata</title>
-
-  <script async defer src="https://accounts.google.com/gsi/client"></script>
-
-  <!-- Vercel Web Analytics -->
-  <script>
-    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-  </script>
+  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
   <script defer src="/_vercel/insights/script.js"></script>
-
-  <link rel="stylesheet" href="style.css">
+  <script type="module" src="js/main.js"></script>
 </head>
-
 <body>
-  <!-- Sidebar backdrop overlay -->
-  <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
+  <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to content</a>
 
-  <!-- Slide-out sidebar drawer -->
-  <aside id="sidebarDrawer" class="sidebar-drawer" aria-label="Menu">
-    <div class="sidebar-header">
-      <div class="brand">
-        <img src="icon.png" alt="Sonata" class="brand-logo" width="32" height="32" aria-hidden="true" />
-        <div class="brand-text">
-          <span class="brand-title">Sonata</span>
-          <span id="sidebarVersion" class="brand-subtitle">v1.5.4</span>
-        </div>
-      </div>
-      <button id="sidebarCloseBtn" class="icon-button ghost" data-icon="x" type="button" aria-label="Close menu"></button>
-    </div>
-
-    <!-- Sidebar nav (mirrors top-nav for tablet/mobile) -->
-    <nav class="sidebar-nav" role="tablist" aria-label="Main navigation">
-      <button class="sidebar-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-editor" data-view="editor" data-icon="edit" type="button">Editor</button>
-      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-library" data-view="library" data-icon="library" type="button">Library</button>
-      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-tools" data-view="tools" data-icon="sliders" type="button">Tools &amp; Export</button>
-      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-theory" data-view="theory" data-icon="aperture" type="button">Theory</button>
-      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-instruments" data-view="instruments" data-icon="music" type="button">Play</button>
-      <button class="sidebar-nav-btn" role="tab" aria-selected="false" aria-controls="panel-about" data-view="about" data-icon="info" type="button">About Sonata</button>
-    </nav>
-
-    <div class="sidebar-divider"></div>
-
-    <!-- Sidebar secondary actions -->
-    <div class="sidebar-actions">
-
-      <button class="button ghost full-width" id="sidebarDriveSyncBtn" data-icon="cloud" type="button">Drive Sync</button>
-      <button class="button ghost full-width" id="sidebarSettingsBtn" data-icon="settings" type="button">Settings</button>
-      <button class="button ghost full-width" id="sidebarPresentBtn" data-icon="presentation" type="button">Presentation Mode</button>
-    </div>
-
-    <div class="sidebar-divider"></div>
-
-    <!-- Language + version in sidebar -->
-    <div class="sidebar-footer">
-      <div style="display:flex; align-items:center; width:100%; gap:8px; margin-bottom:12px;" id="sidebarProfileContainer">
-        <img id="sidebarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
-        <span id="sidebarUserGreeting" style="font-size:0.85rem; font-weight:600; color:var(--text);">Hi, Musician!</span>
-      </div>
-      <label class="sidebar-label" for="langSelectSidebar">Language</label>
-      <select id="langSelectSidebar" class="select" style="width:100%;" aria-label="Language"></select>
-      <button class="button primary full-width" id="sidebarInstallBtn" data-icon="download" type="button">Install App</button>
-    </div>
-  </aside>
-
-  <div class="app-shell">
+  <div class="app" id="app" data-view="editor">
     <header class="topbar">
-      <!-- Hamburger — shown on tablet/mobile, hidden on desktop -->
-      <button id="menuToggleBtn" class="icon-button ghost topbar-menu-btn" data-icon="menu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="sidebarDrawer"></button>
+      <a class="brand" href="./" aria-label="Sonata home">
+        <img src="icons/icon.svg" alt="" width="32" height="32">
+        <span class="wordmark">Sonata</span>
+      </a>
 
-      <div class="brand">
-        <img src="icon.png" alt="Sonata" class="brand-logo" width="35" height="35" aria-hidden="true" />
-        <div class="brand-text">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <h1 class="brand-title">Sonata</h1>
-            <span class="version-badge" id="brandVersion">v1.5.4</span>
-          </div>
-          <p class="brand-subtitle">Offline tool for musicians</p>
-        </div>
-      </div>
-
-      <!-- Desktop tab nav pill -->
-      <nav class="top-nav" role="tablist" aria-label="Main navigation">
-        <button class="top-nav-btn active" role="tab" aria-selected="true" aria-controls="panel-editor" data-view="editor" data-icon="edit" type="button"><span class="button-label">Editor</span></button>
-        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-library" data-view="library" data-icon="library" type="button"><span class="button-label">Library</span></button>
-        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-tools" data-view="tools" data-icon="sliders" type="button"><span class="button-label">Tools &amp; Export</span></button>
-        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-theory" data-view="theory" data-icon="aperture" type="button"><span class="button-label">Theory</span></button>
-        <button class="top-nav-btn" role="tab" aria-selected="false" aria-controls="panel-instruments" data-view="instruments" data-icon="music" type="button"><span class="button-label">Play</span></button>
+      <nav class="tabs" role="tablist" aria-label="Main" data-i18n-attr="aria-label:navMain">
+        <button class="tab" role="tab" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
+        <button class="tab" role="tab" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navEditor">Editor</span></button>
+        <button class="tab" role="tab" data-view="tools" type="button"><span data-icon="sliders"></span><span data-i18n="navTools">Tools</span></button>
+        <button class="tab" role="tab" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
+        <button class="tab" role="tab" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
       </nav>
 
-      <!-- Desktop quick actions (always visible on desktop, hidden on mobile/tablet) -->
       <div class="top-actions">
-        <div id="topbarProfileContainer" title="Google Account / Sync">
-          <img id="topbarUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture">
-          <span id="topbarUserGreeting">Hi, Musician</span>
-        </div>
-        <button class="button secondary" id="googleSyncButton" data-icon="cloud" type="button" title="Google Drive Sync"><span class="button-label">Drive Sync</span></button>
-        <button class="button primary" id="headerInstallBtn" data-icon="download" type="button" style="display:none;" title="Install App"><span class="button-label">Install App</span></button>
-        <button class="button ghost" id="helpButton" data-icon="help" type="button" title="Help & About"><span class="button-label">Help</span></button>
-        <button class="icon-button ghost" id="themeToggle" data-icon="sun" type="button" aria-label="Toggle dark mode" title="Toggle Theme"></button>
-        <button class="button ghost" id="settingsButton" data-icon="settings" type="button" title="Settings"><span class="button-label">Settings</span></button>
-        <button class="button primary" id="presentationButton" data-icon="presentation" type="button" title="Presentation Mode"><span class="button-label">Present</span></button>
-        <select id="langSelect" class="select" title="Language" aria-label="Language">
-          <option value="en" selected>English</option>
-          <option value="fil">Filipino</option>
-        </select>
-      </div>
-
-
-      <!-- Mobile quick actions row: sync + theme toggle + present -->
-      <div class="topbar-mobile-actions">
-        <img id="mobileUserAvatar" src="data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='8' r='4'/><path d='M12 14c-4.42 0-8 2.69-8 6v2h16v-2c0-3.31-3.58-6-8-6z'/></svg>" alt="User profile picture" aria-label="User profile picture" style="width:28px; height:28px; border-radius:50%; object-fit:cover; cursor:pointer; border:1px solid var(--line);" title="Google Account / Sync">
-        <button class="icon-button ghost" id="googleSyncButtonMobile" data-icon="cloud" type="button" aria-label="Drive Sync" title="Drive Sync"></button>
-        <button class="icon-button ghost" id="themeToggleMobile" data-icon="sun" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
-        <button class="button primary compact" id="presentationButtonMobile" data-icon="presentation" type="button" aria-label="Presentation Mode" title="Presentation Mode">Present</button>
+        <button class="account-btn" id="accountBtn" type="button" aria-haspopup="dialog">
+          <span class="account-avatar" id="accountAvatar" data-icon="cloud"></span>
+          <span class="account-label" id="accountLabel" data-i18n="backup">Back up</span>
+          <span class="sync-dot" id="syncDot" hidden></span>
+        </button>
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="Dark mode" data-i18n-attr="aria-label:toggleTheme,title:toggleTheme"><span data-icon="moon"></span></button>
+        <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" data-i18n-attr="aria-label:settings,title:settings"><span data-icon="settings"></span></button>
+        <button class="btn primary present-btn" id="presentBtn" type="button"><span data-icon="present"></span><span data-i18n="present">Present</span></button>
       </div>
     </header>
 
-    <nav class="mobile-view-switcher" role="tablist" aria-label="Mobile navigation">
-      <button class="tab-button active" role="tab" aria-selected="true" aria-controls="panel-editor" type="button" data-view="editor" data-icon="edit">Editor</button>
-      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-library" type="button" data-view="library" data-icon="library">Library</button>
-      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-tools" type="button" data-view="tools" data-icon="sliders">Tools</button>
-      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-theory" type="button" data-view="theory" data-icon="aperture">Theory</button>
-      <button class="tab-button" role="tab" aria-selected="false" aria-controls="panel-instruments" type="button" data-view="instruments" data-icon="music">Play</button>
-    </nav>
-
-    <main class="workspace" data-view="editor">
-
-      <!-- 1. LIBRARY PAGE -->
-      <aside class="panel library-panel" id="panel-library" role="tabpanel" aria-label="Song library">
-        <div class="panel-heading">
-          <h2>Song Library <button class="help-icon" data-help="library" type="button" aria-label="Help with Song Library">?</button></h2>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-
-            <button class="button secondary" id="manageLibraryBtn" data-icon="sliders" type="button"
-              title="Manage Library">Manage</button>
-            <button class="button primary" id="newSongButton" data-icon="plus" type="button">New Song</button>
+    <main id="main" class="main">
+      <!-- SONGS -->
+      <section class="view" id="view-songs" data-view-panel="songs" aria-labelledby="songsHeading">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 id="songsHeading" data-i18n="songsTitle">Songs</h1>
+              <p class="page-sub" id="libraryCount"></p>
+            </div>
+            <div class="page-actions">
+              <button class="btn" id="newSetlistBtn" type="button"><span data-icon="list"></span><span data-i18n="newSetlist">New setlist</span></button>
+              <button class="btn primary" id="newSongBtn" type="button"><span data-icon="plus"></span><span data-i18n="newSong">New song</span></button>
+            </div>
           </div>
-        </div>
-        <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-          <div class="field" style="flex:1; min-width:180px; margin:0;">
-            <label class="visually-hidden" for="songSearch">Search</label>
-            <input class="input" id="songSearch" type="search" placeholder="Search title or lyrics..." autocomplete="off" style="margin:0;">
-          </div>
-          <div class="select-wrapper" style="width:120px;">
-            <select class="select" id="librarySortSelect" style="height:36px; font-size:0.78rem; padding: 0 8px;" title="Sort Library" aria-label="Sort Library">
-              <option value="recent">Recent</option>
-              <option value="title">Title</option>
-              <option value="author">Author</option>
-              <option value="arranger">Arranger</option>
-              <option value="key">Key</option>
+          <div class="library-toolbar">
+            <label class="search">
+              <span data-icon="search"></span>
+              <input id="librarySearch" type="search" autocomplete="off" placeholder="Search titles, artists, lyrics" data-i18n-attr="placeholder:searchPlaceholder,aria-label:search" aria-label="Search">
+            </label>
+            <div class="segmented" role="tablist" aria-label="Filter">
+              <button type="button" role="tab" data-filter="all" class="active" data-i18n="filterAll">All</button>
+              <button type="button" role="tab" data-filter="favorites" data-i18n="filterFavorites">Favorites</button>
+              <button type="button" role="tab" data-filter="setlists" data-i18n="filterSetlists">Setlists</button>
+            </div>
+            <select class="select" id="librarySort" aria-label="Sort" data-i18n-attr="aria-label:sort">
+              <option value="recent" data-i18n="sortRecent">Recently edited</option>
+              <option value="title" data-i18n="sortTitle">Title A–Z</option>
+              <option value="artist" data-i18n="sortArtist">Artist</option>
+              <option value="key" data-i18n="sortKey">Key</option>
             </select>
           </div>
-          <div class="segmented" role="tablist" aria-label="Library filter">
-            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="libraryList" type="button" data-library-filter="all">All</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="libraryList" type="button" data-library-filter="favorites" data-icon="star">Favorites</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="libraryList" type="button" data-library-filter="setlists" data-icon="list">Setlists</button>
+          <div class="library-list" id="libraryList" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <!-- EDITOR -->
+      <section class="view" id="view-editor" data-view-panel="editor" aria-label="Editor" data-i18n-attr="aria-label:navEditor">
+        <div class="banner" id="sharedBanner" hidden>
+          <span data-icon="share"></span>
+          <span class="banner-text" data-i18n="sharedBanner">You're viewing a shared song.</span>
+          <button class="btn small primary" id="saveSharedBtn" type="button" data-i18n="saveToSongs">Save to my songs</button>
+          <button class="btn small ghost" id="closeSharedBtn" type="button" data-i18n="close">Close</button>
+        </div>
+        <div class="setlist-bar" id="setlistBar" hidden>
+          <button class="icon-btn" id="setPrevBtn" type="button" aria-label="Previous song" data-i18n-attr="aria-label:prevSong"><span data-icon="chevron-left"></span></button>
+          <div class="setlist-bar-title"><span data-icon="list"></span><span id="setlistBarTitle"></span></div>
+          <button class="icon-btn" id="setNextBtn" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong"><span data-icon="chevron-right"></span></button>
+          <button class="icon-btn" id="setExitBtn" type="button" aria-label="Leave setlist" data-i18n-attr="aria-label:leaveSetlist"><span data-icon="x"></span></button>
+        </div>
+
+        <div class="editor-head">
+          <div class="title-row">
+            <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
+            <span class="save-state" id="saveState" aria-live="polite"></span>
+          </div>
+          <div class="meta-row">
+            <div class="meta-chips" id="metaChips"></div>
+            <button class="btn small ghost" id="detailsBtn" type="button"><span data-icon="info"></span><span data-i18n="details">Details</span></button>
           </div>
         </div>
-        <div class="library-list" id="libraryList" aria-live="polite"></div>
-      </aside>
 
-      <!-- 2. EDITOR PAGE (SPLIT VIEW ON DESKTOP) -->
-      <section class="panel editor-panel" id="panel-editor" data-mobile-pane="edit" role="tabpanel" aria-label="Song editor">
-        <label class="visually-hidden" for="songTitle">Song title</label>
-        <input class="input song-title-input" id="songTitle" autocomplete="off" placeholder="Untitled Song">
-        <div id="editorMetadataBar"
-          style="padding: 6px 14px; font-size: 0.75rem; color: var(--muted); display: none; gap: 12px; flex-wrap: wrap; background: var(--surface-2); border-bottom: 1px solid var(--line); align-items:center;">
-        </div>
         <div class="editor-toolbar">
-          <div class="toolbar">
-            <button class="button primary" id="saveSongButton" data-icon="save" type="button">Save <kbd class="key-hint" id="saveKeyHint" style="margin-left:5px; font-size:0.68rem; opacity:0.85; font-family:var(--chart-font); background:rgba(255,255,255,0.25); padding:1px 5px; border-radius:3px;">⌘S</kbd></button>
-            <div class="history-group">
-              <button class="button icon-button ghost" id="undoSongButton" data-icon="rotate-ccw" type="button"
-                title="Undo (⌘Z / Ctrl+Z)" aria-label="Undo" style="min-width:32px; height:32px; padding:0;"></button>
-              <button class="button icon-button ghost" id="redoSongButton" data-icon="rotate" type="button"
-                title="Redo (⌘⇧Z / Ctrl+Y)" aria-label="Redo" style="min-width:32px; height:32px; padding:0;"></button>
-            </div>
-            <button class="button primary" id="importSharedButton" data-icon="download" type="button"
-              style="display:none;">Save to Library</button>
-            <button class="button" id="infoSongButton" data-icon="info" type="button">Details</button>
-            <button class="button" id="loadDemoButton" data-icon="sparkles" type="button">Demo</button>
-            <button class="button" id="exitSharedButton" data-icon="x" type="button" style="display:none;">Close
-              Preview</button>
+          <div class="tool-group">
+            <button class="icon-btn" id="undoBtn" type="button" aria-label="Undo" data-i18n-attr="aria-label:undo,title:undo"><span data-icon="undo"></span></button>
+            <button class="icon-btn" id="redoBtn" type="button" aria-label="Redo" data-i18n-attr="aria-label:redo,title:redo"><span data-icon="redo"></span></button>
           </div>
-          <div class="desktop-preview-mode-switch segmented" role="tablist" aria-label="Chart notation mode">
-            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="previewOutput" type="button" data-preview-mode="original">Song</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="transposed">Transposed</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="roman">Roman</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="nashville">Nashville</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-preview-mode="lyrics">Lyrics</button>
+          <div class="tool-group key-control" aria-label="Key" data-i18n-attr="aria-label:key">
+            <button class="icon-btn" id="keyDownBtn" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown,title:transposeDown"><span data-icon="minus"></span></button>
+            <button class="key-pill" id="keyPill" type="button" aria-label="Key" data-i18n-attr="title:keyAndCapo"><span class="key-pill-label" data-i18n="key">Key</span><strong id="keyPillValue">C</strong></button>
+            <button class="icon-btn" id="keyUpBtn" type="button" aria-label="Transpose up" data-i18n-attr="aria-label:transposeUp,title:transposeUp"><span data-icon="plus"></span></button>
           </div>
-          <div class="mobile-editor-mode-toggle segmented" role="tablist" id="mobileEditorModeToggle" aria-label="Mobile editor view mode">
-            <button class="tab-button active" role="tab" aria-selected="true" aria-controls="editorPaneLeft" type="button" data-mobile-editor-pane="edit" data-icon="edit">Edit Chart</button>
-            <button class="tab-button" role="tab" aria-selected="false" aria-controls="editorPaneRight" type="button" data-mobile-editor-pane="preview" data-icon="eye">Live Preview</button>
+          <div class="segmented view-mode" role="tablist" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
+            <button type="button" role="tab" data-mode="chords" data-i18n="modeChords">Chords</button>
+            <button type="button" role="tab" data-mode="nashville" data-i18n="modeNumbers">Numbers</button>
+            <button type="button" role="tab" data-mode="roman" data-i18n="modeRoman">Roman</button>
+            <button type="button" role="tab" data-mode="lyrics" data-i18n="modeLyrics">Lyrics</button>
           </div>
-          <div class="status-line saved" id="saveStatus" aria-live="polite">Ready</div>
-        </div>
-
-        <div class="setlist-nav" id="setlistNav">
-          <button class="button secondary" id="slPrev" data-icon="arrow-left" type="button">Prev</button>
-          <span id="slTitle" style="font-weight:700; color:var(--accent);">Setlist</span>
-          <div style="display:flex; gap:6px;">
-            <button class="button secondary" id="slNext" data-icon="arrow-right" type="button">Next</button>
-            <button class="icon-button danger" id="slExit" data-icon="x" type="button"
-              aria-label="Exit Setlist"></button>
+          <div class="segmented pane-switch" role="tablist" aria-label="Editor panes">
+            <button type="button" role="tab" data-pane="edit" data-i18n="paneEdit">Edit</button>
+            <button type="button" role="tab" data-pane="preview" data-i18n="panePreview">Preview</button>
           </div>
         </div>
 
-        <div class="editor-split-container">
-          <div class="editor-pane-left" id="editorPaneLeft">
-            <div class="pane-header">
-              <span class="pane-tag">CHORD &amp; LYRIC EDITOR</span>
-              <span class="muted" style="font-size:0.72rem;"># Section &bull; [Chord] inline</span>
+        <div class="chord-bar" id="chordBar" aria-label="Insert a chord" data-i18n-attr="aria-label:insertChord"></div>
+
+        <div class="editor-panes" id="editorPanes" data-pane="edit">
+          <div class="pane pane-edit">
+            <textarea class="chart-input" id="songBody" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Chords and lyrics" data-i18n-attr="aria-label:chartInput"></textarea>
+            <div class="quickstart" id="quickstart">
+              <p class="quickstart-title" data-i18n="quickTitle">Start your chart</p>
+              <p class="quickstart-text" data-i18n="quickText">Type chords on the line above the lyrics, or put them inside the words like [G]Amazing. Tap to insert:</p>
+              <div class="quickstart-chips">
+                <button type="button" class="chip" data-insert="## Verse 1&#10;"><code>##</code> <span data-i18n="snipSection">Section</span></button>
+                <button type="button" class="chip" data-insert="G         C          G&#10;"><code>G  C</code> <span data-i18n="snipChordLine">Chord line</span></button>
+                <button type="button" class="chip" data-insert="[G]"><code>[G]</code> <span data-i18n="snipInline">Inline chord</span></button>
+                <button type="button" class="chip" data-insert="&gt; "><code>&gt;</code> <span data-i18n="snipNote">Band note</span></button>
+                <button type="button" class="chip" data-insert="---&#10;"><code>---</code> <span data-i18n="snipDivider">Divider</span></button>
+              </div>
+              <button type="button" class="btn small" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
             </div>
-            <div class="editor-container">
-              <textarea class="textarea" id="songBody" spellcheck="false" aria-label="Song body" placeholder=" "></textarea>
-              <div class="editor-placeholder">
-                <div class="quickstart-card">
-                  <div class="quickstart-header">
-                    <span class="quickstart-badge">QUICK START</span>
-                    <h3>Start Writing Your Song</h3>
-                    <p>Type chords above lyrics or use inline brackets like <code>[G]</code>. Click syntax tags to insert:</p>
-                  </div>
-                  <div class="quickstart-tags">
-                    <button type="button" class="syntax-chip" data-insert="# Verse 1&#10;"><code>#</code> Section Header</button>
-                    <button type="button" class="syntax-chip" data-insert="## Chorus&#10;"><code>##</code> Subheader</button>
-                    <button type="button" class="syntax-chip" data-insert="[G]"><code>[G]</code> Inline Chord</button>
-                    <button type="button" class="syntax-chip" data-insert="---&#10;"><code>---</code> Divider Line</button>
-                    <button type="button" class="syntax-chip" data-insert="&gt; Note: "><code>&gt;</code> Stage Note</button>
-                  </div>
-                  <div class="quickstart-actions">
-                    <button class="button primary compact" id="placeholderDemoBtn" type="button">Load Demo Song</button>
-                  </div>
+          </div>
+          <div class="pane pane-preview">
+            <div class="preview-head">
+              <span class="preview-label" id="previewLabel"></span>
+              <button class="icon-btn small" id="copyChartBtn" type="button" aria-label="Copy chart" data-i18n-attr="aria-label:copyChart,title:copyChart"><span data-icon="copy"></span></button>
+            </div>
+            <div class="chart" id="preview" aria-live="off"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOOLS -->
+      <section class="view" id="view-tools" data-view-panel="tools" aria-labelledby="toolsHeading">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 id="toolsHeading" data-i18n="toolsTitle">Tools</h1>
+              <p class="page-sub" id="toolsSong"></p>
+            </div>
+          </div>
+          <div class="card-grid">
+            <article class="card" aria-labelledby="keyCardTitle">
+              <header class="card-head"><h2 id="keyCardTitle"><span data-icon="key"></span><span data-i18n="keyCardTitle">Key &amp; transpose</span></h2></header>
+              <div class="stat-row">
+                <div class="stat"><span class="stat-label" data-i18n="detectedKey">Detected key</span><strong id="detectedKey">—</strong></div>
+                <div class="stat"><span class="stat-label" data-i18n="playsIn">Band plays in</span><strong id="soundingKey">—</strong></div>
+                <div class="stat"><span class="stat-label" data-i18n="shapes">Capo shapes</span><strong id="shapeKey">—</strong></div>
+              </div>
+              <label class="field"><span data-i18n="songKey">Song key</span><select class="select" id="songKeySelect"></select></label>
+              <div class="field">
+                <span data-i18n="transpose">Transpose</span>
+                <div class="stepper">
+                  <button class="icon-btn" type="button" id="trDown" aria-label="Down a half step" data-i18n-attr="aria-label:transposeDown"><span data-icon="minus"></span></button>
+                  <output id="trValue">0</output>
+                  <button class="icon-btn" type="button" id="trUp" aria-label="Up a half step" data-i18n-attr="aria-label:transposeUp"><span data-icon="plus"></span></button>
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="editor-pane-right" id="editorPaneRight">
-            <div class="pane-header">
-              <span class="pane-tag">LIVE CHART PREVIEW</span>
-              <div style="display:flex; gap:4px; align-items:center;">
-                <button class="button icon-button ghost" id="copyLiveChartBtn" type="button" title="Copy Formatted Chart" aria-label="Copy Formatted Chart" data-icon="copy" style="width:26px; min-height:26px;"></button>
-                <button class="help-icon" data-help="formats" type="button" aria-label="Help with Chord Formats">?</button>
+              <label class="field"><span data-i18n="capo">Capo</span><select class="select" id="capoSelect"></select></label>
+              <div class="field">
+                <span data-i18n="spelling">Sharps or flats</span>
+                <div class="segmented full" role="tablist" aria-label="Spelling">
+                  <button type="button" role="tab" data-spelling="auto" data-i18n="spellAuto">Auto</button>
+                  <button type="button" role="tab" data-spelling="sharp">♯</button>
+                  <button type="button" role="tab" data-spelling="flat">♭</button>
+                </div>
               </div>
-            </div>
-            <div class="preview-output" id="previewOutput"></div>
+              <div class="card-actions">
+                <button class="btn" type="button" id="resetKeyBtn" data-i18n="reset">Reset</button>
+                <button class="btn primary" type="button" id="applyTransposeBtn" data-i18n="applyTranspose">Write into chart</button>
+              </div>
+            </article>
+
+            <article class="card metronome-card" aria-labelledby="metroTitle">
+              <header class="card-head"><h2 id="metroTitle"><span data-icon="metronome"></span><span data-i18n="metronome">Metronome</span></h2></header>
+              <div class="bpm-display">
+                <button class="icon-btn big" type="button" id="bpmDown" aria-label="Slower" data-i18n-attr="aria-label:slower"><span data-icon="minus"></span></button>
+                <div class="bpm-value"><input id="bpmInput" type="number" min="30" max="300" inputmode="numeric" aria-label="BPM"><span>BPM</span></div>
+                <button class="icon-btn big" type="button" id="bpmUp" aria-label="Faster" data-i18n-attr="aria-label:faster"><span data-icon="plus"></span></button>
+              </div>
+              <input class="range" type="range" id="bpmRange" min="30" max="300" aria-label="Tempo" data-i18n-attr="aria-label:tempo">
+              <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
+              <div class="field inline">
+                <span data-i18n="timeSignature">Time signature</span>
+                <select class="select" id="sigSelect"></select>
+              </div>
+              <div class="card-actions">
+                <button class="btn" type="button" id="tapBtn" data-i18n="tapTempo">Tap tempo</button>
+                <button class="btn" type="button" id="songTempoBtn" data-i18n="saveTempo">Save to song</button>
+                <button class="btn primary" type="button" id="metroBtn"><span data-icon="play"></span><span data-i18n="start">Start</span></button>
+              </div>
+            </article>
+
+            <article class="card" aria-labelledby="shareTitle">
+              <header class="card-head"><h2 id="shareTitle"><span data-icon="share"></span><span data-i18n="shareExport">Share &amp; export</span></h2></header>
+              <p class="card-text" data-i18n="shareText">Send a link or QR code. The song travels inside the link, so no account is needed.</p>
+              <button class="btn primary wide" type="button" id="shareBtn"><span data-icon="qr"></span><span data-i18n="shareSong">Share link &amp; QR</span></button>
+              <div class="export-grid">
+                <button class="btn" type="button" id="pdfBtn"><span data-icon="file"></span>PDF</button>
+                <button class="btn" type="button" id="pngBtn"><span data-icon="image"></span>PNG</button>
+                <button class="btn" type="button" id="txtBtn"><span data-icon="text"></span>TXT</button>
+                <button class="btn" type="button" id="printBtn"><span data-icon="print"></span><span data-i18n="print">Print</span></button>
+              </div>
+              <div class="field-row">
+                <label class="field"><span data-i18n="columns">Columns</span>
+                  <select class="select" id="exportColumns"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+                </label>
+                <label class="field"><span data-i18n="page">Page</span>
+                  <select class="select" id="exportOrientation"><option value="portrait" data-i18n="portrait">Portrait</option><option value="landscape" data-i18n="landscape">Landscape</option></select>
+                </label>
+              </div>
+              <p class="card-hint" id="exportHint"></p>
+            </article>
           </div>
         </div>
       </section>
 
-      <!-- 3. TOOLS & EXPORT PAGE -->
-      <!-- 3. TOOLS & EXPORT PAGE -->
-      <aside class="panel tools-panel" id="panel-tools" role="tabpanel" aria-label="Music tools">
-        <div class="tools-grid-layout">
-          <!-- Card 1: Music Analysis & Transposition -->
-          <div class="tool-dashboard-card">
-            <div class="panel-heading">
-              <h2>Music Analysis &amp; Transposition</h2>
-              <span class="muted" id="wordCount">0 lines</span>
+      <!-- THEORY -->
+      <section class="view" id="view-theory" data-view-panel="theory" aria-labelledby="theoryHeading">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 id="theoryHeading" data-i18n="theoryTitle">Circle of fifths</h1>
+              <p class="page-sub" data-i18n="theorySub">Tap a key to hear it. The highlighted wedges are the chords that belong to the key.</p>
             </div>
-            <div class="metric-grid">
-              <div class="metric"><span>Detected Key</span><strong id="detectedKey">Unknown</strong></div>
-              <div class="metric"><span>Active Key</span><strong id="activeKey">Auto</strong></div>
-              <div class="metric"><span>Chords</span><strong id="chordCount">0</strong></div>
-              <div class="metric"><span>Transpose</span><strong id="transposeLabel">0</strong></div>
+            <div class="segmented" role="tablist" aria-label="Numbers">
+              <button type="button" role="tab" data-circle-format="roman" data-i18n="modeRoman">Roman</button>
+              <button type="button" role="tab" data-circle-format="nashville" data-i18n="modeNumbers">Numbers</button>
             </div>
-            <div class="field"><label for="keySelect">Key override <button class="help-icon" data-help="keyOverride"
-                  type="button" aria-label="Help with Key override">?</button></label><select class="select" id="keySelect" aria-label="Key override"></select></div>
-            <div class="field">
-              <label for="enharmonicPrefGroup" id="enharmonicPrefLabel">Enharmonic spelling (♯ / ♭)</label>
-              <div class="segmented" id="enharmonicPrefGroup" role="tablist" aria-label="Enharmonic spelling preference" style="width:100%; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr));">
-                <button class="tab-button active" role="tab" aria-selected="true" aria-controls="previewOutput" type="button" data-enharmonic-pref="auto">Auto</button>
-                <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-enharmonic-pref="sharp">♯ Sharp</button>
-                <button class="tab-button" role="tab" aria-selected="false" aria-controls="previewOutput" type="button" data-enharmonic-pref="flat">♭ Flat</button>
+          </div>
+          <div class="theory-layout">
+            <div class="circle-wrap card"><div id="circle" class="circle" role="group" aria-label="Circle of fifths"></div></div>
+            <aside class="card key-panel">
+              <div class="key-picker" id="keyPicker" role="group" aria-label="Choose a key" data-i18n-attr="aria-label:chooseKey"></div>
+              <div class="segmented full" role="tablist" aria-label="Mode">
+                <button type="button" role="tab" data-key-mode="major" data-i18n="major">Major</button>
+                <button type="button" role="tab" data-key-mode="minor" data-i18n="minor">Minor</button>
               </div>
-            </div>
-            <div class="field">
-              <label id="capoLabel" for="capoSelect">Capo</label>
-              <select class="select" id="capoSelect" aria-label="Capo">
-                <option value="0">No Capo</option>
-                <option value="1">Capo 1</option>
-                <option value="2">Capo 2</option>
-                <option value="3">Capo 3</option>
-                <option value="4">Capo 4</option>
-                <option value="5">Capo 5</option>
-                <option value="6">Capo 6</option>
-                <option value="7">Capo 7</option>
-                <option value="8">Capo 8</option>
-                <option value="9">Capo 9</option>
-                <option value="10">Capo 10</option>
-                <option value="11">Capo 11</option>
-                <option value="12">Capo 12</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="transposeSelect">Transpose semitones <button class="help-icon" data-help="transpose"
-                  type="button" aria-label="Help with Transpose semitones">?</button></label>
-              <div class="transpose-box"
-                style="display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 8px;"><button
-                  class="icon-button ghost" id="transposeDown" data-icon="minus" type="button"
-                  aria-label="Transpose down"></button><select class="select" id="transposeSelect" aria-label="Transpose semitones"
-                  style="text-align:center; font-weight: 600;"></select><span class="transpose-stepper-value" id="transposeStepperValue" aria-live="polite">0</span><button class="icon-button ghost" id="transposeUp"
-                  data-icon="plus" type="button" aria-label="Transpose up"></button></div>
-            </div>
-            <div class="inline-actions"><button class="button primary" id="applyTransposeButton" data-icon="wand"
-                type="button">Apply Transpose</button><button class="button secondary" id="resetTransposeButton"
-                data-icon="rotate-ccw" type="button">Reset</button></div>
-          </div>
-
-          <!-- Card 2: Metronome -->
-          <div class="tool-dashboard-card">
-            <div class="tool-card-header">
-              <div class="tool-card-title"><span data-inline-icon="metronome"></span>Metronome</div><span
-                class="tool-card-value" id="metronomeStatus">Stopped</span>
-            </div>
-            <div class="field" style="margin-bottom: 4px;"><input id="metronomeBpmRange" type="range" min="30" max="500"
-                step="1" value="90" aria-label="Metronome BPM" style="width: 100%;"></div>
-            <div
-              style="display:grid; grid-template-columns: 36px minmax(0, 1fr) 36px 64px; gap:8px; align-items:center;">
-              <button class="icon-button" id="metronomeDown" data-icon="minus" type="button"
-                aria-label="Slower"></button>
-              <input class="input" id="metronomeBpmInput" type="number" min="30" max="500" step="1" value="90" aria-label="Metronome BPM value"
-                style="text-align: center; padding: 0 4px; font-weight: 700; font-size: 1rem;">
-              <button class="icon-button" id="metronomeUp" data-icon="plus" type="button" aria-label="Faster"></button>
-              <select class="select" id="metronomeBeats" aria-label="Beats" style="padding: 0 6px; font-weight: 600;">
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4" selected>4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-              </select>
-            </div>
-            <div class="beat-row" id="beatRow" aria-hidden="true"></div>
-            <div class="inline-actions"><button class="button primary" id="metronomeToggle" data-icon="play"
-                type="button">Start</button><button class="button" id="tapTempoButton" data-icon="tap" type="button">Tap
-                Tempo</button></div>
-          </div>
-
-          <!-- Card 3: Export & Layout -->
-          <div class="tool-dashboard-card">
-            <div class="panel-heading">
-              <h2>Export &amp; Sharing <button class="help-icon" data-help="export" type="button" aria-label="Help with Export &amp; Sharing">?</button></h2>
-            </div>
-            <div class="layout-row">
-              <div class="field"><label for="exportOrientation">Page Orientation</label><select class="select" id="exportOrientation" aria-label="Orientation">
-                  <option value="portrait">Portrait</option>
-                  <option value="landscape">Landscape</option>
-                </select></div>
-              <div class="field"><label for="exportColumns">Columns</label><select class="select" id="exportColumns" aria-label="Columns">
-                  <option value="1">1 Column</option>
-                  <option value="2">2 Columns</option>
-                  <option value="3">3 Columns</option>
-                </select></div>
-            </div>
-            <div class="export-grid">
-              <button class="button" id="exportTxtButton" data-icon="file-text" type="button">Export TXT</button><button
-                class="button" id="exportPngButton" data-icon="image" type="button">Export PNG</button><button class="button"
-                id="exportPdfButton" data-icon="pdf" type="button">Export PDF</button><button class="button" id="printButton"
-                data-icon="print" type="button">Print Chart</button><button class="button" id="copyButton" data-icon="copy"
-                type="button">Copy Text</button><button class="button primary" id="shareButton" data-icon="share"
-                type="button">Share Link / QR</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <!-- 4. THEORY PAGE -->
-      <aside class="panel theory-panel" id="panel-theory" role="tabpanel" aria-label="Music Theory">
-        <div class="panel-heading">
-          <h2>Circle of 5th's</h2>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <div class="segmented" role="tablist" aria-label="Circle notation format" style="padding:2px; display:inline-flex;">
-              <button class="tab-button active" role="tab" aria-selected="true" aria-controls="circleContainer" type="button" data-circle-format="roman"
-                style="min-height:24px; padding:0 10px; font-size:0.75rem;">Roman</button>
-              <button class="tab-button" role="tab" aria-selected="false" aria-controls="circleContainer" type="button" data-circle-format="nashville"
-                style="min-height:24px; padding:0 10px; font-size:0.75rem;">Nashville</button>
-            </div><button class="help-icon" data-help="circle" type="button" aria-label="Help with Circle of Fifths">?</button>
-          </div>
-        </div>
-        <div class="field" style="margin-bottom: 12px;"><label for="theoryKeyInput"
-            style="display:flex; justify-content:space-between;"><span>Active Key (Type or Select)</span><button
-              class="help-icon" data-help="theoryKey" type="button" aria-label="Help with Theory Key Selection"
-              style="width:16px; height:16px; font-size:10px;">?</button></label><input class="input"
-            id="theoryKeyInput" list="theoryKeyOptions" placeholder="e.g. G major, C# minor" aria-label="Active Key"
-            autocomplete="off"><datalist id="theoryKeyOptions"></datalist></div>
-        <div class="field"
-          style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-          <label for="circleRotateToggle">Auto-Rotate to Key</label><input type="checkbox" id="circleRotateToggle"
-            checked style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
-        </div>
-        <div class="field"
-          style="display:flex; flex-direction:row; justify-content:space-between; align-items:center; margin-bottom: 16px;">
-          <label for="circleHighlightToggle">Highlight Key Family</label><input type="checkbox"
-            id="circleHighlightToggle" checked
-            style="width:20px; height:20px; accent-color:var(--accent); cursor:pointer;">
-        </div>
-        <div class="circle-container" id="circleContainer" role="region" aria-label="Interactive Circle of Fifths"></div>
-        <div class="explanation-text"><strong>How it works:</strong> The Circle organizes keys mathematically. Toggle
-          'Highlight Key Family' to instantly reveal the 7 diatonic chords (I, ii, iii, IV, V, vi, vii°) that
-          naturally belong in your active song.</div>
-      </aside>
-
-      <!-- 5. PLAY / INSTRUMENTS PAGE -->
-      <aside class="panel instrument-panel" id="panel-instruments" role="tabpanel" aria-label="Instruments">
-        <div class="panel-heading" style="margin-bottom:0;">
-          <h2>Virtual Piano <button class="help-icon" data-help="piano" type="button" aria-label="Help with Virtual Piano">?</button></h2>
-          <!-- Key highlight selector -->
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <label for="instrumentKeyRoot" style="font-size:0.78rem; color:var(--muted); font-weight:600;">Highlight key:</label>
-            <select id="instrumentKeyRoot" class="select" aria-label="Highlight key root" style="height:28px; font-size:0.78rem; padding:0 6px; width:72px;"></select>
-            <select id="instrumentKeyMode" class="select" aria-label="Highlight key mode" style="height:28px; font-size:0.78rem; padding:0 6px; width:80px;">
-              <option value="major">Major</option>
-              <option value="minor">Minor</option>
-            </select>
-          </div>
-        </div>
-        <div class="piano-container">
-          <div class="piano-scroll" id="pianoKeyboard" role="group" aria-label="Virtual Piano Keyboard"></div>
-        </div>
-        <div class="explanation-text" style="margin-top:0;">Scroll horizontally to view more octaves. Touch and hold
-          keys to sustain the note.</div>
-
-        <div class="panel-heading" style="margin-top:24px;">
-          <h2>Fretboard <button class="help-icon" data-help="fretboard" type="button" aria-label="Help with Fretboard">?</button></h2>
-          <select class="select" id="fretboardTuning" aria-label="Fretboard tuning" style="width:auto; height:30px; font-size:0.75rem;">
-            <option value="guitar">Guitar (EADGBE)</option>
-            <option value="bass">4-Str Bass (EADG)</option>
-            <option value="bass5">5-Str Bass (BEADG)</option>
-            <option value="ukulele">Ukulele (GCEA)</option>
-          </select>
-        </div>
-        <div class="fretboard-container">
-          <div class="fretboard" id="fretboardGrid" role="group" aria-label="Interactive Fretboard"></div>
-        </div>
-        <div class="explanation-text" style="margin-top:0;">The leftmost column is the open string (nut). Touch and
-          hold frets to sustain the note.</div>
-
-        <div class="panel-heading" style="margin-top:24px;">
-          <h2>Reference Tuner <button class="help-icon" data-help="tuner" type="button" aria-label="Help with Reference Tuner">?</button></h2>
-        </div>
-        <div class="tool-card">
-          <p style="margin: 0 0 10px; font-size: 0.8rem; color: var(--muted); text-align: center;">Click to hear
-            reference pitch</p>
-          <div id="tunerReferenceButtons"
-            style="display:flex; justify-content:center; gap:8px; margin-bottom:12px; flex-wrap:wrap;"></div>
-          <button id="micTunerBtn" class="button secondary" type="button" style="width:100%;"><span
-              data-inline-icon="music" style="margin-right:6px;"></span> Start Microphone Tuner</button>
-          <div id="tunerDisplay"
-            style="display:none; text-align:center; padding:16px 10px 10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; margin-top:8px;">
-            <div id="tunerNote" style="font-size: 3rem; font-weight: 800; color:var(--text); line-height: 1;">--</div>
-            <div id="tunerCents" style="color: var(--muted); font-size:0.9rem; font-weight:600; margin:8px 0 16px;">0
-              cents</div>
-            <div
-              style="width:100%; height:14px; background:var(--surface-3); border-radius:7px; position:relative; overflow:hidden;">
-              <div style="position:absolute; width:2px; height:100%; background:var(--line); left:50%; z-index: 1;">
+              <h2 class="key-title" id="keyTitle">C major</h2>
+              <dl class="key-facts">
+                <div><dt data-i18n="signature">Key signature</dt><dd id="keySig">—</dd></div>
+                <div><dt data-i18n="relative">Relative key</dt><dd id="keyRelative">—</dd></div>
+              </dl>
+              <p class="mini-label" data-i18n="chordsInKey">Chords in this key · tap to play</p>
+              <div class="diatonic" id="diatonic"></div>
+              <div class="card-actions">
+                <button class="btn" type="button" id="theoryFromSongBtn" data-i18n="followSong">Follow song key</button>
+                <button class="btn primary" type="button" id="theoryToSongBtn" data-i18n="useAsSongKey">Use as song key</button>
               </div>
-              <div id="tunerNeedle"
-                style="position:absolute; width:10px; height:14px; border-radius:5px; background:var(--accent); top:0; left:50%; transform:translateX(-50%); transition: left 0.1s ease-out; z-index: 2;">
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <!-- 7. ABOUT PAGE -->
-      <section class="panel about-panel" id="panel-about" role="tabpanel" aria-label="About Sonata" style="display: none;">
-        <div class="panel-heading">
-          <h2>About Sonata</h2>
-        </div>
-        <div class="panel-content" style="padding: 24px; overflow-y: auto; height: 100%;">
-          <div style="text-align: center; margin-bottom: 2rem;">
-            <div class="brand-title" style="font-size: 2.5rem; justify-content: center; margin-bottom: 0.5rem;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 36px; height: 36px; color: var(--accent);">
-                <path d="M9 18V5l12-2v13"></path>
-                <circle cx="6" cy="18" r="3"></circle>
-                <circle cx="18" cy="16" r="3"></circle>
-              </svg>
-              Sonata
-            </div>
-            <p style="color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; line-height: 1.5;">
-              Created by <strong>Jethro Frane</strong> to help church musicians collaborate seamlessly and eliminate stage friction.
-            </p>
-            <p style="margin-top:16px;font-style:italic;font-weight:700;color:var(--accent);font-size:0.9rem;">
-              "So whether you eat or drink or whatever you do, do it all for the glory of God." — 1 Cor 10:31
-            </p>
-          </div>
-
-          <div style="margin-bottom: 3rem;">
-            <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Interface Showcase</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
-              <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/editor.png" alt="Sonata v1.5.4 Split Chord and Lyric Editor with live transposition and Nashville number preview" style="width: 100%; height: auto; display: block;">
-                <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">📝 Split Editor (Light Mode)</figcaption>
-              </figure>
-              <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/library_dark.png" alt="Sonata v1.5.4 Song Library and Setlist Manager in dark mode" style="width: 100%; height: auto; display: block;">
-                <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">📚 Song Library (Dark Mode)</figcaption>
-              </figure>
-              <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/presentation_mode.png" alt="Sonata v1.5.4 Stage Presentation Mode with auto-scroll and metronome controls" style="width: 100%; height: auto; display: block;">
-                <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">🎭 Stage Presentation Mode</figcaption>
-              </figure>
-              <figure style="margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
-                <img src="screenshots/play.png" alt="Sonata v1.5.4 Virtual Piano, Guitar Fretboard, and Chromatic Tuner" style="width: 100%; height: auto; display: block;">
-                <figcaption style="padding: 10px; text-align: center; font-size: 0.85rem; background: var(--surface-2); color: var(--text); font-weight: 600;">🎹 Virtual Instruments & Tuner</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Key Features</h3>
-          <div style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 3rem;">
-            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
-              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
-                100% Offline
-              </h3>
-              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Sonata is a Progressive Web App (PWA). Once loaded, it works entirely offline. Install it on your phone or tablet for the stage.</p>
-            </div>
-            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
-              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                AI Co-Writer
-              </h3>
-              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Powered by Gemini 3.6 Flash. Transpose, rewrite, or arrange chords instantly using the built-in AI assistant. Includes a smart Undo feature and efficient Reply quoting to save your API tokens.</p>
-            </div>
-            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
-              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                Zero-Friction Sharing
-              </h3>
-              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Share songs instantly via QR codes or ultra-short links without needing accounts or centralized databases.</p>
-            </div>
-            <div style="background: var(--surface-2); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--line);">
-              <h3 style="margin-top: 0; color: var(--text); display: flex; align-items: center; gap: 8px; font-size: 1.1rem;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                Stage Ready
-              </h3>
-              <p style="color: var(--muted); font-size: 0.95rem; margin-bottom: 0; line-height: 1.5;">Distraction-free fullscreen presentation mode with smooth auto-scroll, customizable metronome, and true-black stage theme.</p>
-            </div>
-          </div>
-
-          <!-- Detailed Features Accordion -->
-          <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Detailed Features</h3>
-          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 3rem;">
-            
-            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
-              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                Chord & Lyric Editor
-              </summary>
-              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
-                <ul style="margin: 0; padding-left: 20px;">
-                  <li><strong>Dual Format Support:</strong> Works with both traditional chord lines and inline bracket chords.</li>
-                  <li><strong>Clean Markdown Syntax:</strong> Use <code>#</code> for titles, <code>##</code> for sections, and <code>---</code> for dividers.</li>
-                  <li><strong>Live Transposition & Capo:</strong> Transpose semitones up/down instantly with automatic enharmonic spelling.</li>
-                  <li><strong>Notation Formats:</strong> Switch between Standard Chords, Roman Numerals, and Nashville Number System.</li>
-                </ul>
-              </div>
-            </details>
-
-            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
-              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
-                Song Library & Setlists
-              </summary>
-              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
-                <ul style="margin: 0; padding-left: 20px;">
-                  <li><strong>Fast Search & Filtering:</strong> Filter by song key, artist, or tags with instant search.</li>
-                  <li><strong>Multi-Song Setlists:</strong> Create custom worship sets and gig setlists.</li>
-                  <li><strong>Quick Import & Export:</strong> Export your entire library as JSON backups.</li>
-                </ul>
-              </div>
-            </details>
-            
-            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
-              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-                Music Theory & Interactive Tools
-              </summary>
-              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
-                <ul style="margin: 0; padding-left: 20px;">
-                  <li><strong>Interactive Circle of Fifths:</strong> Click any key to hear 3-note harmonic audio synthesis.</li>
-                  <li><strong>Virtual Instruments:</strong> Piano, 6-String Guitar, 4/5-String Bass, and Ukulele.</li>
-                  <li><strong>Digital Chromatic Tuner:</strong> Built-in microphone tuner with visual pitch cents needle.</li>
-                  <li><strong>Metronome:</strong> Tap tempo, adjustable BPM, and custom time signatures.</li>
-                </ul>
-              </div>
-            </details>
-
-            <details style="border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2);">
-              <summary style="padding: 14px 16px; cursor: pointer; font-weight: 600; font-size: 1.05rem; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="var(--accent)" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>
-                Privacy & Security
-              </summary>
-              <div style="padding: 0 16px 16px; color: var(--muted); font-size: 0.95rem; line-height: 1.6;">
-                <ul style="margin: 0; padding-left: 20px;">
-                  <li><strong>Zero Centralized Database:</strong> Sonata does not store or process your songs on external company servers.</li>
-                  <li><strong>Isolated Google OAuth 2.0:</strong> Uses the restricted `drive.file` scope—Sonata can only access the files it creates in your Google Drive.</li>
-                  <li><strong>No Telemetry / No Trackers:</strong> 100% private, open, and client-side.</li>
-                </ul>
-              </div>
-            </details>
-          </div>
-
-          <h3 style="border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 16px; font-size: 1.3rem;">Release Notes</h3>
-          <div id="aboutChangelogContent" style="color:var(--text); font-size: 0.95rem; padding-bottom: 40px;">
-            Loading changelog...
+            </aside>
           </div>
         </div>
       </section>
 
+      <!-- PLAY -->
+      <section class="view" id="view-play" data-view-panel="play" aria-labelledby="playHeading">
+        <div class="page">
+          <div class="page-head">
+            <div>
+              <h1 id="playHeading" data-i18n="playTitle">Play</h1>
+              <p class="page-sub" id="playSub"></p>
+            </div>
+            <div class="play-controls">
+              <div class="segmented" role="tablist" aria-label="Show">
+                <button type="button" role="tab" data-show="scale" data-i18n="showScale">Scale</button>
+                <button type="button" role="tab" data-show="chord" data-i18n="showChord">Chord</button>
+              </div>
+              <select class="select" id="playKeySelect" aria-label="Key" data-i18n-attr="aria-label:key"></select>
+            </div>
+          </div>
+          <div class="song-chords" id="songChords" aria-label="Chords in this song" data-i18n-attr="aria-label:chordsInSong"></div>
+
+          <article class="card instrument-card">
+            <header class="card-head">
+              <h2><span data-icon="piano"></span><span data-i18n="piano">Piano</span></h2>
+              <label class="switch"><input type="checkbox" id="pianoLabels" checked><span data-i18n="noteNames">Note names</span></label>
+            </header>
+            <div class="piano-scroll"><div class="piano" id="piano" role="group" aria-label="Piano"></div></div>
+          </article>
+
+          <article class="card instrument-card">
+            <header class="card-head">
+              <h2><span data-icon="guitar"></span><span data-i18n="fretboard">Fretboard</span></h2>
+              <select class="select" id="tuningSelect" aria-label="Tuning" data-i18n-attr="aria-label:tuning"></select>
+            </header>
+            <div class="fretboard-scroll"><div class="fretboard" id="fretboard" role="group" aria-label="Fretboard"></div></div>
+          </article>
+
+          <article class="card instrument-card tuner-card" aria-labelledby="tunerTitle">
+            <header class="card-head">
+              <h2 id="tunerTitle"><span data-icon="tuner"></span><span data-i18n="tuner">Tuner</span></h2>
+              <label class="field inline small"><span>A4</span><input class="input tiny" type="number" id="a4Input" min="415" max="466" inputmode="numeric" aria-label="Reference pitch A4"><span>Hz</span></label>
+            </header>
+            <div class="tuner" id="tuner">
+              <div class="tuner-gauge" aria-hidden="true">
+                <svg viewBox="0 0 240 132" id="tunerSvg"></svg>
+              </div>
+              <div class="tuner-readout">
+                <div class="tuner-note" id="tunerNote">—</div>
+                <div class="tuner-detail" id="tunerDetail" aria-live="polite" data-i18n="tunerIdle">Tap Start and play one string.</div>
+              </div>
+              <div class="tuner-actions">
+                <button class="btn primary" type="button" id="tunerBtn"><span data-icon="mic"></span><span data-i18n="startTuner">Start tuner</span></button>
+              </div>
+              <p class="mini-label" data-i18n="referenceTones">Reference tones</p>
+              <div class="tuner-strings" id="tunerStrings"></div>
+            </div>
+          </article>
+        </div>
+      </section>
     </main>
+
+    <nav class="bottom-nav" aria-label="Main" data-i18n-attr="aria-label:navMain">
+      <button class="bn" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
+      <button class="bn" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navEditor">Editor</span></button>
+      <button class="bn" data-view="tools" type="button"><span data-icon="sliders"></span><span data-i18n="navTools">Tools</span></button>
+      <button class="bn" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
+      <button class="bn" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
+    </nav>
   </div>
 
-  <div class="modal-host" id="modalHost" hidden>
-    <div class="modal-backdrop" id="modalBackdrop"></div>
-    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal-header">
-        <h2 id="modalTitle"></h2>
-        <p class="modal-message" id="modalMessage"></p>
+  <!-- STAGE -->
+  <section class="stage" id="stage" hidden aria-label="Stage view" data-i18n-attr="aria-label:stage">
+    <header class="stage-top">
+      <div class="stage-nav" id="stageSetNav" hidden>
+        <button class="stage-btn" id="stagePrev" type="button" aria-label="Previous song" data-i18n-attr="aria-label:prevSong"><span data-icon="chevron-left"></span></button>
+        <span class="stage-count" id="stageCount">1/1</span>
+        <button class="stage-btn" id="stageNext" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong"><span data-icon="chevron-right"></span></button>
       </div>
-      <div class="modal-fields" id="modalFields"></div>
-      <div class="modal-actions" id="modalActions"><button class="button" id="modalCancel"
-          type="button">Cancel</button><button class="button primary" id="modalConfirm" type="button">Done</button>
-      </div>
-    </section>
-  </div>
-
-  <div class="toast-host" id="toastHost" aria-live="polite"></div>
-
-  <section class="presentation" id="presentation" data-pres-theme="stage" hidden aria-label="Presentation mode">
-    <button class="presentation-floating-exit" id="floatingPresentationExit" type="button" aria-label="Exit presentation">✕ Exit</button>
-    <div class="presentation-top" id="presentationTop">
-      <div class="presentation-header-row">
-        <div class="presentation-title-group">
-          <div class="pres-setlist-nav" id="presSetlistNav" style="display: none;">
-            <button class="button secondary compact" id="presSlPrev" data-icon="arrow-left" type="button" aria-label="Previous song in setlist">‹</button>
-            <span id="presSlIndicator" class="pres-setlist-badge">1/1</span>
-            <button class="button secondary compact" id="presSlNext" data-icon="arrow-right" type="button" aria-label="Next song in setlist">›</button>
-          </div>
-          <div class="presentation-title" id="presentationTitle">Sonata</div>
+      <div class="stage-title"><strong id="stageTitle"></strong><span id="stageMeta"></span></div>
+      <div class="stage-tools">
+        <div class="stage-group">
+          <button class="stage-btn" id="stageKeyDown" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown"><span data-icon="minus"></span></button>
+          <span class="stage-key" id="stageKey">C</span>
+          <button class="stage-btn" id="stageKeyUp" type="button" aria-label="Transpose up" data-i18n-attr="aria-label:transposeUp"><span data-icon="plus"></span></button>
         </div>
-        <button class="button danger compact" id="presentationExit" data-icon="x" type="button" aria-label="Exit presentation">Exit</button>
-      </div>
-
-      <div class="presentation-controls">
-        <div class="presentation-notation-switch segmented" id="presentationNotationSwitch" role="tablist" aria-label="Stage notation mode">
-          <button class="tab-button active" role="tab" aria-selected="true" aria-controls="presentationText" type="button" data-pres-notation="original">Song</button>
-          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="transposed">Transposed</button>
-          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="roman">Roman</button>
-          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="nashville">Nashville</button>
-          <button class="tab-button" role="tab" aria-selected="false" aria-controls="presentationText" type="button" data-pres-notation="lyrics">Lyrics</button>
+        <div class="stage-group">
+          <button class="stage-btn" id="stageFontDown" type="button" aria-label="Smaller text" data-i18n-attr="aria-label:smaller">A−</button>
+          <button class="stage-btn" id="stageFontUp" type="button" aria-label="Bigger text" data-i18n-attr="aria-label:bigger">A+</button>
         </div>
-        <div class="presentation-action-tools">
-          <div class="pres-transpose-stepper" id="presTransposeGroup" title="Quick Transpose in Stage Mode">
-            <button class="button compact" id="presTransposeDown" type="button" aria-label="Transpose down 1 semitone">♭</button>
-            <span id="presKeyBadge" class="pres-key-badge" title="Active Key">Key</span>
-            <button class="button compact" id="presTransposeUp" type="button" aria-label="Transpose up 1 semitone">♯</button>
-          </div>
-          <div class="pres-font-group">
-            <button class="button compact" id="presentationFontDown" data-icon="type-minus" type="button" aria-label="Decrease font size">A-</button>
-            <button class="button compact" id="presentationFontUp" data-icon="type-plus" type="button" aria-label="Increase font size">A+</button>
-          </div>
-          <select class="select compact" id="presentationOrientation" aria-label="Presentation orientation">
-            <option value="auto">Auto</option>
-            <option value="portrait">Portrait</option>
-            <option value="landscape">Landscape</option>
-          </select>
-          <button class="help-icon" data-help="present" type="button" aria-label="Help with Presentation Mode">?</button>
-        </div>
+        <select class="stage-select" id="stageMode" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
+          <option value="chords" data-i18n="modeChords">Chords</option>
+          <option value="nashville" data-i18n="modeNumbers">Numbers</option>
+          <option value="roman" data-i18n="modeRoman">Roman</option>
+          <option value="lyrics" data-i18n="modeLyrics">Lyrics</option>
+        </select>
       </div>
+      <button class="stage-btn exit" id="stageExit" type="button" aria-label="Exit stage view" data-i18n-attr="aria-label:exitStage"><span data-icon="x"></span></button>
+    </header>
+    <div class="stage-scroll" id="stageScroll" tabindex="0">
+      <div class="chart stage-chart" id="stageChart"></div>
     </div>
-    <div class="presentation-stage" id="presentationStage" tabindex="0" role="region" aria-label="Chord chart display area">
-      <div class="presentation-text" id="presentationText"></div>
-    </div>
-    <div class="presentation-controls-bottom" id="presentationControlsBottom" role="toolbar" aria-label="Stage audio and scroll controls">
-      <button class="icon-button" id="presThemeToggle" data-icon="sun" type="button" aria-label="Cycle Presentation Theme" title="Cycle Theme"></button>
-      <button class="icon-button" id="presMetronomeToggle" data-icon="metronome" type="button" aria-label="Toggle Presentation Metronome" title="Toggle Metronome"></button>
-      <div class="beat-row" id="presBeatRow" style="width: 44px;"></div>
-      <div class="pres-dock-divider"></div>
-      <button class="icon-button" id="presScrollToggle" data-icon="scroll" type="button" aria-label="Toggle Auto-Scroll" title="Toggle Auto-Scroll"></button>
-      <span class="pres-speed-label">SPD</span>
-      <input type="range" id="presScrollSpeed" min="0" max="180" step="1" value="30" class="pres-speed-slider" aria-label="Auto-scroll speed">
-      <span id="presScrollSpeedLabel" class="pres-speed-value">30</span>
-    </div>
+    <footer class="stage-dock">
+      <button class="stage-btn" id="stageScrollBtn" type="button" aria-label="Auto-scroll" data-i18n-attr="aria-label:autoScroll"><span data-icon="play"></span></button>
+      <input class="range stage-range" type="range" id="stageSpeed" min="5" max="180" aria-label="Scroll speed" data-i18n-attr="aria-label:scrollSpeed">
+      <span class="stage-divider"></span>
+      <button class="stage-btn" id="stageMetroBtn" type="button" aria-label="Metronome" data-i18n-attr="aria-label:metronome"><span data-icon="metronome"></span></button>
+      <span class="stage-bpm" id="stageBpm">90</span>
+      <span class="stage-beat" id="stageBeat" aria-hidden="true"></span>
+      <span class="stage-divider"></span>
+      <button class="stage-btn" id="stageThemeBtn" type="button" aria-label="Stage colors" data-i18n-attr="aria-label:stageColors"><span data-icon="contrast"></span></button>
+    </footer>
   </section>
 
-  <section class="print-area" id="printArea" aria-hidden="true">
-    <h1 id="printTitle"></h1>
-    <pre id="printBody"></pre>
-    <footer id="printFooter"></footer>
-  </section>
+  <dialog class="sheet" id="sheet" aria-labelledby="sheetTitle">
+    <form method="dialog" class="sheet-inner" id="sheetForm">
+      <header class="sheet-head">
+        <h2 id="sheetTitle"></h2>
+        <button class="icon-btn" value="cancel" formnovalidate type="submit" aria-label="Close" data-i18n-attr="aria-label:close"><span data-icon="x"></span></button>
+      </header>
+      <div class="sheet-body" id="sheetBody"></div>
+      <footer class="sheet-foot" id="sheetFoot"></footer>
+    </form>
+  </dialog>
 
-  <!-- AI Assistant FAB and Panel -->
-  <button id="aiFabButton" class="ai-fab" type="button" title="AI Co-Writer" aria-label="Open AI Assistant" aria-expanded="false" aria-controls="aiChatPanel">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-  </button>
-
-  <aside id="aiChatPanel" class="ai-chat-panel hidden" role="dialog" aria-label="AI Co-Writer">
-    <div class="ai-chat-header">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-        <h2 style="margin:0; font-size:1.1rem; font-weight:700;">AI Co-Writer</h2>
-      </div>
-      <div style="display:flex; align-items:center; gap:4px;">
-        <button id="aiClearHistoryButton" class="icon-button ghost danger" type="button" aria-label="Clear Chat" title="Clear Chat" style="min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--danger);">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-        </button>
-        <button id="aiSettingsButton" class="icon-button ghost" type="button" aria-label="AI Settings" title="AI Settings" style="min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </button>
-        <button id="aiCloseButton" class="icon-button ghost" data-icon="x" type="button" aria-label="Close AI" style="min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      </div>
-    </div>
-    
-    <!-- AI Settings Overlay -->
-    <div id="aiSettingsOverlay" class="hidden" style="position:absolute; top:52px; left:0; width:100%; height:calc(100% - 52px); background:var(--surface); z-index:10; display:none; flex-direction:column; padding:20px; box-sizing:border-box; overflow-y:auto;">
-      <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:12px;">
-        <h3 style="margin:0; color:var(--text); font-size:1.1rem;">AI Settings (BYOK)</h3>
-        <button class="help-icon" data-help="aiByok" type="button" aria-label="Help with Gemini API Key" style="width: 22px; height: 22px; margin:0; flex-shrink: 0;">?</button>
-      </div>
-      <p style="color:var(--muted); font-size:0.9rem; line-height:1.5;">
-        Sonata shares a free public AI pool. If you hit the limit or want <strong>unlimited access</strong>, you can plug in your own free Google Gemini API key.
-      </p>
-      <div style="background:var(--surface-2); padding:12px; border-radius:8px; margin-bottom:16px;">
-        <ol style="margin:0; padding-left:16px; color:var(--text); font-size:0.85rem; line-height:1.5;">
-          <li>Click <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent); font-weight:bold;">here</a> to open Google AI Studio.</li>
-          <li>Click the blue <strong>Create API Key</strong> button.</li>
-          <li>Paste the key below.</li>
-        </ol>
-      </div>
-      <label for="aiApiKeyInput" style="font-size:0.85rem; font-weight:bold; color:var(--text); margin-bottom:6px; display:block;">Your Gemini API Key</label>
-      <input type="password" id="aiApiKeyInput" class="input" placeholder="AIzaSy..." style="margin-bottom:16px; width:100%;">
-      <button id="aiSaveKeyButton" class="button primary" type="button" style="width:100%; justify-content:center;">Save Key</button>
-      <button id="aiClearKeyButton" class="button ghost danger" type="button" style="width:100%; justify-content:center; margin-top:8px;">Clear Key</button>
-    </div>
-    <div id="aiChatHistory" class="ai-chat-history" aria-live="polite">
-      <div class="ai-message assistant">
-        <p style="margin:0;">Hi! I'm your AI co-writer. I can read your current chord chart and help you write, arrange, transpose, or format lyrics. How can I help?</p>
-      </div>
-    </div>
-    <div class="ai-chat-input-area">
-      <textarea id="aiChatInput" aria-label="Ask AI Co-Writer" placeholder="Ask AI to write a bridge, add chords, format lyrics..." rows="2"></textarea>
-      <button id="aiSendButton" class="button primary" type="button" title="Send (Enter)">Send</button>
-    </div>
-  </aside>
-
-  <script src="app.js" defer></script>
+  <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+  <div class="print-area" id="printArea" aria-hidden="true"></div>
 </body>
-
-</html><!-- Vercel cache bust -->
+</html>

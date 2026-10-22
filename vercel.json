@@ -1,40 +1,32 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/manifest.json", "destination": "/manifest.webmanifest", "permanent": true },
+    { "source": "/icon.png", "destination": "/icons/icon-512.png", "permanent": true },
+    { "source": "/icon_dark.png", "destination": "/icons/icon-512.png", "permanent": true },
+    { "source": "/icon_light.png", "destination": "/icons/icon-512.png", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "microphone=(self), camera=(), geolocation=(), payment=()" }
       ]
     },
     {
-      "source": "/(icon.*|screenshots/.*|.*\\.png|.*\\.jpg|.*\\.svg)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=604800, stale-while-revalidate=86400"
-        }
-      ]
+      "source": "/(index.html|sw.js|version.json|update_log.json|manifest.webmanifest)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
     {
-      "source": "/(style.css|app.js)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
+      "source": "/(js|css)/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/(icons|screenshots)/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }]
     }
   ]
 }

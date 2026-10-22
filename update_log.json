@@ -1,5 +1,32 @@
 [
   {
+    "version": "2.0.0",
+    "date": "2026-10-22",
+    "whatsNew": "A full rebuild: cleaner design, simpler Drive backup, better instruments, and Sona the music buddy. The AI assistant is gone.",
+    "changes": [
+      "New look: new logo and icon, Plus Jakarta Sans and JetBrains Mono fonts, light, dark and match-device themes, five accent colors.",
+      "One navigation per screen: tabs on top for desktop, a bottom tab bar on phones and tablets. The slide-out menu and duplicate buttons are gone.",
+      "Google Drive backup is now one Back up button. Sign in once and changes sync on their own; every sync merges first, so two devices never overwrite each other. Signing out now clears your name and photo.",
+      "Transpose and capo are saved per song and show right away in the Chords view. Capo shows the shapes you actually play.",
+      "Chords stay above the right word even when lines wrap on a phone. Inline [G]chords display above the lyrics too.",
+      "Editor: chord chips insert chords at the cursor, undo/redo per song, everything autosaves. The demo song no longer overwrites your song.",
+      "Circle of fifths redrawn: the key family is highlighted, Roman or Nashville numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.",
+      "Piano and fretboard: real chord and scale highlighting, correct sharps and flats for the key (F# in G, not Gb), proper fret inlays, Drop D tuning, press-and-slide playing.",
+      "Better sound: plucked-string guitar and bass (tuned to the cent), piano that stops when you let go.",
+      "Tuner rebuilt: accurate pitch detection with the microphone's echo cancellation turned off, needle gauge, Hz and cents, nearest-string hint, adjustable A4.",
+      "Metronome now keeps steady time on the audio clock, with 2/4 to 12/8, tap tempo and save-to-song.",
+      "Stage view: keeps the screen awake, auto-scroll pauses when you touch, arrow keys move through a setlist, three stage colors.",
+      "Setlists: reorder songs with up/down, play from the library, share a whole setlist.",
+      "Share links keep the song inside the link and no longer go through TinyURL unless you choose to shorten one. Old Sonata links still open.",
+      "PDF export keeps accented letters (ñ, é), shows key, capo and tempo, and prints a whole setlist.",
+      "Deleting a song can be undone, and deleted songs no longer come back after a Drive sync.",
+      "Works offline after the first visit (real service worker). About page now states plainly that Vercel counts anonymous page views.",
+      "Removed the Gemini AI co-writer and its server code.",
+      "Meet Sona, a blue pixel musician who wanders the bottom of the screen, bobs to the metronome and shares tips. Hide Sona in Settings.",
+      "Code rebuilt as small JavaScript modules, type-checked with TypeScript, with unit and browser tests. Your existing songs and settings load unchanged."
+    ]
+  },
+  {
     "version": "1.5.5",
     "date": "2026-10-16",
     "whatsNew": "Stage Mode Responsive Overhaul, Touch Interaction Hardening, In-Stage Transposition & Setlist Controls, Theory Circle Robustness",
