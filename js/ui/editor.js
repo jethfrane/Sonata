@@ -73,8 +73,10 @@ export function initEditor() {
     historyTimer = setTimeout(() => pushHistory(s.id, body().value), 500);
     h.redo = [];
     store.update(s, { body: body().value });
+    autosize();
     queueRender();
   });
+  window.addEventListener("resize", autosize);
   body().addEventListener("keydown", (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
@@ -125,12 +127,23 @@ export function initEditor() {
   loadSong();
 }
 
+const compact = matchMedia("(max-width: 960px)");
+
+/** On phones and tablets the chart box grows with the text, so only the page scrolls. */
+function autosize() {
+  const ta = body();
+  if (!compact.matches) { ta.style.height = ""; return; }
+  ta.style.height = "auto";
+  ta.style.height = `${Math.max(ta.scrollHeight + 2, 320)}px`;
+}
+
 /** @param {string} pane */
 function setPane(pane) {
   $("editorPanes").dataset.pane = pane;
+  $("view-editor").dataset.pane = pane;
   $$("[data-pane]").forEach((b) => { const on = b.dataset.pane === pane; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
   try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch { /* ignore */ }
-  if (pane === "preview") renderPreview();
+  if (pane === "preview") renderPreview(); else requestAnimationFrame(autosize);
 }
 
 /** @param {string} id @param {string} value */
@@ -158,6 +171,7 @@ function step(dir) {
   h.last = value;
   body().value = value;
   store.update(s, { body: value });
+  autosize();
   updateHistoryButtons();
   queueRender();
 }
@@ -317,6 +331,7 @@ export function loadSong() {
   updateHistoryButtons();
   updateSetlistBar();
   refreshEditor();
+  requestAnimationFrame(autosize);
 }
 
 /** Re-render everything that depends on settings or key. */
@@ -328,4 +343,5 @@ export function refreshEditor() {
   renderChordBar();
   renderPreview();
   paintIcons($("view-editor"));
+  requestAnimationFrame(autosize);
 }

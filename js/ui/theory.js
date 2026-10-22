@@ -1,5 +1,5 @@
 // @ts-check
-import { $, $$, esc, toast } from "./dom.js";
+import { $, $$, esc, toast, setIcon } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import {
@@ -11,6 +11,8 @@ import { playChord } from "../audio.js";
 /** @type {import("../core/music.js").Key|null} null = follow the song */
 let picked = null;
 let format = "roman";
+/** When locked, tapping a wedge only plays it; the highlighted key stays put. */
+let locked = false;
 
 const ORDER_SHARPS = ["F", "C", "G", "D", "A", "E", "B"];
 const ORDER_FLATS = ["B", "E", "A", "D", "G", "C", "F"];
@@ -20,7 +22,19 @@ export function theoryKey() {
 }
 
 export function initTheory() {
-  try { format = localStorage.getItem("sonata_circle_format") === "nashville" ? "nashville" : "roman"; } catch { /* ignore */ }
+  try {
+    format = localStorage.getItem("sonata_circle_format") === "nashville" ? "nashville" : "roman";
+    locked = localStorage.getItem("sonata_circle_lock") === "1";
+    const saved = localStorage.getItem("sonata_circle_key");
+    if (locked && saved) { const [pc, mode] = saved.split(":"); picked = keyFromTonic(Number(pc), mode === "minor" ? "minor" : "major"); }
+  } catch { /* ignore */ }
+  $("circleLock").addEventListener("click", () => {
+    locked = !locked;
+    if (locked) picked = theoryKey();
+    saveLock();
+    tick();
+    renderTheory();
+  });
   $$("[data-circle-format]").forEach((b) => b.addEventListener("click", () => {
     format = b.dataset.circleFormat || "roman";
     try { localStorage.setItem("sonata_circle_format", format); } catch { /* ignore */ }
@@ -30,12 +44,14 @@ export function initTheory() {
     const k = theoryKey();
     const mode = /** @type {"major"|"minor"} */ (b.dataset.keyMode);
     if (mode !== k.mode) picked = mode === "minor" ? keyFromTonic(k.tonic + 9, "minor") : keyFromTonic(k.tonic + 3, "major");
+    saveLock();
     renderTheory();
   }));
   $("keyPicker").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-tonic]"));
     if (!b) return;
     picked = keyFromTonic(Number(b.dataset.tonic), theoryKey().mode);
+    saveLock();
     tick();
     renderTheory();
   });
@@ -45,7 +61,7 @@ export function initTheory() {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
     if (b) { tick(); playChord(chordTones(b.dataset.chord || "")); }
   });
-  $("theoryFromSongBtn").addEventListener("click", () => { picked = null; renderTheory(); });
+  $("theoryFromSongBtn").addEventListener("click", () => { picked = null; locked = false; saveLock(); renderTheory(); });
   $("theoryToSongBtn").addEventListener("click", () => {
     const s = store.active();
     if (!s || s.readonly) return;
@@ -56,12 +72,19 @@ export function initTheory() {
     if (tr > 6) tr -= 12;
     if (written.mode !== k.mode) { store.update(s, { manualKey: keyValue(k), transpose: 0 }); }
     else store.update(s, { transpose: tr });
-    picked = null;
+    if (!locked) picked = null;
     toast(t("keyOf", "Key of {key}", { key: pretty(k.name) }), "success");
     renderTheory();
   });
   store.on("change", () => { if (app.view === "theory") renderTheory(); });
-  store.on("song-open", () => { picked = null; if (app.view === "theory") renderTheory(); });
+  store.on("song-open", () => { if (!locked) picked = null; if (app.view === "theory") renderTheory(); });
+}
+
+function saveLock() {
+  try {
+    localStorage.setItem("sonata_circle_lock", locked ? "1" : "0");
+    if (locked && picked) localStorage.setItem("sonata_circle_key", `${picked.tonic}:${picked.mode}`);
+  } catch { /* ignore */ }
 }
 
 /** @param {Event} e */
@@ -71,11 +94,19 @@ function onWedge(e) {
   const pc = Number(g.getAttribute("data-pc"));
   const ring = g.getAttribute("data-ring");
   tick();
-  if (ring === "dim") { playChord([pc, mod12(pc + 3), mod12(pc + 6)]); return; }
+  if (ring === "dim") { playChord([pc, mod12(pc + 3), mod12(pc + 6)]); ping(g); return; }
   const mode = ring === "minor" ? "minor" : "major";
-  picked = keyFromTonic(pc, mode);
   playChord(mode === "minor" ? [pc, mod12(pc + 3), mod12(pc + 7)] : [pc, mod12(pc + 4), mod12(pc + 7)]);
+  if (locked) { ping(g); return; }
+  picked = keyFromTonic(pc, mode);
   renderTheory();
+}
+
+/** Brief flash on a wedge that was played but not selected. @param {Element} g */
+function ping(g) {
+  g.classList.remove("ping");
+  void (/** @type {any} */ (g)).getBoundingClientRect();
+  g.classList.add("ping");
 }
 
 /** @param {number} cx @param {number} cy @param {number} r @param {number} deg */
@@ -162,7 +193,13 @@ export function renderTheory() {
     return `<button type="button" class="dia${d.degree === 1 ? " tonic" : ""}" data-chord="${esc(d.name)}"><span class="dia-num">${esc(pretty(n))}</span><span class="dia-name">${esc(pretty(d.name.replace(/dim$/, "°")))}</span></button>`;
   }).join("");
   const s = store.active();
+  const lb = $("circleLock");
+  lb.setAttribute("aria-pressed", String(locked));
+  lb.classList.toggle("on", locked);
+  setIcon(/** @type {HTMLElement} */ (lb.firstElementChild), locked ? "lock" : "unlock");
+  /** @type {HTMLElement} */ (lb.querySelector(".lock-text")).textContent = locked ? t("keyLocked", "Locked") : t("lockKey", "Lock key");
+  $("lockHint").hidden = !locked;
   /** @type {HTMLButtonElement} */ ($("theoryFromSongBtn")).hidden = !picked;
-  /** @type {HTMLButtonElement} */ ($("theoryToSongBtn")).disabled = !s || Boolean(s.readonly) || !picked;
+  /** @type {HTMLButtonElement} */ ($("theoryToSongBtn")).hidden = !s || Boolean(s.readonly) || !picked;
   renderCircle();
 }

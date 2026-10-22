@@ -1,5 +1,18 @@
 [
   {
+    "version": "2.0.1",
+    "date": "2026-10-22",
+    "whatsNew": "Calmer colors, a much better phone layout, and a Lock key option on the circle of fifths.",
+    "changes": [
+      "Softer, less saturated colors in light and dark mode, including the Present button, the circle of fifths and the piano and fretboard highlights.",
+      "Phone editor: one compact toolbar row, the chart box grows with the song so only the page scrolls, view options show only in Preview, and the chord chips only while editing.",
+      "Circle of fifths: new Lock key button. While locked, tapping a wedge plays the chord but keeps the highlighted key; the key picker still changes it. The lock is remembered.",
+      "Phone fixes: shorter sort labels, compact Details button, stacked link fields, tighter key picker, fretboard and tuner string buttons that fit small screens.",
+      "Sona stays on the song list on phones so it never covers the editor or instruments.",
+      "Dark mode: the key family on the circle is easier to see."
+    ]
+  },
+  {
     "version": "2.0.0",
     "date": "2026-10-22",
     "whatsNew": "A full rebuild: cleaner design, simpler Drive backup, better instruments, and Sona the music buddy. The AI assistant is gone.",

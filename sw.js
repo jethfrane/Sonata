@@ -1,7 +1,7 @@
 // Sonata service worker: works offline after the first visit.
 // App files: network first (so updates show), cache as fallback.
 // Fonts: cache first. Google APIs and analytics are never cached.
-const VERSION = "2.0.0";
+const VERSION = "2.0.1";
 const CACHE = `sonata-v${VERSION}`;
 const SHELL = [
   "/", "/index.html", "/css/app.css", "/manifest.webmanifest", "/version.json", "/update_log.json",

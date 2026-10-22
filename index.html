@@ -96,8 +96,8 @@
               <button type="button" role="tab" data-filter="setlists" data-i18n="filterSetlists">Setlists</button>
             </div>
             <select class="select" id="librarySort" aria-label="Sort" data-i18n-attr="aria-label:sort">
-              <option value="recent" data-i18n="sortRecent">Recently edited</option>
-              <option value="title" data-i18n="sortTitle">Title A–Z</option>
+              <option value="recent" data-i18n="sortRecent">Recent</option>
+              <option value="title" data-i18n="sortTitle">Title</option>
               <option value="artist" data-i18n="sortArtist">Artist</option>
               <option value="key" data-i18n="sortKey">Key</option>
             </select>
@@ -128,7 +128,7 @@
           </div>
           <div class="meta-row">
             <div class="meta-chips" id="metaChips"></div>
-            <button class="btn small ghost" id="detailsBtn" type="button"><span data-icon="info"></span><span data-i18n="details">Details</span></button>
+            <button class="btn small ghost details-btn" id="detailsBtn" type="button"><span data-icon="info"></span><span data-i18n="details">Details</span></button>
           </div>
         </div>
 
@@ -281,7 +281,11 @@
             </div>
           </div>
           <div class="theory-layout">
-            <div class="circle-wrap card"><div id="circle" class="circle" role="group" aria-label="Circle of fifths"></div></div>
+            <div class="circle-wrap card">
+              <button class="lock-btn" id="circleLock" type="button" aria-pressed="false"><span data-icon="unlock"></span><span class="lock-text" data-i18n="lockKey">Lock key</span></button>
+              <div id="circle" class="circle" role="group" aria-label="Circle of fifths"></div>
+              <p class="lock-hint" id="lockHint" hidden data-i18n="lockHint">Key locked. Tapping plays the chord but keeps the highlight.</p>
+            </div>
             <aside class="card key-panel">
               <div class="key-picker" id="keyPicker" role="group" aria-label="Choose a key" data-i18n-attr="aria-label:chooseKey"></div>
               <div class="segmented full" role="tablist" aria-label="Mode">

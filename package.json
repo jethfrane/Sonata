@@ -1,6 +1,6 @@
 {
   "name": "sonata",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Sonata: chord charts and music tools. Static site, no build step.",
   "type": "module",
