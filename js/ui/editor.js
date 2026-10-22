@@ -3,7 +3,7 @@ import { $, $$, esc, toast, copyText, paintIcons } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
-import { diatonicChords, keyShort, pretty, isChordLine } from "../core/music.js";
+import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails } from "./sheets.js";
 
 export const DEMO_SONG = {
@@ -53,6 +53,8 @@ function hist(id) {
 
 const body = () => /** @type {HTMLTextAreaElement} */ ($("songBody"));
 const title = () => /** @type {HTMLInputElement} */ ($("songTitle"));
+
+let barType = "triad";
 
 export function initEditor() {
   title().addEventListener("input", () => {
@@ -110,9 +112,17 @@ export function initEditor() {
   $("setPrevBtn").addEventListener("click", () => stepSetlist(-1));
   $("setNextBtn").addEventListener("click", () => stepSetlist(1));
   $("setExitBtn").addEventListener("click", () => store.exitSetlist());
+  try { barType = localStorage.getItem("sonata_bar_type") || "triad"; } catch { /* ignore */ }
   $("chordBar").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
-    if (b) insertChord(b.dataset.chord || "");
+    if (b) insertChord(toWritten(b.dataset.chord || ""));
+  });
+  $("chordBar").addEventListener("change", (e) => {
+    const el = /** @type {HTMLSelectElement} */ (e.target);
+    if (el.id !== "barType") return;
+    barType = el.value;
+    try { localStorage.setItem("sonata_bar_type", barType); } catch { /* ignore */ }
+    renderChordBar();
   });
 
   store.on("song-open", () => loadSong());
@@ -292,12 +302,25 @@ function renderChordBar() {
   const bar = $("chordBar");
   if (!s || s.readonly) { bar.hidden = true; return; }
   bar.hidden = false;
-  const key = writtenKey(s);
-  const used = uniqueChords(s.body, { ...renderOptions(s, "chords"), transpose: 0, capo: 0 }).slice(0, 8);
-  const diatonic = diatonicChords(key).map((d) => d.name.replace(/dim$/, "dim"));
-  const list = [...new Set([...diatonic.slice(0, 6), ...used])];
-  const html = list.map((c) => `<button type="button" class="chip chord-chip" data-chord="${esc(c)}">${esc(pretty(c))}</button>`).join("");
+  // Chips follow the key you see on the chart, so they change when you transpose or pick a key.
+  const key = shapeKey(s);
+  const used = uniqueChords(s.body, renderOptions(s, "chords")).slice(0, 8);
+  const type = CHORD_TYPES.some((x) => x.id === barType) ? barType : "triad";
+  const list = [...new Set([...chordsForKey(key, type).map((c) => c.name), ...used])];
+  const select = `<select class="select cp-type" id="barType" aria-label="${esc(t("chordType", "Chord type"))}">${CHORD_TYPES.map((x) => `<option value="${x.id}"${x.id === type ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
+  const html = select + list.map((c) => `<button type="button" class="chip chord-chip" data-chord="${esc(c)}">${esc(pretty(c))}</button>`).join("");
   if (bar.dataset.html !== html) { bar.innerHTML = html; bar.dataset.html = html; }
+}
+
+/** The chord as it must be typed into the chart (the chart is stored in its written key). @param {string} chord */
+function toWritten(chord) {
+  const s = store.active();
+  const c = parseChord(chord);
+  if (!s || !c) return chord;
+  const steps = (s.transpose || 0) - (s.capo || 0);
+  if (!steps) return chord;
+  const written = writtenKey(s);
+  return transposeChord(c, -steps, prefersFlats(written, /** @type {any} */ (store.settings.enharmonicPref)));
 }
 
 function updateSetlistBar() {

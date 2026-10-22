@@ -13,6 +13,9 @@ let picked = null;
 let format = "roman";
 /** When locked, tapping a wedge only plays it; the highlighted key stays put. */
 let locked = false;
+/** Auto-rotate turns the circle so the chosen key sits at the top. */
+let rotate = false;
+let rotDeg = 0;
 
 const ORDER_SHARPS = ["F", "C", "G", "D", "A", "E", "B"];
 const ORDER_FLATS = ["B", "E", "A", "D", "G", "C", "F"];
@@ -25,6 +28,7 @@ export function initTheory() {
   try {
     format = localStorage.getItem("sonata_circle_format") === "nashville" ? "nashville" : "roman";
     locked = localStorage.getItem("sonata_circle_lock") === "1";
+    rotate = localStorage.getItem("sonata_circle_rotate") === "1";
     const saved = localStorage.getItem("sonata_circle_key");
     if (locked && saved) { const [pc, mode] = saved.split(":"); picked = keyFromTonic(Number(pc), mode === "minor" ? "minor" : "major"); }
   } catch { /* ignore */ }
@@ -32,6 +36,12 @@ export function initTheory() {
     locked = !locked;
     if (locked) picked = theoryKey();
     saveLock();
+    tick();
+    renderTheory();
+  });
+  $("circleRotate").addEventListener("click", () => {
+    rotate = !rotate;
+    try { localStorage.setItem("sonata_circle_rotate", rotate ? "1" : "0"); } catch { /* ignore */ }
     tick();
     renderTheory();
   });
@@ -202,4 +212,23 @@ export function renderTheory() {
   /** @type {HTMLButtonElement} */ ($("theoryFromSongBtn")).hidden = !picked;
   /** @type {HTMLButtonElement} */ ($("theoryToSongBtn")).hidden = !s || Boolean(s.readonly) || !picked;
   renderCircle();
+  applyRotation();
+}
+
+/** Turn the whole circle (labels stay upright) so the key's wedge is at 12 o'clock. */
+function applyRotation() {
+  const host = $("circle");
+  const key = theoryKey();
+  const majorPc = key.mode === "minor" ? mod12(key.tonic + 3) : key.tonic;
+  const idx = CIRCLE.indexOf(majorPc);
+  let target = rotate ? -idx * 30 : 0;
+  // Take the short way round so it never spins backwards through a full turn.
+  while (target - rotDeg > 180) target -= 360;
+  while (target - rotDeg < -180) target += 360;
+  rotDeg = target;
+  host.dataset.rotate = rotate ? "1" : "0";
+  host.style.setProperty("--rot", `${rotDeg}deg`);
+  const b = $("circleRotate");
+  b.setAttribute("aria-pressed", String(rotate));
+  b.classList.toggle("on", rotate);
 }

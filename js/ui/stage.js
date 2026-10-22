@@ -105,6 +105,12 @@ async function lockScreen() {
   try { if ("wakeLock" in navigator && !wakeLock) { wakeLock = await /** @type {any} */ (navigator).wakeLock.request("screen"); wakeLock.addEventListener?.("release", () => { wakeLock = null; }); } } catch { wakeLock = null; }
 }
 
+/** @type {((on: boolean) => void)|null} */
+let stageListener = null;
+export const isStageOpen = () => open;
+/** @param {(on: boolean) => void} fn */
+export function onStageChange(fn) { stageListener = fn; }
+
 export function openStage() {
   const s = store.active();
   if (!s) return;
@@ -128,6 +134,7 @@ export function openStage() {
   }
   lockScreen();
   scroller().focus({ preventScroll: true });
+  stageListener?.(true);
 }
 
 export function closeStage() {
@@ -139,6 +146,7 @@ export function closeStage() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   try { wakeLock?.release(); } catch { /* ignore */ }
   wakeLock = null;
+  stageListener?.(false);
 }
 
 function renderStage() {

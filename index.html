@@ -3,28 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!--meta:start-->
   <title>Sonata · Chord charts &amp; music tools</title>
   <meta name="description" content="Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app for musicians and worship teams.">
+  <link rel="canonical" href="https://sonata.jethrofrane.xyz/">
+  <meta property="og:site_name" content="Sonata">
+  <meta property="og:title" content="Sonata · Chord charts &amp; music tools">
+  <meta property="og:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
+  <meta property="og:image" content="https://sonata.jethrofrane.xyz/icons/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Sonata app icon with the text: chord charts, transpose, stage view, circle of fifths, piano, tuner.">
+  <meta property="og:url" content="https://sonata.jethrofrane.xyz/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sonata · Chord charts &amp; music tools">
+  <meta name="twitter:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
+  <meta name="twitter:image" content="https://sonata.jethrofrane.xyz/icons/og-image.png">
+  <!--meta:end-->
   <meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0b0f17" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Sonata">
-  <link rel="canonical" href="https://sonata.jethrofrane.xyz/">
-  <meta property="og:title" content="Sonata · Chord charts & music tools">
-  <meta property="og:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
-  <meta property="og:image" content="https://sonata.jethrofrane.xyz/icons/og-image.png">
-  <meta property="og:url" content="https://sonata.jethrofrane.xyz/">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="/css/app.css">
   <script>
     // Apply the saved theme before first paint so there is no flash.
     (function () {
@@ -39,15 +48,15 @@
   </script>
   <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
   <script defer src="/_vercel/insights/script.js"></script>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="/js/main.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to content</a>
 
   <div class="app" id="app" data-view="editor">
     <header class="topbar">
-      <a class="brand" href="./" aria-label="Sonata home">
-        <img src="icons/icon.svg" alt="" width="32" height="32">
+      <a class="brand" href="/" aria-label="Sonata home">
+        <img src="/icons/icon.svg" alt="" width="32" height="32">
         <span class="wordmark">Sonata</span>
       </a>
 
@@ -158,19 +167,16 @@
 
         <div class="editor-panes" id="editorPanes" data-pane="edit">
           <div class="pane pane-edit">
-            <textarea class="chart-input" id="songBody" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Chords and lyrics" data-i18n-attr="aria-label:chartInput"></textarea>
             <div class="quickstart" id="quickstart">
-              <p class="quickstart-title" data-i18n="quickTitle">Start your chart</p>
-              <p class="quickstart-text" data-i18n="quickText">Type chords on the line above the lyrics, or put them inside the words like [G]Amazing. Tap to insert:</p>
+              <p class="quickstart-text" data-i18n="quickText2">Chords above the words, or [G] inside them. Tap to add:</p>
               <div class="quickstart-chips">
                 <button type="button" class="chip" data-insert="## Verse 1&#10;"><code>##</code> <span data-i18n="snipSection">Section</span></button>
                 <button type="button" class="chip" data-insert="G         C          G&#10;"><code>G  C</code> <span data-i18n="snipChordLine">Chord line</span></button>
                 <button type="button" class="chip" data-insert="[G]"><code>[G]</code> <span data-i18n="snipInline">Inline chord</span></button>
-                <button type="button" class="chip" data-insert="&gt; "><code>&gt;</code> <span data-i18n="snipNote">Band note</span></button>
-                <button type="button" class="chip" data-insert="---&#10;"><code>---</code> <span data-i18n="snipDivider">Divider</span></button>
+                <button type="button" class="chip" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
               </div>
-              <button type="button" class="btn small" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
             </div>
+            <textarea class="chart-input" id="songBody" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Chords and lyrics" placeholder="G        C&#10;Amazing grace, how sweet…" data-i18n-attr="aria-label:chartInput"></textarea>
           </div>
           <div class="pane pane-preview">
             <div class="preview-head">
@@ -282,7 +288,10 @@
           </div>
           <div class="theory-layout">
             <div class="circle-wrap card">
-              <button class="lock-btn" id="circleLock" type="button" aria-pressed="false"><span data-icon="unlock"></span><span class="lock-text" data-i18n="lockKey">Lock key</span></button>
+              <div class="circle-tools">
+                <button class="lock-btn" id="circleRotate" type="button" aria-pressed="false"><span data-icon="refresh"></span><span data-i18n="autoRotate">Auto-rotate</span></button>
+                <button class="lock-btn" id="circleLock" type="button" aria-pressed="false"><span data-icon="unlock"></span><span class="lock-text" data-i18n="lockKey">Lock key</span></button>
+              </div>
               <div id="circle" class="circle" role="group" aria-label="Circle of fifths"></div>
               <p class="lock-hint" id="lockHint" hidden data-i18n="lockHint">Key locked. Tapping plays the chord but keeps the highlight.</p>
             </div>
@@ -317,32 +326,34 @@
               <p class="page-sub" id="playSub"></p>
             </div>
             <div class="play-controls">
-              <div class="segmented" role="tablist" aria-label="Show">
-                <button type="button" role="tab" data-show="scale" data-i18n="showScale">Scale</button>
-                <button type="button" role="tab" data-show="chord" data-i18n="showChord">Chord</button>
-              </div>
               <select class="select" id="playKeySelect" aria-label="Key" data-i18n-attr="aria-label:key"></select>
             </div>
           </div>
-          <div class="song-chords" id="songChords" aria-label="Chords in this song" data-i18n-attr="aria-label:chordsInSong"></div>
+          <div class="segmented full inst-tabs" role="tablist" aria-label="Instrument">
+            <button type="button" role="tab" data-inst="piano"><span data-icon="piano"></span><span data-i18n="piano">Piano</span></button>
+            <button type="button" role="tab" data-inst="guitar"><span data-icon="guitar"></span><span data-i18n="guitar">Guitar</span></button>
+            <button type="button" role="tab" data-inst="tuner"><span data-icon="tuner"></span><span data-i18n="tuner">Tuner</span></button>
+          </div>
 
-          <article class="card instrument-card">
+          <article class="card instrument-card" data-inst-panel="piano">
             <header class="card-head">
               <h2><span data-icon="piano"></span><span data-i18n="piano">Piano</span></h2>
               <label class="switch"><input type="checkbox" id="pianoLabels" checked><span data-i18n="noteNames">Note names</span></label>
             </header>
+            <div class="chord-player" id="pianoPlayer"></div>
             <div class="piano-scroll"><div class="piano" id="piano" role="group" aria-label="Piano"></div></div>
           </article>
 
-          <article class="card instrument-card">
+          <article class="card instrument-card" data-inst-panel="guitar">
             <header class="card-head">
               <h2><span data-icon="guitar"></span><span data-i18n="fretboard">Fretboard</span></h2>
               <select class="select" id="tuningSelect" aria-label="Tuning" data-i18n-attr="aria-label:tuning"></select>
             </header>
+            <div class="chord-player" id="guitarPlayer"></div>
             <div class="fretboard-scroll"><div class="fretboard" id="fretboard" role="group" aria-label="Fretboard"></div></div>
           </article>
 
-          <article class="card instrument-card tuner-card" aria-labelledby="tunerTitle">
+          <article class="card instrument-card tuner-card" data-inst-panel="tuner" aria-labelledby="tunerTitle">
             <header class="card-head">
               <h2 id="tunerTitle"><span data-icon="tuner"></span><span data-i18n="tuner">Tuner</span></h2>
               <label class="field inline small"><span>A4</span><input class="input tiny" type="number" id="a4Input" min="415" max="466" inputmode="numeric" aria-label="Reference pitch A4"><span>Hz</span></label>

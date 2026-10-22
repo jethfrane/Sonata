@@ -24,15 +24,26 @@ export function audio() {
     limiter.attack.value = 0.003; limiter.release.value = 0.2;
     master.connect(limiter).connect(ctx.destination);
   }
-  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+  if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
   return ctx;
 }
 
-/** Resume after tab switches (iOS suspends audio). */
+/**
+ * Keep sound alive when the phone locks or the user switches apps and comes back.
+ * iOS suspends or "interrupts" audio; we resume on every sign of the page returning.
+ */
 export function keepAlive() {
-  const wake = () => { if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {}); };
+  // Play through the silent switch and keep the session alive (Safari 16.4+).
+  try { const as = /** @type {any} */ (navigator).audioSession; if (as) as.type = "playback"; } catch { /* unsupported */ }
+  const wake = () => {
+    if (ctx && ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
+  };
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") wake(); });
+  window.addEventListener("pageshow", wake);
+  window.addEventListener("focus", wake);
   document.addEventListener("pointerdown", wake, { passive: true });
+  document.addEventListener("touchend", wake, { passive: true });
+  setInterval(() => { if (document.visibilityState === "visible") wake(); }, 4000);
 }
 
 /**

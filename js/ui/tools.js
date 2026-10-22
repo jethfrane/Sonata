@@ -5,6 +5,8 @@ import { store, app, metronome, writtenKey, detectedKey, soundingKey, shapeKey, 
 import { keyShort, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { buildPdf, renderPng, docText } from "../lib/export.js";
+import { qrModules } from "../lib/qr.js";
+import { packSong, shareUrl } from "../core/share.js";
 import { TIME_SIGNATURES } from "../audio.js";
 import { keyOptions, capoOptions, openShare } from "./sheets.js";
 
@@ -169,7 +171,16 @@ async function exportPng() {
   if (!doc) return;
   await document.fonts?.ready;
   const logo = /** @type {HTMLImageElement|null} */ (document.querySelector(".brand img"));
-  download(`${slug(doc.title)}.png`, await renderPng(doc, { ...exportOpts(), logo }));
+  // The QR opens this exact chart; if the song is too long for a code it points to the app instead.
+  const song = store.active();
+  let qr = null;
+  let qrNote = "";
+  if (song && !song.readonly) {
+    qr = qrModules(await shareUrl(`${location.origin}/`, packSong(song)));
+    if (qr) qrNote = "Opens this song in Sonata on any phone.";
+  }
+  if (!qr) { qr = qrModules(`${location.origin}/`); qrNote = "Opens Sonata on any phone."; }
+  download(`${slug(doc.title)}.png`, await renderPng(doc, { ...exportOpts(), logo, qr, qrNote }));
 }
 
 function printChart() {

@@ -543,3 +543,20 @@ export function qrSvg(text, o = {}) {
   const size = n + m * 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${size}" height="${size}" fill="${o.bg || "#fff"}"/><path d="${d}" fill="${o.fg || "#0b1220"}"/></svg>`;
 }
+
+/**
+ * Raw QR modules, for drawing at exact pixel sizes (sharp edges in PNGs).
+ * Tries the stronger error correction first, then falls back so long links still fit.
+ * @param {string} text
+ * @param {("L"|"M"|"Q"|"H")[]} [tryEcc]
+ * @returns {{ n: number, dark: (r: number, c: number) => boolean }|null}
+ */
+export function qrModules(text, tryEcc = ["M", "L"]) {
+  for (const ecc of tryEcc) {
+    try {
+      const qr = QRCode.generate(text, ecc);
+      return { n: qr.getModuleCount(), dark: (r, c) => qr.isDark(r, c) };
+    } catch { /* too long for this level */ }
+  }
+  return null;
+}

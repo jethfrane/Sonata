@@ -1,5 +1,20 @@
 [
   {
+    "version": "2.0.3",
+    "date": "2026-10-22",
+    "whatsNew": "Taps no longer jump to the top, every page and song has its own link, and the piano and guitar each have a chord player.",
+    "changes": [
+      "Fixed: tapping anything used to scroll back to the top and re-render the page. It now stays where you are.",
+      "Links: /songs, /tools, /theory, /play/piano, /play/guitar, /play/tuner, /song/<name> and /song/<name>/stage. Back and forward work.",
+      "Piano and Guitar each have their own chord player with more chord types: triads, 7ths, sus, add9, 6ths, 9ths, power and borrowed chords for every key.",
+      "The chord bar in the editor follows the key you see and changes when you transpose.",
+      "Circle of fifths: Auto-rotate turns the circle so your key sits at the top.",
+      "Sound keeps working when you leave the app and come back.",
+      "Simpler chart start strip, a clearer type scale, and Settings → Interface text (Small, Medium, Large).",
+      "Sharper QR codes: the QR card and the PNG chart export now include a scannable QR. Share links have a readable name and better link previews."
+    ]
+  },
+  {
     "version": "2.0.2",
     "date": "2026-10-22",
     "whatsNew": "Piano and guitar notes now ring out, and the app is smaller and tighter on phones.",

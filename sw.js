@@ -1,12 +1,12 @@
 // Sonata service worker: works offline after the first visit.
 // App files: network first (so updates show), cache as fallback.
 // Fonts: cache first. Google APIs and analytics are never cached.
-const VERSION = "2.0.2";
+const VERSION = "2.0.3";
 const CACHE = `sonata-v${VERSION}`;
 const SHELL = [
   "/", "/index.html", "/css/app.css", "/manifest.webmanifest", "/version.json", "/update_log.json",
   "/icons/icon.svg", "/icons/icon-192.png", "/icons/icon-512.png", "/icons/apple-touch-icon.png",
-  "/js/main.js", "/js/audio.js", "/js/drive.js",
+  "/js/main.js", "/js/router.js", "/js/audio.js", "/js/drive.js",
   "/js/core/music.js", "/js/core/chart.js", "/js/core/store.js", "/js/core/share.js", "/js/core/pitch.js",
   "/js/lib/qr.js", "/js/lib/export.js",
   "/js/ui/dom.js", "/js/ui/i18n.js", "/js/ui/ctx.js", "/js/ui/editor.js", "/js/ui/library.js", "/js/ui/sheets.js",

@@ -1,4 +1,5 @@
 // @ts-check
+import { slugify } from "../router.js";
 // Share links carry the song itself, compressed into the URL (?s=...).
 // The format matches Sonata v1 so old links and QR codes still open.
 
@@ -132,5 +133,7 @@ export async function decodeShare(value) {
  * @param {SharedSong|SharedSet} data
  */
 export async function shareUrl(base, data) {
-  return `${base}?s=${await encodeShare(data)}`;
+  // /share/<name> gives link previews a readable title; old ?s= links on the root still open.
+  const name = slugify(/** @type {any} */ (data).t || "");
+  return `${base}${name ? `share/${name}` : ""}?s=${await encodeShare(data)}`;
 }

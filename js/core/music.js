@@ -399,6 +399,62 @@ export function diatonicChords(key, spelling = "auto") {
   });
 }
 
+/** Chord families offered for every key (chord bar, chord players). */
+export const CHORD_TYPES = [
+  { id: "triad", label: "Triads" },
+  { id: "7th", label: "7ths" },
+  { id: "sus4", label: "Sus4" },
+  { id: "sus2", label: "Sus2" },
+  { id: "add9", label: "Add9" },
+  { id: "6", label: "6ths" },
+  { id: "9th", label: "9ths" },
+  { id: "power", label: "Power (5)" },
+  { id: "borrowed", label: "Borrowed" }
+];
+
+/**
+ * The chords of a key in one family, in scale order.
+ * @param {Key} key @param {string} type one of CHORD_TYPES ids
+ * @param {Spelling} [spelling]
+ * @returns {{ name: string, numeral: string, pc: number }[]}
+ */
+export function chordsForKey(key, type, spelling = "auto") {
+  const flats = prefersFlats(key, spelling);
+  const minorKey = key.mode === "minor";
+  const nm = (/** @type {number} */ pc, /** @type {string} */ q) => noteName(pc, flats) + q;
+  if (type === "borrowed") {
+    const T = key.tonic;
+    const rows = minorKey
+      ? [["IV", 5, ""], ["V", 7, ""], ["V7", 7, "7"], ["♭II", 1, ""], ["♭v", 6, "dim"]]
+      : [["♭III", 3, ""], ["iv", 5, "m"], ["♭VI", 8, ""], ["♭VII", 10, ""], ["II", 2, ""], ["III7", 4, "7"]];
+    return rows.map(([numeral, off, q]) => {
+      const pc = mod12(T + Number(off));
+      const fl = String(numeral).startsWith("♭") || flats;
+      return { numeral: String(numeral), pc, name: noteName(pc, fl) + q };
+    });
+  }
+  /** @type {{ name: string, numeral: string, pc: number }[]} */
+  const out = [];
+  for (const d of diatonicChords(key, spelling)) {
+    const dominant = minorKey ? d.degree === 7 : d.degree === 5;
+    const dim = d.quality === "diminished";
+    const minor = d.quality === "minor";
+    /** @type {string|null} */
+    let q = null;
+    if (type === "triad") q = dim ? "dim" : minor ? "m" : "";
+    else if (type === "7th") q = dim ? "m7b5" : minor ? "m7" : dominant ? "7" : "maj7";
+    else if (type === "sus4") q = dim ? null : "sus4";
+    else if (type === "sus2") q = dim ? null : "sus2";
+    else if (type === "add9") q = dim ? null : minor ? "madd9" : "add9";
+    else if (type === "6") q = dim ? null : minor ? "m6" : "6";
+    else if (type === "9th") q = dim ? null : minor ? "m9" : dominant ? "9" : "maj9";
+    else if (type === "power") q = dim ? null : "5";
+    if (q === null) continue;
+    out.push({ name: nm(d.pc, q), numeral: d.numeral, pc: d.pc });
+  }
+  return out;
+}
+
 /**
  * Number of sharps (positive) or flats (negative) in the key signature.
  * @param {Key} key

@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = {
   theme: "system",
   accentTheme: "blue",
   language: "en",
+  uiText: "m",
   chartFontFamily: "mono",
   editorFontSize: 15,
   previewFontSize: 16,
@@ -116,6 +117,7 @@ export function normalizeSettings(raw) {
   const s = { ...DEFAULT_SETTINGS, ...(raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {}) };
   if (!["light", "dark", "system"].includes(s.theme)) s.theme = "system";
   if (!["en", "fil"].includes(s.language)) s.language = "en";
+  if (!["s", "m", "l"].includes(s.uiText)) s.uiText = "m";
   if (!["auto", "sharp", "flat"].includes(s.enharmonicPref)) s.enharmonicPref = "auto";
   if (!["chords", "nashville", "roman", "lyrics"].includes(s.viewMode)) s.viewMode = "chords";
   if (!["stage", "dark", "light"].includes(s.presTheme)) s.presTheme = "stage";

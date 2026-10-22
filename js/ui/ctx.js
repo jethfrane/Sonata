@@ -17,7 +17,7 @@ export const metronome = new Metronome();
 export const app = {
   /** @type {View} */ view: "editor",
   /** @type {import("../drive.js").Drive|null} */ drive: null,
-  /** @type {(view: View) => void} */ show: () => {},
+  /** @type {(view: View, opts?: { sub?: string, replace?: boolean }) => void} */ show: () => {},
   /** @type {() => void} */ openStage: () => {},
   /** @type {() => void} */ refresh: () => {},
   /** @type {Set<(beat: number, accent: string) => void>} */ beatListeners: new Set()

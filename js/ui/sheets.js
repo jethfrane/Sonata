@@ -7,7 +7,7 @@ import { store, app, detectedKey, soundingKey, shapeKey, signed, tick } from "./
 import { keyShort, parseKey, pretty } from "../core/music.js";
 import { packSong, packSet, shareUrl, unpackSong } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
-import { qrSvg } from "../lib/qr.js";
+import { qrSvg, qrModules } from "../lib/qr.js";
 
 const KEY_ROOTS_MAJOR = ["C", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"];
 const KEY_ROOTS_MINOR = ["C", "C#", "D", "D#", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
@@ -143,20 +143,60 @@ export function openDetails() {
 
 const BASE = () => `${location.origin}/`;
 
-/** Render a QR SVG to a PNG blob. @param {string} svg @param {string} title */
-async function qrPng(svg, title) {
-  const img = new Image();
-  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-  await img.decode();
+/** Wrap text into at most `max` lines of `width` pixels. @param {CanvasRenderingContext2D} g @param {string} text @param {number} width @param {number} max */
+function wrapLines(g, text, width, max) {
+  const words = text.split(/\s+/);
+  /** @type {string[]} */
+  const lines = [];
+  let cur = "";
+  for (const w of words) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (g.measureText(next).width > width && cur) { lines.push(cur); cur = w; } else cur = next;
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > max) { lines.length = max; lines[max - 1] = lines[max - 1].replace(/.{0,2}$/, "…"); }
+  return lines;
+}
+
+/** A sharp, scannable QR card as a PNG: whole-pixel modules, quiet zone, title and brand. @param {string} url @param {string} title */
+async function qrPng(url, title) {
+  const qr = qrModules(url);
+  if (!qr) throw new Error("qr too long");
+  const W = 1080, H = 1350;
   const c = document.createElement("canvas");
-  c.width = 900; c.height = 1040;
+  c.width = W; c.height = H;
   const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
-  g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height);
-  g.drawImage(img, 60, 60, 780, 780);
-  g.fillStyle = "#0f172a"; g.font = "700 40px 'Plus Jakarta Sans', system-ui, sans-serif"; g.textAlign = "center";
-  g.fillText(title.length > 34 ? title.slice(0, 33) + "…" : title, 450, 910);
-  g.fillStyle = "#64748b"; g.font = "500 26px 'Plus Jakarta Sans', system-ui, sans-serif";
-  g.fillText("Scan to open in Sonata", 450, 960);
+  const ui = "'Plus Jakarta Sans', system-ui, sans-serif";
+  await document.fonts?.ready;
+  g.fillStyle = "#eef2f8"; g.fillRect(0, 0, W, H);
+  // White card
+  const cx = 70, cy = 70, cw = W - 140, ch = H - 140;
+  g.fillStyle = "#ffffff"; g.beginPath(); g.roundRect(cx, cy, cw, ch, 40); g.fill();
+  // Brand row
+  try {
+    const logo = new Image(); logo.src = "/icons/icon-512.png"; await logo.decode();
+    g.drawImage(logo, cx + 56, cy + 52, 72, 72);
+  } catch { /* logo is optional */ }
+  g.fillStyle = "#0f172a"; g.textBaseline = "middle"; g.textAlign = "left"; g.font = `800 44px ${ui}`;
+  g.fillText("Sonata", cx + 148, cy + 88);
+  // QR: integer module size, 4-module quiet zone, black on white for the best scan rate.
+  const quiet = 4, box = 700;
+  const mod = Math.max(2, Math.floor(box / (qr.n + quiet * 2)));
+  const side = mod * (qr.n + quiet * 2);
+  const qx = Math.round((W - side) / 2), qy = cy + 170;
+  g.fillStyle = "#fff"; g.fillRect(qx, qy, side, side);
+  g.fillStyle = "#0b1220";
+  for (let r = 0; r < qr.n; r++) for (let col = 0; col < qr.n; col++) if (qr.dark(r, col)) g.fillRect(qx + (col + quiet) * mod, qy + (r + quiet) * mod, mod, mod);
+  g.strokeStyle = "#e2e8f0"; g.lineWidth = 2; g.strokeRect(qx - 1, qy - 1, side + 2, side + 2);
+  // Title + hint
+  g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#0f172a"; g.font = `800 52px ${ui}`;
+  const lines = wrapLines(g, title, cw - 160, 2);
+  let ty = qy + side + 92;
+  for (const l of lines) { g.fillText(l, W / 2, ty); ty += 62; }
+  g.fillStyle = "#475569"; g.font = `600 30px ${ui}`;
+  g.fillText("Scan with your phone camera to open it in Sonata", W / 2, ty + 14);
+  g.fillStyle = "#94a3b8"; g.font = `600 26px ${ui}`;
+  g.fillText("sonata.jethrofrane.xyz", W / 2, cy + ch - 44);
   return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("png"))), "image/png"));
 }
 
@@ -172,7 +212,7 @@ export async function openShare(setId) {
   const title = set ? set.title : /** @type {any} */ (song).title;
   let url = await shareUrl(BASE(), data);
   const draw = () => {
-    const svg = qrSvg(url);
+    const svg = qrSvg(url, { ecc: "M", margin: 4 }) || qrSvg(url, { margin: 4 });
     return `<div class="share">
       <div class="qr-box">${svg || `<p class="muted">${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p>`}</div>
       <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(url)}" aria-label="Link"><button class="btn" type="button" id="shareCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button></div>
@@ -191,7 +231,7 @@ export async function openShare(setId) {
     if (!b) return;
     if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
-    if (b.id === "shareQr") { const svg = qrSvg(url); if (svg) download(`sonata-${slug(title)}-qr.png`, await qrPng(svg, title)); }
+    if (b.id === "shareQr") { try { download(`sonata-${slug(title)}-qr.png`, await qrPng(url, title)); } catch { toast(t("qrTooLong", "This song is too long for a QR code. The link still works."), "error"); } }
     if (b.id === "shareShort") {
       try {
         const r = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(url), { signal: AbortSignal.timeout(6000) });
@@ -299,6 +339,7 @@ export function openSettings() {
         <label class="field"><span>${esc(t("theme", "Theme"))}</span><select class="select" data-set="theme">${opt("system", t("themeSystem", "Match device"), s.theme)}${opt("light", t("themeLight", "Light"), s.theme)}${opt("dark", t("themeDark", "Dark"), s.theme)}</select></label>
         <label class="field"><span>${esc(t("language", "Language"))}</span><select class="select" data-set="language">${opt("en", "English", s.language)}${opt("fil", "Filipino", s.language)}</select></label>
       </div>
+      <label class="field"><span>${esc(t("uiText", "Interface text"))}</span><select class="select" data-set="uiText">${opt("s", t("sizeSmall", "Small"), s.uiText)}${opt("m", t("sizeMedium", "Medium"), s.uiText)}${opt("l", t("sizeLarge", "Large"), s.uiText)}</select></label>
       <div class="field"><span>${esc(t("color", "Color"))}</span><div class="swatches">${accents.map(([v, l]) => `<button type="button" class="swatch${s.accentTheme === v ? " on" : ""}" data-accent="${v}" style="--sw:var(--sw-${v})" aria-label="${l}" aria-pressed="${s.accentTheme === v}"></button>`).join("")}</div></div>
       <label class="field"><span>${esc(t("chartText", "Chart text size"))} <output id="fsOut">${s.previewFontSize}px</output></span><input class="range" type="range" min="12" max="28" data-set="previewFontSize" value="${s.previewFontSize}"></label>
       <label class="field"><span>${esc(t("lineSpacing", "Line spacing"))} <output id="lhOut">${s.editorLineHeight.toFixed(2)}</output></span><input class="range" type="range" min="1.2" max="2.2" step="0.05" data-set="editorLineHeight" value="${s.editorLineHeight}"></label>
@@ -381,7 +422,7 @@ export async function openAbout() {
     title: t("aboutTitle", "About Sonata"),
     wide: true,
     body: `<div class="about">
-      <div class="about-head"><img src="icons/icon.svg" alt="" width="56" height="56"><div><h3>Sonata <span class="version">v${esc(/** @type {any} */ (app).version || "")}</span></h3>
+      <div class="about-head"><img src="/icons/icon.svg" alt="" width="56" height="56"><div><h3>Sonata <span class="version">v${esc(/** @type {any} */ (app).version || "")}</span></h3>
       <p class="muted">Chord charts and music tools for musicians and worship teams. Made by Jethro Frane.</p></div></div>
       <ul class="about-points">
         <li>Free, no account needed. Songs are saved on your device.</li>
@@ -395,7 +436,7 @@ export async function openAbout() {
     </div>`
   });
   try {
-    const logs = await (await fetch("update_log.json", { cache: "no-cache" })).json();
+    const logs = await (await fetch("/update_log.json", { cache: "no-cache" })).json();
     /** @type {HTMLElement} */ (body.querySelector("#changelog")).innerHTML = logs.slice(0, 8).map((/** @type {any} */ v, /** @type {number} */ i) => `<details${i === 0 ? " open" : ""}><summary><strong>v${esc(v.version)}</strong><span class="muted">${esc(v.date)}</span></summary>
       <p class="log-lead">${esc(v.whatsNew || "")}</p><ul>${(v.changes || []).map((/** @type {string} */ c) => `<li>${esc(c)}</li>`).join("")}</ul></details>`).join("");
   } catch { /** @type {HTMLElement} */ (body.querySelector("#changelog")).innerHTML = `<p class="muted">Release notes are available online.</p>`; }

@@ -205,7 +205,7 @@ export function buildPdf(docs, o = {}) {
 /**
  * Render a song to a PNG image.
  * @param {ExportDoc} doc
- * @param {ExportOptions & { fontFamily?: string, uiFont?: string, logo?: HTMLImageElement|null }} [o]
+ * @param {ExportOptions & { fontFamily?: string, uiFont?: string, logo?: HTMLImageElement|null, qr?: { n: number, dark: (r: number, c: number) => boolean }|null, qrNote?: string }} [o]
  * @returns {Promise<Blob>}
  */
 export async function renderPng(doc, o = {}) {
@@ -226,7 +226,8 @@ export async function renderPng(doc, o = {}) {
   const perCol = Math.ceil(rows.length / columns);
   const headH = doc.artist || doc.creator ? 150 : 128;
   const width = Math.max(720, pad * 2 + colW * columns);
-  const height = headH + pad + perCol * lh + 70;
+  const qrBlock = o.qr ? 250 : 0;
+  const height = headH + pad + perCol * lh + 70 + qrBlock;
   const scale = 2;
   canvas.width = width * scale;
   canvas.height = height * scale;
@@ -257,6 +258,26 @@ export async function renderPng(doc, o = {}) {
     ctx.font = `${r.kind === "chord" ? 700 : 400} ${size}px ${mono}`;
     ctx.fillText(r.text, x, ry);
   });
+  if (o.qr) {
+    // QR drawn in whole device pixels so every module stays sharp and scannable.
+    const quiet = 4, target = 440;
+    const mod = Math.max(2, Math.floor(target / (o.qr.n + quiet * 2)));
+    const side = mod * (o.qr.n + quiet * 2);
+    const qx = pad * scale, qy = Math.round((height - qrBlock - 40) * scale) + 24 * scale;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(qx, qy, side, side);
+    ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 2; ctx.strokeRect(qx - 1, qy - 1, side + 2, side + 2);
+    ctx.fillStyle = "#0b1220";
+    for (let r = 0; r < o.qr.n; r++) for (let c = 0; c < o.qr.n; c++) if (o.qr.dark(r, c)) ctx.fillRect(qx + (c + quiet) * mod, qy + (r + quiet) * mod, mod, mod);
+    ctx.restore();
+    const tx = pad + side / scale + 28;
+    ctx.textAlign = "left"; ctx.fillStyle = "#0f172a"; ctx.font = `700 22px ${ui}`;
+    ctx.fillText("Scan to open this chart", tx, qy / scale + 70);
+    ctx.fillStyle = "#475569"; ctx.font = `500 16px ${ui}`;
+    ctx.fillText(o.qrNote || "Opens in Sonata on any phone.", tx, qy / scale + 98);
+    ctx.fillText("Free, works offline, no account.", tx, qy / scale + 122);
+  }
   ctx.fillStyle = "#94a3b8"; ctx.font = `500 12px ${ui}`; ctx.textAlign = "center";
   ctx.fillText("Made with Sonata  ·  sonata.jethrofrane.xyz", width / 2, height - 26);
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG failed"))), "image/png"));
