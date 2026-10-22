@@ -86,7 +86,7 @@ function bindPress(host, sel, start) {
     if (!a || e.pointerType === "mouse" && !e.buttons) return;
     const under = /** @type {HTMLElement|null} */ (document.elementFromPoint(e.clientX, e.clientY)?.closest(sel) || null);
     if (under && under !== a.el && host.contains(under)) {
-      a.voice.stop(0.4);
+      a.voice.stop();
       a.el.classList.remove("down");
       under.classList.add("down");
       active.set(e.pointerId, { el: under, voice: start(under) });

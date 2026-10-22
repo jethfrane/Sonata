@@ -88,7 +88,7 @@ export function piano(midi, vel = 0.7) {
   n.start(t);
   let stopped = false;
   return {
-    stop(release = 0.28) {
+    stop(release = 1.3) {
       if (stopped || !ctx) return;
       stopped = true;
       const now = ctx.currentTime;
@@ -183,7 +183,7 @@ export function pluck(midi, kind = "guitar", vel = 0.8, when = 0) {
   src.start(t);
   let stopped = false;
   return {
-    stop(release = 0.12) {
+    stop(release = 1.5) {
       if (stopped || !ctx) return;
       stopped = true;
       const now = ctx.currentTime;

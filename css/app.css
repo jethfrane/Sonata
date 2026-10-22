@@ -790,3 +790,53 @@ body.stage-open { overflow: hidden; }
   #themeBtn { display: none; }
   .bn span:last-child { font-size: 10px; }
 }
+
+/* ---------- Compact pass (2.0.2): smaller, tighter controls on small screens ---------- */
+@media (max-width: 960px) {
+  :root { --top-h: 50px; --nav-h: 56px; --radius: 12px; --radius-sm: 9px; }
+  body { font-size: 14px; }
+  .btn { min-height: 36px; padding: 0 11px; font-size: 13px; gap: 6px; }
+  .btn.small { min-height: 30px; padding: 0 8px; font-size: 12.5px; }
+  .icon-btn { width: 36px; height: 36px; }
+  .icon-btn.small { width: 30px; height: 30px; }
+  .input, .select { min-height: 38px; font-size: 14px; }
+  .segmented button { min-height: 30px; padding: 0 10px; font-size: 13px; }
+  .chip { min-height: 30px; padding: 0 10px; font-size: 13px; }
+  .brand img { width: 28px; height: 28px; }
+  .present-btn { width: 36px; }
+  .bn { font-size: 10.5px; gap: 2px; }
+  .bn .icon { width: 20px; height: 20px; }
+  .bn.active [data-icon] { padding: 1px 12px; }
+}
+@media (max-width: 640px) {
+  :root { --chart-size: 15px; }
+  .page { padding: 12px 10px 24px; }
+  #view-editor { padding: 8px 8px 12px; }
+  .page-head { margin-bottom: 10px; }
+  .page-head h1 { font-size: 21px; }
+  .card { padding: 11px; border-radius: 12px; }
+  .card-grid { gap: 10px; }
+  .editor-toolbar .icon-btn { width: 32px; height: 32px; }
+  .editor-toolbar .icon-btn .icon { width: 17px; height: 17px; }
+  .row .icon-btn { width: 32px; height: 32px; }
+  .key-badge { min-width: 32px; height: 32px; font-size: 13px; }
+  .key-btn { min-height: 32px; font-size: 12.5px; }
+  .tab, .tuner-strings .string-btn { min-height: 34px; }
+  .piano { min-width: 480px; height: 150px; }
+  .pk.white { padding-bottom: 6px; font-size: 11px; }
+  .fretboard { min-width: 520px; }
+  .fb-row, .fb-inlays { grid-template-columns: 30px repeat(15, minmax(0, 1fr)); }
+  .fb-string::before { left: 30px; }
+  .fb-string { height: 28px; }
+  .fc span { min-width: 20px; height: 20px; font-size: 9.5px; }
+  .tuner-note { font-size: 44px; }
+  .tuner-gauge { max-width: 220px; }
+  .stat { padding: 6px; }
+  .sheet { max-height: 90dvh; }
+}
+@media (max-width: 380px) {
+  .page { padding: 10px 8px 20px; }
+  .piano { min-width: 440px; height: 140px; }
+  .fretboard { min-width: 480px; }
+  .btn { padding: 0 9px; }
+}

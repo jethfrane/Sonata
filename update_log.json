@@ -1,5 +1,14 @@
 [
   {
+    "version": "2.0.2",
+    "date": "2026-10-22",
+    "whatsNew": "Piano and guitar notes now ring out, and the app is smaller and tighter on phones.",
+    "changes": [
+      "Piano and fretboard notes sustain after release instead of cutting off.",
+      "More compact buttons, nav, cards and instruments on small screens."
+    ]
+  },
+  {
     "version": "2.0.1",
     "date": "2026-10-22",
     "whatsNew": "Calmer colors, a much better phone layout, and a Lock key option on the circle of fifths.",
