@@ -1,5 +1,15 @@
 [
   {
+    "version": "2.0.4",
+    "date": "2026-10-22",
+    "whatsNew": "Slash chords like G/B now sound and show their bass note, and pressed notes are much easier to see.",
+    "changes": [
+      "Slash chords (G/B, D/F♯) play the bass note underneath on piano and guitar, and the bass is marked in orange on the keys and frets.",
+      "Each instrument shows the actual chord and its notes. Hold keys or frets and it names what you are playing.",
+      "Pressed and chord notes are darker, and a pressed note stays lit for a moment after you let go."
+    ]
+  },
+  {
     "version": "2.0.3",
     "date": "2026-10-22",
     "whatsNew": "Taps no longer jump to the top, every page and song has its own link, and the piano and guitar each have a chord player.",

@@ -888,3 +888,33 @@ body { font-size: var(--fs-md); }
   .pane-edit:has(.quickstart:not([hidden])) .chart-input { min-height: 200px; }
 }
 @media (max-width: 640px) { .circle { max-width: 330px; } .circle-tools .lock-btn { min-height: 34px; padding: 0 10px; font-size: var(--fs-xs); } }
+
+/* ---------- Pressed and chord notes: darker, easy to see ---------- */
+.chord-readout { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-height: 44px; margin: 2px 0 10px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); }
+.chord-readout[data-state="playing"] { background: var(--accent-soft); border-color: var(--accent); }
+.ro-name { font: 800 var(--fs-xl) var(--ui); letter-spacing: -.02em; color: var(--text); min-width: 2.2ch; }
+.ro-notes { font: 700 var(--fs-md) var(--mono); color: var(--text-2); }
+.ro-notes em { font: 600 var(--fs-xs) var(--ui); font-style: normal; color: var(--muted); margin-left: 4px; }
+.n-root { color: var(--accent-strong); }
+.n-bass { color: #b45309; text-decoration: underline; text-underline-offset: 3px; }
+html[data-theme="dark"] .n-bass { color: #fbbf24; }
+/* Piano */
+.pk.on.white { background: linear-gradient(#fff, color-mix(in srgb, var(--accent) 38%, #fff)); color: var(--accent-strong); box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--accent) 55%, #dfe4ec), 0 0 0 1px color-mix(in srgb, var(--accent) 45%, #d4dae4); }
+.pk.on.black { background: linear-gradient(color-mix(in srgb, var(--accent) 75%, #1a2030), color-mix(in srgb, var(--accent) 55%, #0f141d)); }
+.pk.root.white { background: linear-gradient(#fff, color-mix(in srgb, var(--accent) 55%, #fff)); }
+.pk.down.white, .pk.lit.white { background: linear-gradient(var(--accent), var(--accent-strong)); color: #fff; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25), 0 0 0 1px var(--accent-strong); }
+.pk.down.black, .pk.lit.black { background: linear-gradient(var(--accent), var(--accent-strong)); color: #fff; box-shadow: 0 0 0 2px var(--accent-soft); }
+.pk.down.white span, .pk.lit.white span { background: #fff; color: var(--accent-strong); }
+.pk.lit { transition: background .65s ease-out, box-shadow .65s ease-out; }
+.pk.bass.white::after { content: ""; position: absolute; top: 8px; width: 10px; height: 10px; border-radius: 2px; background: #d97706; }
+.pk.bass.black::after { content: ""; position: absolute; bottom: 24px; width: 8px; height: 8px; border-radius: 2px; background: #fbbf24; }
+.pk { position: relative; }
+.pk.bass span { box-shadow: 0 0 0 2px #d97706; }
+/* Fretboard */
+.fc span { background: color-mix(in srgb, var(--accent) 38%, #fff); }
+.fc.root span { background: var(--accent-strong); color: #fff; }
+.fc.bass span { border-radius: 5px; background: #d97706; color: #fff; box-shadow: 0 0 0 2px #fde68a, 0 1px 3px rgba(0,0,0,.4); }
+.fc.down span, .fc.lit span { background: var(--accent-strong); color: #fff; transform: scale(1.22); box-shadow: 0 0 0 3px var(--accent-mid), 0 2px 6px rgba(0,0,0,.45); }
+.fc span { transition: transform .12s, background .5s; }
+.fc:not(.on).down::before, .fc:not(.on).lit::before { content: ""; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-strong); box-shadow: 0 0 0 3px var(--accent-mid), 0 2px 6px rgba(0,0,0,.4); }
+.chord-chip.on, .chord-chip.on:hover, button.chip.chord-chip.on:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }

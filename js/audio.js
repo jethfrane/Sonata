@@ -210,22 +210,40 @@ export function pluck(midi, kind = "guitar", vel = 0.8, when = 0) {
  * Play a chord from pitch classes, voiced around middle C with the root below.
  * @param {number[]} pcs root first
  * @param {"piano"|"guitar"} [voice]
+ * @param {number|null} [bassPc] note under the chord for slash chords (G/B -> 11)
  * @returns {Voice}
  */
-export function playChord(pcs, voice = "piano") {
+export function playChord(pcs, voice = "piano", bassPc = null) {
   if (!pcs.length) return SILENT;
   const root = 48 + pcs[0];
-  const notes = [root - 12 >= 36 ? root - 12 : root];
-  let last = root;
-  for (const pc of pcs) {
-    let m = 48 + pc;
-    while (m <= last) m += 12;
-    if (pc === pcs[0]) m = root;
-    notes.push(m);
-    last = Math.max(last, m);
+  /** @type {number[]} */
+  let notes;
+  if (bassPc !== null && bassPc !== pcs[0]) {
+    // Slash chord: the named bass note goes clearly underneath, the chord sits above it.
+    const low = voice === "guitar" ? 40 : 36;
+    const bassMidi = low + ((((bassPc - low) % 12) + 12) % 12);
+    notes = [bassMidi];
+    let last = 47;
+    for (const pc of pcs) {
+      if (pc === bassPc) continue;
+      let m = 48 + pc;
+      while (m <= last) m += 12;
+      notes.push(m);
+      last = m;
+    }
+  } else {
+    notes = [root - 12 >= 36 ? root - 12 : root];
+    let last = root;
+    for (const pc of pcs) {
+      let m = 48 + pc;
+      while (m <= last) m += 12;
+      if (pc === pcs[0]) m = root;
+      notes.push(m);
+      last = Math.max(last, m);
+    }
   }
   const uniq = [...new Set(notes)].sort((a, b) => a - b).slice(0, 6);
-  const voices = uniq.map((m, i) => (voice === "guitar" ? pluck(m, "guitar", 0.65, i * 0.025) : piano(m, i === 0 ? 0.55 : 0.42)));
+  const voices = uniq.map((m, i) => (voice === "guitar" ? pluck(m, "guitar", i === 0 ? 0.8 : 0.65, i * 0.025) : piano(m, i === 0 ? 0.7 : 0.42)));
   return { stop: (r) => voices.forEach((v) => v.stop(r)) };
 }
 

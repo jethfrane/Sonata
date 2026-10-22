@@ -73,6 +73,28 @@ ok(await page.locator("#fretboard .fc.on").count() > 12, "guitar player is separ
 await page.locator("#guitarPlayer [data-chord]").first().click(); await page.waitForTimeout(150);
 ok(await page.locator("#fretboard .fc.on").count() < 60 && await page.locator("#fretboard .fc.on").count() > 3, "guitar chord shows shape notes");
 
+// Slash chords: bass is marked, shown and named; held notes are identified
+await page.goto(BASE + "/play/piano"); await page.waitForTimeout(500);
+await page.evaluate(async () => { const { store } = await import("/js/ui/ctx.js"); const { renderPlay } = await import("/js/ui/play.js"); store.update(store.active(), { body: "G  G/B  C  D/F#\nla la" }); renderPlay(); });
+await page.waitForTimeout(300);
+await page.selectOption("#pianoPlayer .cp-type", "song"); await page.waitForTimeout(150);
+await page.locator('#pianoPlayer [data-chord="G/B"]').click(); await page.waitForTimeout(200);
+ok((await page.textContent("#pianoReadout")).includes("G/B") && (await page.textContent("#pianoReadout")).includes("bass B"), "readout shows G/B with its bass: " + (await page.textContent("#pianoReadout")).trim());
+ok(await page.locator("#piano .pk.bass").count() >= 1 && await page.locator("#piano .pk.root").count() >= 1, "piano marks bass separately from root");
+// hold two keys: C3 + G3 + E4 (C major) -> readout names the chord
+const keys = await page.evaluate(() => [...document.querySelectorAll("#piano .pk")].map((e) => Number(e.dataset.midi)));
+for (const m of [48, 55, 64]) { const b = await page.locator(`#piano .pk[data-midi="${m}"]`).boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height * 0.8); await page.mouse.down(); await page.mouse.up(); }
+// tap one key and check afterglow + readout while held
+const kb = await page.locator('#piano .pk[data-midi="52"]').boundingBox();
+await page.mouse.move(kb.x + kb.width / 2, kb.y + kb.height * 0.85); await page.mouse.down(); await page.waitForTimeout(80);
+ok(await page.locator('#piano .pk[data-midi="52"].down').count() === 1 && (await page.textContent("#pianoReadout")).trim().startsWith("E"), "pressed key is marked and named while held");
+await page.mouse.up(); await page.waitForTimeout(100);
+ok(await page.locator('#piano .pk[data-midi="52"].lit').count() === 1, "released key keeps a short afterglow");
+await page.click('[data-inst="guitar"]'); await page.waitForTimeout(150);
+await page.selectOption("#guitarPlayer .cp-type", "song"); await page.waitForTimeout(150);
+await page.locator('#guitarPlayer [data-chord="D/F#"]').click(); await page.waitForTimeout(200);
+ok(await page.locator("#fretboard .fc.bass").count() >= 1 && (await page.textContent("#guitarReadout")).includes("D/F"), "fretboard marks the bass of D/F♯ and names the chord");
+
 // Editor chord bar follows the key
 await page.goto(BASE + slugPath); await page.waitForTimeout(500);
 const before = await page.locator("#chordBar .chord-chip").allTextContents();

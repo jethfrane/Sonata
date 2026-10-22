@@ -99,3 +99,17 @@ test("pdf keeps accented letters and is valid", async () => {
   assert.ok(pdf.startsWith("%PDF-1.4") && pdf.endsWith("%%EOF"));
   assert.ok(/^[\x00-\x7f]*$/.test(pdf), "pure ASCII so xref offsets are exact");
 });
+
+test("slash chords keep their bass; held notes are named", () => {
+  const g = M.chordInfo("G/B");
+  assert.equal(g.bassPc, 11);
+  assert.equal(g.rootPc, 7);
+  assert.deepEqual([...g.pcs].sort((a, b) => a - b), [2, 7, 11]);
+  assert.equal(M.chordInfo("D/F#").bassPc, 6);
+  assert.deepEqual(M.chordInfo("D/F#").pcs.slice().sort((a, b) => a - b), [2, 6, 9]);
+  assert.equal(M.chordInfo("C").bassPc, null);
+  assert.equal(M.identifyChord([55, 59, 62]), "G");
+  assert.equal(M.identifyChord([47, 55, 62]), "G/B");
+  assert.equal(M.identifyChord([60, 63, 67, 70]), "Cm7");
+  assert.equal(M.identifyChord([60]), null);
+});

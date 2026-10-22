@@ -132,6 +132,52 @@ export function chordTones(chordOrText) {
   return pcs;
 }
 
+/**
+ * Everything an instrument needs to show and play a chord, slash chords included.
+ * `pcs` is root first; `bassPc` is the note under the chord (G/B -> B), or null.
+ * @param {string} text
+ */
+export function chordInfo(text) {
+  const c = parseChord(text);
+  if (!c) return null;
+  const tones = chordTones({ ...c, bass: "", bassPc: null });
+  const bassPc = c.bassPc !== null && c.bassPc !== c.rootPc ? c.bassPc : null;
+  const pcs = bassPc !== null && !tones.includes(bassPc) ? [...tones, bassPc] : tones;
+  return { name: c.root + c.quality + (bassPc !== null ? "/" + c.bass : ""), root: c.root, rootPc: c.rootPc, bassPc, pcs };
+}
+
+/** @type {[string, number[]][]} */
+const SHAPES = [
+  ["", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["maj7", [0, 4, 7, 11]], ["m7", [0, 3, 7, 10]],
+  ["sus4", [0, 5, 7]], ["sus2", [0, 2, 7]], ["dim", [0, 3, 6]], ["aug", [0, 4, 8]], ["m7b5", [0, 3, 6, 10]],
+  ["dim7", [0, 3, 6, 9]], ["6", [0, 4, 7, 9]], ["m6", [0, 3, 7, 9]], ["add9", [0, 2, 4, 7]], ["madd9", [0, 2, 3, 7]], ["5", [0, 7]]
+];
+
+/**
+ * Name the chord a player is holding. Lowest note is the bass; a different root gives a slash chord.
+ * @param {number[]} midis held notes
+ * @param {boolean} [flats]
+ * @returns {string|null} null when the notes are not a known chord
+ */
+export function identifyChord(midis, flats = false) {
+  if (midis.length < 2) return null;
+  const sorted = [...midis].sort((a, b) => a - b);
+  const bass = mod12(sorted[0]);
+  const pcs = [...new Set(sorted.map(mod12))];
+  if (pcs.length < 2) return null;
+  // Try the bass note as root first, then the others.
+  const roots = [bass, ...pcs.filter((x) => x !== bass)];
+  for (const r of roots) {
+    const set = new Set(pcs.map((x) => mod12(x - r)));
+    for (const [q, iv] of SHAPES) {
+      if (iv.length === set.size && iv.every((i) => set.has(i))) {
+        return noteName(r, flats) + q + (r !== bass ? "/" + noteName(bass, flats) : "");
+      }
+    }
+  }
+  return null;
+}
+
 /** @param {string} token */
 function splitToken(token) {
   const m = token.match(/^([|()[\]{}<>"'.,;:]*)(.*?)([|()[\]{}<>"'.,;:]*)$/);
