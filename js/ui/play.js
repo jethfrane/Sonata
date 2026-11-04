@@ -46,7 +46,7 @@ export function setInstrument(name) {
 
 function paintInstrument() {
   $("view-play").dataset.inst = inst;
-  $$("[data-inst]").forEach((b) => { const on = b.dataset.inst === inst; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
+  $$("button[data-inst]").forEach((b) => { const on = b.dataset.inst === inst; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; });
   $$("[data-inst-panel]").forEach((el) => { el.hidden = el.dataset.instPanel !== inst; });
 }
 
@@ -78,6 +78,17 @@ export function initPlay() {
     renderFretboard();
   });
   $$("button[data-inst]").forEach((b) => b.addEventListener("click", () => { tick(); app.show("play", { sub: b.dataset.inst }); }));
+  $("view-play").querySelector(".inst-tabs")?.addEventListener("keydown", (ev) => {
+    const e = /** @type {KeyboardEvent} */ (ev);
+    const tabs = /** @type {HTMLButtonElement[]} */ ($$("button[data-inst]"));
+    const i = tabs.findIndex((b) => b.dataset.inst === inst);
+    const n = tabs.length;
+    const to = e.key === "ArrowRight" || e.key === "ArrowDown" ? (i + 1) % n : e.key === "ArrowLeft" || e.key === "ArrowUp" ? (i - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+    if (to < 0) return;
+    e.preventDefault();
+    tick(); app.show("play", { sub: tabs[to].dataset.inst });
+    requestAnimationFrame(() => tabs[to].focus());
+  });
   $("playKeySelect").addEventListener("change", (e) => {
     const v = /** @type {HTMLSelectElement} */ (e.target).value;
     pickedKey = v === "song" ? null : v;

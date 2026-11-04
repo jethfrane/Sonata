@@ -1,5 +1,16 @@
 [
   {
+    "version": "3.1.0",
+    "date": "2026-11-05",
+    "whatsNew": "Small polish: keyboard-friendly instrument tabs, faster first load, and one-tap setlist printing.",
+    "changes": [
+      "Play tabs now work with the arrow keys, Home and End.",
+      "Setlist menu has a Print button that prints every song in the set.",
+      "Dialogs (key, share, settings and more) load only when opened, so the app starts faster.",
+      "App icons are about 60% smaller."
+    ]
+  },
+  {
     "version": "3.0.0",
     "date": "2026-11-04",
     "whatsNew": "A new, simpler Sonata: four tabs, a calmer design, and everything for a song in one place. Your songs, setlists and share links all still work.",

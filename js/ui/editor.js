@@ -4,7 +4,7 @@ import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
-import { openKeySheet, openDetails, openShare } from "./sheets.js";
+import { openKeySheet, openDetails, openShare } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
 
 export const DEMO_SONG = {

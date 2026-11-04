@@ -19,7 +19,7 @@ import { initStage, openStage, closeStage, isStageOpen, onStageChange } from "./
 import { parsePath, buildPath, findSong, PAGE_META, SECTIONS } from "./router.js";
 import { setInstrument, currentInstrument } from "./ui/play.js";
 import { initMascot } from "./ui/mascot.js";
-import { openSettings, openAccount, openImportSet } from "./ui/sheets.js";
+import { openSettings, openAccount, openImportSet } from "./ui/sheets-lazy.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
 const VIEWS = /** @type {View[]} */ (["songs", "editor", "theory", "play"]);

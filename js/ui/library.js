@@ -3,7 +3,7 @@ import { $, $$, esc, icon, toast, openSheet, confirmSheet, relativeTime, paintIc
 import { t, getLang } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
-import { openShare, openSetlistEditor } from "./sheets.js";
+import { openShare, openSetlistEditor, printSetlist } from "./sheets-lazy.js";
 import { addDemoSong } from "./editor.js";
 
 /** @type {"all"|"favorites"|"setlists"} */
@@ -149,6 +149,7 @@ function setlistMenu(id) {
       <button type="button" class="menu-item" data-m="play">${icon("present")}<span>${esc(t("playSet", "Play"))}</span></button>
       <button type="button" class="menu-item" data-m="edit">${icon("edit")}<span>${esc(t("edit", "Edit"))}</span></button>
       <button type="button" class="menu-item" data-m="share">${icon("share")}<span>${esc(t("share", "Share"))}</span></button>
+      <button type="button" class="menu-item" data-m="print">${icon("print")}<span>${esc(t("print", "Print"))}</span></button>
       <button type="button" class="menu-item danger" data-m="del">${icon("trash")}<span>${esc(t("delete", "Delete"))}</span></button>
     </div>`
   });
@@ -156,6 +157,7 @@ function setlistMenu(id) {
     const m = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-m]"))?.dataset.m;
     if (!m) return;
     /** @type {HTMLDialogElement} */ ($("sheet")).close();
+    if (m === "print") printSetlist(id);
     if (m === "play") { if (store.playSetlist(id)) app.openStage(); }
     if (m === "edit") openSetlistEditor(id);
     if (m === "share") openShare(id);
