@@ -26,7 +26,7 @@
       ]
     },
     {
-      "source": "/(index.html|sw.js|registerSW.js|workbox-(.*).js|boot.js|version.json|update_log.json|manifest.webmanifest)",
+      "source": "/(index.html|sw.js|boot.js|version.json|update_log.json|manifest.webmanifest)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
     },
     {
