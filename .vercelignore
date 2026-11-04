@@ -1,4 +1,3 @@
-tests
-jsconfig.json
-package.json
 .Jules
+tests
+.env*
