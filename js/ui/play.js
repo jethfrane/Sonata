@@ -151,8 +151,7 @@ function chordsFor(name) {
 function renderPlayer(name) {
   const p = players[name];
   const hasSong = songChordNames().length > 0;
-  let type = p.type;
-  if (type === "song" && !hasSong) type = "song";
+  const type = p.type;
   const types = [{ id: "song", label: hasSong ? t("songChords", "Song chords") : t("keyChords", "Chords in key") }, ...CHORD_TYPES];
   const list = chordsFor(name);
   if (p.chord && !list.includes(p.chord)) p.chord = null;

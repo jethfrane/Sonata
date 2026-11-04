@@ -61,7 +61,7 @@ export function initStage() {
     el.classList.add("on");
     if (b === 0) el.classList.add("down");
   });
-  store.on("change", () => { if (open) renderStage(); });
+  store.on("change", (/** @type {string} */ kind) => { if (open && kind !== "settings") renderStage(); });
   store.on("song-open", () => { if (open) { scroller().scrollTop = 0; renderStage(); } });
   store.on("setlist", () => { if (open) renderStage(); });
 }
@@ -148,6 +148,8 @@ export function closeStage() {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   try { wakeLock?.release(); } catch { /* ignore */ }
   wakeLock = null;
+  // A click started from the stage dock should not keep ticking after you leave.
+  if (metronome.running && app.view !== "play") { metronome.stop(); syncMetroButton(); }
   stageListener?.(false);
 }
 

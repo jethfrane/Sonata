@@ -77,7 +77,10 @@ export default async function handler(req, res) {
     const query = { s: url.searchParams.get("s") || "" };
     const info = describe(route, query);
     let html = template;
-    if (info) {
+    if (!info) {
+      // Not a page we describe (an unknown address): keep it out of search results. The home page stays indexable.
+      if (route !== "/") html = html.replace("<!--meta:start-->", () => `<!--meta:start-->\n  <meta name="robots" content="noindex">`);
+    } else {
       const title = `${info.title} · Sonata`;
       const canonical = ORIGIN + route.split("?")[0];
       const head = [

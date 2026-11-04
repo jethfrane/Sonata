@@ -169,7 +169,7 @@ export function mergeLibraries(local, remote) {
       const item = norm(raw);
       if (!item || gone.has(/** @type {any} */ (item).id)) continue;
       const prev = map.get(/** @type {any} */ (item).id);
-      const ts = (/** @type {any} */ x) => new Date(x.updatedAt || x.date || 0).getTime() || 0;
+      const ts = (/** @type {any} */ x) => { const v = x.updatedAt || x.date || 0; return Date.parse(v) || Number(v) || 0; };
       if (!prev || ts(item) >= ts(prev)) map.set(/** @type {any} */ (item).id, item);
     }
     return [...map.values()];
@@ -177,12 +177,16 @@ export function mergeLibraries(local, remote) {
   return {
     songs: /** @type {Song[]} */ (merge(local.songs || [], remote.songs || [], normalizeSong)),
     setlists: /** @type {Setlist[]} */ (merge(local.setlists || [], remote.setlists || [], normalizeSetlist)),
-    deletedIds: deleted.slice(-2000)
+    deletedIds: deleted.slice(-5000)
   };
 }
 
 /** Same library content? Used to skip a Drive upload when nothing changed. @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} d */
-export const libraryFingerprint = (d) => JSON.stringify([d.songs || [], d.setlists || [], [...(d.deletedIds || [])].sort()]);
+export const libraryFingerprint = (d) => JSON.stringify([
+  // "last opened" changes on every tap on a song; it alone is not worth an upload.
+  (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined })),
+  d.setlists || [], [...(d.deletedIds || [])].sort()
+]);
 
 /** Storage that lives only as long as the page; used when the browser blocks localStorage. @returns {Storage} */
 export function memoryStorage() {
@@ -222,6 +226,8 @@ export class Store {
     /** @type {ReturnType<typeof setTimeout>|undefined} */ this.saveTimer = undefined;
     this.savedAt = 0;
     this.dirty = false;
+    /** What this tab last read from or wrote to storage; a different value means another tab saved. */
+    this.stamp = "";
   }
 
   load() {
@@ -236,7 +242,44 @@ export class Store {
     let active = null;
     try { active = st.getItem(KEYS.active); } catch { /* private mode */ }
     this.activeId = this.songs.some((s) => s.id === active) ? active : this.songs[0]?.id || null;
+    this.stamp = this.readStamp();
     return this;
+  }
+
+  /** The saved library as one string (cheap to compare). */
+  readStamp() {
+    try { return [KEYS.songs, KEYS.setlists, KEYS.deleted].map((k) => this.storage.getItem(k) || "").join("\u0001"); } catch { return ""; }
+  }
+
+  /**
+   * Another tab saved since this one last did: merge its changes in before writing, so two open
+   * tabs never overwrite each other. Songs keep their object identity (open dialogs hold them).
+   */
+  absorbOtherTabs() {
+    const now = this.readStamp();
+    if (!now || now === this.stamp) return;
+    const st = this.storage;
+    const merged = mergeLibraries(this.snapshot(), {
+      songs: readJson(st, KEYS.songs, []), setlists: readJson(st, KEYS.setlists, []), deletedIds: readJson(st, KEYS.deleted, [])
+    });
+    const activeBody = this.song(this.activeId || "")?.body;
+    this.applyMerged(merged);
+    this.stamp = now;
+    this.emit("change", "library");
+    if (this.song(this.activeId || "")?.body !== activeBody) this.emit("song-open", this.active());
+  }
+
+  /** Replace the library with a merged copy, reusing existing objects so references stay valid. @param {ReturnType<typeof mergeLibraries>} m */
+  applyMerged(m) {
+    /** @param {any[]} current @param {any[]} next */
+    const reuse = (current, next) => {
+      const byId = new Map(current.map((x) => [x.id, x]));
+      return next.map((n) => { const e = byId.get(n.id); return e ? Object.assign(e, n) : n; });
+    };
+    this.songs = reuse(this.songs, m.songs);
+    this.setlists = reuse(this.setlists, m.setlists);
+    this.deletedIds = m.deletedIds;
+    if (!this.songs.some((x) => x.id === this.activeId) && this.activeId !== "shared") this.activeId = this.songs[0]?.id || null;
   }
 
   /** @param {string} evt @param {Function} fn */
@@ -256,12 +299,14 @@ export class Store {
   persist() {
     clearTimeout(this.saveTimer);
     try {
+      this.absorbOtherTabs();
       const st = this.storage;
       st.setItem(KEYS.songs, JSON.stringify(this.songs));
       st.setItem(KEYS.setlists, JSON.stringify(this.setlists));
       st.setItem(KEYS.settings, JSON.stringify(this.settings));
       st.setItem(KEYS.deleted, JSON.stringify(this.deletedIds));
       if (this.activeId && this.activeId !== "shared") st.setItem(KEYS.active, this.activeId);
+      this.stamp = this.readStamp();
       this.savedAt = Date.now();
       this.dirty = false;
       this.emit("saved");
@@ -491,12 +536,8 @@ export class Store {
    * @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} data
    */
   mergeIn(data) {
-    const merged = mergeLibraries(this.snapshot(), data);
     const before = this.songs.length;
-    this.songs = merged.songs;
-    this.setlists = merged.setlists;
-    this.deletedIds = merged.deletedIds;
-    if (!this.songs.some((s) => s.id === this.activeId) && this.activeId !== "shared") this.activeId = this.songs[0]?.id || null;
+    this.applyMerged(mergeLibraries(this.snapshot(), data));
     this.persist();
     this.emit("change", "library");
     this.emit("song-open", this.active());

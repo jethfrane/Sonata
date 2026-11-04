@@ -114,6 +114,56 @@ await p.evaluate(() => { const m = window.__sonata.app; });
 await p.click("#metroBtn"); await p.waitForTimeout(700); await p.click("#metroBtn"); await p.waitForTimeout(600);
 ok(await p.locator("#beatDots .on").count() === 0, "no beat dot stays lit after Stop");
 
+// 9. Drive sync against a fake Google Drive (first upload, no-op sync, write race, duplicate files)
+async function driveCase(name, setup, check) {
+  const fake = { files: new Map(), order: [], calls: [], versions: 0, onVersion: null, dupe: null };
+  const put = (id, body) => { fake.files.set(id, body); if (!fake.order.includes(id)) fake.order.push(id); fake.versions++; };
+  setup(fake, put);
+  const dp = await page();
+  await dp.route("https://www.googleapis.com/**", async (route) => {
+    const req = route.request(); const url = new URL(req.url()); const m = req.method();
+    const id = (url.pathname.match(/files\/([^/?]+)/) || [])[1];
+    const json = (o) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(o), headers: { "access-control-allow-origin": "*" } });
+    fake.calls.push(m + " " + url.pathname.split("/").slice(-2).join("/") + (url.searchParams.get("alt") ? "?alt" : ""));
+    if (url.pathname.startsWith("/upload")) {
+      const text = req.postData() || ""; const body = text.split("\r\n\r\n")[2].split("\r\n--")[0];
+      if (m === "POST") { const nid = "new-" + fake.order.length; put(nid, body); if (fake.dupe) fake.dupe(nid); return json({ id: nid }); }
+      put(id, body); return json({ id });
+    }
+    if (m === "DELETE") { fake.files.delete(id); fake.order = fake.order.filter((x) => x !== id); return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" } }); }
+    if (url.searchParams.get("alt") === "media") return json(JSON.parse(fake.files.get(id)));
+    if (url.searchParams.get("fields") === "md5Checksum,modifiedTime") { fake.onVersion?.(id); return json({ md5Checksum: "v" + fake.versions, modifiedTime: "t" }); }
+    if (id) return json(fake.files.has(id) ? { id, trashed: false } : {});
+    return route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify({ files: fake.order.map((x) => ({ id: x })) }) });
+  });
+  await dp.goto(BASE + "/");
+  await dp.evaluate((id) => {
+    localStorage.clear(); sessionStorage.clear();
+    localStorage.setItem("sonata:v12:songs", JSON.stringify([{ id, title: "Alpha", body: "G C", createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-01T00:00:00.000Z" }]));
+    localStorage.setItem("sonata_user_profile", JSON.stringify({ email: "t@example.com" }));
+    sessionStorage.setItem("sonata_google_token", "tok"); sessionStorage.setItem("sonata_google_token_expiry", String(Date.now() + 3600000));
+  }, ID);
+  await dp.reload(); await dp.waitForTimeout(1500);
+  await check(fake, dp);
+  await dp.close();
+}
+await driveCase("first sync", () => {}, async (f) => {
+  ok(f.calls.filter((c) => c.startsWith("POST")).length === 1, "first sync creates the file once");
+  ok([...f.files.values()].some((v) => v.includes("Alpha")), "uploaded library holds the song");
+});
+await driveCase("no-op sync", (f, put) => { put("file1", JSON.stringify({ songs: [{ id: ID, title: "Alpha", artist: "", creator: "", description: "", links: [], body: "G C", manualKey: "auto", isFavorite: false, transpose: 0, capo: 0, bpm: null, createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-01T00:00:00.000Z", lastOpenedAt: "2026-09-01T00:00:00.000Z" }], setlists: [], deletedIds: [] })); }, async (f) => {
+  ok(!f.calls.some((c) => c.startsWith("PATCH") || c.startsWith("POST")), "identical library is not uploaded again " + (process.env.DEBUG ? f.calls.join(",") + " :: " + [...f.files.values()][0].slice(0, 400) : ""));
+});
+await driveCase("write race", (f, put) => { put("file1", JSON.stringify({ songs: [], setlists: [], deletedIds: [] })); let n = 0; f.onVersion = (id) => { if (++n === 2) put(id, JSON.stringify({ songs: [{ id: "song-other-zzzzzz", title: "FromPhone", body: "D", updatedAt: "2026-10-01T00:00:00.000Z" }], setlists: [], deletedIds: [] })); }; }, async (f) => {
+  const final = f.files.get("file1") || "";
+  ok(final.includes("FromPhone") && final.includes("Alpha"), "a write by another device during sync is merged, not overwritten");
+});
+await driveCase("duplicate files", (f, put) => { f.dupe = () => { f.order = ["older-file", ...f.order]; f.files.set("older-file", JSON.stringify({ songs: [{ id: "song-old-aaaaaa", title: "InOlder", body: "A", updatedAt: "2026-10-01T00:00:00.000Z" }], setlists: [], deletedIds: [] })); }; }, async (f) => {
+  ok(f.files.has("older-file") && f.files.size === 1, "extra file is removed, the oldest kept");
+  const v = f.files.get("older-file") || "";
+  ok(v.includes("InOlder") && v.includes("Alpha"), "both libraries end up in the oldest file");
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 await b.close();
 process.exit(fail ? 1 : 0);

@@ -55,11 +55,13 @@ export class Drive {
   }
 
   init() {
+    // Earlier versions kept the access token in localStorage; it now lives only for this tab session.
+    try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXPIRY_KEY); } catch { /* ignore */ }
     try {
       this.profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}") || {};
       this.fileId = localStorage.getItem(FILE_KEY);
-      const token = localStorage.getItem(TOKEN_KEY);
-      const exp = Number(localStorage.getItem(EXPIRY_KEY) || 0);
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      const exp = Number(sessionStorage.getItem(EXPIRY_KEY) || 0);
       if (token && exp > Date.now() + 30_000) {
         this.token = token;
         this.set("synced");
@@ -110,8 +112,8 @@ export class Drive {
           }
           this.token = resp.access_token;
           try {
-            localStorage.setItem(TOKEN_KEY, resp.access_token);
-            localStorage.setItem(EXPIRY_KEY, String(Date.now() + (Number(resp.expires_in) || 3599) * 1000));
+            sessionStorage.setItem(TOKEN_KEY, resp.access_token);
+            sessionStorage.setItem(EXPIRY_KEY, String(Date.now() + (Number(resp.expires_in) || 3599) * 1000));
           } catch { /* storage blocked */ }
           await this.fetchProfile();
           resolve(await this.sync());
@@ -143,7 +145,8 @@ export class Drive {
     this.token = null;
     this.profile = {};
     this.fileId = null;
-    for (const k of [TOKEN_KEY, EXPIRY_KEY, PROFILE_KEY, FILE_KEY]) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
+    for (const k of [TOKEN_KEY, EXPIRY_KEY]) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch { /* ignore */ } }
+    for (const k of [PROFILE_KEY, FILE_KEY]) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
     this.set("signed-out");
   }
 
@@ -155,7 +158,7 @@ export class Drive {
   }
 
   tokenValid() {
-    try { return Boolean(this.token) && Number(localStorage.getItem(EXPIRY_KEY) || 0) > Date.now() + 15_000; } catch { return Boolean(this.token); }
+    try { return Boolean(this.token) && Number(sessionStorage.getItem(EXPIRY_KEY) || 0) > Date.now() + 15_000; } catch { return Boolean(this.token); }
   }
 
   /** @param {string} url @param {RequestInit} [init] */
@@ -163,13 +166,14 @@ export class Drive {
     const r = await fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${this.token}` } });
     if (r.status === 401) {
       this.token = null;
-      try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+      try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
       throw Object.assign(new Error("expired"), { expired: true });
     }
     if (!r.ok) throw new Error(`Drive ${r.status}`);
     return r;
   }
 
+  /** The library file. With several (two devices created one at once) the oldest wins, so every device agrees. */
   async findFile() {
     if (this.fileId) {
       try {
@@ -179,9 +183,28 @@ export class Drive {
       } catch (e) { if (/** @type {any} */ (e).expired) throw e; }
     }
     const q = encodeURIComponent(`name='${FILE_NAME}' and trashed=false`);
-    const r = await this.api(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=modifiedTime desc&fields=files(id,modifiedTime)&spaces=drive`);
+    const r = await this.api(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=createdTime&fields=files(id)&spaces=drive`);
     const d = await r.json();
     return d.files?.[0]?.id || null;
+  }
+
+  /** Fingerprint of the file's content on Drive, to notice a write by another device. @param {string} id */
+  async remoteVersion(id) {
+    const r = await this.api(`https://www.googleapis.com/drive/v3/files/${id}?fields=md5Checksum,modifiedTime`);
+    const d = await r.json();
+    return `${d.md5Checksum || ""}|${d.modifiedTime || ""}`;
+  }
+
+  /** @param {string|null} id @param {string} body @returns {Promise<string>} the file id */
+  async upload(id, body) {
+    const boundary = "sonata" + Math.random().toString(36).slice(2);
+    const meta = JSON.stringify(id ? {} : { name: FILE_NAME, mimeType: "application/json" });
+    const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
+    const url = id
+      ? `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart&fields=id`
+      : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id";
+    const up = await this.api(url, { method: id ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body: multipart });
+    return (await up.json()).id || id || "";
   }
 
   /** Remember the sync; a full or blocked storage must not turn a good sync into an error. */
@@ -202,32 +225,34 @@ export class Drive {
     this.busy = true;
     this.set("syncing");
     try {
-      const id = await this.findFile();
-      /** @type {any} */
-      let remote = null;
-      if (id) {
-        const r = await this.api(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
-        remote = await r.json().catch(() => null);
-        if (remote && typeof remote === "object") this.store.mergeIn(remote); else remote = null;
+      let id = await this.findFile();
+      // Download, merge, upload. If another device wrote in between, merge again (up to 3 rounds).
+      for (let round = 0; round < 3; round++) {
+        /** @type {any} */
+        let remote = null;
+        let version = "";
+        if (id) {
+          version = await this.remoteVersion(id);
+          const r = await this.api(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
+          remote = await r.json().catch(() => null);
+          if (remote && typeof remote === "object") this.store.mergeIn(remote); else remote = null;
+        }
+        const snap = this.store.snapshot();
+        if (id && remote && libraryFingerprint(remote) === libraryFingerprint(snap)) break; // Drive already holds this library
+        if (id && round < 2 && await this.remoteVersion(id) !== version) continue; // changed while merging
+        id = await this.upload(id, JSON.stringify(snap));
+        // A second device may have created its own file at the same moment: keep only the oldest.
+        const canon = await this.findFile();
+        if (canon && canon !== id) {
+          // Fold our copy into the oldest file on the next round, then remove ours.
+          const extra = id;
+          id = canon;
+          await this.api(`https://www.googleapis.com/drive/v3/files/${extra}`, { method: "DELETE" }).catch(() => {});
+          continue;
+        }
+        break;
       }
-      const snap = this.store.snapshot();
-      if (id && remote && libraryFingerprint(remote) === libraryFingerprint(snap)) {
-        // Drive already holds exactly this library: skip the upload (saves battery and Drive versions).
-        this.fileId = id;
-        this.markSynced();
-        this.set("synced");
-        return true;
-      }
-      const body = JSON.stringify(snap);
-      const boundary = "sonata" + Math.random().toString(36).slice(2);
-      const meta = JSON.stringify(id ? {} : { name: FILE_NAME, mimeType: "application/json" });
-      const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
-      const url = id
-        ? `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart&fields=id`
-        : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id";
-      const up = await this.api(url, { method: id ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body: multipart });
-      const saved = await up.json();
-      this.fileId = saved.id || id;
+      this.fileId = id;
       this.markSynced();
       this.set("synced");
       return true;

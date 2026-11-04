@@ -25,7 +25,7 @@ export default defineConfig({
         // scripts (Cyrillic, Greek, Vietnamese) on demand thanks to unicode-range.
         globIgnores: ["screenshots/**", "icons/og-image.png", "icons/*-512.png", "**/*-{latin-ext,cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//, /^\/_vercel\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/_vercel\//, /\.[a-z0-9]+$/i],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: false,

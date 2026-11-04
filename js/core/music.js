@@ -199,7 +199,9 @@ export function isChordLine(line) {
   let chords = 0;
   for (const token of t.split(/\s+/)) {
     if (NEUTRAL_TOKEN.test(token)) continue;
-    if (parseChord(splitToken(token).core)) chords++;
+    const core = splitToken(token).core;
+    if (/^[a-g]$/.test(core)) return false; // "a", "e": an ordinary word on a lyric line
+    if (parseChord(core)) chords++;
     else return false;
   }
   return chords > 0;

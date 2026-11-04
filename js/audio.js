@@ -169,6 +169,7 @@ function pluckBuffer(ac, midi, kind) {
   const g = peak ? 0.9 / peak : 1;
   for (let i = 0; i < len; i++) out[i] *= g * (i > len - 2000 ? (len - i) / 2000 : 1);
   pluckCache.set(key, buf);
+  if (pluckCache.size > 40) pluckCache.delete(/** @type {string} */ (pluckCache.keys().next().value)); // keep memory small on phones
   return buf;
 }
 

@@ -26,17 +26,25 @@ Method: read every module (`core`, `ui`, `drive`, `audio`, `api/page.js`, `verce
 
 Share-link size caps (client and server), `safeHref`, HTML escaping of song/setlist/link/ids in every template, CSP/HSTS headers, merge-by-newest, transposition and spelling, key signature, roman/Nashville numerals, chord tone sets, YIN pitch range for guitar/bass/ukulele, metronome compound-meter timing, PDF string escaping, wake lock re-acquire, service-worker cache cleanup. A background Drive merge does **not** move the caret when the text is unchanged (tested).
 
-## Known risks and improvements (not changed)
+## Remaining risks, fixed in the same release
 
-1. **Two tabs, one library.** Each tab saves the whole library; a tab with unsaved edits can overwrite another tab's newer changes (the `storage` listener only refreshes a clean tab). Fix idea: write a revision counter and merge on save.
-2. **Drive lost update.** Download → merge → upload has no `If-Match`; two devices syncing within the same second can drop one edit. Two devices signing in for the first time at once can create two `sonata_library.json` files.
-3. **Deletion marks** keep only the last 2,000 ids and have no timestamps; a long-offline device can bring back very old deletions.
-4. **Access token in `localStorage`** (1 hour life, CSP limits script injection). Moving to memory only would force more sign-ins.
-5. **Chord-line detection** treats a line of only lowercase letters like `a b c` as chords. Rare, but a lyric line `A` becomes a chord line.
-6. **Metronome keeps running** after closing the stage view (may be wanted; make it a setting).
-7. **Plucked-string cache** is unbounded (~0.5 MB per note); cap at ~40 buffers on phones.
-8. **Service worker** serves `index.html` for direct visits to `/manifest.webmanifest`, `/version.json` etc. while active.
-9. **Unknown URLs return 200** (app shell). Fine for a PWA; add `noindex` or 404 for paths the app can't resolve.
-10. **CSP** still needs `'unsafe-inline'` for styles; no violation reporting endpoint.
-11. **Stage view** re-renders the whole chart on every speed-slider step.
-12. **Not verifiable here:** Google sign-in/Drive on live, real phones, mic tuner with an instrument, screen readers, real printing.
+| Risk | Fix |
+|---|---|
+| Two tabs overwrite each other | `Store.persist` merges what another tab saved before writing (`absorbOtherTabs`); objects keep identity (`applyMerged`). |
+| Drive lost update | Version check (`md5Checksum`) before upload; merge again if it changed (3 rounds). |
+| Duplicate Drive files | Oldest file wins (`orderBy=createdTime`); a newer duplicate is folded in and deleted. |
+| Uploads on every song tap | `lastOpenedAt` is ignored by the unchanged-library check. |
+| Deletion marks capped at 2,000 | Cap is 5,000; numeric timestamps are compared correctly. |
+| Token in `localStorage` | Kept in `sessionStorage`; old copies are removed. |
+| Lone lowercase letter = chord line | A single `a`–`g` is a word. |
+| Metronome kept running after stage | Stops on leaving the stage unless you are on Play. |
+| Unbounded plucked-string cache | Capped at 40 buffers. |
+| Service worker answered file URLs with the app | Dotted paths are excluded from the fallback. |
+| Unknown URLs indexable | `noindex` on anything except the home page and described pages. |
+| Stage re-rendered on every speed step | Settings changes no longer re-render the chart. |
+
+## Still open (need a person or a bigger change)
+
+1. Deletion marks have no timestamps; a device offline for a very long time can bring back an old deletion.
+2. Styles still need `'unsafe-inline'` in the CSP; no violation reporting endpoint.
+3. Not verifiable here: Google sign-in/Drive on live (the sync logic is tested against a fake Drive), real phones, mic tuner with an instrument, screen readers, real printing.

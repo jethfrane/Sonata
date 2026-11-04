@@ -191,3 +191,28 @@ test("a malformed URL escape does not break routing", () => {
   assert.equal(parsePath("/play/%zz").view, "play");
   assert.equal(parsePath("/song/hello-abc123/stage").stage, true);
 });
+
+test("two tabs saving at once keep each other's songs", () => {
+  const shared = memoryStorage();
+  const a = new Store(shared).load();
+  const b = new Store(shared).load();
+  a.createSong({ title: "From A", body: "G C" });
+  a.persist();
+  b.createSong({ title: "From B", body: "D A" });
+  b.persist(); // b has not seen A's save; it must merge instead of overwriting
+  const saved = JSON.parse(shared.getItem(KEYS.songs)).map((s) => s.title).sort();
+  assert.deepEqual(saved, ["From A", "From B"]);
+  assert.ok(b.songs.some((s) => s.title === "From A"), "b picked up A's song");
+  // A deletion in one tab is not undone by the other
+  const x = a.songs.find((s) => s.title === "From A");
+  a.deleteSongs([x.id]); a.persist();
+  b.persist();
+  assert.ok(!JSON.parse(shared.getItem(KEYS.songs)).some((s) => s.title === "From A"));
+});
+
+test("a lone lowercase letter is a word, not a chord line", () => {
+  assert.equal(M.lineKind("a"), "lyrics");
+  assert.equal(M.lineKind("a b c"), "lyrics");
+  assert.equal(M.lineKind("Am G"), "chords");
+  assert.equal(M.lineKind("A"), "chords");
+});
