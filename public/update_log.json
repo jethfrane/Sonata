@@ -1,5 +1,21 @@
 [
   {
+    "version": "3.0.0",
+    "date": "2026-11-04",
+    "whatsNew": "A new, simpler Sonata: four tabs, a calmer design, and everything for a song in one place. Your songs, setlists and share links all still work.",
+    "changes": [
+      "New look: warm paper light mode, a quiet dark mode, and new fonts that are easier to read on stage.",
+      "Simpler navigation: Songs, Chart, Theory and Play. The old Tools tab is gone: key and capo live on the key button, Share holds link, QR and every export, and the Metronome moved into Play.",
+      "On a computer, a sidebar keeps your recent songs one click away.",
+      "First visit shows a short welcome instead of an empty song.",
+      "Key & capo can now set sharps or flats and write the new key into the chart.",
+      "Song links (like a YouTube reference) are now tappable on the chart. Only normal web links are shown.",
+      "Faster start: the app loads as one small file, fonts are stored on this site, and the QR and PDF tools load only when you use them.",
+      "Better offline support with a clear \"new version ready\" prompt, plus home-screen shortcuts for New song, Metronome, Tuner and Theory.",
+      "Safer: strict security rules for the site, and share links that are too big or broken are refused instead of freezing the app."
+    ]
+  },
+  {
     "version": "2.0.4",
     "date": "2026-10-22",
     "whatsNew": "Slash chords like G/B now sound and show their bass note, and pressed notes are much easier to see.",

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import * as M from "../js/core/music.js";
 import { buildLines, linesToText, pairSegments, uniqueChords } from "../js/core/chart.js";
 import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS } from "../js/core/store.js";
-import { packSong, packSet, encodeShare, decodeShare, unpackSong } from "../js/core/share.js";
+import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK } from "../js/core/share.js";
 import { detectPitch, noteFromFreq } from "../js/core/pitch.js";
 import { buildPdf, pdfString } from "../js/lib/export.js";
 
@@ -112,4 +112,21 @@ test("slash chords keep their bass; held notes are named", () => {
   assert.equal(M.identifyChord([47, 55, 62]), "G/B");
   assert.equal(M.identifyChord([60, 63, 67, 70]), "Cm7");
   assert.equal(M.identifyChord([60]), null);
+});
+
+test("share links: safe hrefs and size caps", async () => {
+  assert.equal(safeHref("https://youtu.be/x"), "https://youtu.be/x");
+  assert.equal(safeHref("javascript:alert(1)"), "");
+  assert.equal(safeHref("data:text/html,hi"), "");
+  assert.equal(safeHref("not a url"), "");
+  assert.equal(await decodeShare("A".repeat(MAX_LINK + 1)), null);
+  // A tiny link that inflates to ~5 MB is refused instead of freezing the tab.
+  const big = "v3." + JSON.stringify({ t: "x", b: "a".repeat(5 * 1024 * 1024) });
+  const bytes = new Uint8Array(await new Response(new Blob([big]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer());
+  const bomb = Buffer.from(bytes).toString("base64url");
+  assert.ok(bomb.length < MAX_LINK, "bomb fits in a link");
+  assert.equal(await decodeShare(bomb), null);
+  // Normal songs still round-trip.
+  const d = await decodeShare(await encodeShare(packSong({ title: "Ok", body: "G C" })));
+  assert.equal(d.t, "Ok");
 });

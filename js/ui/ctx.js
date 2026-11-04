@@ -7,7 +7,7 @@ import { Metronome } from "../audio.js";
 /**
  * @typedef {import("../core/store.js").Song} Song
  * @typedef {import("../core/music.js").Key} Key
- * @typedef {"songs"|"editor"|"tools"|"theory"|"play"} View
+ * @typedef {"songs"|"editor"|"theory"|"play"} View
  */
 
 export const store = new Store(window.localStorage);

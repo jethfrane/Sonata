@@ -10,12 +10,13 @@ const ok = (c, msg) => { if (c) { pass++; console.log("  ✓", msg); } else { fa
 const path = () => new URL(page.url()).pathname;
 
 await page.goto(BASE + "/"); await page.waitForTimeout(700);
+ok(path() === "/songs" && await page.isVisible(".welcome"), "first visit opens Songs with a welcome");
 await page.evaluate(async () => {
   localStorage.clear();
-  const { store } = await import("/js/ui/ctx.js");
+  const { store } = /** @type {any} */ (window).__sonata;
   store.createSong({ title: "Route Test", body: "G   C   D   G\nHello world" });
 });
-await page.reload(); await page.waitForTimeout(600);
+await page.goto(BASE + "/"); await page.waitForTimeout(600);
 ok(/^\/song\/route-test-[a-z0-9]{6}$/.test(path()), "editor URL is /song/<slug>: " + path());
 const slugPath = path();
 
@@ -30,6 +31,13 @@ await page.click('[data-inst="tuner"]'); await page.waitForTimeout(150);
 ok(path() === "/play/tuner", "tuner has /play/tuner");
 await page.goBack(); await page.waitForTimeout(200);
 ok(path() === "/play/guitar", "back button goes to the previous instrument");
+
+// Metronome lives in Play; old /tools links open the chart
+await page.click('.bn[data-view="play"]'); await page.waitForTimeout(150);
+await page.click('[data-inst="metronome"]'); await page.waitForTimeout(150);
+ok(path() === "/play/metronome" && await page.isVisible("#metroBtn"), "metronome has /play/metronome");
+await page.goto(BASE + "/tools"); await page.waitForTimeout(500);
+ok(await page.getAttribute("#app", "data-view") === "editor", "old /tools link opens the chart");
 
 // Direct links
 await page.goto(BASE + "/play/piano"); await page.waitForTimeout(500);
@@ -48,7 +56,8 @@ ok(await page.getAttribute("#app", "data-view") === "songs", "unknown song link 
 // Taps never scroll to top
 await page.setViewportSize({ width: 390, height: 420 });
 await page.goto(BASE + "/play/piano"); await page.waitForTimeout(500);
-await page.evaluate(() => scrollTo(0, 200));
+// Scroll so the keys are on screen (Playwright would scroll them into view itself otherwise).
+await page.evaluate(() => scrollTo(0, Math.max(40, document.getElementById("piano").getBoundingClientRect().top + scrollY - 200)));
 const y0 = await page.evaluate(() => scrollY);
 await page.locator("#piano .pk.white").nth(5).click(); await page.waitForTimeout(250);
 ok(y0 > 0 && await page.evaluate(() => scrollY) === y0, `piano tap keeps scroll (${y0})`);
@@ -75,7 +84,7 @@ ok(await page.locator("#fretboard .fc.on").count() < 60 && await page.locator("#
 
 // Slash chords: bass is marked, shown and named; held notes are identified
 await page.goto(BASE + "/play/piano"); await page.waitForTimeout(500);
-await page.evaluate(async () => { const { store } = await import("/js/ui/ctx.js"); const { renderPlay } = await import("/js/ui/play.js"); store.update(store.active(), { body: "G  G/B  C  D/F#\nla la" }); renderPlay(); });
+await page.evaluate(async () => { const { store } = /** @type {any} */ (window).__sonata; const { renderPlay } = /** @type {any} */ (window).__sonata; store.update(store.active(), { body: "G  G/B  C  D/F#\nla la" }); renderPlay(); });
 await page.waitForTimeout(300);
 await page.selectOption("#pianoPlayer .cp-type", "song"); await page.waitForTimeout(150);
 await page.locator('#pianoPlayer [data-chord="G/B"]').click(); await page.waitForTimeout(200);
@@ -114,7 +123,7 @@ ok(/^-?\d/.test(rot) && parseFloat(rot) !== 0, "circle rotates to put the key on
 // No overflow in any route at small widths
 for (const w of [320, 390, 768]) {
   await page.setViewportSize({ width: w, height: 800 });
-  for (const p of ["/songs", slugPath, "/tools", "/theory", "/play/piano", "/play/guitar", "/play/tuner"]) {
+  for (const p of ["/songs", slugPath, "/tools", "/theory", "/play/piano", "/play/guitar", "/play/tuner", "/play/metronome"]) {
     await page.goto(BASE + p); await page.waitForTimeout(350);
     const over = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     ok(over <= 0, `no overflow ${w}px ${p}`);

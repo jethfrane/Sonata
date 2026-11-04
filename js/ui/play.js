@@ -18,7 +18,7 @@ export const TUNINGS = {
 const FRETS = 15;
 const PIANO_LOW = 48; // C3
 const PIANO_HIGH = 83; // B5
-const INSTS = ["piano", "guitar", "tuner"];
+const INSTS = ["piano", "guitar", "tuner", "metronome"];
 
 /** Each instrument keeps its own chord player: what it shows and which family of chords. */
 const players = {
@@ -331,7 +331,9 @@ export function renderPlay() {
   sel.innerHTML = opts;
   sel.value = pickedKey || "song";
   const h = highlight(inst === "guitar" ? "guitar" : "piano");
-  $("playSub").textContent = s && s.capo && !pickedKey ? `${h.label} · ${t("capoN", "Capo {n}", { n: s.capo })}` : h.label;
+  $("playSub").textContent = inst === "metronome" ? t("metroSub", "Steady time, tap tempo and accents. It keeps running on stage.")
+    : inst === "tuner" ? t("tunerSub", "Play one string at a time near your phone or laptop.")
+    : s && s.capo && !pickedKey ? `${h.label} · ${t("capoN", "Capo {n}", { n: s.capo })}` : h.label;
   paintInstrument();
   renderPlayer("piano");
   renderPlayer("guitar");

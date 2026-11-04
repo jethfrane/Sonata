@@ -1,12 +1,14 @@
-// Tiny static server for local testing. Mirrors vercel.json: paths without a file
+// Tiny static server for testing the built app. Mirrors vercel.json: paths without a file
 // extension fall back to index.html (so /song/<slug>, /play/piano and /share/<name> work).
 import http from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = join(fileURLToPath(import.meta.url), "..", "..");
+// Usage: node tests/serve.mjs [port] [folder]   (folder defaults to dist/, the built app)
+const project = join(fileURLToPath(import.meta.url), "..", "..");
 const port = Number(process.argv[2] || 5391);
+const root = join(project, process.argv[3] || "dist");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".webmanifest": "application/manifest+json" };
 
 http.createServer(async (req, res) => {

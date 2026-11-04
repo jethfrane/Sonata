@@ -121,7 +121,7 @@ export function toast(message, kind = "info", o = {}) {
  * @typedef {{ label: string, kind?: "primary"|"danger"|"ghost", value?: string,
  *   onClick?: (body: HTMLElement) => boolean|void|Promise<boolean|void> }} SheetAction
  * @typedef {{ title: string, body: string|HTMLElement, actions?: SheetAction[], wide?: boolean,
- *   onOpen?: (body: HTMLElement) => void, onClose?: () => void, className?: string }} SheetOptions
+ *   onOpen?: (body: HTMLElement) => void, onClose?: () => void, className?: string, focus?: boolean }} SheetOptions
  */
 
 
@@ -158,7 +158,7 @@ export function openSheet(o) {
   dlg.onclick = (e) => { if (e.target === dlg) closeSheet(); };
   o.onOpen?.(body);
   const first = /** @type {HTMLElement|null} */ (body.querySelector("input:not([type=hidden]):not([readonly]), select, textarea"));
-  if (first && !matchMedia("(pointer: coarse)").matches) first.focus();
+  if (first && o.focus !== false && !matchMedia("(pointer: coarse)").matches) first.focus();
   return body;
 }
 

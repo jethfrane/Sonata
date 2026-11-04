@@ -28,13 +28,34 @@ export function initLibrary() {
   $("newSongBtn").addEventListener("click", () => { newSong(); });
   $("newSetlistBtn").addEventListener("click", () => openSetlistEditor());
   $("libraryList").addEventListener("click", onListClick);
-  store.on("change", (/** @type {string} */ kind) => { if (kind === "library" && app.view === "songs") renderSoon(); });
-  store.on("song-open", () => { if (app.view === "songs") renderSoon(); });
+  store.on("change", (/** @type {string} */ kind) => { if (kind === "library") { recentSoon(); if (app.view === "songs") renderSoon(); } });
+  store.on("song-open", () => { recentSoon(); if (app.view === "songs") renderSoon(); });
+  $("recentList").addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-recent]"));
+    if (!b) return;
+    store.exitSetlist();
+    store.open(b.dataset.recent || "");
+    app.show("editor");
+  });
   renderLibrary();
 }
 
 let soon = 0;
 function renderSoon() { cancelAnimationFrame(soon); soon = requestAnimationFrame(renderLibrary); }
+let recentTimer = /** @type {any} */ (0);
+function recentSoon() { clearTimeout(recentTimer); recentTimer = setTimeout(renderRecent, 250); }
+
+/** Sidebar (desktop): the songs you opened last, one tap away. */
+export function renderRecent() {
+  const host = document.getElementById("recentList");
+  if (!host) return;
+  const time = (/** @type {any} */ s) => Date.parse(s.lastOpenedAt || s.updatedAt) || 0;
+  const songs = store.songs.slice().sort((a, b) => time(b) - time(a)).slice(0, 7);
+  const html = songs.length
+    ? songs.map((s) => `<button type="button" class="recent-item${s.id === store.activeId ? " active" : ""}" data-recent="${esc(s.id)}"><span class="recent-key">${esc(!s.body.trim() && s.manualKey === "auto" ? "–" : pretty(keyShort(soundingKey(s))))}</span><span class="recent-title">${esc(s.title || "Untitled")}</span></button>`).join("")
+    : `<p class="recent-empty">${esc(t("recentEmpty", "Songs you open show up here."))}</p>`;
+  if (host.dataset.html !== html) { host.innerHTML = html; host.dataset.html = html; }
+}
 
 export function newSong() {
   tick();
@@ -162,9 +183,10 @@ const empty = (title, text, actions) => `<div class="empty"><div class="empty-ar
 export function renderLibrary() {
   const list = $("libraryList");
   const lang = getLang();
-  $$("[data-filter]").forEach((b) => { const on = b.dataset.filter === filter; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
+  $$("[data-filter]").forEach((b) => { const on = b.dataset.filter === filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   const ns = store.songs.length, nl = store.setlists.length;
   $("libraryCount").textContent = `${t(ns === 1 ? "songCount1" : "songsCount", ns === 1 ? "1 song" : "{n} songs", { n: ns })} · ${t(nl === 1 ? "setlistCount1" : "setlistsCount", nl === 1 ? "1 setlist" : "{n} setlists", { n: nl })}`;
+  /** @type {HTMLElement} */ (document.querySelector(".library-toolbar")).hidden = !ns && !nl;
   const q = fold(query.trim());
 
   if (filter === "setlists") {
@@ -194,8 +216,23 @@ export function renderLibrary() {
   if (q) songs = songs.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.body}`).includes(q));
 
   if (!store.songs.length) {
-    list.innerHTML = empty(t("emptyLibraryTitle", "No songs yet"), t("emptyLibraryText", "Write your first chart, or open the demo to see how Sonata works."),
-      `<button class="btn primary" type="button" data-act="create">${icon("plus")}${esc(t("createSong", "Create a song"))}</button><button class="btn" type="button" data-act="demo">${icon("sparkles")}${esc(t("tryDemo", "Try the demo song"))}</button>`);
+    const step = (/** @type {string} */ ic, /** @type {string} */ k, /** @type {string} */ en) => `<li>${icon(ic)}<span>${esc(t(k, en))}</span></li>`;
+    list.innerHTML = `<div class="welcome">
+      <div class="welcome-text">
+        <h2>${esc(t("welcomeTitle", "Your chord charts, ready for Sunday"))}</h2>
+        <p>${esc(t("welcomeText", "Write a chart, transpose it for your singer and put it on stage. It saves on this device, works offline and needs no account."))}</p>
+        <div class="empty-actions">
+          <button class="btn primary" type="button" data-act="create">${icon("plus")}${esc(t("createSong", "Write a song"))}</button>
+          <button class="btn" type="button" data-act="demo">${icon("sparkles")}${esc(t("tryDemo", "Try the demo song"))}</button>
+        </div>
+      </div>
+      <ul class="welcome-steps">
+        ${step("edit", "welcomeStep1", "Type chords above the words. They stay lined up on any screen.")}
+        ${step("key", "welcomeStep2", "Tap − or + to change key. Capo shapes are shown for you.")}
+        ${step("present", "welcomeStep3", "Present opens a big stage view with auto-scroll.")}
+        ${step("share", "welcomeStep4", "Share a link or QR code. The song travels inside it.")}
+      </ul>
+    </div>`;
     return;
   }
   if (!songs.length) {

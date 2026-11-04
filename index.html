@@ -21,8 +21,8 @@
   <meta name="twitter:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
   <meta name="twitter:image" content="https://sonata.jethrofrane.xyz/icons/og-image.png">
   <!--meta:end-->
-  <meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0b0f17" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0d0f" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Sonata">
@@ -30,45 +30,34 @@
   <link rel="icon" href="/icons/icon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/app.css">
-  <script>
-    // Apply the saved theme before first paint so there is no flash.
-    (function () {
-      try {
-        var s = JSON.parse(localStorage.getItem("sonata:v12:settings") || "{}");
-        var t = s.theme === "dark" || s.theme === "light" ? s.theme : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-        document.documentElement.dataset.theme = t;
-        document.documentElement.dataset.accent = s.accentTheme || "blue";
-        if (s.language === "fil") document.documentElement.lang = "fil";
-      } catch (e) {}
-    })();
-  </script>
-  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+  <script src="/boot.js"></script>
   <script defer src="/_vercel/insights/script.js"></script>
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to content</a>
 
-  <div class="app" id="app" data-view="editor">
-    <header class="topbar">
-      <a class="brand" href="/" aria-label="Sonata home">
-        <img src="/icons/icon.svg" alt="" width="32" height="32">
+  <div class="app" id="app" data-view="songs">
+    <aside class="sidebar">
+      <a class="brand" href="/songs" aria-label="Sonata home">
+        <img src="/icons/icon.svg" alt="" width="30" height="30">
         <span class="wordmark">Sonata</span>
       </a>
 
-      <nav class="tabs" role="tablist" aria-label="Main" data-i18n-attr="aria-label:navMain">
-        <button class="tab" role="tab" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
-        <button class="tab" role="tab" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navEditor">Editor</span></button>
-        <button class="tab" role="tab" data-view="tools" type="button"><span data-icon="sliders"></span><span data-i18n="navTools">Tools</span></button>
-        <button class="tab" role="tab" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
-        <button class="tab" role="tab" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
+      <nav class="tabs" aria-label="Main" data-i18n-attr="aria-label:navMain">
+        <button class="tab" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
+        <button class="tab" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navChart">Chart</span></button>
+        <button class="tab" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
+        <button class="tab" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
       </nav>
 
-      <div class="top-actions">
+      <section class="side-recent" aria-labelledby="recentTitle">
+        <h2 class="side-label" id="recentTitle" data-i18n="recent">Recent</h2>
+        <div class="recent-list" id="recentList"></div>
+      </section>
+
+      <div class="side-foot">
         <button class="account-btn" id="accountBtn" type="button" aria-haspopup="dialog">
           <span class="account-avatar" id="accountAvatar" data-icon="cloud"></span>
           <span class="account-label" id="accountLabel" data-i18n="backup">Back up</span>
@@ -76,15 +65,14 @@
         </button>
         <button class="icon-btn" id="themeBtn" type="button" aria-label="Dark mode" data-i18n-attr="aria-label:toggleTheme,title:toggleTheme"><span data-icon="moon"></span></button>
         <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" data-i18n-attr="aria-label:settings,title:settings"><span data-icon="settings"></span></button>
-        <button class="btn primary present-btn" id="presentBtn" type="button"><span data-icon="present"></span><span data-i18n="present">Present</span></button>
       </div>
-    </header>
+    </aside>
 
     <main id="main" class="main">
       <!-- SONGS -->
       <section class="view" id="view-songs" data-view-panel="songs" aria-labelledby="songsHeading">
         <div class="page">
-          <div class="page-head">
+          <header class="page-head">
             <div>
               <h1 id="songsHeading" data-i18n="songsTitle">Songs</h1>
               <p class="page-sub" id="libraryCount"></p>
@@ -93,16 +81,16 @@
               <button class="btn" id="newSetlistBtn" type="button"><span data-icon="list"></span><span data-i18n="newSetlist">New setlist</span></button>
               <button class="btn primary" id="newSongBtn" type="button"><span data-icon="plus"></span><span data-i18n="newSong">New song</span></button>
             </div>
-          </div>
+          </header>
           <div class="library-toolbar">
             <label class="search">
               <span data-icon="search"></span>
-              <input id="librarySearch" type="search" autocomplete="off" placeholder="Search titles, artists, lyrics" data-i18n-attr="placeholder:searchPlaceholder,aria-label:search" aria-label="Search">
+              <input id="librarySearch" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search titles, artists, lyrics" data-i18n-attr="placeholder:searchPlaceholder,aria-label:search" aria-label="Search">
             </label>
-            <div class="segmented" role="tablist" aria-label="Filter">
-              <button type="button" role="tab" data-filter="all" class="active" data-i18n="filterAll">All</button>
-              <button type="button" role="tab" data-filter="favorites" data-i18n="filterFavorites">Favorites</button>
-              <button type="button" role="tab" data-filter="setlists" data-i18n="filterSetlists">Setlists</button>
+            <div class="segmented" role="group" aria-label="Filter">
+              <button type="button" data-filter="all" class="active" data-i18n="filterAll">All</button>
+              <button type="button" data-filter="favorites" data-i18n="filterFavorites">Favorites</button>
+              <button type="button" data-filter="setlists" data-i18n="filterSetlists">Setlists</button>
             </div>
             <select class="select" id="librarySort" aria-label="Sort" data-i18n-attr="aria-label:sort">
               <option value="recent" data-i18n="sortRecent">Recent</option>
@@ -115,8 +103,8 @@
         </div>
       </section>
 
-      <!-- EDITOR -->
-      <section class="view" id="view-editor" data-view-panel="editor" aria-label="Editor" data-i18n-attr="aria-label:navEditor">
+      <!-- CHART (editor) -->
+      <section class="view" id="view-editor" data-view-panel="editor" aria-label="Chart" data-i18n-attr="aria-label:navChart">
         <div class="banner" id="sharedBanner" hidden>
           <span data-icon="share"></span>
           <span class="banner-text" data-i18n="sharedBanner">You're viewing a shared song.</span>
@@ -130,40 +118,44 @@
           <button class="icon-btn" id="setExitBtn" type="button" aria-label="Leave setlist" data-i18n-attr="aria-label:leaveSetlist"><span data-icon="x"></span></button>
         </div>
 
-        <div class="editor-head">
+        <header class="editor-head">
           <div class="title-row">
-            <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
+            <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
             <span class="save-state" id="saveState" aria-live="polite"></span>
+            <div class="head-actions">
+              <button class="btn" id="shareSongBtn" type="button"><span data-icon="share"></span><span data-i18n="shareExportShort">Share</span></button>
+              <button class="btn primary present-btn" id="presentBtn" type="button"><span data-icon="present"></span><span data-i18n="present">Present</span></button>
+            </div>
           </div>
           <div class="meta-row">
             <div class="meta-chips" id="metaChips"></div>
             <button class="btn small ghost details-btn" id="detailsBtn" type="button"><span data-icon="info"></span><span data-i18n="details">Details</span></button>
           </div>
-        </div>
+        </header>
 
         <div class="editor-toolbar">
           <div class="tool-group">
             <button class="icon-btn" id="undoBtn" type="button" aria-label="Undo" data-i18n-attr="aria-label:undo,title:undo"><span data-icon="undo"></span></button>
             <button class="icon-btn" id="redoBtn" type="button" aria-label="Redo" data-i18n-attr="aria-label:redo,title:redo"><span data-icon="redo"></span></button>
           </div>
-          <div class="tool-group key-control" aria-label="Key" data-i18n-attr="aria-label:key">
+          <div class="tool-group key-control" role="group" aria-label="Key" data-i18n-attr="aria-label:key">
             <button class="icon-btn" id="keyDownBtn" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown,title:transposeDown"><span data-icon="minus"></span></button>
-            <button class="key-pill" id="keyPill" type="button" aria-label="Key" data-i18n-attr="title:keyAndCapo"><span class="key-pill-label" data-i18n="key">Key</span><strong id="keyPillValue">C</strong></button>
+            <button class="key-pill" id="keyPill" type="button" aria-haspopup="dialog" data-i18n-attr="title:keyAndCapo"><span class="key-pill-label" data-i18n="key">Key</span><strong id="keyPillValue">C</strong></button>
             <button class="icon-btn" id="keyUpBtn" type="button" aria-label="Transpose up" data-i18n-attr="aria-label:transposeUp,title:transposeUp"><span data-icon="plus"></span></button>
           </div>
-          <div class="segmented view-mode" role="tablist" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
-            <button type="button" role="tab" data-mode="chords" data-i18n="modeChords">Chords</button>
-            <button type="button" role="tab" data-mode="nashville" data-i18n="modeNumbers">Numbers</button>
-            <button type="button" role="tab" data-mode="roman" data-i18n="modeRoman">Roman</button>
-            <button type="button" role="tab" data-mode="lyrics" data-i18n="modeLyrics">Lyrics</button>
+          <div class="segmented view-mode" role="group" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
+            <button type="button" data-mode="chords" data-i18n="modeChords">Chords</button>
+            <button type="button" data-mode="nashville" data-i18n="modeNumbers">Numbers</button>
+            <button type="button" data-mode="roman" data-i18n="modeRoman">Roman</button>
+            <button type="button" data-mode="lyrics" data-i18n="modeLyrics">Lyrics</button>
           </div>
-          <div class="segmented pane-switch" role="tablist" aria-label="Editor panes">
-            <button type="button" role="tab" data-pane="edit" data-i18n="paneEdit">Edit</button>
-            <button type="button" role="tab" data-pane="preview" data-i18n="panePreview">Preview</button>
+          <div class="segmented pane-switch" role="group" aria-label="Editor panes">
+            <button type="button" data-pane="edit"><span data-icon="edit"></span><span data-i18n="paneEdit">Edit</span></button>
+            <button type="button" data-pane="preview"><span data-icon="present"></span><span data-i18n="panePreview">View</span></button>
           </div>
         </div>
 
-        <div class="chord-bar" id="chordBar" aria-label="Insert a chord" data-i18n-attr="aria-label:insertChord"></div>
+        <div class="chord-bar" id="chordBar" role="group" aria-label="Insert a chord" data-i18n-attr="aria-label:insertChord"></div>
 
         <div class="editor-panes" id="editorPanes" data-pane="edit">
           <div class="pane pane-edit">
@@ -173,7 +165,7 @@
                 <button type="button" class="chip" data-insert="## Verse 1&#10;"><code>##</code> <span data-i18n="snipSection">Section</span></button>
                 <button type="button" class="chip" data-insert="G         C          G&#10;"><code>G  C</code> <span data-i18n="snipChordLine">Chord line</span></button>
                 <button type="button" class="chip" data-insert="[G]"><code>[G]</code> <span data-i18n="snipInline">Inline chord</span></button>
-                <button type="button" class="chip" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
+                <button type="button" class="chip accent" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
               </div>
             </div>
             <textarea class="chart-input" id="songBody" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Chords and lyrics" placeholder="G        C&#10;Amazing grace, how sweet…" data-i18n-attr="aria-label:chartInput"></textarea>
@@ -186,91 +178,7 @@
             <div class="chart" id="preview" aria-live="off"></div>
           </div>
         </div>
-      </section>
-
-      <!-- TOOLS -->
-      <section class="view" id="view-tools" data-view-panel="tools" aria-labelledby="toolsHeading">
-        <div class="page">
-          <div class="page-head">
-            <div>
-              <h1 id="toolsHeading" data-i18n="toolsTitle">Tools</h1>
-              <p class="page-sub" id="toolsSong"></p>
-            </div>
-          </div>
-          <div class="card-grid">
-            <article class="card" aria-labelledby="keyCardTitle">
-              <header class="card-head"><h2 id="keyCardTitle"><span data-icon="key"></span><span data-i18n="keyCardTitle">Key &amp; transpose</span></h2></header>
-              <div class="stat-row">
-                <div class="stat"><span class="stat-label" data-i18n="detectedKey">Detected key</span><strong id="detectedKey">—</strong></div>
-                <div class="stat"><span class="stat-label" data-i18n="playsIn">Band plays in</span><strong id="soundingKey">—</strong></div>
-                <div class="stat"><span class="stat-label" data-i18n="shapes">Capo shapes</span><strong id="shapeKey">—</strong></div>
-              </div>
-              <label class="field"><span data-i18n="songKey">Song key</span><select class="select" id="songKeySelect"></select></label>
-              <div class="field">
-                <span data-i18n="transpose">Transpose</span>
-                <div class="stepper">
-                  <button class="icon-btn" type="button" id="trDown" aria-label="Down a half step" data-i18n-attr="aria-label:transposeDown"><span data-icon="minus"></span></button>
-                  <output id="trValue">0</output>
-                  <button class="icon-btn" type="button" id="trUp" aria-label="Up a half step" data-i18n-attr="aria-label:transposeUp"><span data-icon="plus"></span></button>
-                </div>
-              </div>
-              <label class="field"><span data-i18n="capo">Capo</span><select class="select" id="capoSelect"></select></label>
-              <div class="field">
-                <span data-i18n="spelling">Sharps or flats</span>
-                <div class="segmented full" role="tablist" aria-label="Spelling">
-                  <button type="button" role="tab" data-spelling="auto" data-i18n="spellAuto">Auto</button>
-                  <button type="button" role="tab" data-spelling="sharp">♯</button>
-                  <button type="button" role="tab" data-spelling="flat">♭</button>
-                </div>
-              </div>
-              <div class="card-actions">
-                <button class="btn" type="button" id="resetKeyBtn" data-i18n="reset">Reset</button>
-                <button class="btn primary" type="button" id="applyTransposeBtn" data-i18n="applyTranspose">Write into chart</button>
-              </div>
-            </article>
-
-            <article class="card metronome-card" aria-labelledby="metroTitle">
-              <header class="card-head"><h2 id="metroTitle"><span data-icon="metronome"></span><span data-i18n="metronome">Metronome</span></h2></header>
-              <div class="bpm-display">
-                <button class="icon-btn big" type="button" id="bpmDown" aria-label="Slower" data-i18n-attr="aria-label:slower"><span data-icon="minus"></span></button>
-                <div class="bpm-value"><input id="bpmInput" type="number" min="30" max="300" inputmode="numeric" aria-label="BPM"><span>BPM</span></div>
-                <button class="icon-btn big" type="button" id="bpmUp" aria-label="Faster" data-i18n-attr="aria-label:faster"><span data-icon="plus"></span></button>
-              </div>
-              <input class="range" type="range" id="bpmRange" min="30" max="300" aria-label="Tempo" data-i18n-attr="aria-label:tempo">
-              <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
-              <div class="field inline">
-                <span data-i18n="timeSignature">Time signature</span>
-                <select class="select" id="sigSelect"></select>
-              </div>
-              <div class="card-actions">
-                <button class="btn" type="button" id="tapBtn" data-i18n="tapTempo">Tap tempo</button>
-                <button class="btn" type="button" id="songTempoBtn" data-i18n="saveTempo">Save to song</button>
-                <button class="btn primary" type="button" id="metroBtn"><span data-icon="play"></span><span data-i18n="start">Start</span></button>
-              </div>
-            </article>
-
-            <article class="card" aria-labelledby="shareTitle">
-              <header class="card-head"><h2 id="shareTitle"><span data-icon="share"></span><span data-i18n="shareExport">Share &amp; export</span></h2></header>
-              <p class="card-text" data-i18n="shareText">Send a link or QR code. The song travels inside the link, so no account is needed.</p>
-              <button class="btn primary wide" type="button" id="shareBtn"><span data-icon="qr"></span><span data-i18n="shareSong">Share link &amp; QR</span></button>
-              <div class="export-grid">
-                <button class="btn" type="button" id="pdfBtn"><span data-icon="file"></span>PDF</button>
-                <button class="btn" type="button" id="pngBtn"><span data-icon="image"></span>PNG</button>
-                <button class="btn" type="button" id="txtBtn"><span data-icon="text"></span>TXT</button>
-                <button class="btn" type="button" id="printBtn"><span data-icon="print"></span><span data-i18n="print">Print</span></button>
-              </div>
-              <div class="field-row">
-                <label class="field"><span data-i18n="columns">Columns</span>
-                  <select class="select" id="exportColumns"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-                </label>
-                <label class="field"><span data-i18n="page">Page</span>
-                  <select class="select" id="exportOrientation"><option value="portrait" data-i18n="portrait">Portrait</option><option value="landscape" data-i18n="landscape">Landscape</option></select>
-                </label>
-              </div>
-              <p class="card-hint" id="exportHint"></p>
-            </article>
-          </div>
-        </div>
+        <div class="song-links" id="songLinks" hidden></div>
       </section>
 
       <!-- THEORY -->
@@ -281,9 +189,9 @@
               <h1 id="theoryHeading" data-i18n="theoryTitle">Circle of fifths</h1>
               <p class="page-sub" data-i18n="theorySub">Tap a key to hear it. The highlighted wedges are the chords that belong to the key.</p>
             </div>
-            <div class="segmented" role="tablist" aria-label="Numbers">
-              <button type="button" role="tab" data-circle-format="roman" data-i18n="modeRoman">Roman</button>
-              <button type="button" role="tab" data-circle-format="nashville" data-i18n="modeNumbers">Numbers</button>
+            <div class="segmented" role="group" aria-label="Numbers">
+              <button type="button" data-circle-format="roman" data-i18n="modeRoman">Roman</button>
+              <button type="button" data-circle-format="nashville" data-i18n="modeNumbers">Numbers</button>
             </div>
           </div>
           <div class="theory-layout">
@@ -297,9 +205,9 @@
             </div>
             <aside class="card key-panel">
               <div class="key-picker" id="keyPicker" role="group" aria-label="Choose a key" data-i18n-attr="aria-label:chooseKey"></div>
-              <div class="segmented full" role="tablist" aria-label="Mode">
-                <button type="button" role="tab" data-key-mode="major" data-i18n="major">Major</button>
-                <button type="button" role="tab" data-key-mode="minor" data-i18n="minor">Minor</button>
+              <div class="segmented full" role="group" aria-label="Mode">
+                <button type="button" data-key-mode="major" data-i18n="major">Major</button>
+                <button type="button" data-key-mode="minor" data-i18n="minor">Minor</button>
               </div>
               <h2 class="key-title" id="keyTitle">C major</h2>
               <dl class="key-facts">
@@ -329,10 +237,11 @@
               <select class="select" id="playKeySelect" aria-label="Key" data-i18n-attr="aria-label:key"></select>
             </div>
           </div>
-          <div class="segmented full inst-tabs" role="tablist" aria-label="Instrument">
+          <div class="segmented full inst-tabs" role="tablist" aria-label="Instrument" data-i18n-attr="aria-label:instrument">
             <button type="button" role="tab" data-inst="piano"><span data-icon="piano"></span><span data-i18n="piano">Piano</span></button>
             <button type="button" role="tab" data-inst="guitar"><span data-icon="guitar"></span><span data-i18n="guitar">Guitar</span></button>
             <button type="button" role="tab" data-inst="tuner"><span data-icon="tuner"></span><span data-i18n="tuner">Tuner</span></button>
+            <button type="button" role="tab" data-inst="metronome"><span data-icon="metronome"></span><span data-i18n="metronome">Metronome</span></button>
           </div>
 
           <article class="card instrument-card" data-inst-panel="piano">
@@ -375,14 +284,33 @@
               <div class="tuner-strings" id="tunerStrings"></div>
             </div>
           </article>
+            <article class="card instrument-card metronome-card" data-inst-panel="metronome" aria-labelledby="metroTitle">
+              <header class="card-head"><h2 id="metroTitle"><span data-icon="metronome"></span><span data-i18n="metronome">Metronome</span></h2></header>
+              <div class="bpm-display">
+                <button class="icon-btn big" type="button" id="bpmDown" aria-label="Slower" data-i18n-attr="aria-label:slower"><span data-icon="minus"></span></button>
+                <div class="bpm-value"><input id="bpmInput" type="number" min="30" max="300" inputmode="numeric" aria-label="BPM"><span>BPM</span></div>
+                <button class="icon-btn big" type="button" id="bpmUp" aria-label="Faster" data-i18n-attr="aria-label:faster"><span data-icon="plus"></span></button>
+              </div>
+              <input class="range" type="range" id="bpmRange" min="30" max="300" aria-label="Tempo" data-i18n-attr="aria-label:tempo">
+              <div class="beat-dots" id="beatDots" aria-hidden="true"></div>
+              <div class="field inline">
+                <span data-i18n="timeSignature">Time signature</span>
+                <select class="select" id="sigSelect"></select>
+              </div>
+              <div class="card-actions">
+                <button class="btn" type="button" id="tapBtn" data-i18n="tapTempo">Tap tempo</button>
+                <button class="btn" type="button" id="songTempoBtn" data-i18n="saveTempo">Save to song</button>
+                <button class="btn primary" type="button" id="metroBtn"><span data-icon="play"></span><span data-i18n="start">Start</span></button>
+              </div>
+            </article>
+
         </div>
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="Main" data-i18n-attr="aria-label:navMain">
       <button class="bn" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
-      <button class="bn" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navEditor">Editor</span></button>
-      <button class="bn" data-view="tools" type="button"><span data-icon="sliders"></span><span data-i18n="navTools">Tools</span></button>
+      <button class="bn" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navChart">Chart</span></button>
       <button class="bn" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
       <button class="bn" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
     </nav>

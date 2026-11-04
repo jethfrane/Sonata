@@ -185,8 +185,8 @@ function renderCircle() {
 
 export function renderTheory() {
   const key = theoryKey();
-  $$("[data-circle-format]").forEach((b) => { const on = b.dataset.circleFormat === format; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
-  $$("[data-key-mode]").forEach((b) => { const on = b.dataset.keyMode === key.mode; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
+  $$("[data-circle-format]").forEach((b) => { const on = b.dataset.circleFormat === format; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
+  $$("[data-key-mode]").forEach((b) => { const on = b.dataset.keyMode === key.mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   $("keyPicker").innerHTML = Array.from({ length: 12 }, (_, pc) => {
     const k = keyFromTonic(pc, key.mode);
     const on = pc === key.tonic;

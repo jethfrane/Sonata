@@ -1,9 +1,10 @@
 // Browser test. Needs Playwright: npx playwright@1 install chromium, then BASE=http://localhost:5391/ node tests/browser.e2e.mjs
 
 const { chromium } = await import("playwright");
+const share = await import("../js/core/share.js");
 const BASE = process.env.BASE || "http://127.0.0.1:5391/";
 const b = await chromium.launch();
-const ctx = await b.newContext({ viewport: { width: 1280, height: 860 } });
+const ctx = await b.newContext({ viewport: { width: 1280, height: 860 }, acceptDownloads: true });
 const page = await ctx.newPage();
 const errs = []; page.on("pageerror", (e) => errs.push(e.message)); page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("404")) errs.push(m.text()); });
 let pass = 0, fail = 0;
@@ -50,7 +51,7 @@ ok(!(await page.textContent("#preview")).match(/\b[CFG]\b/), "lyrics mode hides 
 await page.click('[data-mode="chords"]');
 
 // 4. Share link round trip (old v1 format link too)
-const url = await page.evaluate(async () => { const m = await import("/js/core/share.js"); return m.shareUrl(location.origin + "/", m.packSong({ title: "Shared One", body: "G C\nHello world", manualKey: "G:major", capo: 2 })); });
+const url = await share.shareUrl(new URL(BASE).origin + "/", share.packSong({ title: "Shared One", body: "G C\nHello world", manualKey: "G:major", capo: 2 }));
 await page.goto(url); await page.waitForTimeout(700);
 ok(await page.inputValue("#songTitle") === "Shared One", "share link opens song");
 ok(await page.isVisible("#sharedBanner"), "shared banner visible (read-only)");
@@ -83,7 +84,7 @@ await page.keyboard.press("Escape"); await page.waitForTimeout(200);
 ok(!(await page.isVisible("#stage")), "Esc closes stage");
 
 // 7. Backup export file content + import restores
-const snap = await page.evaluate(async () => { const { store } = await import("/js/ui/ctx.js"); return store.snapshot(); });
+const snap = await page.evaluate(async () => { const { store } = /** @type {any} */ (window).__sonata; return store.snapshot(); });
 ok(snap.songs.length >= 3 && Array.isArray(snap.setlists), "backup snapshot has songs and setlists");
 
 // 8. Filipino switch
@@ -100,10 +101,26 @@ await page.click('[data-tonic="2"]'); await page.waitForTimeout(150);
 ok((await page.textContent("#keyTitle")).startsWith("D"), "theory picks D major");
 ok((await page.textContent("#diatonic")).includes("F♯m"), "D major diatonic has F♯m");
 // 10. Play: fretboard uses F# (not Gb) in G
-await page.evaluate(async () => { const { store } = await import("/js/ui/ctx.js"); const s = store.createSong({ body: "G C D G", title: "G song" }); });
+await page.evaluate(async () => { const { store } = /** @type {any} */ (window).__sonata; const s = store.createSong({ body: "G C D G", title: "G song" }); });
 await page.click('.tabs [data-view="play"]'); await page.waitForTimeout(250);
 const fb = await page.textContent("#fretboard");
 ok(fb.includes("F♯") && !fb.includes("G♭"), "fretboard spells F♯ in key of G");
+// 11. v3: key sheet writes the transpose into the chart; share sheet holds export; unsafe links never render
+await page.evaluate(() => { const { store, app } = /** @type {any} */ (window).__sonata; const s = store.createSong({ title: "Key Test", body: "C F G", manualKey: "C:major", links: [{ name: "Bad", url: "javascript:alert(1)" }, { name: "Ref", url: "https://example.com/ref" }] }); store.open(s.id); app.show("editor"); });
+await page.waitForTimeout(250);
+ok(await page.locator('#songLinks a').count() === 1 && (await page.getAttribute('#songLinks a', "href")) === "https://example.com/ref", "only http(s) song links render");
+await page.click("#keyUpBtn"); await page.click("#keyUpBtn"); await page.waitForTimeout(100);
+await page.click("#keyPill"); await page.waitForTimeout(200);
+await page.click("#ksWrite"); await page.waitForTimeout(200);
+await page.keyboard.press("Escape");
+const kt = await page.evaluate(() => /** @type {any} */ (window).__sonata.store.active());
+ok(kt.body === "D G A" && kt.transpose === 0, "Write into chart rewrites chords and resets transpose");
+await page.click("#shareSongBtn"); await page.waitForTimeout(400);
+ok(await page.locator('#sheet [data-export]').count() === 4 && await page.isVisible("#sheet .qr-box svg"), "share sheet has QR and 4 export buttons");
+const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 5000 }).catch(() => null), page.click('#sheet [data-export="pdf"]')]);
+ok(Boolean(dl) && /\.pdf$/.test(dl.suggestedFilename()), "PDF export downloads (lazy-loaded)");
+await page.keyboard.press("Escape");
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errs.length ? errs.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errs.length ? 1 : 0);

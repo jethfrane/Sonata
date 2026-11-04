@@ -9,9 +9,9 @@ const OG = `${ORIGIN}/icons/og-image.png`;
 const PAGES = {
   songs: ["Songs", "Your chord charts and setlists in Sonata."],
   editor: ["Chart editor", "Write chords above lyrics, transpose and present."],
-  tools: ["Tools", "Transpose, capo, metronome, share and export your charts."],
+  metronome: ["Metronome", "A steady metronome with tap tempo and accents for 2/4 to 12/8."],
   theory: ["Circle of fifths", "Explore keys and the chords that belong to them."],
-  play: ["Piano, guitar and tuner", "Play chords on a piano or fretboard and tune your instrument."],
+  play: ["Play", "Piano, fretboard, tuner and metronome for practice and rehearsal."],
   piano: ["Piano", "Play scales and chords in any key on a piano."],
   guitar: ["Guitar fretboard", "See and hear scales and chords on a guitar, bass or ukulele."],
   tuner: ["Tuner", "Tune guitar, bass or ukulele with your phone microphone."]
@@ -21,11 +21,16 @@ let template = "";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clip = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
 
+// Caps match js/core/share.js: a crafted ?s= value can't make the function inflate gigabytes.
+const MAX_LINK = 64 * 1024;
+const MAX_JSON = 2 * 1024 * 1024;
+
 function decodeShare(value) {
   try {
+    if (String(value).length > MAX_LINK) return null;
     const bytes = Buffer.from(String(value).replace(/-/g, "+").replace(/_/g, "/"), "base64");
     let text;
-    try { text = zlib.inflateRawSync(bytes).toString("utf8"); } catch { text = bytes.toString("utf8"); }
+    try { text = zlib.inflateRawSync(bytes, { maxOutputLength: MAX_JSON }).toString("utf8"); } catch { text = bytes.length <= MAX_JSON ? bytes.toString("utf8") : "{}"; }
     return JSON.parse(text.replace(/^v\d\./, ""));
   } catch { return null; }
 }
@@ -40,7 +45,8 @@ function describe(route, query) {
       return { title: clip(d.t, 70), desc: `Chord chart${bits ? " " + bits : ""}. Open it in Sonata to transpose, play along and present. Free, no account.`, robots: true };
     }
   }
-  const [a, b] = seg[0] === "song" ? [seg[2] || "editor", seg[3]] : [seg[0], seg[1]];
+  let [a, b] = seg[0] === "song" ? [seg[2] || "editor", seg[3]] : [seg[0], seg[1]];
+  if (a === "tools") a = "editor";
   if (a === "play" && PAGES[b]) return { title: PAGES[b][0], desc: PAGES[b][1] };
   if (PAGES[a === "stage" ? "editor" : a]) {
     const p = PAGES[a === "stage" ? "editor" : a];
@@ -49,9 +55,20 @@ function describe(route, query) {
   return null;
 }
 
-export default function handler(req, res) {
+/** The built page (dist/index.html has the hashed asset links). If the file wasn't bundled with
+ * the function, fetch the static copy from this same deployment instead. @param {any} req */
+async function readTemplate(req) {
+  try { return fs.readFileSync(path.join(process.cwd(), "dist/index.html"), "utf8"); } catch { /* not bundled */ }
+  const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
+  const base = /^[a-z0-9.-]+(:\d+)?$/i.test(host) ? `https://${host}` : ORIGIN;
+  const r = await fetch(`${base}/index.html`, { headers: { "x-sonata-template": "1" } });
+  if (!r.ok) throw new Error(`index.html ${r.status}`);
+  return r.text();
+}
+
+export default async function handler(req, res) {
   try {
-    if (!template) template = fs.readFileSync(path.join(process.cwd(), "index.html"), "utf8");
+    if (!template) template = await readTemplate(req);
     const url = new URL(req.url, ORIGIN);
     const route = "/" + (url.searchParams.get("p") || "").replace(/^\/+/, "");
     const query = { s: url.searchParams.get("s") || "" };

@@ -1,5 +1,8 @@
 // @ts-check
 // Boot: load the library, wire the views, handle shared links and offline.
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
+import { registerSW } from "virtual:pwa-register";
 import { $, paintIcons, setIcon, toast, esc } from "./ui/dom.js";
 import { t, setLang, applyI18n } from "./ui/i18n.js";
 import { store, app, metronome } from "./ui/ctx.js";
@@ -7,8 +10,8 @@ import { keepAlive } from "./audio.js";
 import { Drive } from "./drive.js";
 import { decodeShare, unpackSong } from "./core/share.js";
 import { initEditor, refreshEditor } from "./ui/editor.js";
-import { initLibrary, renderLibrary } from "./ui/library.js";
-import { initTools, renderTools } from "./ui/tools.js";
+import { initLibrary, renderLibrary, renderRecent, newSong } from "./ui/library.js";
+import { initMetronome, renderMetronome } from "./ui/metronome.js";
 import { initTheory, renderTheory } from "./ui/theory.js";
 import { initPlay, renderPlay } from "./ui/play.js";
 import { stopTuner } from "./ui/tuner.js";
@@ -19,7 +22,7 @@ import { initMascot } from "./ui/mascot.js";
 import { openSettings, openAccount, openImportSet } from "./ui/sheets.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
-const VIEWS = /** @type {View[]} */ (["songs", "editor", "tools", "theory", "play"]);
+const VIEWS = /** @type {View[]} */ (["songs", "editor", "theory", "play"]);
 const dark = matchMedia("(prefers-color-scheme: dark)");
 
 function applyTheme() {
@@ -75,6 +78,8 @@ function show(view, opts = {}) {
   const first = !$("app").dataset.ready;
   const changed = app.view !== view || first;
   if (app.view === "play" && view !== "play") stopTuner();
+  // The chart always has a song to show: a new, empty one if the library is empty.
+  if (view === "editor" && !store.active()) store.createSong({}, app.drive?.profile.name || "");
   app.view = view;
   $("app").dataset.view = view;
   $("app").dataset.ready = "1";
@@ -82,7 +87,6 @@ function show(view, opts = {}) {
     const el = /** @type {HTMLElement} */ (b);
     const on = el.dataset.view === view;
     el.classList.toggle("active", on);
-    if (el.getAttribute("role") === "tab") el.setAttribute("aria-selected", String(on));
     if (on) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
   });
   try { localStorage.setItem("sonata_active_view", view); } catch { /* ignore */ }
@@ -98,9 +102,8 @@ function show(view, opts = {}) {
 function renderView(view) {
   if (view === "songs") renderLibrary();
   if (view === "editor") refreshEditor();
-  if (view === "tools") renderTools();
   if (view === "theory") renderTheory();
-  if (view === "play") renderPlay();
+  if (view === "play") { renderPlay(); renderMetronome(); }
 }
 
 /** @param {import("./drive.js").DriveStatus} status */
@@ -154,16 +157,18 @@ async function handleShareLink() {
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || location.protocol !== "https:") return;
-  navigator.serviceWorker.register("/sw.js").then((reg) => {
-    reg.addEventListener("updatefound", () => {
-      const w = reg.installing;
-      w?.addEventListener("statechange", () => {
-        if (w.state === "installed" && navigator.serviceWorker.controller) {
-          toast(t("updateReady", "A new version of Sonata is ready."), "info", { ms: 12000, action: t("reload", "Reload"), onAction: () => location.reload() });
-        }
-      });
-    });
-  }).catch(() => { /* offline support is optional */ });
+  const update = registerSW({
+    onNeedRefresh() {
+      toast(t("updateReady", "A new version of Sonata is ready."), "info", { ms: 15000, action: t("reload", "Reload"), onAction: () => { store.flush(); update(true); } });
+    },
+    onOfflineReady() {
+      toast(t("offlineReady", "Sonata now works offline on this device."), "success", { ms: 3500 });
+    },
+    onRegisteredSW(_url, reg) {
+      // Check for a new version every hour while the app stays open (stage tablets).
+      if (reg) setInterval(() => { if (navigator.onLine) reg.update().catch(() => {}); }, 60 * 60 * 1000);
+    }
+  });
 }
 
 /** Open whatever the address bar says. */
@@ -171,9 +176,12 @@ function route() {
   const r = parsePath(location.pathname);
   let view = /** @type {View} */ (SECTIONS.includes(r.view) ? r.view : "");
   if (!view) {
-    try { view = /** @type {View} */ (localStorage.getItem("sonata_active_view") || "editor"); } catch { view = "editor"; }
+    // First visit: the song list with a welcome. Later: wherever you left off.
+    const fallback = store.songs.length ? "editor" : "songs";
+    try { view = /** @type {View} */ (localStorage.getItem("sonata_active_view") || fallback); } catch { view = fallback; }
     if (/** @type {string} */ (view) === "library") view = "songs";
-    if (!SECTIONS.includes(view)) view = "editor";
+    if (/** @type {string} */ (view) === "tools") view = "editor";
+    if (!SECTIONS.includes(view)) view = fallback;
   }
   if (r.slug) {
     const song = findSong(store.songs, r.slug);
@@ -200,7 +208,7 @@ async function boot() {
   app.refresh = () => renderView(app.view);
   initEditor();
   initLibrary();
-  initTools();
+  initMetronome();
   initTheory();
   initPlay();
   initStage();
@@ -257,15 +265,19 @@ async function boot() {
   drive.init();
 
   const opened = await handleShareLink();
-  if (!store.songs.length && !opened) store.createSong({});
   if (!opened) route();
+  renderRecent();
+  // Home-screen shortcut "New song" (manifest shortcuts) opens /songs?new=1.
+  if (!opened && new URLSearchParams(location.search).has("new")) { history.replaceState(history.state, "", location.pathname); newSong(); }
   store.emit("song-open", store.active());
 
   fetch("/version.json", { cache: "no-cache" }).then((r) => r.json()).then((v) => { /** @type {any} */ (app).version = v.version; }).catch(() => {});
   initMascot();
   registerServiceWorker();
-  // Old builds unregistered every service worker; clear their leftover caches once.
-  if ("caches" in window) caches.keys().then((keys) => keys.filter((k) => k.startsWith("sonata-cache-")).forEach((k) => caches.delete(k))).catch(() => {});
+  // Test hook for the local browser tests only; never on the published site.
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, renderPlay };
+  // Caches from the hand-written service worker (v2 and older) are replaced by Workbox's.
+  if ("caches" in window) caches.keys().then((keys) => keys.filter((k) => /^sonata-(cache-|v\d|fonts$)/.test(k)).forEach((k) => caches.delete(k))).catch(() => {});
 }
 
 boot().catch((e) => {

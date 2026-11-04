@@ -1,12 +1,12 @@
 // @ts-check
 // Pure URL helpers: every section, song, stage and instrument has its own path.
-//   /songs  /tools  /theory  /play  /play/piano|guitar|tuner
+//   /songs  /theory  /play  /play/piano|guitar|tuner|metronome   (old /tools links open the chart)
 //   /song/<slug>  /song/<slug>/stage  /song/<slug>/play/piano
 // A song's slug is its title plus the tail of its id. The tail is what we look
 // up, so a link keeps working after the song is renamed.
 
-export const SECTIONS = ["songs", "editor", "tools", "theory", "play"];
-export const INSTRUMENTS = ["piano", "guitar", "tuner"];
+export const SECTIONS = ["songs", "editor", "theory", "play"];
+export const INSTRUMENTS = ["piano", "guitar", "tuner", "metronome"];
 
 /** @param {string} s */
 export function slugify(s) {
@@ -38,6 +38,8 @@ export function parsePath(pathname) {
   let view = seg[0] || (slug ? "editor" : "");
   if (view === "library") view = "songs";
   if (view === "instruments") view = "play";
+  if (view === "tools" || view === "chart") view = "editor";
+  if (view === "metronome") { view = "play"; seg[1] = "metronome"; }
   const stage = view === "stage";
   if (stage) view = "editor";
   const sub = stage ? "" : seg[1] || "";
@@ -59,7 +61,6 @@ export function buildPath(r) {
 export const PAGE_META = {
   songs: ["Songs", "Your chord charts and setlists."],
   editor: ["Chart editor", "Write and transpose a chord chart."],
-  tools: ["Tools", "Transpose, capo, metronome, share and export."],
   theory: ["Circle of fifths", "Explore keys and the chords that belong to them."],
-  play: ["Piano, guitar and tuner", "Play along on a piano, fretboard or tuner."]
+  play: ["Play", "Piano, fretboard, tuner and metronome."]
 };

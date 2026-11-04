@@ -4,7 +4,7 @@ import { t } from "./i18n.js";
 import { store, app, metronome, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick } from "./ctx.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { keyShort, pretty } from "../core/music.js";
-import { syncMetroButton } from "./tools.js";
+import { syncMetroButton } from "./metronome.js";
 import { stepSetlist } from "./editor.js";
 
 const THEMES = ["stage", "dark", "light"];

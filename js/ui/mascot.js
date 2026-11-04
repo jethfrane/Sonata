@@ -3,6 +3,7 @@
 // screen, bobs to the metronome, and shares a tip when tapped.
 
 import { t, getLang } from "./i18n.js";
+import { toast } from "./dom.js";
 import { store, app } from "./ctx.js";
 
 const C = { body: "#4F8BFF", shade: "#2F68DD", light: "#A9C8FF", ink: "#0F1B3D", phones: "#1E293B", cup: "#FACC15", wood: "#F59E0B", woodDark: "#B45309", neck: "#7C4A1E" };
@@ -58,20 +59,16 @@ const TIPS = {
     fil: ["I-tap ang bituin para mapunta sa Paborito ang kanta.", "Sunod-sunod tumutugtog ang setlist sa stage. Gamitin ang mga arrow.", "Pati liriko nahahanap ng search, hindi lang pamagat."]
   },
   editor: {
-    en: ["Write chords on the line above the words. I'll keep them lined up.", "Tap a chord chip to drop it right where your cursor is.", "Numbers view turns your chords into Nashville numbers. Great for any key!", "Use − and + by the key to transpose for your singer."],
-    fil: ["Isulat ang chords sa linya sa itaas ng liriko. Ako na ang mag-aayos.", "I-tap ang chord chip para ilagay kung nasaan ang cursor mo.", "Ginagawang Nashville numbers ng Numbers view ang chords mo. Pang-kahit anong key!", "Gamitin ang − at + sa tabi ng key para i-transpose para sa singer."]
-  },
-  tools: {
-    en: ["Capo on? I'll show the shapes you actually play.", "Tap tempo four times and I'll find the BPM.", "Share links carry the whole song. No account needed."],
-    fil: ["May capo? Ipapakita ko ang hugis na tutugtugin mo.", "I-tap ang tempo nang apat na beses at hahanapin ko ang BPM.", "Kasama na ang buong kanta sa share link. Walang account na kailangan."]
+    en: ["Capo on? Tap the key and I'll show the shapes you actually play.", "Share links carry the whole song. No account needed.", "Write chords on the line above the words. I'll keep them lined up.", "Tap a chord chip to drop it right where your cursor is.", "Numbers view turns your chords into Nashville numbers. Great for any key!", "Use − and + by the key to transpose for your singer."],
+    fil: ["May capo? I-tap ang key at ipapakita ko ang hugis na tutugtugin mo.", "Kasama na ang buong kanta sa share link. Walang account na kailangan.", "Isulat ang chords sa linya sa itaas ng liriko. Ako na ang mag-aayos.", "I-tap ang chord chip para ilagay kung nasaan ang cursor mo.", "Ginagawang Nashville numbers ng Numbers view ang chords mo. Pang-kahit anong key!", "Gamitin ang − at + sa tabi ng key para i-transpose para sa singer."]
   },
   theory: {
     en: ["The three wedges around your key are the chords that just work: I, IV and V.", "Tap any wedge to hear the chord.", "Relative minor shares all the same notes. Try it for a moody bridge!"],
     fil: ["Ang tatlong wedge sa paligid ng key mo ang mga chord na swak: I, IV at V.", "I-tap ang kahit anong wedge para marinig ang chord.", "Pareho ng nota ang relative minor. Subukan sa malungkot na bridge!"]
   },
   play: {
-    en: ["Tap a chord from your song to see it on piano and fretboard.", "Hold a key to let it ring. Slide across to glide.", "Tuner tip: tune up to the note, not down."],
-    fil: ["I-tap ang chord mula sa kanta para makita sa piano at fretboard.", "Pindutin nang matagal para tumunog. I-slide para dumulas.", "Tip sa tuner: itaas papunta sa nota, huwag pababa."]
+    en: ["Tap tempo four times on the Metronome and I'll find the BPM.", "Tap a chord from your song to see it on piano and fretboard.", "Hold a key to let it ring. Slide across to glide.", "Tuner tip: tune up to the note, not down."],
+    fil: ["I-tap ang tempo nang apat na beses sa Metronome at hahanapin ko ang BPM.", "I-tap ang chord mula sa kanta para makita sa piano at fretboard.", "Pindutin nang matagal para tumunog. I-slide para dumulas.", "Tip sa tuner: itaas papunta sa nota, huwag pababa."]
   }
 };
 
@@ -213,7 +210,7 @@ export function initMascot() {
     bubble.hidden = true;
     store.settings.buddy = false;
     store.changed("settings");
-    import("./dom.js").then(({ toast }) => toast(t("sonaHidden", "Sona is hiding. Bring Sona back in Settings."), "info"));
+    toast(t("sonaHidden", "Sona is hiding. Bring Sona back in Settings."), "info");
   });
   for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => { lastTouch = performance.now(); if (state === "sleep") { enter("idle", 1500); pose.eyes = "open"; } }, { passive: true });
   store.on("change", (/** @type {string} */ k) => { if (k === "settings") sync(); });

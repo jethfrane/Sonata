@@ -4,7 +4,8 @@ import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
-import { openKeySheet, openDetails } from "./sheets.js";
+import { openKeySheet, openDetails, openShare } from "./sheets.js";
+import { safeHref } from "../core/share.js";
 
 export const DEMO_SONG = {
   title: "Amazing Grace (My Chains Are Gone)",
@@ -90,6 +91,7 @@ export function initEditor() {
   $("keyUpBtn").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), 1); });
   $("keyPill").addEventListener("click", () => openKeySheet());
   $("detailsBtn").addEventListener("click", () => openDetails());
+  $("shareSongBtn").addEventListener("click", () => openShare());
   $$("[data-mode]").forEach((b) => b.addEventListener("click", () => {
     store.settings.viewMode = /** @type {any} */ (b.dataset.mode);
     store.changed("settings");
@@ -151,7 +153,7 @@ function autosize() {
 function setPane(pane) {
   $("editorPanes").dataset.pane = pane;
   $("view-editor").dataset.pane = pane;
-  $$("[data-pane]").forEach((b) => { const on = b.dataset.pane === pane; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
+  $$("[data-pane]").forEach((b) => { const on = b.dataset.pane === pane; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch { /* ignore */ }
   if (pane === "preview") renderPreview(); else requestAnimationFrame(autosize);
 }
@@ -293,6 +295,10 @@ function updateMeta() {
   if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);
   if (s.creator) parts.push(`<span class="chip static muted">arr. ${esc(s.creator)}</span>`);
   chips.innerHTML = parts.join("");
+  const links = (s.links || []).map((l) => ({ name: l.name || l.url, href: safeHref(l.url) })).filter((l) => l.href);
+  const box = $("songLinks");
+  box.hidden = !links.length;
+  box.innerHTML = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => `<a class="chip link-chip" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer nofollow">${esc(l.name)}<span aria-hidden="true">↗</span></a>`).join("") : "";
   $("keyPillValue").textContent = pretty(keyShort(k));
   $("keyPill").title = `${t("keyAndCapo", "Key & capo")}: ${pretty(k.name)}`;
 }
@@ -360,7 +366,7 @@ export function loadSong() {
 /** Re-render everything that depends on settings or key. */
 export function refreshEditor() {
   const mode = store.settings.viewMode;
-  $$("[data-mode]").forEach((b) => { const on = b.dataset.mode === mode; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
+  $$("[data-mode]").forEach((b) => { const on = b.dataset.mode === mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   updateMeta();
   updateQuickstart();
   renderChordBar();

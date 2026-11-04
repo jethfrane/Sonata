@@ -1,13 +1,16 @@
 // @ts-check
 // Dialog sheets: key & capo, song details, share, setlist editor, settings,
 // Drive account, about, and shared-setlist import.
-import { $, esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime } from "./dom.js";
+import { $, esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime, paintIcons } from "./dom.js";
 import { t, getLang, setLang, applyI18n } from "./i18n.js";
-import { store, app, detectedKey, soundingKey, shapeKey, signed, tick } from "./ctx.js";
-import { keyShort, parseKey, pretty } from "../core/music.js";
+import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
+import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
 import { packSong, packSet, shareUrl, unpackSong } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
-import { qrSvg, qrModules } from "../lib/qr.js";
+import { exportPdf, exportPng, exportTxt, printChart } from "./exporter.js";
+
+/** The QR library is ~20 KB, so it loads the first time a share sheet opens. */
+const loadQr = () => import("../lib/qr.js");
 
 const KEY_ROOTS_MAJOR = ["C", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"];
 const KEY_ROOTS_MINOR = ["C", "C#", "D", "D#", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
@@ -36,24 +39,38 @@ export function capoOptions(capo) {
   return html;
 }
 
-/** Quick key, transpose and capo controls for the editor's key pill. */
+/** Key, transpose, capo and spelling for the open song (the editor's key pill). */
 export function openKeySheet() {
   const s = store.active();
   if (!s) return;
+  const seg = (/** @type {string} */ v, /** @type {string} */ label) => {
+    const on = store.settings.enharmonicPref === v;
+    return `<button type="button" data-spelling="${v}" class="${on ? "active" : ""}" aria-pressed="${on}">${esc(label)}</button>`;
+  };
   const render = () => {
     const k = soundingKey(s);
+    const det = detectedKey(s);
     return `<div class="key-sheet">
       <div class="big-key"><span class="mini-label">${esc(t("playsIn", "Band plays in"))}</span><strong>${esc(pretty(k.name))}</strong>
-        ${s.capo ? `<span class="muted">${esc(t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) }))}</span>` : ""}</div>
+        <span class="muted">${s.capo ? esc(t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) })) : det ? esc(t("detectedAs", "Detected from chords: {key}", { key: pretty(det.name) })) : "&nbsp;"}</span></div>
       <div class="field"><span>${esc(t("transpose", "Transpose"))}</span>
         <div class="stepper"><button class="icon-btn" type="button" data-tr="-1" aria-label="${esc(t("transposeDown", "Down a half step"))}">${icon("minus")}</button>
-        <output>${esc(signed(s.transpose))}</output>
+        <output aria-live="polite">${esc(signed(s.transpose))}</output>
         <button class="icon-btn" type="button" data-tr="1" aria-label="${esc(t("transposeUp", "Up a half step"))}">${icon("plus")}</button></div></div>
-      <label class="field"><span>${esc(t("songKey", "Song key"))}</span><select class="select" id="ksKey"${s.readonly ? " disabled" : ""}>${keyOptions(s.manualKey, detectedKey(s))}</select></label>
-      <label class="field"><span>${esc(t("capo", "Capo"))}</span><select class="select" id="ksCapo">${capoOptions(s.capo)}</select></label>
+      <div class="field-row">
+        <label class="field"><span>${esc(t("songKey", "Song key"))}</span><select class="select" id="ksKey"${s.readonly ? " disabled" : ""}>${keyOptions(s.manualKey, det)}</select></label>
+        <label class="field"><span>${esc(t("capo", "Capo"))}</span><select class="select" id="ksCapo">${capoOptions(s.capo)}</select></label>
+      </div>
+      <div class="field"><span>${esc(t("spelling", "Sharps or flats"))}</span>
+        <div class="segmented full" role="group">${seg("auto", t("spellAuto", "Auto"))}${seg("sharp", "♯")}${seg("flat", "♭")}</div></div>
+      ${s.readonly ? "" : `<div class="btn-row">
+        <button class="btn" type="button" id="ksReset"${s.transpose || s.capo ? "" : " disabled"}>${esc(t("reset", "Reset"))}</button>
+        <button class="btn" type="button" id="ksWrite"${s.transpose ? "" : " disabled"}>${icon("edit")}${esc(t("applyTranspose", "Write into chart"))}</button>
+      </div>
+      <p class="card-hint">${esc(t("writeHint", "Write into chart rewrites the chords in the new key, so it stays that way everywhere."))}</p>`}
     </div>`;
   };
-  const body = openSheet({ title: t("keyAndCapo", "Key & capo"), body: render(), actions: [{ label: t("close", "Close"), kind: "primary" }] });
+  const body = openSheet({ title: t("keyAndCapo", "Key & capo"), body: render(), focus: false, actions: [{ label: t("done", "Done"), kind: "primary" }] });
   const rerender = () => { body.innerHTML = render(); };
   /** @param {Partial<import("../core/store.js").Song>} patch */
   const apply = (patch) => {
@@ -61,13 +78,30 @@ export function openKeySheet() {
     rerender();
   };
   body.addEventListener("click", (e) => {
-    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-tr]"));
-    if (!b) return;
-    tick();
-    let next = s.transpose + Number(b.dataset.tr);
-    if (next > 11) next -= 12;
-    if (next < -11) next += 12;
-    apply({ transpose: next });
+    const target = /** @type {HTMLElement} */ (e.target);
+    const tr = /** @type {HTMLElement|null} */ (target.closest("[data-tr]"));
+    const sp = /** @type {HTMLElement|null} */ (target.closest("[data-spelling]"));
+    if (tr) {
+      tick();
+      let next = s.transpose + Number(tr.dataset.tr);
+      if (next > 11) next -= 12;
+      if (next < -11) next += 12;
+      apply({ transpose: next });
+    } else if (sp) {
+      store.settings.enharmonicPref = /** @type {any} */ (sp.dataset.spelling);
+      store.changed("settings");
+      rerender();
+    } else if (target.closest("#ksReset")) {
+      apply({ transpose: 0, capo: 0 });
+    } else if (target.closest("#ksWrite") && s.transpose) {
+      const from = writtenKey(s);
+      const pref = /** @type {any} */ (store.settings.enharmonicPref);
+      const to = keyFromTonic(from.tonic + s.transpose, from.mode, pref);
+      store.update(s, { body: transposeText(s.body, s.transpose, from, pref), transpose: 0, manualKey: s.manualKey === "auto" ? "auto" : keyValue(to) });
+      store.emit("song-open", s);
+      toast(t("transposeWritten", "Chords rewritten in {key}", { key: pretty(to.name) }), "success");
+      rerender();
+    }
   });
   body.addEventListener("change", (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
@@ -160,6 +194,7 @@ function wrapLines(g, text, width, max) {
 
 /** A sharp, scannable QR card as a PNG: whole-pixel modules, quiet zone, title and brand. @param {string} url @param {string} title */
 async function qrPng(url, title) {
+  const { qrModules } = await loadQr();
   const qr = qrModules(url);
   if (!qr) throw new Error("qr too long");
   const W = 1080, H = 1350;
@@ -200,8 +235,18 @@ async function qrPng(url, title) {
   return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("png"))), "image/png"));
 }
 
+/** Export choices are remembered per device. */
+const EXPORT_KEY = "sonata_export_opts";
+function readExportOpts() {
+  try {
+    const o = JSON.parse(localStorage.getItem(EXPORT_KEY) || "{}");
+    return { columns: [1, 2, 3].includes(o.columns) ? o.columns : 1, landscape: Boolean(o.landscape) };
+  } catch { return { columns: 1, landscape: false }; }
+}
+
 /**
- * Share a song (default: the open one) or a setlist by id.
+ * Share & export a song (default: the open one) or a setlist by id.
+ * Link + QR first (the song travels inside the link), then files.
  * @param {string} [setId]
  */
 export async function openShare(setId) {
@@ -210,34 +255,71 @@ export async function openShare(setId) {
   if (!set && !song) { toast(t("noSong", "No song open"), "error"); return; }
   const data = set ? packSet(set, store.setlistSongs(set)) : packSong(/** @type {any} */ (song));
   const title = set ? set.title : /** @type {any} */ (song).title;
-  let url = await shareUrl(BASE(), data);
+  const [{ qrSvg }, link] = await Promise.all([loadQr(), shareUrl(BASE(), data)]);
+  let url = link;
+  const opts = readExportOpts();
+  const many = set ? store.setlistSongs(set).length : (store.currentSetlist()?.songs.length || 1);
   const draw = () => {
     const svg = qrSvg(url, { ecc: "M", margin: 4 }) || qrSvg(url, { margin: 4 });
+    const short = !svg && !url.includes("tinyurl.com");
     return `<div class="share">
-      <div class="qr-box">${svg || `<p class="muted">${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p>`}</div>
-      <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(url)}" aria-label="Link"><button class="btn" type="button" id="shareCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button></div>
-      <div class="share-actions">
-        ${"share" in navigator ? `<button class="btn primary" type="button" id="shareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
-        ${svg ? `<button class="btn" type="button" id="shareQr">${icon("download")}${esc(t("downloadQr", "Download QR"))}</button>` : ""}
-        ${!svg && !url.includes("tinyurl.com") ? `<button class="btn" type="button" id="shareShort">${esc(t("shortLink", "Make a short link"))}</button>` : ""}
+      <div class="share-top">
+        <div class="qr-box">${svg || `<p>${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p>`}</div>
+        <div class="share-side">
+          <p class="card-text">${esc(t("shareHow2", "Anyone can open the link or scan the code to see the chart and save it. No account needed."))}</p>
+          <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(url)}" aria-label="Link"></div>
+          <div class="share-actions">
+            <button class="btn primary" type="button" id="shareCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
+            ${"share" in navigator ? `<button class="btn" type="button" id="shareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
+            ${svg ? `<button class="btn" type="button" id="shareQr">${icon("qr")}${esc(t("downloadQr", "QR image"))}</button>` : ""}
+            ${short ? `<button class="btn" type="button" id="shareShort">${esc(t("shortLink", "Make a short link"))}</button>` : ""}
+          </div>
+          ${short ? `<p class="card-hint">${esc(t("shortLinkNote", "This sends the link to TinyURL to shorten it."))}</p>` : ""}
+        </div>
       </div>
-      ${!svg && !url.includes("tinyurl.com") ? `<p class="card-hint">${esc(t("shortLinkNote", "This sends the link to TinyURL to shorten it."))}</p>` : ""}
-      <p class="card-hint">${esc(t("shareHow", "They can open the link or scan the QR with a phone camera, see the song and save it."))}</p>
+      <h3 class="group-title">${esc(t("exportFiles", "Export"))}${many > 1 ? ` <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: many }))}</span>` : ""}</h3>
+      <div class="export-grid">
+        <button class="btn" type="button" data-export="pdf">${icon("file")}PDF</button>
+        ${set ? "" : `<button class="btn" type="button" data-export="png">${icon("image")}PNG</button>`}
+        <button class="btn" type="button" data-export="txt">${icon("text")}TXT</button>
+        <button class="btn" type="button" data-export="print">${icon("print")}${esc(t("print", "Print"))}</button>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>${esc(t("columns", "Columns"))}</span>
+          <select class="select" id="exportColumns">${[1, 2, 3].map((n) => `<option value="${n}"${n === opts.columns ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+        <label class="field"><span>${esc(t("page", "Page"))}</span>
+          <select class="select" id="exportOrientation"><option value="portrait">${esc(t("portrait", "Portrait"))}</option><option value="landscape"${opts.landscape ? " selected" : ""}>${esc(t("landscape", "Landscape"))}</option></select></label>
+      </div>
     </div>`;
   };
-  const body = openSheet({ title: set ? t("shareSetTitle", "Share setlist") : t("shareTitle", "Share \"{title}\"", { title }), body: draw() });
+  const body = openSheet({ title: set ? t("shareSetTitle", "Share setlist") : t("shareTitle", "Share \"{title}\"", { title }), body: draw(), wide: true, className: "share-sheet", focus: false });
+  const busy = async (/** @type {HTMLElement} */ b, /** @type {() => Promise<void>|void} */ fn) => {
+    b.setAttribute("aria-busy", "true");
+    try { await fn(); } catch { toast(t("exportFailed", "Couldn't make that file. Please try again."), "error"); } finally { b.removeAttribute("aria-busy"); }
+  };
+  body.addEventListener("change", (e) => {
+    const el = /** @type {HTMLSelectElement} */ (e.target);
+    if (el.id === "exportColumns") opts.columns = Number(el.value) || 1;
+    if (el.id === "exportOrientation") opts.landscape = el.value === "landscape";
+    try { localStorage.setItem(EXPORT_KEY, JSON.stringify(opts)); } catch { /* ignore */ }
+  });
   body.addEventListener("click", async (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
     if (!b) return;
+    const kind = b.dataset.export;
+    if (kind === "pdf") busy(b, () => exportPdf(title, opts, set?.id));
+    if (kind === "png") busy(b, () => exportPng(opts));
+    if (kind === "txt") busy(b, () => exportTxt(set?.id));
+    if (kind === "print") { closeSheet(); printChart(opts, set?.id); }
     if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
-    if (b.id === "shareQr") { try { download(`sonata-${slug(title)}-qr.png`, await qrPng(url, title)); } catch { toast(t("qrTooLong", "This song is too long for a QR code. The link still works."), "error"); } }
+    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(url, title)));
     if (b.id === "shareShort") {
       try {
-        const r = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(url), { signal: AbortSignal.timeout(6000) });
-        const short = (await r.text()).trim();
-        if (r.ok && /^https:\/\/tinyurl\.com\//.test(short)) { url = short; body.innerHTML = draw(); }
-        else toast(t("syncIssue", "Couldn't shorten the link"), "error");
+        const r = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(url), { signal: AbortSignal.timeout(6000), referrerPolicy: "no-referrer" });
+        const shortUrl = (await r.text()).trim();
+        if (r.ok && /^https:\/\/tinyurl\.com\/[A-Za-z0-9]+$/.test(shortUrl)) { url = shortUrl; body.innerHTML = draw(); paintIcons(body); }
+        else toast(t("shortFailed", "Couldn't shorten the link"), "error");
       } catch { toast(t("offline", "Offline"), "error"); }
     }
   });

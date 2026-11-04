@@ -11,6 +11,14 @@ import { slugify } from "../router.js";
  *   s: SharedSong[] }} SharedSet
  */
 
+/** Only plain web links are ever shown as links (never javascript:, data: or file: URLs). @param {string} url */
+export function safeHref(url) {
+  try {
+    const u = new URL(String(url).trim());
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : "";
+  } catch { return ""; }
+}
+
 /** @param {any} l */
 const cleanLinks = (l) => (Array.isArray(l) ? l : [])
   .filter((x) => x && (String(x.name || "").trim() || String(x.url || "").trim()))
@@ -96,13 +104,33 @@ export async function encodeShare(data) {
 /** @param {string} text */
 const stripVersion = (text) => (/^v\d\./.test(text) ? text.slice(3) : text);
 
+/** Longest ?s= value we accept (QR codes top out near 3 KB; links stay well under this). */
+export const MAX_LINK = 64 * 1024;
+/** Largest decompressed song or setlist (a whole setlist is a few hundred KB at most). */
+export const MAX_JSON = 2 * 1024 * 1024;
+
+/** Inflate with a size cap, so a crafted link can't expand into gigabytes and freeze the tab. @param {Uint8Array} bytes */
+async function inflateCapped(bytes) {
+  const reader = new Blob([/** @type {BlobPart} */ (bytes)]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();
+  const parts = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_JSON) { reader.cancel().catch(() => {}); throw new Error("share too large"); }
+    parts.push(value);
+  }
+  return new TextDecoder().decode(await new Blob(parts).arrayBuffer());
+}
+
 /**
  * Decode a ?s= value. Handles compressed and plain (older) links.
  * @param {string} value
  * @returns {Promise<any|null>}
  */
 export async function decodeShare(value) {
-  if (!value) return null;
+  if (!value || String(value).length > MAX_LINK) return null;
   try {
     let b64 = String(value).trim().replace(/-/g, "+").replace(/_/g, "/").replace(/\s+/g, "+");
     while (b64.length % 4) b64 += "=";
@@ -111,8 +139,7 @@ export async function decodeShare(value) {
     let text = "";
     if (typeof DecompressionStream !== "undefined") {
       try {
-        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-        text = await new Response(stream).text();
+        text = await inflateCapped(bytes);
       } catch { text = ""; }
     }
     if (!text) text = new TextDecoder().decode(bytes);
