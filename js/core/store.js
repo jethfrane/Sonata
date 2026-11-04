@@ -181,6 +181,23 @@ export function mergeLibraries(local, remote) {
   };
 }
 
+/** Same library content? Used to skip a Drive upload when nothing changed. @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} d */
+export const libraryFingerprint = (d) => JSON.stringify([d.songs || [], d.setlists || [], [...(d.deletedIds || [])].sort()]);
+
+/** Storage that lives only as long as the page; used when the browser blocks localStorage. @returns {Storage} */
+export function memoryStorage() {
+  /** @type {Map<string, string>} */
+  const m = new Map();
+  return /** @type {Storage} */ ({
+    get length() { return m.size; },
+    key: (i) => [...m.keys()][i] ?? null,
+    getItem: (k) => (m.has(k) ? /** @type {string} */ (m.get(k)) : null),
+    setItem: (k, v) => { m.set(k, String(v)); },
+    removeItem: (k) => { m.delete(k); },
+    clear: () => m.clear()
+  });
+}
+
 /** @param {Storage} storage @param {string} key @param {any} fallback */
 function readJson(storage, key, fallback) {
   try { const raw = storage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
@@ -293,14 +310,50 @@ export class Store {
     const t = now();
     const song = /** @type {Song} */ (normalizeSong({ creator: this.settings.autoFillArranger ? arranger : "", ...data, id: uid(), createdAt: t, updatedAt: t, lastOpenedAt: t }));
     if (!data.title) song.title = "Untitled";
-    // Blank starter songs carry nothing; drop them so the library stays tidy.
-    this.songs = this.songs.filter((s) => s.body.trim() || s.title !== "Untitled" || this.setlists.some((l) => l.items.some((i) => i.songId === s.id)));
+    this.dropBlankSongs();
     this.songs.unshift(song);
     this.activeId = song.id;
     this.shared = null;
     this.changed();
     this.emit("song-open", song);
     return song;
+  }
+
+  /**
+   * Blank starter songs carry nothing; drop them so the library stays tidy.
+   * They are remembered as deleted, otherwise a synced copy would bring them back.
+   */
+  dropBlankSongs() {
+    const keep = (/** @type {Song} */ s) => s.body.trim() || s.title !== "Untitled" || this.setlists.some((l) => l.items.some((i) => i.songId === s.id));
+    const gone = this.songs.filter((s) => !keep(s)).map((s) => s.id);
+    if (!gone.length) return;
+    this.songs = this.songs.filter(keep);
+    this.deletedIds = [...new Set([...this.deletedIds, ...gone])];
+  }
+
+  /**
+   * Put deleted songs back (Undo). They get new ids: a synced copy of the old id carries a
+   * deletion mark that would delete them again on the next sync.
+   * @param {Song[]} songs @param {Setlist[]} [setlistsBefore] setlists as they were before the delete
+   * @returns {Map<string, string>} old id -> new id
+   */
+  restoreSongs(songs, setlistsBefore = []) {
+    const t = now();
+    /** @type {Map<string, string>} */
+    const map = new Map();
+    for (const s of songs) {
+      const copy = { ...s, id: uid(), updatedAt: t };
+      map.set(s.id, copy.id);
+      this.songs.unshift(copy);
+    }
+    for (const sl of this.setlists) {
+      const before = setlistsBefore.find((x) => x.id === sl.id);
+      if (!before) continue;
+      const items = before.items.map((i) => ({ songId: map.get(i.songId) || i.songId })).filter((i) => this.song(i.songId));
+      if (JSON.stringify(items) !== JSON.stringify(sl.items)) { sl.items = items; sl.updatedAt = t; }
+    }
+    this.changed();
+    return map;
   }
 
   /** @param {Song} song @param {Partial<Song>} patch */
@@ -414,9 +467,23 @@ export class Store {
    * @param {{ songs?: any[], setlists?: any[] }} data
    */
   importBackup(data) {
-    const ids = new Set([...(data.songs || []), ...(data.setlists || [])].map((x) => x && x.id).filter(Boolean));
-    this.deletedIds = this.deletedIds.filter((id) => !ids.has(id));
-    return this.mergeIn({ songs: data.songs || [], setlists: data.setlists || [] });
+    // Anything deleted here since gets a new id, so a synced deletion mark can't remove it again.
+    const gone = new Set(this.deletedIds);
+    /** @type {Map<string, string>} */
+    const remap = new Map();
+    const t = now();
+    const songs = (data.songs || []).map((raw) => {
+      if (!raw || !gone.has(raw.id)) return raw;
+      const id = uid();
+      remap.set(raw.id, id);
+      return { ...raw, id, updatedAt: t };
+    });
+    const setlists = (data.setlists || []).map((raw) => {
+      if (!raw || typeof raw !== "object") return raw;
+      const items = Array.isArray(raw.items) ? raw.items.map((/** @type {any} */ i) => (i && remap.has(i.songId) ? { ...i, songId: remap.get(i.songId) } : i)) : raw.items;
+      return gone.has(raw.id) ? { ...raw, id: uid("set"), items, updatedAt: t } : { ...raw, items };
+    });
+    return this.mergeIn({ songs, setlists });
   }
 
   /**

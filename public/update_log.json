@@ -1,5 +1,20 @@
 [
   {
+    "version": "3.1.1",
+    "date": "2026-11-05",
+    "whatsNew": "Bug-fix release from a full code audit: setlist delete works again, and Drive sync, the tuner and edge cases are safer.",
+    "changes": [
+      "Deleting a setlist now works (the confirmation used to close itself before you could tap Delete).",
+      "Undo after deleting a song, and restoring a backup, no longer lose songs on the next Google Drive sync.",
+      "Empty starter songs can no longer come back from Drive.",
+      "The tuner no longer leaves the microphone on if you tap Start twice.",
+      "The app opens even if the browser blocks storage, and tells you songs won't be kept.",
+      "Damaged links and unusual web addresses show a clear message instead of a blank or broken screen.",
+      "The Google Drive window no longer replaces other dialogs, Space works on stage buttons, and Drive skips uploads when nothing changed.",
+      "Link previews handle titles with special characters; personal song pages are no longer indexed by search engines."
+    ]
+  },
+  {
     "version": "3.1.0",
     "date": "2026-11-05",
     "whatsNew": "Small polish: keyboard-friendly instrument tabs, faster first load, and one-tap setlist printing.",

@@ -32,7 +32,9 @@ export function findSong(songs, slug) {
  * @returns {{ view: string, slug: string, sub: string, stage: boolean }}
  */
 export function parsePath(pathname) {
-  const seg = pathname.split("/").filter(Boolean).map((x) => decodeURIComponent(x).toLowerCase());
+  // A malformed escape such as %E0%A4 must not break the app: use the raw text instead.
+  const decode = (/** @type {string} */ x) => { try { return decodeURIComponent(x); } catch { return x; } };
+  const seg = pathname.split("/").filter(Boolean).map((x) => decode(x).toLowerCase());
   let slug = "";
   if (seg[0] === "song" || seg[0] === "s") { slug = seg[1] || ""; seg.splice(0, 2); }
   let view = seg[0] || (slug ? "editor" : "");

@@ -40,17 +40,20 @@ function describe(route, query) {
   if (query.s) {
     const d = decodeShare(query.s);
     if (d && typeof d.t === "string") {
-      if (d.type === "set") return { title: `${clip(d.t, 60)} · Setlist`, desc: `A setlist of ${(d.s || []).length} songs. Open it in Sonata to see the charts, transpose and present.`, robots: true };
-      const bits = [d.a ? `by ${clip(String(d.a), 40)}` : "", d.k ? `in ${String(d.k).split(":")[0]}${d.k.endsWith("minor") ? "m" : ""}` : ""].filter(Boolean).join(" ");
+      if (d.type === "set") return { title: `${clip(d.t, 60)} · Setlist`, desc: `A setlist of ${Array.isArray(d.s) ? d.s.length : 0} songs. Open it in Sonata to see the charts, transpose and present.`, robots: true };
+      const k = typeof d.k === "string" ? d.k : "";
+      const bits = [d.a ? `by ${clip(String(d.a), 40)}` : "", k ? `in ${clip(k.split(":")[0], 8)}${k.endsWith("minor") ? "m" : ""}` : ""].filter(Boolean).join(" ");
       return { title: clip(d.t, 70), desc: `Chord chart${bits ? " " + bits : ""}. Open it in Sonata to transpose, play along and present. Free, no account.`, robots: true };
     }
   }
+  // Personal song pages hold nothing to index; keep search engines out of them.
+  const personal = seg[0] === "song" || seg[0] === "s";
   let [a, b] = seg[0] === "song" ? [seg[2] || "editor", seg[3]] : [seg[0], seg[1]];
   if (a === "tools") a = "editor";
-  if (a === "play" && PAGES[b]) return { title: PAGES[b][0], desc: PAGES[b][1] };
+  if (a === "play" && PAGES[b]) return { title: PAGES[b][0], desc: PAGES[b][1], robots: personal };
   if (PAGES[a === "stage" ? "editor" : a]) {
     const p = PAGES[a === "stage" ? "editor" : a];
-    return { title: a === "stage" ? "Stage view" : p[0], desc: a === "stage" ? "A big, clear chart for the stage with auto-scroll and a metronome." : p[1] };
+    return { title: a === "stage" ? "Stage view" : p[0], desc: a === "stage" ? "A big, clear chart for the stage with auto-scroll and a metronome." : p[1], robots: personal };
   }
   return null;
 }
@@ -59,8 +62,8 @@ function describe(route, query) {
  * the function, fetch the static copy from this same deployment instead. @param {any} req */
 async function readTemplate(req) {
   try { return fs.readFileSync(path.join(process.cwd(), "dist/index.html"), "utf8"); } catch { /* not bundled */ }
-  const host = String(req.headers["x-forwarded-host"] || req.headers.host || "");
-  const base = /^[a-z0-9.-]+(:\d+)?$/i.test(host) ? `https://${host}` : ORIGIN;
+  // Only this deployment's own address: a forged Host header must never choose where the page comes from.
+  const base = process.env.VERCEL_URL && /^[a-z0-9.-]+$/i.test(process.env.VERCEL_URL) ? `https://${process.env.VERCEL_URL}` : ORIGIN;
   const r = await fetch(`${base}/index.html`, { headers: { "x-sonata-template": "1" } });
   if (!r.ok) throw new Error(`index.html ${r.status}`);
   return r.text();
@@ -95,7 +98,8 @@ export default async function handler(req, res) {
         `<meta name="twitter:description" content="${esc(info.desc)}">`,
         `<meta name="twitter:image" content="${OG}">`
       ].filter(Boolean).join("\n  ");
-      html = html.replace(/<!--meta:start-->[\s\S]*?<!--meta:end-->/, `<!--meta:start-->\n  ${head}\n  <!--meta:end-->`);
+      // A function replacement: a title such as "Cost $& more" must not be read as a $ pattern.
+      html = html.replace(/<!--meta:start-->[\s\S]*?<!--meta:end-->/, () => `<!--meta:start-->\n  ${head}\n  <!--meta:end-->`);
     }
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");

@@ -129,10 +129,7 @@ export function deleteWithUndo(ids) {
     ms: 7000,
     action: t("undoDelete", "Undo"),
     onAction: () => {
-      store.songs.unshift(...removed);
-      store.deletedIds = store.deletedIds.filter((x) => !ids.includes(x));
-      store.setlists = setsBefore;
-      store.changed();
+      store.restoreSongs(removed, setsBefore);
       renderLibrary();
     }
   });

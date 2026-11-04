@@ -1,10 +1,24 @@
 // @ts-check
 // Thin async entry points so the dialog code (js/ui/sheets.js) loads on first use.
+import { toast } from "./dom.js";
+import { t } from "./i18n.js";
 
-/** @param {string} id */
-const call = async (id, /** @type {any[]} */ args) => {
-  const m = /** @type {any} */ (await import("./sheets.js"));
-  return m[id](...args);
+/**
+ * Load a lazy chunk. After a new release, a tab that was open before it can't find the old
+ * file names any more; say so and offer a reload instead of doing nothing.
+ * @template T @param {() => Promise<T>} load @returns {Promise<T|null>}
+ */
+async function chunk(load) {
+  try { return await load(); } catch {
+    toast(t("loadFailed", "Couldn't load this screen. Check your connection, or reload to get the latest version."), "error", { ms: 9000, action: t("reload", "Reload"), onAction: () => location.reload() });
+    return null;
+  }
+}
+
+/** @param {string} id @param {any[]} args */
+const call = async (id, args) => {
+  const m = /** @type {any} */ (await chunk(() => import("./sheets.js")));
+  return m ? m[id](...args) : undefined;
 };
 
 /** @param {...any} a */ export const openKeySheet = (...a) => call("openKeySheet", a);
@@ -17,11 +31,12 @@ export const openAccount = () => call("openAccount", []);
 
 /** Print every song in a setlist using the saved print layout. @param {string} id */
 export async function printSetlist(id) {
-  const { printChart } = await import("./exporter.js");
+  const m = await chunk(() => import("./exporter.js"));
+  if (!m) return;
   let o = { columns: 1, landscape: false };
   try {
     const s = JSON.parse(localStorage.getItem("sonata_export_opts") || "{}");
     o = { columns: [1, 2, 3].includes(s.columns) ? s.columns : 1, landscape: Boolean(s.landscape) };
   } catch { /* defaults */ }
-  printChart(o, id);
+  m.printChart(o, id);
 }

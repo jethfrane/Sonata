@@ -135,7 +135,9 @@ export function initEditor() {
   });
   store.on("saved", () => setSaveState("saved"));
   store.on("save-error", () => { setSaveState("error"); toast(t("saveFailed", "Couldn't save. This browser's storage is full."), "error", { ms: 6000 }); });
-  setPane(localStorage.getItem("sonata_mobile_editor_pane") === "preview" ? "preview" : "edit");
+  let savedPane = "edit";
+  try { savedPane = localStorage.getItem("sonata_mobile_editor_pane") === "preview" ? "preview" : "edit"; } catch { /* storage blocked */ }
+  setPane(savedPane);
   loadSong();
 }
 
@@ -238,10 +240,7 @@ function insertChord(chord) {
 
 /** Add the demo, replacing a blank starter song so the library stays clean. */
 export function addDemoSong() {
-  const cur = store.active();
-  if (cur && !cur.readonly && !cur.body.trim() && (cur.title === "Untitled" || !cur.title.trim()) && store.songs.length) {
-    store.songs = store.songs.filter((s) => s.id !== cur.id);
-  }
+  // createSong drops any blank starter song (and remembers it as deleted).
   return store.createSong({ ...DEMO_SONG });
 }
 

@@ -3,7 +3,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as M from "../js/core/music.js";
 import { buildLines, linesToText, pairSegments, uniqueChords } from "../js/core/chart.js";
-import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS } from "../js/core/store.js";
+import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
+import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK } from "../js/core/share.js";
 import { detectPitch, noteFromFreq } from "../js/core/pitch.js";
 import { buildPdf, pdfString } from "../js/lib/export.js";
@@ -129,4 +130,64 @@ test("share links: safe hrefs and size caps", async () => {
   // Normal songs still round-trip.
   const d = await decodeShare(await encodeShare(packSong({ title: "Ok", body: "G C" })));
   assert.equal(d.t, "Ok");
+});
+
+const freshStore = () => new Store(memoryStorage()).load();
+
+test("blank starter songs are remembered as deleted, so sync can't bring them back", () => {
+  const st = freshStore();
+  const blank = st.createSong({});
+  st.createSong({ title: "Real", body: "G C" });
+  assert.ok(!st.songs.some((s) => s.id === blank.id));
+  assert.ok(st.deletedIds.includes(blank.id));
+  st.mergeIn({ songs: [blank], setlists: [] });
+  assert.ok(!st.songs.some((s) => s.id === blank.id), "remote copy of the blank song stays gone");
+});
+
+test("undo and backup restore survive a deletion mark that already synced", () => {
+  const st = freshStore();
+  const a = st.createSong({ title: "Keep", body: "C F" });
+  const set = st.saveSetlist({ title: "Sun", items: [{ songId: a.id }] });
+  const setsBefore = st.setlists.map((x) => ({ ...x, items: [...x.items] }));
+  const removed = st.songs.map((x) => ({ ...x }));
+  st.deleteSongs([a.id]);
+  const remote = { songs: [], setlists: [], deletedIds: [a.id] }; // Drive already has the mark
+  st.restoreSongs(removed, setsBefore);
+  st.mergeIn(remote);
+  assert.equal(st.songs.length, 1, "undo keeps the song after the next sync");
+  assert.equal(st.songs[0].title, "Keep");
+  assert.equal(st.setlists.find((x) => x.id === set.id).items[0].songId, st.songs[0].id, "setlist points at the restored song");
+  // Backup restore of something deleted here
+  const st2 = freshStore();
+  const b = st2.createSong({ title: "Gone", body: "D A" });
+  st2.deleteSongs([b.id]);
+  st2.importBackup({ songs: [b], setlists: [] });
+  st2.mergeIn({ songs: [], setlists: [], deletedIds: [b.id] });
+  assert.equal(st2.songs.filter((x) => x.title === "Gone").length, 1);
+});
+
+test("library fingerprint ignores order of deletions and the export time", () => {
+  const st = freshStore();
+  st.createSong({ title: "A", body: "G" });
+  const one = st.snapshot();
+  const two = { ...st.snapshot(), exportedAt: "x", deletedIds: [...one.deletedIds].reverse() };
+  const before = libraryFingerprint(one);
+  assert.equal(before, libraryFingerprint(two));
+  st.createSong({ title: "B", body: "C" });
+  assert.notEqual(before, libraryFingerprint(st.snapshot()));
+});
+
+test("memory storage stands in when the browser blocks storage", () => {
+  const m = memoryStorage();
+  m.setItem("k", 5);
+  assert.equal(m.getItem("k"), "5");
+  assert.equal(m.getItem("nope"), null);
+  m.removeItem("k");
+  assert.equal(m.length, 0);
+});
+
+test("a malformed URL escape does not break routing", () => {
+  assert.doesNotThrow(() => parsePath("/song/%E0%A4%A"));
+  assert.equal(parsePath("/play/%zz").view, "play");
+  assert.equal(parsePath("/song/hello-abc123/stage").stage, true);
 });

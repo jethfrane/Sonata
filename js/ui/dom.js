@@ -125,6 +125,9 @@ export function toast(message, kind = "info", o = {}) {
  */
 
 
+/** The sheet that is open now (the dialog element is shared by every sheet). @type {{ finished: boolean, done: () => void }|null} */
+let current = null;
+
 /**
  * Open the shared dialog. An action that returns false keeps it open.
  * @param {SheetOptions} o
@@ -133,7 +136,12 @@ export function openSheet(o) {
   const dlg = /** @type {HTMLDialogElement} */ ($("sheet"));
   const body = $("sheetBody");
   const foot = $("sheetFoot");
-  if (dlg.open) closeSheet();
+  // Finish the sheet being replaced right away. Its "close" event arrives later, after this
+  // sheet is open, and must not be mistaken for this sheet closing.
+  const prev = current;
+  current = null;
+  if (dlg.open) dlg.close();
+  prev?.done();
   $("sheetTitle").textContent = o.title;
   dlg.className = `sheet${o.wide ? " wide" : ""}${o.className ? " " + o.className : ""}`;
   if (typeof o.body === "string") body.innerHTML = o.body; else { body.innerHTML = ""; body.appendChild(o.body); }
@@ -151,8 +159,13 @@ export function openSheet(o) {
     foot.appendChild(b);
   }
   paintIcons(body);
-  const onClose = () => { dlg.removeEventListener("close", onClose); o.onClose?.(); };
-  dlg.addEventListener("close", onClose);
+  const me = { finished: false, done() { if (this.finished) return; this.finished = true; o.onClose?.(); } };
+  current = me;
+  dlg.onclose = () => {
+    if (dlg.open || current !== me) return; // a late event from an earlier sheet
+    current = null;
+    me.done();
+  };
   dlg.showModal();
   // Close when tapping the dimmed backdrop.
   dlg.onclick = (e) => { if (e.target === dlg) closeSheet(); };

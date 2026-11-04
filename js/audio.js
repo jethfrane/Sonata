@@ -291,6 +291,7 @@ export class Metronome {
     /** @type {Set<(beat: number, accent: "strong"|"medium"|"weak") => void>} */
     this.listeners = new Set();
     /** @type {number[]} */ this.taps = [];
+    /** @type {Set<ReturnType<typeof setTimeout>>} */ this.flashes = new Set();
   }
 
   /** @param {(beat: number, accent: "strong"|"medium"|"weak") => void} fn */
@@ -318,6 +319,9 @@ export class Metronome {
   stop() {
     this.running = false;
     clearInterval(this.timer);
+    // Beat flashes already booked would otherwise light a dot after Stop.
+    this.flashes.forEach((id) => clearTimeout(id));
+    this.flashes.clear();
     this.beat = 0;
   }
 
@@ -332,7 +336,8 @@ export class Metronome {
       const accent = b === 0 ? "strong" : this.sig.accents.includes(b) ? "medium" : "weak";
       this.click(this.nextTime, accent);
       const delay = Math.max(0, (this.nextTime - ctx.currentTime) * 1000);
-      setTimeout(() => this.listeners.forEach((fn) => fn(b, accent)), delay);
+      const id = setTimeout(() => { this.flashes.delete(id); this.listeners.forEach((fn) => fn(b, accent)); }, delay);
+      this.flashes.add(id);
       this.nextTime += per;
       this.beat++;
     }

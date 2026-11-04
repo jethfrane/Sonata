@@ -71,6 +71,8 @@ function onKey(e) {
   if (!open) return;
   const tag = /** @type {HTMLElement} */ (e.target).tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+  // Space and Enter must still press a focused button or link.
+  if ((tag === "BUTTON" || tag === "A") && (e.key === " " || e.key === "Enter")) return;
   if (e.key === "Escape") { e.preventDefault(); closeStage(); }
   else if (e.key === " ") { e.preventDefault(); toggleScroll(); }
   else if (e.key === "ArrowRight" || e.key === "PageDown" && !scrolling) { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(1); } }

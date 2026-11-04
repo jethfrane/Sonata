@@ -5,7 +5,7 @@ import "@fontsource-variable/jetbrains-mono";
 import { registerSW } from "virtual:pwa-register";
 import { $, paintIcons, setIcon, toast, esc } from "./ui/dom.js";
 import { t, setLang, applyI18n } from "./ui/i18n.js";
-import { store, app, metronome } from "./ui/ctx.js";
+import { store, app, metronome, storageBlocked } from "./ui/ctx.js";
 import { keepAlive } from "./audio.js";
 import { Drive } from "./drive.js";
 import { decodeShare, unpackSong } from "./core/share.js";
@@ -144,7 +144,10 @@ async function handleShareLink() {
   if (!raw) return false;
   history.replaceState(null, "", location.pathname);
   const data = await decodeShare(raw);
-  if (!data) { toast(t("badLink", "This link couldn't be opened. It may be cut off."), "error", { ms: 5000 }); return false; }
+  // A link must hold a song ({ t, b }) or a setlist ({ type: "set", s: [...] }); anything else is damaged.
+  const isObj = Boolean(data) && typeof data === "object" && !Array.isArray(data);
+  const valid = isObj && (data.type === "set" ? Array.isArray(data.s) : typeof data.t === "string" || typeof data.b === "string");
+  if (!valid) { toast(t("badLink", "This link couldn't be opened. It may be cut off."), "error", { ms: 5000 }); return false; }
   if (data.type === "set") { show("songs"); openImportSet(data); return true; }
   // Already saved? open it; otherwise preview read-only with a Save button.
   const u = unpackSong(data);
@@ -266,6 +269,7 @@ async function boot() {
 
   const opened = await handleShareLink();
   if (!opened) route();
+  if (storageBlocked) toast(t("storageBlocked", "This browser blocks storage, so songs are kept only until you close this tab. Export a backup in Settings to keep them."), "error", { ms: 9000 });
   renderRecent();
   // Home-screen shortcut "New song" (manifest shortcuts) opens /songs?new=1.
   if (!opened && new URLSearchParams(location.search).has("new")) { history.replaceState(history.state, "", location.pathname); newSong(); }

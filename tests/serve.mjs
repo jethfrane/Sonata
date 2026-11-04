@@ -12,7 +12,7 @@ const root = join(project, process.argv[3] || "dist");
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".webmanifest": "application/manifest+json" };
 
 http.createServer(async (req, res) => {
-  const path = decodeURIComponent((req.url || "/").split("?")[0]);
+  let path; try { path = decodeURIComponent((req.url || "/").split("?")[0]); } catch { path = "/"; }
   const file = extname(path) ? normalize(join(root, path)) : join(root, "index.html");
   if (!file.startsWith(root)) { res.writeHead(403); res.end(); return; }
   try {

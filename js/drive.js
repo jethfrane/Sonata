@@ -3,6 +3,8 @@
 // see (drive.file scope). Every sync downloads, merges, then uploads, so two
 // devices never overwrite each other's edits.
 
+import { libraryFingerprint } from "./core/store.js";
+
 const CLIENT_ID = "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
 const FILE_NAME = "sonata_library.json";
@@ -182,6 +184,15 @@ export class Drive {
     return d.files?.[0]?.id || null;
   }
 
+  /** Remember the sync; a full or blocked storage must not turn a good sync into an error. */
+  markSynced() {
+    this.lastSync = Date.now();
+    try {
+      if (this.fileId) localStorage.setItem(FILE_KEY, this.fileId);
+      localStorage.setItem("sonata:v12:last_synced", new Date().toISOString());
+    } catch { /* storage blocked or full */ }
+  }
+
   /** Download, merge, upload. Returns true on success. */
   async sync() {
     if (!this.token) return false;
@@ -192,12 +203,22 @@ export class Drive {
     this.set("syncing");
     try {
       const id = await this.findFile();
+      /** @type {any} */
+      let remote = null;
       if (id) {
         const r = await this.api(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
-        const remote = await r.json().catch(() => null);
-        if (remote && typeof remote === "object") this.store.mergeIn(remote);
+        remote = await r.json().catch(() => null);
+        if (remote && typeof remote === "object") this.store.mergeIn(remote); else remote = null;
       }
-      const body = JSON.stringify(this.store.snapshot());
+      const snap = this.store.snapshot();
+      if (id && remote && libraryFingerprint(remote) === libraryFingerprint(snap)) {
+        // Drive already holds exactly this library: skip the upload (saves battery and Drive versions).
+        this.fileId = id;
+        this.markSynced();
+        this.set("synced");
+        return true;
+      }
+      const body = JSON.stringify(snap);
       const boundary = "sonata" + Math.random().toString(36).slice(2);
       const meta = JSON.stringify(id ? {} : { name: FILE_NAME, mimeType: "application/json" });
       const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
@@ -207,9 +228,7 @@ export class Drive {
       const up = await this.api(url, { method: id ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body: multipart });
       const saved = await up.json();
       this.fileId = saved.id || id;
-      if (this.fileId) localStorage.setItem(FILE_KEY, this.fileId);
-      localStorage.setItem("sonata:v12:last_synced", new Date().toISOString());
-      this.lastSync = Date.now();
+      this.markSynced();
       this.set("synced");
       return true;
     } catch (e) {

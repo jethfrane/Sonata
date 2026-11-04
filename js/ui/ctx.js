@@ -1,6 +1,6 @@
 // @ts-check
 // Shared app context: the store, Drive, metronome, and key helpers every view uses.
-import { Store } from "../core/store.js";
+import { Store, memoryStorage } from "../core/store.js";
 import { detectKey, parseKey, keyFromTonic, keyShort, mod12 } from "../core/music.js";
 import { Metronome } from "../audio.js";
 
@@ -10,7 +10,21 @@ import { Metronome } from "../audio.js";
  * @typedef {"songs"|"editor"|"theory"|"play"} View
  */
 
-export const store = new Store(window.localStorage);
+/** The browser's storage, or memory-only storage when the browser blocks it (private or strict modes). */
+function pickStorage() {
+  try {
+    const s = window.localStorage;
+    s.setItem("sonata:probe", "1");
+    s.removeItem("sonata:probe");
+    return { storage: s, blocked: false };
+  } catch {
+    return { storage: memoryStorage(), blocked: true };
+  }
+}
+const picked = pickStorage();
+/** True when songs can't be saved on this device (the app still works until the tab closes). */
+export const storageBlocked = picked.blocked;
+export const store = new Store(picked.storage);
 export const metronome = new Metronome();
 
 /** Late-bound references (avoid import cycles between views). */

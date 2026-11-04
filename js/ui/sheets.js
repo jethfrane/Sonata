@@ -1,7 +1,7 @@
 // @ts-check
 // Dialog sheets: key & capo, song details, share, setlist editor, settings,
 // Drive account, about, and shared-setlist import.
-import { $, esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime, paintIcons } from "./dom.js";
+import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime, paintIcons } from "./dom.js";
 import { t, getLang, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
@@ -201,7 +201,8 @@ async function qrPng(url, title) {
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
-  const ui = "'Plus Jakarta Sans', system-ui, sans-serif";
+  const ui = "'Inter Variable', Inter, system-ui, sans-serif";
+  await Promise.all([document.fonts?.load(`800 44px ${ui}`), document.fonts?.load(`600 30px ${ui}`)]).catch(() => {});
   await document.fonts?.ready;
   g.fillStyle = "#eef2f8"; g.fillRect(0, 0, W, H);
   // White card
@@ -485,7 +486,8 @@ export function openSettings() {
       const before = store.songs.length;
       store.importBackup(data);
       app.refresh();
-      toast(t("backupRestored", "Restored {n} songs", { n: Math.max(0, store.songs.length - before) || (data.songs || []).length }), "success");
+      const added = Math.max(0, store.songs.length - before);
+      toast(added ? t("backupRestored", "Restored {n} songs", { n: added }) : t("backupNothingNew", "Backup merged. Nothing new to add."), "success");
       closeSheet();
     } catch { toast(t("badBackup", "That file isn't a Sonata backup."), "error"); }
   });
@@ -552,8 +554,10 @@ export function openAccount() {
       <p class="card-hint">${esc(t("autoSyncNote", "Changes sync automatically while you're signed in."))}</p>
     </div>`;
   };
-  const body = openSheet({ title: t("accountTitle", "Google Drive backup"), body: draw() });
-  const unsub = store.on("drive-status", () => { if (/** @type {HTMLDialogElement} */ ($("sheet")).open) body.innerHTML = draw(); else unsub(); });
+  /** Stop redrawing once this sheet is gone (the dialog is shared with every other sheet). */
+  let unsub = () => {};
+  const body = openSheet({ title: t("accountTitle", "Google Drive backup"), body: draw(), onClose: () => unsub() });
+  unsub = store.on("drive-status", () => { body.innerHTML = draw(); });
   body.addEventListener("click", async (e) => {
     const id = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"))?.id;
     if (id === "gSignIn") { if (await d.signIn()) toast(t("syncDone", "Synced with Google Drive"), "success"); }

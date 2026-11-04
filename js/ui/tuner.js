@@ -54,16 +54,30 @@ export function renderTunerStrings() {
   }).join("");
 }
 
+/** True while the browser's microphone prompt is open. */
+let starting = false;
+/** Bumped by every stop, so a microphone that arrives after Stop is released at once. */
+let session = 0;
+
 async function startTuner() {
+  if (starting || stream) return;
   const ac = audio();
   if (!ac) return;
+  starting = true;
+  const mine = session;
+  /** @type {MediaStream} */
+  let got;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    got = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   } catch (e) {
+    starting = false;
     toast(/** @type {any} */ (e)?.name === "NotFoundError" ? t("micUnavailable", "No microphone found.") : t("micDenied", "The tuner needs the microphone. Allow it in your browser settings."), "error", { ms: 5000 });
-    stream = null;
     return;
   }
+  starting = false;
+  if (mine !== session) { got.getTracks().forEach((tr) => tr.stop()); return; }
+  stream = got;
+  clearInterval(timer);
   const src = ac.createMediaStreamSource(stream);
   analyser = ac.createAnalyser();
   analyser.fftSize = 4096;
@@ -77,12 +91,16 @@ async function startTuner() {
     if (!analyser) return;
     analyser.getFloatTimeDomainData(buf);
     const r = detectPitch(buf, ac.sampleRate, { minFreq: tuning.kind === "bass" ? 28 : 55, maxFreq: 1400 });
-    if (r && r.clarity > 0.75) { lastHeard = performance.now(); update(r.freq); }
-    else if (performance.now() - lastHeard > 1200) idle();
+    if (r && r.clarity > 0.75) { lastHeard = performance.now(); idleShown = false; update(r.freq); }
+    else if (!idleShown && performance.now() - lastHeard > 1200) idle();
   }, 45);
 }
 
+/** The "listening" state is already on screen, so the 45 ms loop doesn't redraw it. */
+let idleShown = false;
+
 export function stopTuner() {
+  session++;
   clearInterval(timer);
   stream?.getTracks().forEach((tr) => tr.stop());
   stream = null;
@@ -105,6 +123,7 @@ function setButton(on) {
 
 /** @param {string} [text] */
 function idle(text) {
+  idleShown = true;
   recent = [];
   $("tunerNote").textContent = "—";
   $("tunerNote").className = "tuner-note";
