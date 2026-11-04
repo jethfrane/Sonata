@@ -1,4 +1,4 @@
-# Sonata full code audit (2026-11-05, on v3.1.0 → fixes in v3.1.1)
+# Sonata full code audit (2026-11-05, on v3.1.0 → fixes in v3.1.1 and v3.1.2)
 
 Method: read every module (`core`, `ui`, `drive`, `audio`, `api/page.js`, `vercel.json`, `vite.config.js`), then reproduced each suspected bug in Node or Chromium before fixing it. Items marked **Fixed** have a regression test (`tests/core.test.mjs`, `tests/regression.e2e.mjs`).
 
