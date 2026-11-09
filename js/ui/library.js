@@ -1,14 +1,19 @@
 // @ts-check
 import { $, $$, esc, icon, toast, openSheet, confirmSheet, relativeTime, paintIcons } from "./dom.js";
 import { t, getLang } from "./i18n.js";
-import { store, app, soundingKey, tick } from "./ctx.js";
+import { store, app, soundingKey, tick, renderOptions } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
+import { buildLines, linesToHtml } from "../core/chart.js";
 import { openShare, openSetlistEditor, printSetlist, openBankManager } from "./sheets-lazy.js";
 import { addDemoSong } from "./editor.js";
 
 /** @type {"all"|"favorites"|"setlists"|"bank"} */
 let filter = "all";
 let query = "";
+/** Wide screens show the tapped song's chart beside the list (phones open it). */
+const wide = matchMedia("(min-width: 900px)");
+/** Song shown beside the list ("" = the open song). */
+let peekId = "";
 /** Rows drawn at once; "Show more" adds a page. Resets when the search or filter changes. */
 const PAGE = 200;
 let limit = PAGE;
@@ -40,6 +45,21 @@ export function initLibrary() {
   $("newSongBtn").addEventListener("click", () => { newSong(); });
   $("newSetlistBtn").addEventListener("click", () => openSetlistEditor());
   $("libraryList").addEventListener("click", onListClick);
+  $("libraryList").addEventListener("dblclick", (e) => {
+    const row = /** @type {HTMLElement} */ (e.target).closest("[data-id]");
+    if (!row || !wide.matches || !/** @type {HTMLElement} */ (e.target).closest('[data-act="open"]')) return;
+    store.exitSetlist(); store.open(row.getAttribute("data-id") || ""); app.show("editor");
+  });
+  $("songPeek").addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
+    const id = $("songPeek").dataset.id || "";
+    if (!b || !store.song(id)) return;
+    store.exitSetlist();
+    if (b.id === "peekEdit") { store.open(id); app.show("editor"); }
+    if (b.id === "peekPresent") { store.open(id); app.openStage(); }
+    if (b.id === "peekShare") { store.open(id); openShare(); }
+  });
+  wide.addEventListener("change", () => { if (app.view === "songs") renderLibrary(); });
   store.on("change", (/** @type {string} */ kind) => { if (kind === "library") { recentSoon(); if (app.view === "songs") renderSoon(); } });
   store.on("song-open", () => { recentSoon(); if (app.view === "songs") renderSoon(); });
   $("recentList").addEventListener("click", (e) => {
@@ -83,7 +103,10 @@ function onListClick(e) {
   if (!btn) return;
   const id = btn.closest("[data-id]")?.getAttribute("data-id") || "";
   const act = btn.dataset.act;
-  if (act === "open") { store.exitSetlist(); store.open(id); app.show("editor"); }
+  if (act === "open") {
+    if (wide.matches && /** @type {MouseEvent} */ (e).detail < 2) { peekId = id; renderLibrary(); return; }
+    store.exitSetlist(); store.open(id); app.show("editor");
+  }
   else if (act === "fav") toggleFavorite(id);
   else if (act === "more") songMenu(id);
   else if (act === "set-open") { if (store.playSetlist(id)) app.show("editor"); else openSetlistEditor(id); }
@@ -207,6 +230,9 @@ export function renderLibrary() {
   $("librarySort").hidden = filter === "setlists";
   const q = fold(query.trim());
 
+  // The side preview shows only when a song list is drawn (renderPeek below).
+  $("songPeek").hidden = true;
+  $("libraryList").closest(".songs-split")?.classList.remove("with-peek");
   if (filter === "setlists") {
     const sets = store.setlists.filter((s) => !q || fold(s.title).includes(q));
     if (!store.setlists.length) {
@@ -282,4 +308,21 @@ export function renderLibrary() {
     ? `<div class="row more-row"><button type="button" class="btn ghost wide" data-act="more-rows">${esc(t("showMoreSongs", "Show more ({n} left)", { n: total - songs.length }))}</button></div>`
     : "");
   paintIcons(list);
+  renderPeek(songs);
+}
+
+/** The chart of the tapped (or open) song beside the list, on wide screens. @param {any[]} shown */
+function renderPeek(shown) {
+  const host = $("songPeek");
+  const s = wide.matches && filter !== "setlists" ? (store.song(peekId) || shown.find((x) => x.id === store.activeId) || shown[0] || null) : null;
+  host.hidden = !s;
+  $("libraryList").closest(".songs-split")?.classList.toggle("with-peek", Boolean(s));
+  if (!s) return;
+  host.dataset.id = s.id;
+  document.querySelectorAll("#libraryList .row[data-id]").forEach((r) => r.classList.toggle("peeked", r.getAttribute("data-id") === s.id));
+  const k = pretty(keyShort(soundingKey(s)));
+  const meta = [s.artist, s.genre, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean);
+  host.innerHTML = `<header class="peek-head"><span class="key-badge">${esc(k)}</span><div><h2>${esc(s.title)}</h2>${meta.length ? `<p class="muted">${esc(meta.join(" · "))}</p>` : ""}</div></header>
+    <div class="peek-actions"><button class="btn primary" type="button" id="peekEdit">${icon("edit")}${esc(t("editChart", "Edit chart"))}</button><button class="btn" type="button" id="peekPresent">${icon("present")}${esc(t("present", "Present"))}</button><button class="btn" type="button" id="peekShare">${icon("share")}${esc(t("share", "Share"))}</button></div>
+    <div class="chart peek-chart">${s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s))) : `<p class="chart-empty">${esc(t("stageEmpty", "This song has no chart yet."))}</p>`}</div>`;
 }

@@ -35,6 +35,8 @@ ok((await page.textContent("#libraryList")).includes("Sunday"), "v1 setlist show
 // 2. Transpose shows in Chords view and is saved per song
 await page.click('[data-filter="all"]');
 await page.click('#libraryList [data-id="song-old1"] [data-act="open"]'); await page.waitForTimeout(200);
+// Wide screens show the song beside the list first (v4.1); Edit chart opens it.
+if (await page.locator("#songPeek").isVisible()) { ok((await page.textContent("#songPeek h2")) === "Old Hymn", "song shown beside the list"); await page.click("#peekEdit"); await page.waitForTimeout(200); }
 await page.click("#keyUpBtn"); await page.click("#keyUpBtn");
 await page.waitForTimeout(600);
 const pv = await page.textContent("#preview");

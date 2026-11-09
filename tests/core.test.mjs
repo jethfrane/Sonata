@@ -362,3 +362,40 @@ test("v4: libraries saved before genre/song bank existed don't count as changed"
   assert.equal(libraryFingerprint(old), libraryFingerprint(now));
   assert.notEqual(libraryFingerprint(old), libraryFingerprint({ ...now, songs: [{ ...now.songs[0], inBank: true }] }));
 });
+
+test("Song Bank v2: social links, payment codes, v1 files and request channels", async () => {
+  const B = await import("../js/core/bank.js");
+  const s = B.normalizeSocials({ instagram: "https://www.instagram.com/jethrofrane/?hl=en", tiktok: "@jethro.frane", facebook: "https://m.facebook.com/jethro.frane", youtube: "https://youtube.com/@jethro", spotify: "https://evil.example.com/x", website: "jethrofrane.xyz", email: "bad" });
+  assert.equal(s.instagram, "jethrofrane");
+  assert.equal(s.tiktok, "jethro.frane");
+  assert.equal(s.facebook, "jethro.frane");
+  assert.equal(s.youtube, "https://youtube.com/@jethro");
+  assert.equal(s.spotify, "", "only spotify.com links");
+  assert.equal(s.website, "https://jethrofrane.xyz/");
+  assert.equal(s.email, "");
+  // v1 files: Messenger name becomes Facebook; WhatsApp, SMS and Telegram are dropped.
+  const v1 = B.parseBankFile({ type: "sonata-bank", v: 1, title: "Old", songs: [], contacts: { whatsapp: "+63917", messenger: "old.name", email: "a@b.co", telegram: "x" } });
+  assert.equal(v1.socials.facebook, "old.name");
+  assert.equal(v1.socials.email, "a@b.co");
+  assert.ok(!("whatsapp" in v1.socials));
+  const targets = B.requestTargets(v1.socials, "hi").map((x) => x.kind);
+  assert.deepEqual(targets, ["messenger", "email"]);
+  // Payment codes: QR Ph text or a small picture; anything else is dropped. At most four.
+  const pay = B.normalizePayments([
+    { label: "GCash", qr: "00020101021127830012com.p2pqrpay0111GXCHPHM2" },
+    { label: "Maya", qr: "<script>alert(1)</script>\u0000" },
+    { label: "BPI", img: "data:image/svg+xml;base64,PHN2Zz4=" },
+    { label: "BDO", img: "data:image/png;base64,iVBORw0KGgo=" }
+  ]);
+  assert.deepEqual(pay.map((p) => p.label), ["GCash", "BDO"]);
+  assert.equal(B.guessPaymentLabel("0002010102112783...GXCHPHM2..."), "GCash");
+  assert.equal(B.isPaymentQr("000201..."), true);
+  assert.equal(B.imageData("data:image/jpeg;base64," + "A".repeat(300 * 1024)), "", "big pictures refused");
+  assert.equal(B.bankSlug("Jethro Frane & Friends!"), "jethro-frane-friends");
+  const links = B.socialLinks({ ...s, email: "me@x.co" }).map((l) => l.kind);
+  assert.deepEqual(links, ["instagram", "tiktok", "facebook", "youtube", "website", "email"]);
+  const file = B.buildBankFile(B.normalizeProfile({ name: "Jethro", socials: s, payments: pay }), [{ id: "s1", title: "A", inBank: true, body: "G" }], () => "G");
+  assert.equal(file.v, 2);
+  assert.equal(file.title, "Jethro's Song Bank");
+  assert.deepEqual(B.parseBankFile(JSON.parse(JSON.stringify(file))).payments, pay);
+});

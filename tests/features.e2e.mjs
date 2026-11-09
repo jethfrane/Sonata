@@ -10,6 +10,7 @@ const b = await chromium.launch();
 let pass = 0, fail = 0;
 const ok = (c, msg) => { if (c) { pass++; console.log("  ✓", msg); } else { fail++; console.log("  ✗", msg); } };
 const errors = [];
+const PAYQR = "00020101021127830012com.p2pqrpay0111GXCHPHM2XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD";
 
 const SONGS = [
   { id: "song-feat-aaaaaa", title: "Here I Am to Worship", artist: "Tim Hughes", genre: "Worship", body: "## Verse\nG        D/F#      Em\nLight of the world\nC         Am/G\nYou stepped down", links: [{ name: "Reference", url: "https://youtu.be/dQw4w9WgXcQ" }] },
@@ -123,7 +124,7 @@ const fakeDrive = async (page) => page.route("https://www.googleapis.com/**", as
   const json = (o) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(o), headers: { "access-control-allow-origin": "*" } });
   const id = (url.pathname.match(/files\/([^/?]+)/) || [])[1];
   if (url.pathname.includes("/permissions")) { drive.perms.push([m, id, req.postData()]); return json({ id: "anyoneWithLink" }); }
-  if (url.pathname.startsWith("/upload")) { drive.uploads++; const body = (req.postData() || "").split("\r\n\r\n")[2]?.split("\r\n--")[0] || ""; const nid = id || "bankfile-" + "x".repeat(24); drive.files.set(nid, body); return json({ id: nid }); }
+  if (url.pathname.startsWith("/upload")) { drive.uploads++; const body = (req.postData() || "").split("\r\n\r\n")[2]?.split("\r\n--")[0] || ""; const nid = id || ((req.postData() || "").includes("sonata_songbank.json") ? "bankfile-" + "x".repeat(24) : "libraryfile-" + "y".repeat(20)); drive.files.set(nid, body); return json({ id: nid }); }
   if (url.searchParams.get("alt") === "media") return json(JSON.parse(drive.files.get(id) || "{}"));
   if (id) return json(drive.files.has(id) ? { id, trashed: false, md5Checksum: "1", modifiedTime: "t" } : {});
   return json({ files: [...drive.files.keys()].filter((k) => !k.startsWith("bankfile") || url.searchParams.get("q")?.includes("songbank")).map((x) => ({ id: x })) });
@@ -135,19 +136,35 @@ await p.click('[data-act="more"] >> nth=0'); await p.click('.menu-item[data-m="b
 await p.click('[data-filter="bank"]'); await p.waitForTimeout(200);
 ok(await p.locator(".row[data-id]").count() === 1 && await p.locator(".bank-card").isVisible(), "song menu adds a song to the bank; Song bank filter shows it");
 await p.click('[data-act="bank"]'); await p.waitForTimeout(400);
-await p.fill('[data-p="name"]', "Jethro"); await p.fill('[data-c="whatsapp"]', "+63 917 000 0000");
+await p.fill('[data-p="name"]', "Jethro"); await p.fill('[data-s="instagram"]', "https://www.instagram.com/jethrofrane/"); await p.fill('[data-s="facebook"]', "jethro.frane");
+await p.locator('[data-s="instagram"]').dispatchEvent("change"); await p.waitForTimeout(700);
+ok((await p.inputValue('[data-s="instagram"]')) === "jethrofrane", "a pasted Instagram link becomes the user name");
+ok(await p.locator('#beCard .sc-link.sc-instagram').count() === 1 && (await p.textContent("#beCard .sc-name")) === "Jethro", "the Sonata Card updates while you type");
+// Payment QR: a screenshot of a QR Ph code is read and redrawn
+const qrFile = await (async () => {
+  const { QRCode } = await import("../js/lib/qr.js");
+  const qr = QRCode.generate(PAYQR, "M"); const n = qr.getModuleCount(), sc = 8, m = 4, W = (n + 2 * m) * sc;
+  const { PNG } = await import("./png.mjs");
+  return PNG(W, W, (x, y) => { const r = Math.floor(y / sc) - m, c = Math.floor(x / sc) - m; return r >= 0 && c >= 0 && r < n && c < n && qr.isDark(r, c); });
+})();
+await p.setInputFiles("#bePay", { name: "gcash.png", mimeType: "image/png", buffer: qrFile }); await p.waitForTimeout(1500);
+ok(await p.locator(".pay-edit").count() === 1 && (await p.inputValue('[data-pl="0"]')) === "GCash", "uploaded GCash QR is read and labelled");
 await p.click("#bankPublish"); await p.waitForTimeout(1500);
 const published = [...drive.files.entries()].find(([k]) => k.startsWith("bankfile"));
 const bankJson = published ? JSON.parse(published[1]) : null;
-ok(bankJson?.type === "sonata-bank" && bankJson.songs.length === 1 && bankJson.name === "Jethro" && bankJson.contacts.whatsapp === "+639170000000", "publishing writes the bank file to the musician's Drive");
+if (process.env.DEBUG) console.log("bank:", JSON.stringify({ v: bankJson?.v, n: bankJson?.songs?.length, name: bankJson?.name, s: bankJson?.socials, p: bankJson?.payments?.map((x) => x.label + ":" + (x.qr === PAYQR)) }));
+ok(bankJson?.type === "sonata-bank" && bankJson.v === 2 && bankJson.songs.length === 1 && bankJson.name === "Jethro" && bankJson.socials.instagram === "jethrofrane" && bankJson.payments[0]?.qr === PAYQR && !("whatsapp" in (bankJson.socials || {})), "publishing writes the Song Bank (card, links, payment code) to the owner's Drive");
 ok(drive.perms.some(([m, , body]) => m === "POST" && body.includes('"type":"anyone"')), "the bank file (only) is shared as anyone-with-link");
-ok((await p.inputValue("#bankLink")).endsWith("/bank/" + published?.[0]), "public link shown");
+ok((await p.inputValue("#bankLink")).endsWith("/bank/" + published?.[0] + "/jethro"), "public link shown, ending with the owner's name");
+const [cardDl] = await Promise.all([p.waitForEvent("download"), p.click("#bankCardPng")]);
+const cardImg = require("node:fs").readFileSync(await cardDl.path());
+ok(cardImg.subarray(1, 4).toString() === "PNG" && cardImg.readUInt32BE(16) === 1080 && cardImg.readUInt32BE(20) === 1350, "Sonata Card downloads as a 1080×1350 image");
 const libFile = [...drive.files.entries()].find(([k]) => !k.startsWith("bankfile"));
 ok(!drive.perms.some(([, id]) => id === libFile?.[0]), "the private library file is never shared");
 await p.close();
 
 console.log("Song bank: listener");
-const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro", bio: "OPM and pop", contacts: { whatsapp: "+639170000000", email: "j@example.com" }, updatedAt: "2026-11-09",
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro", bio: "OPM and pop", socials: { facebook: "jethro.frane", instagram: "jethrofrane", tiktok: "jethrofrane", email: "j@example.com" }, payments: [{ label: "GCash", name: "J. F.", qr: PAYQR }], updatedAt: "2026-11-09",
   songs: [{ id: "a", t: "Buwan", a: "Juan Karlos", g: "OPM", k: "Am", b: "Am  F  C  G\nIkaw ang buwan" }, { id: "b", t: "Perfect", a: "Ed Sheeran", g: "Pop", k: "G" }, { id: "c", t: "Mundo", a: "IV of Spades", g: "OPM", k: "C" }] };
 const BID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345";
 p = await open(`/bank/${BID}`, { touch: true, viewport: { width: 390, height: 844 }, songs: [], route: (page) => page.route(`**/api/bank?id=${BID}`, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(BANK) })) });
@@ -163,11 +180,14 @@ ok((await p.locator(".bank-chart").innerText()).includes("A♯m") || (await p.lo
 await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(400);
 ok((await p.textContent("#sheetTitle")) === "Send request", "Request in this key opens the request sheet");
 await p.fill("#rqFrom", "Ana");
-const [popup] = await Promise.all([p.waitForEvent("popup").catch(() => null), p.click('[data-go="whatsapp"]')]);
-const wa = popup ? (await popup.waitForURL(/wa\.me|whatsapp/, { timeout: 5000 }).catch(() => {}), popup.url()) : "";
+// Record the address the request opens (Messenger itself needs a sign-in in a test browser).
+await p.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; });
+await p.click('[data-go="messenger"]');
+const wa = (await p.evaluate(() => window.__opened[0])) || "";
+if (process.env.DEBUG) console.log("popup:", wa);
 if (process.env.DEBUG) console.log("popup:", wa);
 const waText = decodeURIComponent(wa.replace(/\+/g, " "));
-ok(/(wa\.me\/|phone=)639170000000/.test(wa) && waText.includes("Song request from Ana") && waText.includes("Buwan (Juan Karlos) in B♭m"), "WhatsApp opens with the request written");
+ok(/m\.me\/jethro\.frane|jethro\.frane/.test(wa) && waText.includes("Song request from Ana") && waText.includes("Buwan (Juan Karlos) in B♭m"), "Messenger opens with the request written");
 await p.close();
 p = await open(`/bank/${BID}`, { songs: [], route: (page) => page.route("**/api/bank?**", (r) => r.fulfill({ status: 404, contentType: "application/json", body: '{"error":"x"}' })) });
 ok((await p.textContent("#bankBody")).includes("isn't available"), "a stopped or wrong list says so");

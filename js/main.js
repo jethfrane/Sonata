@@ -174,7 +174,7 @@ async function restoreBank() {
   const found = await app.drive.findBank();
   const file = found && parseBankFile(found.body);
   if (!found || !file) return;
-  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, contacts: file.contacts, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
+  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, photo: file.photo, socials: file.socials, links: file.links, payments: file.payments, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
   store.changed("settings");
   (await bankModule())?.watchBank();
 }

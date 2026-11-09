@@ -1,5 +1,18 @@
 [
   {
+    "version": "4.1.0",
+    "date": "2026-11-10",
+    "whatsNew": "Song Bank gets a Sonata Card, social links and payment QR codes; Songs shows the chart beside the list on bigger screens.",
+    "changes": [
+      "Sonata Card: your photo, name, note, song count, genres and links, shown live while you edit and on your public Song Bank. Download it as a 1080×1350 image with a QR code.",
+      "Social links with logos: Instagram, TikTok, Facebook, YouTube, Spotify, X, Threads, website and email. Requests go by Messenger, Instagram or email (WhatsApp, SMS and Telegram removed).",
+      "Support: add GCash, Maya or bank QR Ph codes from a screenshot. Sonata reads the code and shows it crisply; payments go straight to you and Sonata never handles money.",
+      "Song Bank links end with your name (…/bank/<id>/your-name).",
+      "Tablets in landscape and computers: tap a song to see its chart beside the list, with Edit, Present and Share. Double-click opens the editor.",
+      "Fresh screenshots, including Chords and Song Bank."
+    ]
+  },
+  {
     "version": "4.0.0",
     "date": "2026-11-09",
     "whatsNew": "A new Chords tab, a Song Bank for requests, smaller QR codes that scan, and setlists you can send as song links.",

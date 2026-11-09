@@ -78,5 +78,26 @@ await shot(page, "phone-play.png"); await ctx.close();
 ({ ctx, page } = await open(phone, "light", "/play/metronome"));
 await shot(page, "phone-metronome.png"); await ctx.close();
 
+// v4: Chords, Songs side by side, and a public Song Bank (served from a sample file, no Drive needed).
+({ ctx, page } = await open(desk, "light", "/chords/D-over-F%23"));
+await shot(page, "desktop-chords.png"); await ctx.close();
+
+({ ctx, page } = await open(desk, "light", "/songs"));
+await page.click('#libraryList [data-id="song-demo-amazing"] [data-act="open"]'); await page.waitForTimeout(300);
+await shot(page, "desktop-songs.png"); await ctx.close();
+
+({ ctx, page } = await open(phone, "light", "/chords/Am7"));
+await shot(page, "phone-chords.png"); await ctx.close();
+
+const SAMPLE_BANK = { type: "sonata-bank", v: 2, title: "Songs I can play", name: "Jethro Frane", bio: "OPM, pop and worship. Requests welcome!",
+  socials: { instagram: "jethrofrane", tiktok: "jethrofrane", facebook: "jethrofrane", youtube: "@jethrofrane" }, links: [], payments: [],
+  updatedAt: new Date().toISOString(), songs: SONGS.map((x, i) => ({ id: "b" + i, t: x.title, a: x.artist, g: i % 2 ? "Worship" : "Hymn", k: x.manualKey.split(":")[0], bpm: x.bpm })) };
+for (const [vp, name] of [[phone, "phone-bank.png"], [desk, "desktop-bank.png"]]) {
+  ({ ctx, page } = await open(vp, "light", "/songs"));
+  await page.route("**/api/bank?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(SAMPLE_BANK) }));
+  await page.goto(BASE + "/bank/1SampleSongBankSampleSongBank00/jethro-frane"); await page.waitForTimeout(900);
+  await shot(page, name); await ctx.close();
+}
+
 await b.close();
 console.log("Screenshots saved to public/screenshots/");
