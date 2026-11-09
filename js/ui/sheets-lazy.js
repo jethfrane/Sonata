@@ -27,6 +27,15 @@ const call = async (id, args) => {
 /** @param {string} [id] */ export const openSetlistEditor = (id) => call("openSetlistEditor", [id]);
 /** @param {any} data */ export const openImportSet = (data) => call("openImportSet", [data]);
 export const openSettings = () => call("openSettings", []);
+/** QR encoder (loaded on first use). */
+export const loadQr = () => chunk(() => import("../lib/qr.js"));
+/** Chords screen and chord pop-ups. */
+export const chordsModule = () => chunk(() => import("./chords.js"));
+/** Song bank: manager and public page. */
+export const bankModule = () => chunk(() => import("./bank.js"));
+/** @param {string} name */ export const openChordSheet = async (name) => (await chordsModule())?.openChordSheet(name);
+export const openBankManager = async () => (await bankModule())?.openBankManager();
+export const openLinksImport = (/** @type {string} */ text = "") => call("openLinksImport", [text]);
 export const openAccount = () => call("openAccount", []);
 
 /** Print every song in a setlist using the saved print layout. @param {string} id */

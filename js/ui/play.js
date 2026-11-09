@@ -6,6 +6,7 @@ import { uniqueChords } from "../core/chart.js";
 import { SCALES, mod12, noteName, prefersFlats, keyFromTonic, keyShort, pretty, parseChord, diatonicChords, CHORD_TYPES, chordsForKey, chordInfo, identifyChord } from "../core/music.js";
 import { piano, pluck, playChord } from "../audio.js";
 import { initTuner, setTuning, renderTunerStrings, stopTuner } from "./tuner.js";
+import { openChordSheet } from "./sheets-lazy.js";
 
 export const TUNINGS = {
   guitar: { label: "Guitar · E A D G B E", kind: "guitar", strings: [64, 59, 55, 50, 45, 40] },
@@ -124,6 +125,7 @@ function onPlayer(name, target) {
   tick();
   if (role === "scale") { p.chord = null; }
   else if (role === "again") { if (p.chord) playFor(name, p.chord); return; }
+  else if (role === "shapes") { if (p.chord) openChordSheet(p.chord); return; }
   else if (btn.dataset.chord) { p.chord = btn.dataset.chord; playFor(name, p.chord); }
   savePlayer();
   renderInstrument(name);
@@ -142,7 +144,7 @@ function chordsFor(name) {
   const type = players[name].type;
   if (type === "song") {
     const names = songChordNames();
-    return (names.length ? names : diatonicChords(playKey()).map((d) => d.name)).slice(0, 18);
+    return (names.length ? names : diatonicChords(playKey()).map((d) => d.name)).slice(0, 80);
   }
   return chordsForKey(playKey(), type).map((c) => c.name);
 }
@@ -157,7 +159,7 @@ function renderPlayer(name) {
   if (p.chord && !list.includes(p.chord)) p.chord = null;
   const sel = `<select class="select cp-type" data-role="type" aria-label="${esc(t("chordType", "Chord type"))}">${types.map((x) => `<option value="${x.id}"${x.id === type ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
   const chips = list.map((c) => `<button type="button" class="chip chord-chip${p.chord === c ? " on" : ""}" data-chord="${esc(c)}" aria-pressed="${p.chord === c}">${esc(pretty(c))}</button>`).join("");
-  $(name + "Player").innerHTML = `<div class="cp-bar">${sel}<button type="button" class="chip${p.chord ? "" : " on"}" data-role="scale">${esc(t("scaleChip", "Scale"))}</button>${p.chord ? `<button type="button" class="chip" data-role="again" aria-label="${esc(t("playAgain", "Play again"))}">▶ ${esc(name === "guitar" ? t("strum", "Strum") : t("playIt", "Play"))}</button>` : ""}</div><div class="cp-chips">${chips}</div>`;
+  $(name + "Player").innerHTML = `<div class="cp-bar">${sel}<button type="button" class="chip${p.chord ? "" : " on"}" data-role="scale">${esc(t("scaleChip", "Scale"))}</button>${p.chord ? `<button type="button" class="chip" data-role="again" aria-label="${esc(t("playAgain", "Play again"))}">▶ ${esc(name === "guitar" ? t("strum", "Strum") : t("playIt", "Play"))}</button><button type="button" class="chip" data-role="shapes">${esc(t("chordShapes", "Shapes"))}</button>` : ""}</div><div class="cp-chips">${chips}</div>`;
 }
 
 /** Held notes per instrument, so the readout can name what you are playing. @type {Record<string, number[]>} */

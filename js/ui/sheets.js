@@ -5,7 +5,7 @@ import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, rela
 import { t, getLang, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
-import { packSong, packSet, shareUrl, unpackSong } from "../core/share.js";
+import { packSong, packSet, shareUrl, unpackSong, qrUrl, parseLinks, setlistMessage } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
 import { exportPdf, exportPng, exportTxt, printChart } from "./exporter.js";
 
@@ -133,6 +133,11 @@ export function openDetails() {
         <label class="field"><span>${esc(t("songKey", "Song key"))}</span><select class="select" id="dKey">${keyOptions(s.manualKey, detectedKey(s))}</select></label>
         <label class="field"><span>${esc(t("bpm", "Tempo (BPM)"))}</span><input class="input" id="dBpm" type="number" min="30" max="300" inputmode="numeric" value="${s.bpm ?? ""}"></label>
       </div>
+      <div class="field-row">
+        <label class="field"><span>${esc(t("genre", "Genre"))}</span><input class="input" id="dGenre" value="${esc(s.genre)}" maxlength="40" list="dGenres" autocomplete="off" placeholder="OPM, Worship, Pop…">
+          <datalist id="dGenres">${[...new Set(store.songs.map((x) => x.genre).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist></label>
+        <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my song bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
+      </div>
       <label class="field"><span>${esc(t("notes", "Notes"))}</span><textarea class="input" id="dNotes" rows="3">${esc(s.description)}</textarea></label>
       <div class="field"><span>${esc(t("links", "Links"))}</span><div id="dLinks">${linkRows(links)}</div>
         <button class="btn small ghost" type="button" id="dAddLink">${icon("plus")}${esc(t("addLink", "Add link"))}</button></div>
@@ -149,6 +154,8 @@ export function openDetails() {
           manualKey: v("dKey"),
           bpm: bpm >= 30 && bpm <= 300 ? Math.round(bpm) : null,
           description: v("dNotes"),
+          genre: v("dGenre").trim().slice(0, 40),
+          inBank: /** @type {HTMLInputElement} */ (b.querySelector("#dInBank")).checked,
           links: links.filter((l) => l.name.trim() || l.url.trim()).map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
         });
         store.emit("song-open", s);
@@ -195,7 +202,7 @@ function wrapLines(g, text, width, max) {
 /** A sharp, scannable QR card as a PNG: whole-pixel modules, quiet zone, title and brand. @param {string} url @param {string} title */
 async function qrPng(url, title) {
   const { qrModules } = await loadQr();
-  const qr = qrModules(url);
+  const qr = qrModules(url, ["L", "M"]);
   if (!qr) throw new Error("qr too long");
   const W = 1080, H = 1350;
   const c = document.createElement("canvas");
@@ -256,13 +263,15 @@ export async function openShare(setId) {
   if (!set && !song) { toast(t("noSong", "No song open"), "error"); return; }
   const data = set ? packSet(set, store.setlistSongs(set)) : packSong(/** @type {any} */ (song));
   const title = set ? set.title : /** @type {any} */ (song).title;
-  const [{ qrSvg }, link] = await Promise.all([loadQr(), shareUrl(BASE(), data)]);
+  const [{ qrSvg }, link, qrLink] = await Promise.all([loadQr(), shareUrl(BASE(), data), qrUrl(location.origin, data)]);
   let url = link;
   const opts = readExportOpts();
   const many = set ? store.setlistSongs(set).length : (store.currentSetlist()?.songs.length || 1);
   const draw = () => {
-    const svg = qrSvg(url, { ecc: "M", margin: 4 }) || qrSvg(url, { margin: 4 });
-    const short = !svg && !url.includes("tinyurl.com");
+    // The QR holds the upper-case form of the link (QR alphanumeric mode: a smaller, easier-to-scan code).
+    const qrText = url.includes("tinyurl.com") ? url : qrLink;
+    const svg = qrSvg(qrText, { ecc: "L", margin: 4 });
+    const short = !url.includes("tinyurl.com") && url.length > 300;
     return `<div class="share">
       <div class="share-top">
         <div class="qr-box">${svg || `<p>${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p>`}</div>
@@ -273,9 +282,11 @@ export async function openShare(setId) {
             <button class="btn primary" type="button" id="shareCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
             ${"share" in navigator ? `<button class="btn" type="button" id="shareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
             ${svg ? `<button class="btn" type="button" id="shareQr">${icon("qr")}${esc(t("downloadQr", "QR image"))}</button>` : ""}
+            ${set ? `<button class="btn" type="button" id="shareSongLinks">${icon("link")}${esc(t("songLinks", "Song links"))}</button>` : ""}
             ${short ? `<button class="btn" type="button" id="shareShort">${esc(t("shortLink", "Make a short link"))}</button>` : ""}
           </div>
           ${short ? `<p class="card-hint">${esc(t("shortLinkNote", "This sends the link to TinyURL to shorten it."))}</p>` : ""}
+          ${set ? `<p class="card-hint">${esc(t("songLinksHint", "Song links: one short link per song in a message. Anyone can paste the whole message into Sonata (Songs → Add from links) to get the setlist."))}</p>` : ""}
         </div>
       </div>
       <h3 class="group-title">${esc(t("exportFiles", "Export"))}${many > 1 ? ` <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: many }))}</span>` : ""}</h3>
@@ -314,7 +325,12 @@ export async function openShare(setId) {
     if (kind === "print") { closeSheet(); printChart(opts, set?.id); }
     if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
-    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(url, title)));
+    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(url.includes("tinyurl.com") ? url : qrLink, title)));
+    if (b.id === "shareSongLinks" && set) busy(b, async () => {
+      const msg = await setlistMessage(BASE(), set, store.setlistSongs(set));
+      if ("share" in navigator && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ title: `${set.title} · Sonata`, text: msg }); return; } catch { /* cancelled: copy instead */ } }
+      if (await copyText(msg)) toast(t("songLinksCopied", "Setlist message copied. Paste it in your group chat."), "success", { ms: 4000 });
+    });
     if (b.id === "shareShort") {
       try {
         const r = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(url), { signal: AbortSignal.timeout(6000), referrerPolicy: "no-referrer" });
@@ -571,3 +587,48 @@ export function openAccount() {
   });
 }
 
+
+
+/**
+ * Add songs from pasted Sonata links (one song per link, or a whole-setlist link). When the
+ * message came from "Song links" (first line "Setlist: …"), the setlist is rebuilt too.
+ * @param {string} [text]
+ */
+export function openLinksImport(text = "") {
+  /** @type {Awaited<ReturnType<typeof parseLinks>>} */
+  let found = { title: "", songs: [], sets: [] };
+  const summary = () => {
+    const n = found.songs.length + found.sets.reduce((a, s) => a + s.s.length, 0);
+    if (!n) return `<p class="muted">${esc(t("linksNone", "Paste a message with Sonata links. Each song link adds one song."))}</p>`;
+    return `<p class="status-line synced">${esc(t("linksFound", "Found {n} songs", { n }))}${found.sets.length ? ` · ${esc(t("linksSets", "{n} setlists", { n: found.sets.length }))}` : ""}</p>
+      <ol class="import-list">${found.songs.map((s) => `<li>${esc(s.t || "Untitled")}${s.a ? ` <span class="muted">· ${esc(s.a)}</span>` : ""}</li>`).join("")}${found.sets.map((s) => `<li><b>${esc(s.t)}</b> <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: s.s.length }))}</span></li>`).join("")}</ol>
+      ${found.songs.length > 1 ? `<label class="switch-row"><span>${esc(t("linksMakeSet", "Also make a setlist"))}</span><input type="checkbox" class="toggle" id="lkMakeSet" checked></label>
+        <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="lkSetTitle" value="${esc(found.title || t("importedSetlist", "Imported setlist"))}" maxlength="80"></label>` : ""}`;
+  };
+  const body = openSheet({
+    title: t("addFromLinks", "Add from links"), wide: true, focus: !text,
+    body: `<div class="form"><label class="field"><span>${esc(t("linksPaste", "Paste links or a whole message"))}</span><textarea class="input" id="lkText" rows="5" placeholder="https://sonata.jethrofrane.xyz/share/…">${esc(text)}</textarea></label><div id="lkFound">${summary()}</div></div>`,
+    actions: [
+      { label: t("cancel", "Cancel"), kind: "ghost" },
+      { label: t("add", "Add"), kind: "primary", onClick: (b) => {
+        const n = found.songs.length + found.sets.length;
+        if (!n) { toast(t("linksNone", "Paste a message with Sonata links. Each song link adds one song."), "error"); return false; }
+        /** Reuse a song that's already saved (same title and chart). @param {any} d */
+        const add = (d) => { const u = unpackSong(d); const same = store.songs.find((x) => x.title === u.title && x.body === u.body); return same ? same.id : store.createSong(/** @type {any} */ (u)).id; };
+        const ids = found.songs.map(add);
+        for (const set of found.sets) store.saveSetlist({ title: set.t || "Setlist", description: set.d || "", items: set.s.map((d) => ({ songId: add(d) })) });
+        const make = /** @type {HTMLInputElement|null} */ (b.querySelector("#lkMakeSet"));
+        let made = null;
+        if (make?.checked && ids.length > 1) made = store.saveSetlist({ title: /** @type {HTMLInputElement} */ (b.querySelector("#lkSetTitle")).value.trim() || "Setlist", description: "", items: ids.map((songId) => ({ songId })) });
+        toast(made ? t("linksAddedSet", "Added {n} songs and the setlist", { n: ids.length }) : t("linksAdded", "Added {n} songs", { n: ids.length + found.sets.reduce((a, s) => a + s.s.length, 0) }), "success");
+        app.show("songs");
+        app.refresh();
+      } }
+    ]
+  });
+  const area = /** @type {HTMLTextAreaElement} */ (body.querySelector("#lkText"));
+  let timer = /** @type {any} */ (0);
+  const read = async () => { found = await parseLinks(area.value); /** @type {HTMLElement} */ (body.querySelector("#lkFound")).innerHTML = summary(); };
+  area.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(read, 250); });
+  if (text) read();
+}

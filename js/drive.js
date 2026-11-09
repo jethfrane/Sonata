@@ -8,6 +8,8 @@ import { libraryFingerprint } from "./core/store.js";
 const CLIENT_ID = "158653989463-6dicjrekd70pp2mh39scp05skr6ilcl6.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
 const FILE_NAME = "sonata_library.json";
+/** The public song bank (shared "anyone with the link can view"). */
+const BANK_NAME = "sonata_songbank.json";
 const TOKEN_KEY = "sonata_google_token";
 const EXPIRY_KEY = "sonata_google_token_expiry";
 const PROFILE_KEY = "sonata_user_profile";
@@ -210,16 +212,61 @@ export class Drive {
     return `${d.md5Checksum || ""}|${d.modifiedTime || ""}`;
   }
 
-  /** @param {string|null} id @param {string} body @returns {Promise<string>} the file id */
-  async upload(id, body) {
+  /** @param {string|null} id @param {string} body @param {string} [name] @returns {Promise<string>} the file id */
+  async upload(id, body, name = FILE_NAME) {
     const boundary = "sonata" + Math.random().toString(36).slice(2);
-    const meta = JSON.stringify(id ? {} : { name: FILE_NAME, mimeType: "application/json" });
+    const meta = JSON.stringify(id ? {} : { name, mimeType: "application/json" });
     const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
     const url = id
       ? `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=multipart&fields=id`
       : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id";
     const up = await this.api(url, { method: id ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body: multipart });
     return (await up.json()).id || id || "";
+  }
+
+  /**
+   * Publish the song bank: write sonata_songbank.json and let anyone with the link read it.
+   * Only this one file is shared; the library file stays private.
+   * @param {object} file the public bank JSON @param {string} [fileId] existing file to update
+   * @returns {Promise<{ ok: true, id: string } | { ok: false, reason: "signin"|"offline"|"error" }>}
+   */
+  async publishBank(file, fileId = "") {
+    if (!this.token || !this.tokenValid()) return { ok: false, reason: "signin" };
+    if (!navigator.onLine) return { ok: false, reason: "offline" };
+    try {
+      let id = fileId;
+      if (id) {
+        try { const r = await this.api(`https://www.googleapis.com/drive/v3/files/${id}?fields=id,trashed`); const d = await r.json(); if (!d.id || d.trashed) id = ""; } catch (e) { if (/** @type {any} */ (e).expired) throw e; id = ""; }
+      }
+      id = await this.upload(id || null, JSON.stringify(file), BANK_NAME);
+      await this.api(`https://www.googleapis.com/drive/v3/files/${id}/permissions?fields=id`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "reader", type: "anyone", allowFileDiscovery: false })
+      });
+      return { ok: true, id };
+    } catch (e) {
+      if (/** @type {any} */ (e).expired) { this.set("expired"); return { ok: false, reason: "signin" }; }
+      return { ok: false, reason: navigator.onLine ? "error" : "offline" };
+    }
+  }
+
+  /** Stop sharing the song bank (the file stays in Drive, private again). @param {string} fileId */
+  async unpublishBank(fileId) {
+    if (!this.token || !fileId) return false;
+    try { await this.api(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions/anyoneWithLink`, { method: "DELETE" }); return true; }
+    catch { return false; }
+  }
+
+  /** The bank file made on another device, if any (to restore the profile here). */
+  async findBank() {
+    if (!this.token) return null;
+    try {
+      const q = encodeURIComponent(`name='${BANK_NAME}' and trashed=false`);
+      const r = await this.api(`https://www.googleapis.com/drive/v3/files?q=${q}&orderBy=createdTime&fields=files(id)&spaces=drive`);
+      const id = (await r.json()).files?.[0]?.id;
+      if (!id) return null;
+      const body = await (await this.api(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`)).json();
+      return { id, body };
+    } catch { return null; }
   }
 
   /** Remember the sync; a full or blocked storage must not turn a good sync into an error. */

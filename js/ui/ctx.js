@@ -7,7 +7,7 @@ import { Metronome } from "../audio.js";
 /**
  * @typedef {import("../core/store.js").Song} Song
  * @typedef {import("../core/music.js").Key} Key
- * @typedef {"songs"|"editor"|"theory"|"play"} View
+ * @typedef {"songs"|"editor"|"chords"|"theory"|"play"|"bank"} View
  */
 
 /** The browser's storage, or memory-only storage when the browser blocks it (private or strict modes). */
@@ -34,7 +34,8 @@ export const app = {
   /** @type {(view: View, opts?: { sub?: string, replace?: boolean }) => void} */ show: () => {},
   /** @type {() => void} */ openStage: () => {},
   /** @type {() => void} */ refresh: () => {},
-  /** @type {Set<(beat: number, accent: string) => void>} */ beatListeners: new Set()
+  /** @type {Set<(beat: number, accent: string) => void>} */ beatListeners: new Set(),
+  /** @type {((chord: string) => void)|null} */ onChordChange: null
 };
 
 /** @type {Map<string, ReturnType<typeof detectKey>>} */

@@ -1,6 +1,7 @@
 // @ts-check
 // Library state and persistence. Storage keys are unchanged from v1 so
 // existing libraries load as-is.
+import { normalizeProfile } from "./bank.js";
 
 export const KEYS = {
   songs: "sonata:v12:songs",
@@ -8,15 +9,16 @@ export const KEYS = {
   settings: "sonata:v12:settings",
   active: "sonata:v12:active",
   deleted: "sonata:v12:deleted",
-  lastSynced: "sonata:v12:last_synced"
+  lastSynced: "sonata:v12:last_synced",
+  bank: "sonata:v12:bank"
 };
 
 /**
  * @typedef {{ name: string, url: string }} Link
  * @typedef {{ id: string, title: string, artist: string, creator: string, description: string,
  *   links: Link[], body: string, manualKey: string, isFavorite: boolean, transpose: number,
- *   capo: number, bpm: number|null, createdAt: string, updatedAt: string, lastOpenedAt: string,
- *   readonly?: boolean }} Song
+ *   capo: number, bpm: number|null, genre: string, inBank: boolean, createdAt: string, updatedAt: string,
+ *   lastOpenedAt: string, readonly?: boolean }} Song
  * @typedef {{ id: string, title: string, description: string, links: Link[],
  *   items: { songId: string }[], date: string, updatedAt: string }} Setlist
  * @typedef {typeof DEFAULT_SETTINGS} Settings
@@ -89,6 +91,8 @@ export function normalizeSong(s) {
     transpose: int(s.transpose, -11, 11, 0),
     capo: int(s.capo, 0, 11, 0),
     bpm: Number.isFinite(bpm) && bpm >= 30 && bpm <= 300 ? Math.round(bpm) : null,
+    genre: str(s.genre).trim().slice(0, 40),
+    inBank: Boolean(s.inBank),
     createdAt: time(s.createdAt, t),
     updatedAt,
     lastOpenedAt: time(s.lastOpenedAt, updatedAt)
@@ -219,6 +223,10 @@ export class Store {
     /** @type {Setlist[]} */ this.setlists = [];
     /** @type {string[]} */ this.deletedIds = [];
     /** @type {Settings} */ this.settings = normalizeSettings({});
+    /** Song bank profile (this device; the public copy lives in the musician's Drive). */
+    this.bank = normalizeProfile({});
+    /** The published song bank is behind the library (re-publish soon). */
+    this.bankDirty = false;
     /** @type {string|null} */ this.activeId = null;
     /** @type {Song|null} */ this.shared = null;
     /** @type {{ id: string|null, index: number }} */ this.setlist = { id: null, index: 0 };
@@ -239,6 +247,7 @@ export class Store {
     const del = readJson(st, KEYS.deleted, []);
     this.deletedIds = Array.isArray(del) ? del.filter((x) => typeof x === "string") : [];
     this.settings = normalizeSettings(readJson(st, KEYS.settings, {}));
+    this.bank = normalizeProfile(readJson(st, KEYS.bank, {}));
     let active = null;
     try { active = st.getItem(KEYS.active); } catch { /* private mode */ }
     this.activeId = this.songs.some((s) => s.id === active) ? active : this.songs[0]?.id || null;
@@ -304,6 +313,7 @@ export class Store {
       st.setItem(KEYS.songs, JSON.stringify(this.songs));
       st.setItem(KEYS.setlists, JSON.stringify(this.setlists));
       st.setItem(KEYS.settings, JSON.stringify(this.settings));
+      st.setItem(KEYS.bank, JSON.stringify(this.bank));
       st.setItem(KEYS.deleted, JSON.stringify(this.deletedIds));
       if (this.activeId && this.activeId !== "shared") st.setItem(KEYS.active, this.activeId);
       this.stamp = this.readStamp();

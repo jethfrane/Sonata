@@ -1,10 +1,10 @@
 // @ts-check
-import { $, $$, esc, toast, copyText, paintIcons } from "./dom.js";
+import { $, $$, esc, icon, toast, copyText, paintIcons } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
-import { openKeySheet, openDetails, openShare } from "./sheets-lazy.js";
+import { openKeySheet, openDetails, openShare, openChordSheet } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
 
 export const DEMO_SONG = {
@@ -57,7 +57,52 @@ const title = () => /** @type {HTMLInputElement} */ ($("songTitle"));
 
 let barType = "triad";
 
+/** The YouTube video id in a link, or "". @param {string} url */
+export function youtubeId(url) {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^(www\.|m\.|music\.)/, "");
+    let id = "";
+    if (host === "youtu.be") id = u.pathname.slice(1);
+    else if (host === "youtube.com" || host === "youtube-nocookie.com") id = u.searchParams.get("v") || (u.pathname.match(/^\/(?:embed|shorts|live)\/([^/?#]+)/) || [])[1] || "";
+    return /^[\w-]{11}$/.test(id) ? id : "";
+  } catch { return ""; }
+}
+
+/** Video playing under the chart ("" = none). */
+let playing = "";
+/** @param {string} id */
+function openPlayer(id) {
+  playing = id;
+  const box = $("ytPlayer");
+  box.hidden = false;
+  box.innerHTML = `<div class="yt-frame"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" title="${esc(t("refVideo", "Reference video"))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>
+    <div class="yt-bar"><a class="btn small ghost" href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener noreferrer">${icon("youtube")}${esc(t("openYoutube", "Open in YouTube"))}</a><button type="button" class="btn small ghost" id="ytClose">${icon("x")}${esc(t("close", "Close"))}</button></div>`;
+  paintIcons(box);
+  updateMeta();
+  box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function closePlayer() {
+  if (!playing) return;
+  playing = "";
+  $("ytPlayer").hidden = true;
+  $("ytPlayer").innerHTML = "";
+  updateMeta();
+}
+
 export function initEditor() {
+  $("songLinks").addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-yt]"));
+    if (!b) return;
+    if (playing === b.dataset.yt) closePlayer(); else openPlayer(b.dataset.yt || "");
+  });
+  $("ytPlayer").addEventListener("click", (e) => { if (/** @type {HTMLElement} */ (e.target).closest("#ytClose")) closePlayer(); });
+  // Tap a chord in the chart view to see its shapes and hear it.
+  $("preview").addEventListener("click", (e) => {
+    const c = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest(".ch"));
+    if (!c || store.settings.viewMode !== "chords") return;
+    openChordSheet(c.textContent?.trim() || "");
+  });
   title().addEventListener("input", () => {
     const s = store.active();
     if (!s || s.readonly) return;
@@ -298,7 +343,13 @@ function updateMeta() {
   const links = (s.links || []).map((l) => ({ name: l.name || l.url, href: safeHref(l.url) })).filter((l) => l.href);
   const box = $("songLinks");
   box.hidden = !links.length;
-  box.innerHTML = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => `<a class="chip link-chip" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer nofollow">${esc(l.name)}<span aria-hidden="true">↗</span></a>`).join("") : "";
+  box.innerHTML = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => {
+    const yt = youtubeId(l.href);
+    // YouTube plays right here (loaded only when tapped); other links open in a new tab.
+    return yt ? `<button type="button" class="chip link-chip yt-chip" data-yt="${esc(yt)}" aria-expanded="${playing === yt}">${icon(playing === yt ? "pause" : "youtube")}${esc(l.name)}</button>`
+      : `<a class="chip link-chip" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer nofollow">${esc(l.name)}<span aria-hidden="true">↗</span></a>`;
+  }).join("") : "";
+  if (playing && !links.some((l) => youtubeId(l.href) === playing)) closePlayer();
   $("editorHeading").textContent = s.title || t("untitled", "Untitled");
   $("keyPillValue").textContent = pretty(keyShort(k));
   $("keyPill").title = `${t("keyAndCapo", "Key & capo")}: ${pretty(k.name)}`;
@@ -349,6 +400,7 @@ export function stepSetlist(d) {
 
 /** Load the active song into the editor. */
 export function loadSong() {
+  closePlayer();
   const s = store.active();
   const ro = Boolean(s?.readonly);
   title().value = s ? (s.title === "Untitled" && !s.body ? "" : s.title) : "";

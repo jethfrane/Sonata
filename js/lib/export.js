@@ -111,11 +111,11 @@ function printRows(lines, max) {
 }
 
 /**
- * Build a PDF with one or more songs (a setlist prints one song per page group).
+ * The PDF's objects for one or more songs (a setlist prints one song per page group).
  * @param {ExportDoc[]} docs
  * @param {ExportOptions} [o]
  */
-export function buildPdf(docs, o = {}) {
+function pdfObjects(docs, o = {}) {
   const columns = Math.min(3, Math.max(1, o.columns || 1));
   const W = o.landscape ? 792 : 612;
   const H = o.landscape ? 612 : 792;
@@ -163,9 +163,9 @@ export function buildPdf(docs, o = {}) {
     }
   }
 
-  /** @type {string[]} */
+  /** @type {(string|{ dict: string, data: string })[]} */
   const objects = [];
-  const add = (/** @type {string} */ v) => { objects.push(v); return objects.length; };
+  const add = (/** @type {string|{ dict: string, data: string }} */ v) => { objects.push(v); return objects.length; };
   const catalogId = add("");
   const pagesId = add("");
   const enc = "/Encoding /WinAnsiEncoding";
@@ -186,20 +186,67 @@ export function buildPdf(docs, o = {}) {
     const foot = `Sonata  ·  sonata.jethrofrane.xyz${total > 1 ? `  ·  Page ${i + 1} of ${total}` : ""}`;
     head += `q 0.88 0.9 0.92 RG 0.6 w ${M} 40 m ${W - M} 40 l S Q\n0.55 0.58 0.62 rg BT /F2 8.5 Tf ${M} 26 Td (${pdfString(foot)}) Tj ET\n`;
     const content = head + p.ops.join("\n");
-    const cid = add(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    const cid = add({ dict: "", data: content });
     pageIds.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << ${fonts} >> >> /Contents ${cid} 0 R >>`));
   });
   objects[pagesId - 1] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] >>`;
   objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
   const title = docs.length > 1 ? "Sonata setlist" : docs[0]?.title || "Sonata chart";
   const infoId = add(`<< /Title (${pdfString(title)}) /Producer (Sonata) >>`);
-  let pdf = "%PDF-1.4\n";
+  return { objects, catalogId, infoId };
+}
+
+/**
+ * Write the PDF file. With `deflate`, page streams are Flate-compressed (a chart PDF is
+ * about a quarter of the size); without it the file is plain ASCII.
+ * @param {ReturnType<typeof pdfObjects>} d
+ * @param {((text: string) => Uint8Array)|null} [deflate]
+ */
+function assemble(d, deflate = null) {
+  const enc = new TextEncoder();
+  /** @type {Uint8Array[]} */
+  const parts = [];
+  let size = 0;
+  const put = (/** @type {string|Uint8Array} */ x) => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); size += b.length; };
+  put("%PDF-1.4\n");
   const offsets = [];
-  objects.forEach((obj, i) => { offsets.push(pdf.length); pdf += `${i + 1} 0 obj\n${obj}\nendobj\n`; });
-  const xref = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n` + offsets.map((n) => `${String(n).padStart(10, "0")} 00000 n \n`).join("");
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R /Info ${infoId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return new Blob([pdf], { type: "application/pdf" });
+  d.objects.forEach((obj, i) => {
+    offsets.push(size);
+    put(`${i + 1} 0 obj\n`);
+    if (typeof obj === "string") put(obj);
+    else {
+      const data = deflate ? deflate(obj.data) : enc.encode(obj.data);
+      put(`<< /Length ${data.length}${deflate ? " /Filter /FlateDecode" : ""} >>\nstream\n`);
+      put(data);
+      put("\nendstream");
+    }
+    put("\nendobj\n");
+  });
+  const xref = size;
+  put(`xref\n0 ${d.objects.length + 1}\n0000000000 65535 f \n` + offsets.map((n) => `${String(n).padStart(10, "0")} 00000 n \n`).join(""));
+  put(`trailer\n<< /Size ${d.objects.length + 1} /Root ${d.catalogId} 0 R /Info ${d.infoId} 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(/** @type {BlobPart[]} */ (parts), { type: "application/pdf" });
+}
+
+/** Build a PDF (plain, uncompressed). @param {ExportDoc[]} docs @param {ExportOptions} [o] */
+export function buildPdf(docs, o = {}) { return assemble(pdfObjects(docs, o)); }
+
+/**
+ * Build a smaller PDF: page streams compressed with the browser's built-in deflate.
+ * Falls back to the plain file where CompressionStream is missing.
+ * @param {ExportDoc[]} docs @param {ExportOptions} [o]
+ */
+export async function buildPdfSmall(docs, o = {}) {
+  const d = pdfObjects(docs, o);
+  if (typeof CompressionStream === "undefined") return assemble(d);
+  /** @type {Map<string, Uint8Array>} */
+  const done = new Map();
+  for (const obj of d.objects) {
+    if (typeof obj === "string" || done.has(obj.data)) continue;
+    const stream = new Blob([obj.data]).stream().pipeThrough(new CompressionStream("deflate"));
+    done.set(obj.data, new Uint8Array(await new Response(stream).arrayBuffer()));
+  }
+  return assemble(d, (text) => /** @type {Uint8Array} */ (done.get(text)));
 }
 
 /**
@@ -210,8 +257,12 @@ export function buildPdf(docs, o = {}) {
  */
 export async function renderPng(doc, o = {}) {
   const columns = Math.min(3, Math.max(1, o.columns || 1));
-  const mono = o.fontFamily || "'JetBrains Mono', ui-monospace, Menlo, monospace";
-  const ui = o.uiFont || "'Plus Jakarta Sans', system-ui, sans-serif";
+  // The fonts Sonata ships (self-hosted), so the image matches the app on every device.
+  const mono = o.fontFamily || "'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Menlo, monospace";
+  const ui = o.uiFont || "'Inter Variable', Inter, system-ui, sans-serif";
+  if (typeof document !== "undefined" && document.fonts) {
+    await Promise.all([document.fonts.load(`400 ${18}px ${mono}`), document.fonts.load(`700 ${18}px ${mono}`), document.fonts.load(`700 30px ${ui}`), document.fonts.load(`500 16px ${ui}`)]).catch(() => {});
+  }
   const accent = o.accent || "#2563eb";
   const size = 18;
   const lh = Math.round(size * 1.5);
@@ -223,7 +274,21 @@ export async function renderPng(doc, o = {}) {
   ctx.font = `${size}px ${mono}`;
   const charW = ctx.measureText("M").width;
   const colW = Math.ceil(maxChars * charW) + 24;
-  const perCol = Math.ceil(rows.length / columns);
+  // Column breaks never split a chord line from its lyric line, and never start a column with a gap.
+  /** @type {number[]} */
+  const colOf = [];
+  const target = Math.ceil(rows.length / columns);
+  let col = 0, inCol = 0;
+  rows.forEach((r, i) => {
+    if (col < columns - 1 && inCol >= target && !rows[i - 1]?.keep) { col++; inCol = 0; }
+    colOf.push(col);
+    inCol++;
+  });
+  /** @type {number[]} */
+  const rowInCol = [];
+  const counts = new Array(columns).fill(0);
+  rows.forEach((_, i) => { rowInCol.push(counts[colOf[i]]++); });
+  const perCol = Math.max(...counts, 1);
   const headH = doc.artist || doc.creator ? 150 : 128;
   const width = Math.max(720, pad * 2 + colW * columns);
   const qrBlock = o.qr ? 250 : 0;
@@ -246,9 +311,8 @@ export async function renderPng(doc, o = {}) {
   if (by) { ctx.fillStyle = "#475569"; ctx.font = `600 16px ${ui}`; ctx.fillText(by, x0, y); y += 22; }
   ctx.fillStyle = "#64748b"; ctx.font = `500 14px ${ui}`; ctx.fillText(doc.meta, x0, y);
   rows.forEach((r, i) => {
-    const col = Math.floor(i / perCol);
-    const x = pad + col * colW;
-    const ry = headH + pad / 2 + (i % perCol) * lh;
+    const x = pad + colOf[i] * colW;
+    const ry = headH + pad / 2 + rowInCol[i] * lh;
     if (r.kind === "divider") { ctx.fillStyle = "#e2e8f0"; ctx.fillRect(x, ry - lh / 3, colW - 24, 1); return; }
     if (r.kind === "gap") return;
     if (r.kind === "section") { ctx.fillStyle = accent; ctx.font = `800 ${size - 3}px ${ui}`; ctx.fillText(r.text, x, ry); return; }

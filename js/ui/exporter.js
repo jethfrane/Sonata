@@ -4,7 +4,7 @@ import { $, esc, download, slug } from "./dom.js";
 import { store, soundingKey, shapeKey, renderOptions } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
-import { packSong, shareUrl } from "../core/share.js";
+import { packSong, qrUrl } from "../core/share.js";
 
 /** @typedef {{ columns: number, landscape: boolean }} ExportOptions */
 
@@ -31,8 +31,8 @@ const accent = () => getComputedStyle(document.documentElement).getPropertyValue
 export async function exportPdf(name, o, setId) {
   const docs = exportDocs(setId);
   if (!docs.length) return;
-  const { buildPdf } = await import("../lib/export.js");
-  download(`${slug(name || docs[0].title)}.pdf`, buildPdf(docs, { ...o, accent: accent() }));
+  const { buildPdfSmall } = await import("../lib/export.js");
+  download(`${slug(name || docs[0].title)}.pdf`, await buildPdfSmall(docs, { ...o, accent: accent() }));
 }
 
 /** @param {ExportOptions} o */
@@ -47,7 +47,8 @@ export async function exportPng(o) {
   let qr = null;
   let qrNote = "";
   if (song && !song.readonly) {
-    qr = qrModules(await shareUrl(`${location.origin}/`, packSong(song)));
+    // Upper-case QR link: alphanumeric mode, a smaller code that scans more easily from paper.
+    qr = qrModules(await qrUrl(location.origin, packSong(song)), ["L", "M"]);
     if (qr) qrNote = "Opens this song in Sonata on any phone.";
   }
   if (!qr) { qr = qrModules(`${location.origin}/`); qrNote = "Opens Sonata on any phone."; }

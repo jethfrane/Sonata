@@ -334,3 +334,24 @@ test("v4: chord families for a key include slash, walking bass and secondary dom
   assert.ok(M.chordsForKey(g, "secondary").map((c) => c.name).includes("B7"));
   for (const t of M.CHORD_TYPES) for (const c of M.chordsForKey(g, t.id)) assert.ok(M.parseChord(c.name), `${t.id}: ${c.name} parses`);
 });
+
+test("v4: compressed PDF is valid and much smaller", async () => {
+  const { buildPdfSmall } = await import("../js/lib/export.js");
+  const zlib = await import("node:zlib");
+  const body = "## Verse\n" + "G        D/F#      Em        C\nHere I am to worship, here I am to bow down\n".repeat(30);
+  const docs = [{ title: "Long song", meta: "Key G", lines: buildLines(body, { key: M.parseKey("G") }) }];
+  const plain = Buffer.from(await (await buildPdf(docs)).arrayBuffer());
+  const small = Buffer.from(await (await buildPdfSmall(docs)).arrayBuffer());
+  assert.ok(small.length < plain.length * 0.6, `smaller: ${small.length} vs ${plain.length}`);
+  const text = small.toString("latin1");
+  assert.ok(text.startsWith("%PDF-1.4") && text.trimEnd().endsWith("%%EOF"));
+  // Every xref offset points at "n 0 obj".
+  const xref = Number(text.match(/startxref\n(\d+)/)[1]);
+  const offsets = [...text.slice(xref).matchAll(/^(\d{10}) 00000 n $/gm)].map((m) => Number(m[1]));
+  offsets.forEach((o, i) => assert.equal(text.slice(o, o + String(i + 1).length + 6), `${i + 1} 0 obj`));
+  // Page streams inflate back to the drawing commands.
+  const m = text.match(/\/Length (\d+) \/Filter \/FlateDecode >>\nstream\n/);
+  const start = m.index + m[0].length;
+  const inflated = zlib.inflateSync(small.subarray(start, start + Number(m[1]))).toString("latin1");
+  assert.ok(inflated.includes("Here I am to worship"));
+});

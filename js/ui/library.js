@@ -3,10 +3,10 @@ import { $, $$, esc, icon, toast, openSheet, confirmSheet, relativeTime, paintIc
 import { t, getLang } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
-import { openShare, openSetlistEditor, printSetlist } from "./sheets-lazy.js";
+import { openShare, openSetlistEditor, printSetlist, openBankManager } from "./sheets-lazy.js";
 import { addDemoSong } from "./editor.js";
 
-/** @type {"all"|"favorites"|"setlists"} */
+/** @type {"all"|"favorites"|"setlists"|"bank"} */
 let filter = "all";
 let query = "";
 /** Rows drawn at once; "Show more" adds a page. Resets when the search or filter changes. */
@@ -93,6 +93,7 @@ function onListClick(e) {
   else if (act === "demo") { addDemoSong(); app.show("editor"); }
   else if (act === "create-set") openSetlistEditor();
   else if (act === "all") { filter = "all"; renderLibrary(); }
+  else if (act === "bank") openBankManager();
   else if (act === "more-rows") { limit += PAGE * 2; renderLibrary(); }
   else if (act === "clear") { query = ""; /** @type {HTMLInputElement} */ ($("librarySearch")).value = ""; renderLibrary(); }
 }
@@ -118,6 +119,7 @@ function songMenu(id) {
       <button type="button" class="menu-item" data-m="present">${icon("present")}<span>${esc(t("present", "Present"))}</span></button>
       <button type="button" class="menu-item" data-m="share">${icon("share")}<span>${esc(t("share", "Share"))}</span></button>
       <button type="button" class="menu-item" data-m="dup">${icon("duplicate")}<span>${esc(t("duplicate", "Duplicate"))}</span></button>
+      <button type="button" class="menu-item" data-m="bank">${icon("bank")}<span>${esc(s.inBank ? t("removeFromBank", "Remove from song bank") : t("addToBank", "Add to song bank"))}</span></button>
       <button type="button" class="menu-item danger" data-m="del">${icon("trash")}<span>${esc(t("delete", "Delete"))}</span></button>
     </div>`
   });
@@ -129,6 +131,7 @@ function songMenu(id) {
     if (m === "present") { store.exitSetlist(); store.open(id); app.openStage(); }
     if (m === "share") { store.open(id); openShare(); }
     if (m === "dup") { store.duplicate(s); app.show("editor"); }
+    if (m === "bank") { store.update(s, { inBank: !s.inBank }); renderLibrary(); toast(s.inBank ? t("addedToBank", "Added to your song bank") : t("removedFromBank", "Removed from your song bank"), "success"); }
     if (m === "del") deleteWithUndo([id]);
   });
 }
@@ -228,6 +231,7 @@ export function renderLibrary() {
   const sort = /** @type {any} */ (/** @type {HTMLSelectElement} */ ($("librarySort")).value);
   let songs = sortSongs(sort);
   if (filter === "favorites") songs = songs.filter((s) => s.isFavorite);
+  if (filter === "bank") songs = songs.filter((s) => s.inBank);
   if (q) songs = songs.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.body}`).includes(q));
 
   if (!store.songs.length) {
@@ -250,7 +254,10 @@ export function renderLibrary() {
     </div>`;
     return;
   }
+  // Song bank: a card to manage and share it sits above its songs.
+  const bankCard = filter === "bank" ? `<div class="bank-card"><div><b>${esc(store.bank.fileId ? t("bankIsLive", "Your song list is live") : t("songBank", "Song bank"))}</b><p class="muted">${esc(store.bank.fileId ? t("bankLiveSub", "{n} songs · people scan your QR to request", { n: store.songs.filter((x) => x.inBank).length }) : t("bankPitch", "List the songs you can play. People scan your QR, pick a song and key, and send you a request."))}</p></div><button class="btn primary" type="button" data-act="bank">${icon(store.bank.fileId ? "share" : "bank")}${esc(store.bank.fileId ? t("manageShare", "Manage & share") : t("setUpBank", "Set up"))}</button></div>` : "";
   if (!songs.length) {
+    if (filter === "bank") { list.innerHTML = bankCard + empty(t("songBank", "Song bank"), t("bankNoSongs", "No songs in your song bank yet. Open Set up, or use a song's ⋮ menu → Add to song bank."), ""); paintIcons(list); return; }
     list.innerHTML = q
       ? empty(t("noMatches", "No matches for \"{q}\"", { q: query }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`)
       : empty(t("filterFavorites", "Favorites"), t("noFavorites", "No favorites yet. Tap the star on a song."), `<button class="btn" type="button" data-act="all">${esc(t("showAllSongs", "Show all songs"))}</button>`);
@@ -260,13 +267,13 @@ export function renderLibrary() {
   // Big libraries: draw the first rows now and the rest on request, so typing in search stays quick.
   const total = songs.length;
   songs = songs.slice(0, limit);
-  list.innerHTML = songs.map((s) => {
+  list.innerHTML = bankCard + songs.map((s) => {
     const k = !s.body.trim() && s.manualKey === "auto" ? "–" : pretty(keyShort(soundingKey(s)));
     const sub = [s.artist, relativeTime(s.updatedAt, lang)].filter(Boolean).map(esc).join(" · ");
     return `<div class="row${s.id === activeId ? " active" : ""}" data-id="${esc(s.id)}">
       <button type="button" class="row-main" data-act="open">
         <span class="key-badge" title="${esc(t("key", "Key"))}">${esc(k)}</span>
-        <span class="row-text"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${sub}</span></span>
+        <span class="row-text"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${sub}${s.genre ? ` · ${esc(s.genre)}` : ""}</span></span>
       </button>
       <button type="button" class="icon-btn fav${s.isFavorite ? " on" : ""}" data-act="fav" aria-pressed="${s.isFavorite}" aria-label="${esc(t("favorite", "Favorite"))}">${icon(s.isFavorite ? "star-fill" : "star")}</button>
       <button type="button" class="icon-btn" data-act="more" aria-label="${esc(t("moreActions", "More actions"))}">${icon("more")}</button>

@@ -8,7 +8,8 @@ import { t, setLang, applyI18n } from "./ui/i18n.js";
 import { store, app, metronome, storageBlocked } from "./ui/ctx.js";
 import { keepAlive } from "./audio.js";
 import { Drive } from "./drive.js";
-import { decodeShare, unpackSong } from "./core/share.js";
+import { decodeShare, decodeQr, unpackSong } from "./core/share.js";
+import { normalizeProfile, parseBankFile } from "./core/bank.js";
 import { initEditor, refreshEditor } from "./ui/editor.js";
 import { initLibrary, renderLibrary, renderRecent, newSong } from "./ui/library.js";
 import { initMetronome, renderMetronome } from "./ui/metronome.js";
@@ -19,10 +20,12 @@ import { initStage, openStage, closeStage, isStageOpen, onStageChange } from "./
 import { parsePath, buildPath, findSong, PAGE_META, SECTIONS } from "./router.js";
 import { setInstrument, currentInstrument } from "./ui/play.js";
 import { initMascot } from "./ui/mascot.js";
-import { openSettings, openAccount, openImportSet } from "./ui/sheets-lazy.js";
+import { openSettings, openAccount, openImportSet, chordsModule, bankModule, openLinksImport } from "./ui/sheets-lazy.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
-const VIEWS = /** @type {View[]} */ (["songs", "editor", "theory", "play"]);
+const VIEWS = /** @type {View[]} */ (["songs", "editor", "chords", "theory", "play", "bank"]);
+/** Lazy screens: loaded the first time they open. */
+const lazy = { chords: /** @type {any} */ (null), bank: /** @type {any} */ (null), bankId: "" };
 const dark = matchMedia("(prefers-color-scheme: dark)");
 
 function applyTheme() {
@@ -46,14 +49,15 @@ function linkSong() {
 
 /** Path for the current screen. @param {boolean} [stage] */
 function currentPath(stage = isStageOpen()) {
-  return buildPath({ view: app.view, song: linkSong(), sub: app.view === "play" ? currentInstrument() : "", stage });
+  const sub = app.view === "play" ? currentInstrument() : app.view === "chords" ? (lazy.chords?.currentChord() || "") : app.view === "bank" ? lazy.bankId : "";
+  return buildPath({ view: app.view, song: linkSong(), sub, stage });
 }
 
 let titleTimer = /** @type {any} */ (0);
 function setTitle() {
   const song = linkSong();
   const meta = /** @type {any} */ (PAGE_META)[app.view] || PAGE_META.songs;
-  const base = app.view === "editor" && song ? song.title || "Untitled" : meta[0];
+  const base = app.view === "editor" && song ? song.title || "Untitled" : app.view === "chords" && lazy.chords ? `${lazy.chords.currentChord()} chord` : meta[0];
   document.title = isStageOpen() && song ? `${song.title} · Stage · Sonata` : `${base} · Sonata`;
   const url = location.origin + location.pathname;
   document.querySelector('link[rel="canonical"]')?.setAttribute("href", url);
@@ -93,6 +97,8 @@ function show(view, opts = {}) {
   const subChanged = view === "play" && Boolean(opts.sub) && opts.sub !== currentInstrument();
   if (view === "play" && opts.sub) setInstrument(opts.sub);
   renderView(view);
+  if (view === "chords") showChords(opts.sub);
+  if (view === "bank" && opts.sub) showBank(opts.sub);
   syncUrl(opts.replace || first || (!changed && !subChanged) ? "replace" : "push");
   // Only a real change of screen goes back to the top, never a tap inside one.
   if (changed) window.scrollTo({ top: 0 });
@@ -104,6 +110,22 @@ function renderView(view) {
   if (view === "editor") refreshEditor();
   if (view === "theory") renderTheory();
   if (view === "play") { renderPlay(); renderMetronome(); }
+  if (view === "chords") lazy.chords?.renderChords();
+}
+
+/** Load and open the Chords screen. @param {string} [chord] */
+async function showChords(chord) {
+  if (!lazy.chords) { lazy.chords = await chordsModule(); if (!lazy.chords) return; lazy.chords.initChords(); }
+  if (chord && lazy.chords.isChord(chord)) lazy.chords.select(chord, { silent: true });
+  else lazy.chords.renderChords();
+  syncUrl("replace");
+}
+
+/** Load and open a musician's public song list. @param {string} id */
+async function showBank(id) {
+  lazy.bankId = id;
+  if (!lazy.bank) { lazy.bank = await bankModule(); if (!lazy.bank) return; lazy.bank.initBank(); }
+  lazy.bank.openBank(id);
 }
 
 /** @param {import("./drive.js").DriveStatus} status */
@@ -141,6 +163,20 @@ function onDriveStatus(status) {
   }
   lastDriveStatus = status;
   store.emit("drive-status", status);
+  if (status === "synced") restoreBank();
+}
+
+/** New device, same Google account: bring back the song bank profile from Drive. */
+let bankChecked = false;
+async function restoreBank() {
+  if (bankChecked || store.bank.fileId || !app.drive) return;
+  bankChecked = true;
+  const found = await app.drive.findBank();
+  const file = found && parseBankFile(found.body);
+  if (!found || !file) return;
+  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, contacts: file.contacts, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
+  store.changed("settings");
+  (await bankModule())?.watchBank();
 }
 /** @type {string} */
 let lastDriveStatus = "";
@@ -148,9 +184,11 @@ let lastDriveStatus = "";
 async function handleShareLink() {
   const params = new URLSearchParams(location.search);
   const raw = params.get("s") || params.get("share");
-  if (!raw) return false;
-  history.replaceState(null, "", location.pathname);
-  const data = await decodeShare(raw);
+  // QR codes use /Q/<CODE> (upper case, so the code is smaller); links use ?s=.
+  const qr = location.pathname.match(/^\/q\/([A-Za-z2-7]+)/i);
+  if (!raw && !qr) return false;
+  history.replaceState(null, "", qr ? "/" : location.pathname);
+  const data = qr ? await decodeQr(qr[1]) : await decodeShare(raw || "");
   // A link must hold a song ({ t, b }) or a setlist ({ type: "set", s: [...] }); anything else is damaged.
   const isObj = Boolean(data) && typeof data === "object" && !Array.isArray(data);
   const valid = isObj && (data.type === "set" ? Array.isArray(data.s) : typeof data.t === "string" || typeof data.b === "string");
@@ -186,6 +224,8 @@ function registerServiceWorker() {
 /** Open whatever the address bar says. */
 function route() {
   const r = parsePath(location.pathname);
+  if (r.view === "bank") { show("bank", { sub: r.raw, replace: true }); return; }
+  if (r.view === "chords") { show("chords", { sub: r.raw, replace: true }); return; }
   let view = /** @type {View} */ (SECTIONS.includes(r.view) ? r.view : "");
   if (!view) {
     // First visit: the song list with a welcome. Later: wherever you left off.
@@ -244,6 +284,14 @@ async function boot() {
     titleTimer = setTimeout(() => syncUrl("replace"), 700);
   });
   $("presentBtn").addEventListener("click", () => openStage());
+  $("addLinksBtn").addEventListener("click", () => openLinksImport());
+  // Pasting Sonata links into the song search offers to add them.
+  $("librarySearch").addEventListener("paste", (e) => {
+    const text = /** @type {ClipboardEvent} */ (e).clipboardData?.getData("text") || "";
+    if (/https?:\/\/\S+(\?s=|\/q\/)/i.test(text)) { e.preventDefault(); openLinksImport(text); }
+  });
+  app.onChordChange = () => { if (app.view === "chords") syncUrl("replace"); };
+  if (store.bank.fileId) bankModule().then((m) => m?.watchBank());
   $("settingsBtn").addEventListener("click", () => openSettings());
   $("accountBtn").addEventListener("click", () => openAccount());
   $("themeBtn").addEventListener("click", () => {

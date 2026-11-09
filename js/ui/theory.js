@@ -4,8 +4,9 @@ import { t } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import {
   CIRCLE, keyFromTonic, prefersFlats, noteName, diatonicChords, keySignature, relativeKey,
-  pretty, keyShort, keyValue, mod12, chordTones, parseChord, SHARP_NOTES
+  pretty, keyShort, keyValue, mod12, chordTones, parseChord, SHARP_NOTES, chordsForKey, CHORD_TYPES, chordInfo
 } from "../core/music.js";
+import { openChordSheet } from "./sheets-lazy.js";
 import { playChord } from "../audio.js";
 
 /** @type {import("../core/music.js").Key|null} null = follow the song */
@@ -16,6 +17,10 @@ let locked = false;
 /** Auto-rotate turns the circle so the chosen key sits at the top. */
 let rotate = false;
 let rotDeg = 0;
+/** Which chords of the key are listed (triads, 7ths, slash chords…). */
+let chordType = "triad";
+/** Last chord tapped in the list (for "See shapes"). */
+let lastChord = "";
 
 const ORDER_SHARPS = ["F", "C", "G", "D", "A", "E", "B"];
 const ORDER_FLATS = ["B", "E", "A", "D", "G", "C", "F"];
@@ -69,8 +74,20 @@ export function initTheory() {
   $("circle").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onWedge(e); } });
   $("diatonic").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
-    if (b) { tick(); playChord(chordTones(b.dataset.chord || "")); }
+    if (!b) return;
+    tick();
+    lastChord = b.dataset.chord || "";
+    const info = chordInfo(lastChord);
+    if (info) playChord(info.pcs, "piano", info.bassPc); else playChord(chordTones(lastChord));
+    $$("#diatonic .dia").forEach((x) => x.classList.toggle("on", x === b));
+    $("theoryShapes").hidden = false;
+    $("theoryShapesLabel").textContent = t("seeShapes", "See {c} shapes", { c: pretty(lastChord) });
   });
+  try { const ct = localStorage.getItem("sonata_theory_type"); if (ct && CHORD_TYPES.some((x) => x.id === ct)) chordType = ct; } catch { /* ignore */ }
+  const typeSel = /** @type {HTMLSelectElement} */ ($("theoryType"));
+  typeSel.innerHTML = CHORD_TYPES.map((x) => `<option value="${x.id}"${x.id === chordType ? " selected" : ""}>${esc(x.label)}</option>`).join("");
+  typeSel.addEventListener("change", () => { chordType = typeSel.value; try { localStorage.setItem("sonata_theory_type", chordType); } catch { /* ignore */ } lastChord = ""; $("theoryShapes").hidden = true; renderTheory(); });
+  $("theoryShapes").addEventListener("click", () => { if (lastChord) openChordSheet(lastChord); });
   $("theoryFromSongBtn").addEventListener("click", () => { picked = null; locked = false; saveLock(); renderTheory(); });
   $("theoryToSongBtn").addEventListener("click", () => {
     const s = store.active();
@@ -198,10 +215,16 @@ export function renderTheory() {
   $("keySig").textContent = sig === 0 ? t("noAccidentals", "No sharps or flats") : `${Math.abs(sig)} ${sig > 0 ? "♯" : "♭"} · ${accs.join(" ")}`;
   const rel = relativeKey(key);
   $("keyRelative").textContent = pretty(rel.name);
-  $("diatonic").innerHTML = diatonicChords(key).map((d) => {
-    const n = format === "nashville" ? String(d.degree) + (d.quality === "minor" ? "m" : d.quality === "diminished" ? "°" : "") : d.numeral;
-    return `<button type="button" class="dia${d.degree === 1 ? " tonic" : ""}" data-chord="${esc(d.name)}"><span class="dia-num">${esc(pretty(n))}</span><span class="dia-name">${esc(pretty(d.name.replace(/dim$/, "°")))}</span></button>`;
-  }).join("");
+  if (chordType === "triad") {
+    $("diatonic").innerHTML = diatonicChords(key).map((d) => {
+      const n = format === "nashville" ? String(d.degree) + (d.quality === "minor" ? "m" : d.quality === "diminished" ? "°" : "") : d.numeral;
+      return `<button type="button" class="dia${d.degree === 1 ? " tonic" : ""}${d.name === lastChord ? " on" : ""}" data-chord="${esc(d.name)}"><span class="dia-num">${esc(pretty(n))}</span><span class="dia-name">${esc(pretty(d.name.replace(/dim$/, "°")))}</span></button>`;
+    }).join("");
+  } else {
+    // Longer names (Gmaj7, D/F#, F#m7b5) get wider buttons.
+    $("diatonic").innerHTML = chordsForKey(key, chordType).map((c, i) => `<button type="button" class="dia wide${i === 0 && chordType !== "secondary" && chordType !== "passing" ? " tonic" : ""}${c.name === lastChord ? " on" : ""}" data-chord="${esc(c.name)}"><span class="dia-num">${esc(pretty(c.numeral))}</span><span class="dia-name">${esc(pretty(c.name))}</span></button>`).join("");
+  }
+  $("diatonic").dataset.type = chordType;
   const s = store.active();
   const lb = $("circleLock");
   lb.setAttribute("aria-pressed", String(locked));
