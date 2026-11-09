@@ -93,7 +93,7 @@ for (const vp of VIEWPORTS) {
   mkdirSync(`${OUT}/${vp.name}`, { recursive: true });
   for (const st of STATES) {
     if (ONLY && !ONLY.includes(st.name)) continue;
-    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch && vp.width < 1000, deviceScaleFactor: 1 });
+    const ctx = await browser.newContext({ bypassCSP: true, viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch && vp.width < 1000, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     const errors = [];
     if (st.bank) await page.route("**/api/bank?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(BANK) }));

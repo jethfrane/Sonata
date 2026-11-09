@@ -12,6 +12,7 @@ p.on("pageerror", (e) => errors.push(e.message));
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) { pass++; console.log("  ✓", m); } else { fail++; console.log("  ✗", m); } };
 if (process.env.SHARE) { await p.goto(process.env.SHARE); await p.waitForTimeout(800); }
+else { await p.goto(BASE + "/songs"); await p.waitForTimeout(800); }
 
 const head = async (path) => p.evaluate(async (u) => { const r = await fetch(u, { headers: { "user-agent": "facebookexternalhit/1.1" } }); return { status: r.status, html: await r.text() }; }, BASE + path);
 const meta = (html, prop) => (html.match(new RegExp(`<meta (?:property|name)="${prop}" content="([^"]*)"`)) || [])[1] || "";

@@ -39,3 +39,10 @@ Builds on v3.2.0 (`docs/audit-v3.2.0.md`). Goal from Jethro: smaller QR codes an
 2. Scan a QR from the Share sheet and from a printed PNG with an iPhone and an Android camera.
 3. YouTube playback inside Sonata on iPhone/Android.
 4. Paste a shared link into Messenger/WhatsApp/Viber and check the preview card and image.
+
+## Production re-audit (after release, https://sonata.jethrofrane.xyz)
+
+- Released: `main` fast-forwarded to `aa07467`; `version.json` = 4.0.0.
+- `npm run test:live` against production: **16/16** (version, per-page previews and images, shared-song and QR previews, both functions incl. id validation, QR link opens the song, Chords and Theory render, CSP, no sideways scroll).
+- Layout audit against production: **180 states** (30 screens × 6 sizes): 0 sideways scroll, 0 off-screen controls, 0 targets < 44 px, 0 axe violations, 0 page errors. (States that need the localhost-only test hook ran against the same build locally.)
+- Naming: the feature is called **Song Bank** everywhere (general use: singers, bands, worship teams, teachers), with no busking-specific wording.
