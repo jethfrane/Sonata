@@ -50,12 +50,13 @@ export function watchBank() {
 
 /** Song bank manager: profile, contacts, songs and sharing. */
 export function openBankManager() {
-  const p = store.bank;
   const all = store.songs.filter((s) => !s.readonly).slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
   const gl = genres(all.map((s) => ({ g: s.genre })));
   const contactLabel = { messenger: "Messenger username", whatsapp: "WhatsApp number", sms: "Phone (text message)", telegram: "Telegram username", email: "Email", instagram: "Instagram username" };
   const ph = { messenger: "your.username", whatsapp: "+63 917 000 0000", sms: "+63 917 000 0000", telegram: "username", email: "you@example.com", instagram: "username" };
   const draw = () => {
+    // Read the profile fresh: publishing and typing replace store.bank.
+    const p = store.bank;
     const n = bankSongs().length;
     const link = p.fileId ? bankUrl(p.fileId) : "";
     return `<div class="form bank-form">
@@ -186,7 +187,7 @@ function renderBank(loading = false) {
   host.innerHTML = `
     <div class="bank-about">${d.name ? `<p class="bank-name">${icon("mic")}<b>${esc(d.name)}</b></p>` : ""}${d.bio ? `<p class="bank-bio">${esc(d.bio)}</p>` : ""}
       <p class="muted bank-meta">${esc(t("songsCount", "{n} songs", { n: d.songs.length }))}${targets.length ? ` · ${esc(t("requestsBy", "Requests by {apps}", { apps: targets.map((x) => x.label).join(", ") }))}` : ""}</p></div>
-    <label class="search bank-search"><span>${icon("search")}</span><input type="search" id="bankSearch" value="${esc(view.q)}" placeholder="${esc(t("bankSearchPh", "Search songs or artists"))}" aria-label="${esc(t("search", "Search"))}" autocomplete="off" enterkeyhint="search"></label>
+    <label class="search bank-search"><span data-icon="search"></span><input type="search" id="bankSearch" value="${esc(view.q)}" placeholder="${esc(t("bankSearchPh", "Search songs or artists"))}" aria-label="${esc(t("search", "Search"))}" autocomplete="off" enterkeyhint="search"></label>
     ${gl.length ? `<div class="chip-row bank-genres" role="group" aria-label="${esc(t("genre", "Genre"))}"><button type="button" class="chip${view.genre ? "" : " on"}" data-genre="" aria-pressed="${!view.genre}">${esc(t("filterAll", "All"))}</button>${gl.map((g) => `<button type="button" class="chip${view.genre === g ? " on" : ""}" data-genre="${esc(g)}" aria-pressed="${view.genre === g}">${esc(g)}</button>`).join("")}</div>` : ""}
     <div class="library-list bank-list">${list.map((s) => {
       const picked = view.picks.has(s.id);
@@ -234,7 +235,7 @@ function viewSong(s) {
     title: s.t, wide: true, focus: false, body: draw(),
     actions: [
       { label: t("saveToSongs", "Save to my songs"), kind: "ghost", onClick: () => { const n = store.createSong({ title: s.t, artist: s.a, body: s.b || "", genre: s.g, manualKey: `${written.root}:${written.mode}`, transpose: steps, bpm: s.bpm }); toast(t("savedNow", "Saved"), "success"); void n; } },
-      { label: t("requestInKey", "Request in {k}", { k: keyNow() }), kind: "primary", onClick: () => { view.picks.set(s.id, keyNow()); renderBank(); requestSheet(); } }
+      { label: t("requestInKey", "Request in {k}", { k: keyNow() }), kind: "primary", onClick: () => { view.picks.set(s.id, keyNow()); renderBank(); requestSheet(); return false; } } // the request sheet replaces this one
     ]
   });
   paintIcons(body);

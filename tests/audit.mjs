@@ -6,10 +6,11 @@
 // (page overflow, element off screen, page error) unless AUDIT_SOFT=1.
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const { chromium } = await import("playwright");
 const BASE = (process.env.BASE || "http://127.0.0.1:5391").replace(/\/$/, "");
-const OUT = process.env.OUT || new URL("../audit-out/", import.meta.url).pathname;
+const OUT = process.env.OUT || fileURLToPath(new URL("../audit-out/", import.meta.url));
 const AXE = readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
 const ONLY = process.env.ONLY ? process.env.ONLY.split(",") : null;
 
@@ -67,8 +68,21 @@ const STATES = [
     // Same markup as toast(): the real prompt only appears when a new service worker waits.
     await p.evaluate(() => { const h = document.getElementById("toasts"); h.innerHTML = `<div class="toast toast-info"><svg class="icon"></svg><span>A new version of Sonata is ready.</span><button type="button" class="toast-action">Reload</button></div>`; });
   } },
-  { name: "offline", n: 40, path: "/songs", offline: true }
+  { name: "offline", n: 40, path: "/songs", offline: true },
+  // v4 screens
+  { name: "chords", n: 40, path: "/chords/Am7" },
+  { name: "chords-slash", n: 40, path: "/chords/D-over-F%23" },
+  { name: "chord-sheet", n: 40, path: "/editor", run: async (p) => { const v = p.locator('button[data-pane="preview"]'); if (await v.isVisible()) await v.click(); await p.click("#preview .ch >> nth=1"); } },
+  { name: "theory-slash", n: 40, path: "/theory", run: async (p) => { await p.selectOption("#theoryType", "slash"); } },
+  { name: "songs-bank", n: 40, path: "/songs", run: async (p) => { await p.evaluate(() => { const s = window.__sonata.store; s.songs.slice(0, 6).forEach((x) => { x.inBank = true; x.genre = "OPM"; }); s.changed("library"); }); await p.click('[data-filter="bank"]'); } },
+  { name: "bank-manager", n: 40, path: "/songs", run: async (p) => { await p.click('[data-filter="bank"]'); await p.click('[data-act="bank"]'); } },
+  { name: "links-import", n: 40, path: "/songs", run: async (p) => { await p.click("#addLinksBtn"); } },
+  { name: "youtube", n: 40, path: "/editor", run: async (p) => { await p.evaluate(() => { const s = window.__sonata.store; s.update(s.active(), { links: [{ name: "Reference video", url: "https://youtu.be/dQw4w9WgXcQ" }] }); }); await p.waitForTimeout(200); await p.click(".yt-chip"); } },
+  { name: "bank-public", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: true, run: async (p) => { await p.click('.bank-list [data-bk="pick"] >> nth=0'); await p.click('.bank-list [data-bk="pick"] >> nth=1'); } },
+  { name: "bank-request", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: true, run: async (p) => { await p.click('.bank-list [data-bk="pick"] >> nth=0'); await p.click('[data-bk="send"]'); } }
 ];
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's busking list", name: "Jethro Frane", bio: "OPM, pop and worship. Requests welcome!", contacts: { whatsapp: "+639170000000", messenger: "someone", email: "j@example.com" }, updatedAt: "2026-11-09",
+  songs: Array.from({ length: 30 }, (_, i) => ({ id: "b" + i, t: ["Buwan", "Perfect", "Mundo", "Way Maker", "Tadhana", "Hallelujah"][i % 6] + (i > 5 ? " " + i : ""), a: ["Juan Karlos", "Ed Sheeran", "IV of Spades", "Sinach", "Up Dharma Down", "Leonard Cohen"][i % 6], g: ["OPM", "Pop", "OPM", "Worship", "OPM", "Ballad"][i % 6], k: ["Am", "G", "C", "E", "D", "C"][i % 6], b: i % 2 ? "" : "Am  F  C  G\nIkaw ang buwan" })) };
 
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
@@ -82,6 +96,7 @@ for (const vp of VIEWPORTS) {
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch && vp.width < 1000, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     const errors = [];
+    if (st.bank) await page.route("**/api/bank?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(BANK) }));
     page.on("pageerror", (e) => errors.push(String(e.message || e)));
     await page.goto(BASE + "/songs");
     await page.evaluate(({ lib }) => {

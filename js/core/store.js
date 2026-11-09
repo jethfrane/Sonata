@@ -188,7 +188,8 @@ export function mergeLibraries(local, remote) {
 /** Same library content? Used to skip a Drive upload when nothing changed. @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} d */
 export const libraryFingerprint = (d) => JSON.stringify([
   // "last opened" changes on every tap on a song; it alone is not worth an upload.
-  (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined })),
+  // New fields (genre, song bank) left at their defaults compare equal to older files that lack them.
+  (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, inBank: s.inBank || undefined })),
   d.setlists || [], [...(d.deletedIds || [])].sort()
 ]);
 

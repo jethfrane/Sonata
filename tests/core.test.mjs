@@ -355,3 +355,10 @@ test("v4: compressed PDF is valid and much smaller", async () => {
   const inflated = zlib.inflateSync(small.subarray(start, start + Number(m[1]))).toString("latin1");
   assert.ok(inflated.includes("Here I am to worship"));
 });
+
+test("v4: libraries saved before genre/song bank existed don't count as changed", () => {
+  const old = { songs: [{ id: "a", title: "A", body: "G", updatedAt: "2026-01-01T00:00:00.000Z" }], setlists: [], deletedIds: [] };
+  const now = { songs: old.songs.map((s) => ({ ...s, genre: "", inBank: false })), setlists: [], deletedIds: [] };
+  assert.equal(libraryFingerprint(old), libraryFingerprint(now));
+  assert.notEqual(libraryFingerprint(old), libraryFingerprint({ ...now, songs: [{ ...now.songs[0], inBank: true }] }));
+});

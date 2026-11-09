@@ -533,6 +533,7 @@ export async function openAbout() {
         <li>Free, no account needed. Songs are saved on your device.</li>
         <li>Works offline after the first visit. Install it for the stage.</li>
         <li>Optional Google Drive backup uses one file only Sonata can see.</li>
+        <li>A song bank is shared only when you publish it: one file in your own Drive that anyone with its link can read. Sonata stores no copy.</li>
         <li>No ads. Anonymous page-view counts only (Vercel Web Analytics, no cookies).</li>
       </ul>
       <p class="verse">“So whether you eat or drink or whatever you do, do it all for the glory of God.” <span>1 Corinthians 10:31</span></p>

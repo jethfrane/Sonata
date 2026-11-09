@@ -16,7 +16,7 @@ Chord charts and music tools for musicians and worship teams. Write a chart, tra
 
 ## What it does
 
-Four places, one job each:
+Five places, one job each, plus a song bank:
 
 - **Songs**: search titles, artists and lyrics; favorites; setlists you reorder and play in order. On a computer, recent songs stay in the sidebar.
 - **Chart**: chords above the lyrics or inline (`[G]Amazing`). Chords stay over the right word even when a line wraps on a phone. Chord chips insert at the cursor. Autosave, undo and redo per song.
@@ -24,6 +24,8 @@ Four places, one job each:
   - **Views**: Chords, Nashville numbers, Roman numerals, or lyrics only.
   - **Present**: big stage text, auto-scroll that pauses when you touch, setlist navigation, metronome, three stage colors, screen stays awake.
   - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG, TXT and print in the same sheet. Old Sonata links still open.
+- **Chords**: type or pick any chord (slash chords too: `Am7/G`, `D/F#`) and see it on guitar and ukulele (every playable shape, the chord-book one first), bass (where its notes are) and piano. Tap a chord in a chart for the same view. Links like `/chords/Am7` open straight to it.
+- **Song bank**: mark the songs you can play, add genres and how to reach you, and publish. People scan your QR, search, read a chart in their key and send a request through WhatsApp, Messenger, SMS, Telegram or email.
 - **Theory**: circle of fifths with the key family highlighted, numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.
 - **Play**: piano, fretboard (guitar, Drop D, 4- and 5-string bass, ukulele), chromatic tuner with reference tones, and a metronome on the audio clock (2/4 to 12/8, tap tempo, save tempo to a song).
 
@@ -44,7 +46,8 @@ Intro: G  C6/9  D  (x2)   labels and repeat marks stay on a chord line
 
 ## Privacy and security
 
-- Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, or choose to shorten a link with TinyURL.
+- Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, publish a song bank, or choose to shorten a link with TinyURL.
+- No Sonata database. Share links and QR codes carry the song itself. A song bank is one file in the musician's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. Requests go straight from the listener's phone to the musician's WhatsApp, Messenger, SMS or email.
 - Vercel Web Analytics counts anonymous page views (no cookies). No ads, no trackers.
 - Strict Content Security Policy (scripts only from this site and Google sign-in), HSTS, no inline scripts, fonts served from this site.
 - Share links are size-capped and decompressed with a limit, so a crafted link can't freeze the app or the link-preview function. Song links only open as normal `http(s)` links.

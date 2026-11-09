@@ -1,6 +1,6 @@
 {
   "name": "sonata",
-  "version": "3.1.2",
+  "version": "4.0.0",
   "private": true,
   "description": "Sonata: chord charts and music tools for musicians and worship teams. Offline-first PWA.",
   "type": "module",
@@ -9,12 +9,13 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "vite",
-    "test": "node --test tests/core.test.mjs",
+    "test": "node --test tests/core.test.mjs tests/api.test.mjs",
     "typecheck": "tsc -p jsconfig.json",
     "serve:dist": "node tests/serve.mjs 5391 dist",
     "test:browser": "node tests/browser.e2e.mjs",
     "test:a11y": "node tests/a11y.e2e.mjs",
     "test:regression": "node tests/regression.e2e.mjs",
+    "test:features": "node tests/features.e2e.mjs",
     "test:audit": "node tests/audit.mjs",
     "check": "npm test && npm run typecheck && npm run build"
   },

@@ -33,7 +33,7 @@
 .cr-note b { font: 700 18px var(--mono); }
 .cr-note small { font-size: 11px; font-weight: 650; color: var(--muted); }
 .cr-note.root { background: var(--accent-soft); border-color: transparent; color: var(--accent-strong); }
-.cr-note.bass { background: color-mix(in srgb, var(--bass) 16%, var(--surface)); border-color: transparent; color: var(--bass); }
+.cr-note.bass { background: color-mix(in srgb, var(--bass) 16%, var(--surface)); border-color: transparent; color: color-mix(in srgb, var(--bass) 62%, var(--text)); }
 .cr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .cr-rel .mini-label { margin: 6px 0; }
 .dg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
@@ -118,6 +118,7 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 .bank-list .row .btn { flex: none; }
 .bank-none, .bank-loading { padding: 24px; text-align: center; }
 .bank-foot { margin: 18px 0 90px; font-size: var(--fs-xs); color: var(--muted); text-align: center; }
+.bank-foot a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 650; }
 .bank-bar { position: sticky; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 10px 10px 10px 18px; border-radius: 999px; background: var(--text); color: var(--bg); box-shadow: var(--shadow-lg); font-weight: 650; }
 .bank-key { justify-content: center; margin: 8px 0 12px; }
 .bank-chart { padding: 4px 2px; }
@@ -143,4 +144,18 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 @media (max-width: 355px) {
   .cf-roots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .dg-grid { grid-template-columns: 1fr; }
+}
+
+/* Songs toolbar on phones: search + sort on one row, the four filters across the full width below. */
+@media (max-width: 640px) {
+  .library-toolbar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "search sort" "filter filter"; }
+  .library-toolbar .search { grid-column: auto; grid-area: search; }
+  .library-toolbar #librarySort { grid-area: sort; width: 104px; }
+  .library-toolbar .segmented { grid-area: filter; }
+  .library-toolbar:has(#librarySort[hidden]) { grid-template-areas: "search search" "filter filter"; }
+}
+@media (max-width: 380px) {
+  .page-actions .btn .icon { display: none; }
+  .page-actions #addLinksBtn .icon { display: block; }
+  .library-toolbar .segmented button { padding: 0 2px; font-size: var(--fs-xs); }
 }
