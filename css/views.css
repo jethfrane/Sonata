@@ -74,8 +74,8 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .cp-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
 .cp-chips::-webkit-scrollbar { display: none; }
 .cp-chips .chip { flex: none; }
-.editor-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; height: calc(100dvh - 250px); min-height: 440px; }
-.pane { position: relative; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+.editor-panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 10px; height: calc(100dvh - 250px); min-height: 440px; }
+.pane { position: relative; min-width: 0; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
 .chart-input {
   flex: 1; width: 100%; min-height: 0; padding: 18px 20px; border: 0; resize: none;
   background: transparent; color: var(--text);
@@ -85,7 +85,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .pane-edit:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .quickstart { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
 .quickstart-text { flex: 1 1 100%; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
-.quickstart-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.quickstart-chips { display: flex; gap: 6px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .quickstart-chips::-webkit-scrollbar { display: none; }
 .quickstart-chips .chip { flex: none; min-height: 30px; }
 .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 20px; border-bottom: 1px solid var(--line); }
@@ -118,7 +118,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .editor-panes { height: calc(100dvh - var(--top-h) - var(--nav-h) - 250px); }
 }
 @media (max-width: 960px) {
-  .editor-panes { height: auto; grid-template-columns: 1fr; min-height: 0; }
+  .editor-panes { height: auto; grid-template-columns: minmax(0, 1fr); min-height: 0; }
   .editor-panes[data-pane="edit"] .pane-preview, .editor-panes[data-pane="preview"] .pane-edit { display: none; }
   .pane-switch { display: inline-flex; }
   .view-mode { margin-left: 0; }
@@ -130,10 +130,9 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .pane-edit:has(.quickstart:not([hidden])) .chart-input { min-height: 200px; }
   #preview { overflow: visible; }
   .editor-toolbar { position: sticky; top: calc(var(--top-h) + 8px); z-index: 5; }
-  .meta-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .meta-chips::-webkit-scrollbar { display: none; }
-  .meta-chips .chip { flex: none; }
-  .details-btn span:last-child { display: none; }
+  /* Chips wrap (a sideways strip hid the key chip and could not be reached by keyboard). */
+  .meta-row { align-items: flex-start; }
+  .details-btn span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .details-btn { width: 36px; padding: 0; flex: none; }
   .welcome { grid-template-columns: 1fr; padding: 24px; gap: 20px; }
 }
@@ -152,8 +151,10 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .key-badge { min-width: 36px; height: 36px; font-size: 13px; }
   .row .icon-btn { width: 36px; height: 36px; }
   .title-row { gap: 8px; }
-  .head-actions .btn { width: 40px; padding: 0; }
-  .head-actions .btn span:last-child { display: none; }
+  .head-actions .btn { width: 44px; padding: 0; }
+  /* Icon-only on phones; the label stays for screen readers. */
+  .head-actions .btn span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .title-input { font-size: var(--fs-xl); }
   .save-state { font-size: 0; gap: 0; }
   .save-state::before { width: 8px; height: 8px; }
   .editor-toolbar { gap: 6px; padding: 5px; }

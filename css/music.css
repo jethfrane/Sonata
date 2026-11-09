@@ -1,7 +1,7 @@
 /* Theory (circle of fifths), Play (piano, fretboard, tuner, metronome). */
 
 /* ---------- Theory ---------- */
-.theory-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); gap: 16px; align-items: start; }
+.theory-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(340px, .75fr); gap: 16px; align-items: start; }
 .circle-wrap { position: relative; display: grid; place-items: center; padding: 20px; }
 .circle-tools { justify-self: end; display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .lock-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-2); font-weight: 600; font-size: var(--fs-sm); }
@@ -37,6 +37,9 @@ html[data-theme="dark"] .wedge:hover path { filter: brightness(1.25); }
 .hub-key { text-anchor: middle; font: 750 30px var(--ui); fill: var(--text); }
 .hub-sub { text-anchor: middle; font: 600 15px var(--ui); fill: var(--muted); }
 .key-panel { position: sticky; top: calc(var(--top-h) + 20px); }
+/* The key panel is narrow beside the circle on small laptops: chords of the key go in two rows. */
+.key-panel { container-type: inline-size; }
+@container (max-width: 400px) { .key-panel .diatonic { grid-template-columns: repeat(4, 1fr); } }
 .key-picker { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 10px; }
 .key-btn { min-height: 40px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-weight: 650; font-size: var(--fs-sm); }
 .key-btn:hover { border-color: var(--accent); }

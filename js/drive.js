@@ -52,6 +52,18 @@ export class Drive {
     this.queued = false;
     /** @type {ReturnType<typeof setTimeout>|undefined} */ this.timer = undefined;
     this.lastSync = 0;
+    /** Failed syncs in a row; sets the wait before the next try. */
+    this.failures = 0;
+    /** @type {ReturnType<typeof setTimeout>|undefined} */ this.retryTimer = undefined;
+  }
+
+  /** After a failed sync (Drive busy, rate limit, flaky network), try again: 20s, 40s, 80s… up to 10 min. */
+  retryLater() {
+    clearTimeout(this.retryTimer);
+    this.failures++;
+    const wait = Math.min(10 * 60_000, 20_000 * 2 ** (this.failures - 1));
+    this.retryTimer = setTimeout(() => { if (this.token && this.status === "error") this.sync(); }, wait);
+    return wait;
   }
 
   init() {
@@ -75,7 +87,8 @@ export class Drive {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && this.token && Date.now() - this.lastSync > 60_000) this.sync();
     });
-    window.addEventListener("online", () => { if (this.token && this.status === "offline") this.sync(); });
+    window.addEventListener("online", () => { if (this.token && (this.status === "offline" || this.status === "error")) this.sync(); });
+    window.addEventListener("offline", () => { if (this.token && this.status !== "expired") this.set("offline"); });
   }
 
   get signedIn() { return Boolean(this.token || this.profile.email); }
@@ -145,6 +158,8 @@ export class Drive {
     this.token = null;
     this.profile = {};
     this.fileId = null;
+    clearTimeout(this.retryTimer);
+    this.failures = 0;
     for (const k of [TOKEN_KEY, EXPIRY_KEY]) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch { /* ignore */ } }
     for (const k of [PROFILE_KEY, FILE_KEY]) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
     this.set("signed-out");
@@ -254,12 +269,17 @@ export class Drive {
       }
       this.fileId = id;
       this.markSynced();
+      this.failures = 0;
+      clearTimeout(this.retryTimer);
       this.set("synced");
       return true;
     } catch (e) {
       if (/** @type {any} */ (e).expired) this.set("expired");
       else if (!navigator.onLine) this.set("offline");
-      else this.set("error", "Sync didn't finish. Your songs are safe on this device; Sonata will try again.");
+      else {
+        this.set("error", "Sync didn't finish. Your songs are safe on this device; Sonata will try again.");
+        this.retryLater();
+      }
       return false;
     } finally {
       this.busy = false;

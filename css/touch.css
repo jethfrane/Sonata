@@ -1,0 +1,66 @@
+/* Loaded last. Touch sizes and short-screen (phone landscape) layout.
+   Every touch control is at least 44 × 44 px (Apple HIG, WCAG 2.5.5). Instrument
+   surfaces (piano keys, fret cells) keep their own sizes. */
+
+@media (pointer: coarse), (max-width: 1023px) {
+  .btn, .btn.small, label.btn, .chip, .lock-btn, .key-btn, .key-pill, .tab, .recent-item { min-height: 44px; }
+  .chord-bar .chip, .quickstart-chips .chip, .circle-tools .lock-btn, .cp-type { min-height: 44px; }
+  a.chip { min-height: 44px; }
+  button.chip, .segmented button, .key-btn { min-width: 44px; justify-content: center; }
+  .title-input { min-height: 44px; }
+  .icon-btn, .icon-btn.small, .row .icon-btn, .editor-toolbar .icon-btn, .key-control .icon-btn,
+  .tool-group:first-child .icon-btn { width: 44px; height: 44px; }
+  .details-btn { width: 44px; min-height: 44px; }
+  .input, .select, .search input, .input.tiny, .share-link .input { min-height: 44px; }
+  .segmented { padding: 2px; }
+  .segmented button { min-height: 44px; }
+  .swatch { width: 44px; height: 44px; }
+  .dia { min-height: 56px; }
+  .toast-action { min-height: 44px; padding: 0 10px; }
+  .sona-actions button { min-height: 44px; }
+  .brand { min-height: 44px; }
+  .account-btn { min-height: 44px; }
+  .changelog summary { min-height: 44px; align-items: center; }
+  .stage-btn, .stage-select { min-width: 44px; height: 44px; min-height: 44px; }
+  .key-picker { gap: 6px; }
+}
+@media (max-width: 640px) {
+  .account-btn { width: 44px; }
+  .sync-dot { left: 25px; top: 6px; }
+  .editor-toolbar { gap: 4px; padding: 4px; }
+  .key-control { padding: 0; }
+  .key-pill { min-width: 44px; padding: 0 8px; }
+  /* Key, text size and view on one row under the title. */
+  .stage-tools { gap: 4px; flex-wrap: nowrap; }
+  .stage-group { gap: 4px; }
+  .stage-key { min-width: 34px; }
+  .stage-select { flex: 0 1 auto; min-width: 0; max-width: 108px; padding: 0 6px; }
+}
+/* Narrowest phones: undo/redo give their room to the key and Edit/View controls. */
+@media (max-width: 380px) {
+  .editor-toolbar .tool-group:first-child #redoBtn { display: none; }
+}
+/* 320–355px phones: 12 keys in three rows of four keeps each key 44px wide. */
+@media (max-width: 355px) {
+  .key-picker { grid-template-columns: repeat(4, 1fr); }
+  .stage-select { font-size: 13px; padding: 0 2px; }
+  .stage-top .stage-tools { justify-content: flex-start; }
+}
+
+/* Phone in landscape (and other short screens): the top bar scrolls away, the tab bar is slim,
+   so the chart gets the height. */
+@media (max-height: 520px) and (max-width: 1023px) {
+  :root { --top-h: 48px; --nav-h: 48px; }
+  .sidebar { position: relative; }
+  .bn { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: var(--fs-xs); }
+  .bn [data-icon] { width: 36px; height: 30px; }
+  .editor-toolbar { top: 4px; }
+  #view-editor { padding-top: 8px; }
+  .title-input { font-size: var(--fs-xl); }
+  .editor-head { margin-bottom: 6px; }
+  .meta-row { margin-top: 2px; }
+  .page { padding-top: 10px; }
+  .page-head { margin-bottom: 10px; }
+  .page-head h1 { font-size: var(--fs-xl); }
+  .page-sub { display: none; }
+}

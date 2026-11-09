@@ -43,7 +43,7 @@ const normalizeNote = (s) => {
   return n;
 };
 
-const QUALITY_RE = /^(?:maj|Maj|M|min|m|-|dim|°|o|aug|\+|sus|add|ø)?(?:\d{1,2})?(?:(?:maj|Maj|M|sus|add|dim|aug|no)\d{0,2}|[#b+\-]\d{1,2})*(?:\([^)]*\))?$/;
+const QUALITY_RE = /^(?:maj|Maj|M|min|m|-|dim|°|o|aug|\+|sus|add|ø)?(?:\d{1,2})?(?:(?<=6)\/9)?(?:(?:maj|Maj|M|sus|add|dim|aug|no)\d{0,2}|[#b+\-]\d{1,2})*(?:\([^)]*\))?$/;
 
 /**
  * Parse one chord symbol such as "G", "F#m7", "C/G", "Bbmaj7", "D///".
@@ -60,7 +60,9 @@ export function parseChord(input) {
   let slashes = "";
   const rhythm = text.match(/^(.*?[^/])(\/{2,})$/) || text.match(/^([A-G][^/]*)(\/)$/);
   if (rhythm) { core = rhythm[1]; slashes = rhythm[2]; }
-  const slashAt = core.indexOf("/");
+  // "C6/9" is a sixth-ninth chord, not C over a bass note "9".
+  const sixNine = core.match(/^[^/]*6\/9(?=$|\/)/);
+  const slashAt = sixNine ? core.indexOf("/", sixNine[0].length) : core.indexOf("/");
   const main = slashAt >= 0 ? core.slice(0, slashAt) : core;
   const bassRaw = slashAt >= 0 ? core.slice(slashAt + 1) : "";
   const m = main.match(/^([A-Ga-g](?:#|b|♯|♭)?)(.*)$/);
@@ -185,7 +187,13 @@ function splitToken(token) {
 }
 
 /** Tokens allowed on a chord line that are not chords: bars, repeats, N.C., "x2". */
-const NEUTRAL_TOKEN = /^(?:[|:%/.\-]+|N\.?C\.?|x\d+|\d+x|\(x?\d+\)|-+)$/i;
+const NEUTRAL_TOKEN = /^(?:[|:%/.\-]+|N\.?C\.?|x\d+|\d+x|\(x?\d+x?\)|\(?(?:repeat|rpt|fine)\)?|-+)$/i;
+
+/** "Intro:", "Tag:", "Turnaround:" in front of the chords of a line. */
+const LINE_LABEL = /^(?:intro|outro|interlude|instrumental|inst|tag|turnaround|turn|vamp|ending|end|coda|riff|solo|break|refrain|link)\d*:$/i;
+
+/** Tokens drawn in the muted colour on a chord line (not chords). @param {string} token */
+export const isNeutralToken = (token) => NEUTRAL_TOKEN.test(token) || LINE_LABEL.test(token);
 
 const SECTION_WORD = /^(verse|chorus|bridge|intro|outro|interlude|tag|pre-?chorus|instrumental|ending|coda|v\d|c\d)[\s\d:]*$/i;
 
@@ -197,8 +205,10 @@ export function isChordLine(line) {
   const t = line.trim();
   if (!t || /^(#|---|>|\/\/)/.test(t) || /\[[^\]]+\]/.test(line) || SECTION_WORD.test(t)) return false;
   let chords = 0;
-  for (const token of t.split(/\s+/)) {
-    if (NEUTRAL_TOKEN.test(token)) continue;
+  const tokens = t.split(/\s+/);
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (NEUTRAL_TOKEN.test(token) || (i === 0 && LINE_LABEL.test(token))) continue;
     const core = splitToken(token).core;
     if (/^[a-g]$/.test(core)) return false; // "a", "e": an ordinary word on a lyric line
     if (parseChord(core)) chords++;

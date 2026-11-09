@@ -70,6 +70,13 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
 .page-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .bottom-nav { display: none; }
 
+/* Small laptops and tablets in landscape: a narrower sidebar leaves the chart room for two panes. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root { --side-w: 204px; --gutter: 20px; }
+  /* Theme is also in Settings; the backup button keeps a readable label. */
+  .side-foot #themeBtn { display: none; }
+}
+
 /* ---------- Phone & tablet shell ---------- */
 @media (max-width: 1023px) {
   :root { --top-h: 56px; --nav-h: 60px; --gutter: 18px; }

@@ -119,6 +119,7 @@
         </div>
 
         <header class="editor-head">
+          <h1 class="sr-only" id="editorHeading">Chart</h1>
           <div class="title-row">
             <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
             <span class="save-state" id="saveState" aria-live="polite"></span>
@@ -175,7 +176,7 @@
               <span class="preview-label" id="previewLabel"></span>
               <button class="icon-btn small" id="copyChartBtn" type="button" aria-label="Copy chart" data-i18n-attr="aria-label:copyChart,title:copyChart"><span data-icon="copy"></span></button>
             </div>
-            <div class="chart" id="preview" aria-live="off"></div>
+            <div class="chart" id="preview" aria-live="off" tabindex="0" role="region" aria-label="Chart preview" data-i18n-attr="aria-label:chartPreview"></div>
           </div>
         </div>
         <div class="song-links" id="songLinks" hidden></div>
@@ -203,7 +204,7 @@
               <div id="circle" class="circle" role="group" aria-label="Circle of fifths"></div>
               <p class="lock-hint" id="lockHint" hidden data-i18n="lockHint">Key locked. Tapping plays the chord but keeps the highlight.</p>
             </div>
-            <aside class="card key-panel">
+            <div class="card key-panel">
               <div class="key-picker" id="keyPicker" role="group" aria-label="Choose a key" data-i18n-attr="aria-label:chooseKey"></div>
               <div class="segmented full" role="group" aria-label="Mode">
                 <button type="button" data-key-mode="major" data-i18n="major">Major</button>
@@ -220,7 +221,7 @@
                 <button class="btn" type="button" id="theoryFromSongBtn" data-i18n="followSong">Follow song key</button>
                 <button class="btn primary" type="button" id="theoryToSongBtn" data-i18n="useAsSongKey">Use as song key</button>
               </div>
-            </aside>
+            </div>
           </div>
         </div>
       </section>
@@ -318,13 +319,8 @@
 
   <!-- STAGE -->
   <section class="stage" id="stage" hidden aria-label="Stage view" data-i18n-attr="aria-label:stage">
-    <header class="stage-top">
-      <div class="stage-nav" id="stageSetNav" hidden>
-        <button class="stage-btn" id="stagePrev" type="button" aria-label="Previous song" data-i18n-attr="aria-label:prevSong"><span data-icon="chevron-left"></span></button>
-        <span class="stage-count" id="stageCount">1/1</span>
-        <button class="stage-btn" id="stageNext" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong"><span data-icon="chevron-right"></span></button>
-      </div>
-      <div class="stage-title"><strong id="stageTitle"></strong><span id="stageMeta"></span></div>
+    <header class="stage-top" id="stageTop">
+      <div class="stage-title"><strong id="stageTitle"></strong><span><span class="stage-count" id="stageCount" hidden></span><span id="stageMeta"></span></span></div>
       <div class="stage-tools">
         <div class="stage-group">
           <button class="stage-btn" id="stageKeyDown" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown"><span data-icon="minus"></span></button>
@@ -347,7 +343,8 @@
     <div class="stage-scroll" id="stageScroll" tabindex="0">
       <div class="chart stage-chart" id="stageChart"></div>
     </div>
-    <footer class="stage-dock">
+    <footer class="stage-dock" id="stageDock">
+      <button class="stage-btn stage-step" id="stagePrev" type="button" aria-label="Previous song" data-i18n-attr="aria-label:prevSong" hidden><span data-icon="chevron-left"></span></button>
       <button class="stage-btn" id="stageScrollBtn" type="button" aria-label="Auto-scroll" data-i18n-attr="aria-label:autoScroll"><span data-icon="play"></span></button>
       <input class="range stage-range" type="range" id="stageSpeed" min="5" max="180" aria-label="Scroll speed" data-i18n-attr="aria-label:scrollSpeed">
       <span class="stage-divider"></span>
@@ -356,6 +353,7 @@
       <span class="stage-beat" id="stageBeat" aria-hidden="true"></span>
       <span class="stage-divider"></span>
       <button class="stage-btn" id="stageThemeBtn" type="button" aria-label="Stage colors" data-i18n-attr="aria-label:stageColors"><span data-icon="contrast"></span></button>
+      <button class="stage-btn stage-step" id="stageNext" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong" hidden><span data-icon="chevron-right"></span></button>
     </footer>
   </section>
 

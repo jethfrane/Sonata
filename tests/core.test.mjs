@@ -216,3 +216,28 @@ test("a lone lowercase letter is a word, not a chord line", () => {
   assert.equal(M.lineKind("Am G"), "chords");
   assert.equal(M.lineKind("A"), "chords");
 });
+
+test("v3.2: 6/9 chords are chords, not a bass note", () => {
+  const c = M.parseChord("C6/9");
+  assert.equal(c.quality, "6/9");
+  assert.equal(c.bassPc, null);
+  assert.deepEqual(M.chordTones("C6/9"), [0, 4, 7, 9, 2]);
+  assert.equal(M.parseChord("C6/9/E").bass, "E");
+  assert.equal(M.parseChord("C6/9///").slashes, "///");
+  assert.equal(M.parseChord("C7/9"), null, "only 6/9 is read as one chord");
+  assert.equal(M.transposeText("G  C6/9  D", 2, M.parseKey("G")), "A  D6/9  E");
+});
+
+test("v3.2: labels and repeat marks keep a line a chord line", () => {
+  assert.equal(M.lineKind("Intro: G  C  G"), "chords");
+  assert.equal(M.lineKind("Tag:  Em  C"), "chords");
+  assert.equal(M.lineKind("Em  C  G  D  (repeat)"), "chords");
+  assert.equal(M.lineKind("G  C  (x2)"), "chords");
+  assert.equal(M.lineKind("Intro:"), "lyrics", "a label alone is not a chord line");
+  assert.equal(M.lineKind("Verse 2"), "lyrics");
+  assert.equal(M.lineKind("Note: G is the key"), "lyrics", "only known labels, and only first");
+  assert.equal(M.transposeText("Intro: G  C  G", 2, M.parseKey("G")), "Intro: A  D  A");
+  const html = buildLines("Intro: G  C  (x2)", { key: M.parseKey("G") }).map((l) => l.chords).join("");
+  assert.equal(html, "Intro: G  C  (x2)");
+  assert.deepEqual(M.extractChords("Intro: G  C  (repeat)").map((c) => c.raw), ["G", "C"]);
+});

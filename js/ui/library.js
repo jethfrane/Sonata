@@ -9,14 +9,26 @@ import { addDemoSong } from "./editor.js";
 /** @type {"all"|"favorites"|"setlists"} */
 let filter = "all";
 let query = "";
+/** Rows drawn at once; "Show more" adds a page. Resets when the search or filter changes. */
+const PAGE = 200;
+let limit = PAGE;
+/** @type {ReturnType<typeof setTimeout>|undefined} */
+let searchTimer;
 
 /** Accent- and case-insensitive text for search. @param {string} s */
 const fold = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export function initLibrary() {
   const search = /** @type {HTMLInputElement} */ ($("librarySearch"));
-  search.addEventListener("input", () => { query = search.value; renderLibrary(); });
-  $$("[data-filter]").forEach((b) => b.addEventListener("click", () => {
+  search.addEventListener("input", () => {
+    query = search.value;
+    limit = PAGE;
+    // Small libraries answer every key at once; big ones wait for a short pause in typing.
+    clearTimeout(searchTimer);
+    if (store.songs.length > 300) searchTimer = setTimeout(renderLibrary, 120); else renderLibrary();
+  });
+  $$("button[data-filter]").forEach((b) => b.addEventListener("click", () => {
+    limit = PAGE;
     filter = /** @type {any} */ (b.dataset.filter);
     renderLibrary();
   }));
@@ -80,6 +92,8 @@ function onListClick(e) {
   else if (act === "create") newSong();
   else if (act === "demo") { addDemoSong(); app.show("editor"); }
   else if (act === "create-set") openSetlistEditor();
+  else if (act === "all") { filter = "all"; renderLibrary(); }
+  else if (act === "more-rows") { limit += PAGE * 2; renderLibrary(); }
   else if (act === "clear") { query = ""; /** @type {HTMLInputElement} */ ($("librarySearch")).value = ""; renderLibrary(); }
 }
 
@@ -182,10 +196,12 @@ const empty = (title, text, actions) => `<div class="empty"><div class="empty-ar
 export function renderLibrary() {
   const list = $("libraryList");
   const lang = getLang();
-  $$("[data-filter]").forEach((b) => { const on = b.dataset.filter === filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
+  $$("button[data-filter]").forEach((b) => { const on = b.dataset.filter === filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   const ns = store.songs.length, nl = store.setlists.length;
   $("libraryCount").textContent = `${t(ns === 1 ? "songCount1" : "songsCount", ns === 1 ? "1 song" : "{n} songs", { n: ns })} · ${t(nl === 1 ? "setlistCount1" : "setlistsCount", nl === 1 ? "1 setlist" : "{n} setlists", { n: nl })}`;
   /** @type {HTMLElement} */ (document.querySelector(".library-toolbar")).hidden = !ns && !nl;
+  // Sorting applies to songs only.
+  $("librarySort").hidden = filter === "setlists";
   const q = fold(query.trim());
 
   if (filter === "setlists") {
@@ -237,10 +253,13 @@ export function renderLibrary() {
   if (!songs.length) {
     list.innerHTML = q
       ? empty(t("noMatches", "No matches for \"{q}\"", { q: query }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`)
-      : empty(t("filterFavorites", "Favorites"), t("noFavorites", "No favorites yet. Tap the star on a song."), "");
+      : empty(t("filterFavorites", "Favorites"), t("noFavorites", "No favorites yet. Tap the star on a song."), `<button class="btn" type="button" data-act="all">${esc(t("showAllSongs", "Show all songs"))}</button>`);
     return;
   }
   const activeId = store.activeId;
+  // Big libraries: draw the first rows now and the rest on request, so typing in search stays quick.
+  const total = songs.length;
+  songs = songs.slice(0, limit);
   list.innerHTML = songs.map((s) => {
     const k = !s.body.trim() && s.manualKey === "auto" ? "–" : pretty(keyShort(soundingKey(s)));
     const sub = [s.artist, relativeTime(s.updatedAt, lang)].filter(Boolean).map(esc).join(" · ");
@@ -252,6 +271,8 @@ export function renderLibrary() {
       <button type="button" class="icon-btn fav${s.isFavorite ? " on" : ""}" data-act="fav" aria-pressed="${s.isFavorite}" aria-label="${esc(t("favorite", "Favorite"))}">${icon(s.isFavorite ? "star-fill" : "star")}</button>
       <button type="button" class="icon-btn" data-act="more" aria-label="${esc(t("moreActions", "More actions"))}">${icon("more")}</button>
     </div>`;
-  }).join("");
+  }).join("") + (total > songs.length
+    ? `<div class="row more-row"><button type="button" class="btn ghost wide" data-act="more-rows">${esc(t("showMoreSongs", "Show more ({n} left)", { n: total - songs.length }))}</button></div>`
+    : "");
   paintIcons(list);
 }

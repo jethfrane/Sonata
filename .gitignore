@@ -9,3 +9,4 @@ Thumbs.db
 .claude/
 node_modules/
 dist/
+audit-out/

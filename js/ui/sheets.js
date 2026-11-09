@@ -342,7 +342,8 @@ export function openSetlistEditor(id) {
   const pool = () => {
     const f = q.trim().toLowerCase();
     return store.songs.filter((s) => !items.includes(s.id) && (!f || `${s.title} ${s.artist}`.toLowerCase().includes(f)))
-      .map((s) => `<button type="button" class="pick" data-add="${esc(s.id)}">${icon("plus")}<span>${esc(s.title)}</span><span class="muted">${esc(s.artist)}</span></button>`).join("");
+      .map((s) => `<button type="button" class="pick" data-add="${esc(s.id)}">${icon("plus")}<span class="pick-text"><span class="pick-title">${esc(s.title)}</span>${s.artist ? `<span class="muted">${esc(s.artist)}</span>` : ""}</span><span class="key-badge small">${esc(pretty(keyShort(soundingKey(s))))}</span></button>`).join("")
+      || `<p class="muted set-empty">${esc(q.trim() ? t("noMatches", "No matches for \"{q}\"", { q }) : t("allSongsAdded", "Every song is in this setlist."))}</p>`;
   };
   const body = openSheet({
     title: existing ? t("editSetlistTitle", "Edit setlist") : t("newSetlistTitle", "New setlist"),
@@ -350,7 +351,7 @@ export function openSetlistEditor(id) {
     body: `<div class="form">
       <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="slTitle" value="${esc(existing?.title || "")}" placeholder="Sunday Service" autocomplete="off"></label>
       <label class="field"><span>${esc(t("setNotes", "Notes (service order, etc.)"))}</span><textarea class="input" id="slNotes" rows="2">${esc(existing?.description || "")}</textarea></label>
-      <div class="field"><span>${esc(t("songsInThisSet", "Songs in this setlist"))}</span><ol class="set-items" id="slItems">${chosen()}</ol></div>
+      <div class="field"><span id="slCount">${esc(t("songsInSetN", "Songs in this setlist ({n})", { n: items.length }))}</span><ol class="set-items" id="slItems">${chosen()}</ol></div>
       <div class="field"><span>${esc(t("addSongs", "Add songs"))}</span>
         <input class="input" id="slSearch" type="search" placeholder="${esc(t("search", "Search"))}" autocomplete="off">
         <div class="pick-list" id="slPool">${pool()}</div></div>
@@ -369,7 +370,11 @@ export function openSetlistEditor(id) {
   });
   const list = /** @type {HTMLElement} */ (body.querySelector("#slItems"));
   const poolEl = /** @type {HTMLElement} */ (body.querySelector("#slPool"));
-  const redraw = () => { list.innerHTML = chosen(); poolEl.innerHTML = pool(); };
+  const redraw = () => {
+    list.innerHTML = chosen();
+    poolEl.innerHTML = pool();
+    /** @type {HTMLElement} */ (body.querySelector("#slCount")).textContent = t("songsInSetN", "Songs in this setlist ({n})", { n: items.length });
+  };
   body.addEventListener("click", (e) => {
     const el = /** @type {HTMLElement} */ (e.target);
     const add = /** @type {HTMLElement|null} */ (el.closest("[data-add]"));

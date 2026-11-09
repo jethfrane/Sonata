@@ -64,6 +64,11 @@ export function initStage() {
   store.on("change", (/** @type {string} */ kind) => { if (open && kind !== "settings") renderStage(); });
   store.on("song-open", () => { if (open) { scroller().scrollTop = 0; renderStage(); } });
   store.on("setlist", () => { if (open) renderStage(); });
+  if ("ResizeObserver" in window) {
+    const ro = new ResizeObserver(() => { if (open) measureChrome(); });
+    ro.observe($("stageTop"));
+    ro.observe($("stageDock"));
+  }
 }
 
 /** @param {KeyboardEvent} e */
@@ -163,15 +168,27 @@ function renderStage() {
   $("stageKey").textContent = pretty(keyShort(k));
   $("stageBpm").textContent = String(metronome.bpm);
   const cur = store.currentSetlist();
-  $("stageSetNav").hidden = !cur;
+  // Setlist: previous/next sit at the ends of the bottom dock, under the thumbs.
+  $("stageCount").hidden = !cur;
+  $("stagePrev").hidden = !cur;
+  $("stageNext").hidden = !cur;
   if (cur) {
     $("stageCount").textContent = `${cur.index + 1}/${cur.songs.length}`;
     /** @type {HTMLButtonElement} */ ($("stagePrev")).disabled = cur.index <= 0;
     /** @type {HTMLButtonElement} */ ($("stageNext")).disabled = cur.index >= cur.songs.length - 1;
   }
+  measureChrome();
   $("stageChart").innerHTML = s.body.trim()
     ? linesToHtml(buildLines(s.body, renderOptions(s, /** @type {any} */ (mode))))
     : `<p class="chart-empty">${esc(t("stageEmpty", "This song has no chart yet."))}</p>`;
+}
+
+/** The bars float over the chart; the chart is padded by their height so nothing starts under them. */
+function measureChrome() {
+  const top = $("stageTop").offsetHeight;
+  const dock = $("stageDock").offsetHeight;
+  stage().style.setProperty("--stage-top-h", `${top}px`);
+  stage().style.setProperty("--stage-dock-h", `${dock}px`);
 }
 
 function toggleScroll() { scrolling ? stopScroll() : startScroll(); }

@@ -92,12 +92,12 @@ export function initEditor() {
   $("keyPill").addEventListener("click", () => openKeySheet());
   $("detailsBtn").addEventListener("click", () => openDetails());
   $("shareSongBtn").addEventListener("click", () => openShare());
-  $$("[data-mode]").forEach((b) => b.addEventListener("click", () => {
+  $$("button[data-mode]").forEach((b) => b.addEventListener("click", () => {
     store.settings.viewMode = /** @type {any} */ (b.dataset.mode);
     store.changed("settings");
     refreshEditor();
   }));
-  $$("[data-pane]").forEach((b) => b.addEventListener("click", () => setPane(/** @type {string} */ (b.dataset.pane))));
+  $$("button[data-pane]").forEach((b) => b.addEventListener("click", () => setPane(/** @type {string} */ (b.dataset.pane))));
   $$("#quickstart [data-insert]").forEach((b) => b.addEventListener("click", () => insertAtCursor(b.dataset.insert || "", true)));
   $("demoBtn").addEventListener("click", addDemo);
   $("copyChartBtn").addEventListener("click", async () => {
@@ -155,7 +155,8 @@ function autosize() {
 function setPane(pane) {
   $("editorPanes").dataset.pane = pane;
   $("view-editor").dataset.pane = pane;
-  $$("[data-pane]").forEach((b) => { const on = b.dataset.pane === pane; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
+  // Only the Edit/View buttons; the section and pane box also carry data-pane for CSS.
+  $$("button[data-pane]").forEach((b) => { const on = b.dataset.pane === pane; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch { /* ignore */ }
   if (pane === "preview") renderPreview(); else requestAnimationFrame(autosize);
 }
@@ -298,6 +299,7 @@ function updateMeta() {
   const box = $("songLinks");
   box.hidden = !links.length;
   box.innerHTML = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => `<a class="chip link-chip" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer nofollow">${esc(l.name)}<span aria-hidden="true">↗</span></a>`).join("") : "";
+  $("editorHeading").textContent = s.title || t("untitled", "Untitled");
   $("keyPillValue").textContent = pretty(keyShort(k));
   $("keyPill").title = `${t("keyAndCapo", "Key & capo")}: ${pretty(k.name)}`;
 }
@@ -365,7 +367,7 @@ export function loadSong() {
 /** Re-render everything that depends on settings or key. */
 export function refreshEditor() {
   const mode = store.settings.viewMode;
-  $$("[data-mode]").forEach((b) => { const on = b.dataset.mode === mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
+  $$("button[data-mode]").forEach((b) => { const on = b.dataset.mode === mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
   updateMeta();
   updateQuickstart();
   renderChordBar();

@@ -67,16 +67,26 @@ async function startTuner() {
   const mine = session;
   /** @type {MediaStream} */
   let got;
+  if (!navigator.mediaDevices?.getUserMedia) {
+    starting = false;
+    toast(t("micUnsupported", "This browser can't use the microphone here. Try Safari or Chrome."), "error", { ms: 5000 });
+    return;
+  }
   try {
     got = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   } catch (e) {
     starting = false;
-    toast(/** @type {any} */ (e)?.name === "NotFoundError" ? t("micUnavailable", "No microphone found.") : t("micDenied", "The tuner needs the microphone. Allow it in your browser settings."), "error", { ms: 5000 });
+    const name = /** @type {any} */ (e)?.name;
+    toast(name === "NotFoundError" || name === "OverconstrainedError" ? t("micUnavailable", "No microphone found.")
+      : name === "NotReadableError" || name === "AbortError" ? t("micBusy", "The microphone is busy in another app (a call or recorder). Close it and try again.")
+      : t("micDenied", "The tuner needs the microphone. Allow it in your browser settings."), "error", { ms: 6000 });
     return;
   }
   starting = false;
   if (mine !== session) { got.getTracks().forEach((tr) => tr.stop()); return; }
   stream = got;
+  // A call, an unplugged headset or the system can take the microphone away mid-tune.
+  got.getAudioTracks().forEach((tr) => tr.addEventListener("ended", () => { if (stream === got) { stopTuner(); toast(t("micLost", "The microphone stopped. Tap Start to tune again."), "info", { ms: 4000 }); } }));
   clearInterval(timer);
   const src = ac.createMediaStreamSource(stream);
   analyser = ac.createAnalyser();

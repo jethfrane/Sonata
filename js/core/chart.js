@@ -4,7 +4,7 @@
 // view, export and the stage share one layout.
 import {
   parseChord, lineKind, mapChords, transposeChord, romanChord, nashvilleChord,
-  keyFromTonic, prefersFlats, isChordLine
+  keyFromTonic, prefersFlats, isChordLine, isNeutralToken
 } from "./music.js";
 
 /**
@@ -141,7 +141,7 @@ export function buildLines(body, o) {
 function chordHtml(text) {
   return text.split(/(\s+)/).map((tok) => {
     if (!tok || /^\s+$/.test(tok)) return tok;
-    if (/^[|:%.\-]+$|^x\d+$|^\d+x$/i.test(tok)) return `<span class="ch-mark">${esc(tok)}</span>`;
+    if (isNeutralToken(tok)) return `<span class="ch-mark">${esc(tok)}</span>`;
     const m = tok.match(/^(.*?)(\/{2,}|\/)$/);
     if (m && m[1] && !m[1].endsWith("/")) return `<b class="ch">${esc(m[1])}</b><span class="ch-mark">${esc(m[2])}</span>`;
     if (/^\/+$/.test(tok)) return `<span class="ch-mark">${esc(tok)}</span>`;

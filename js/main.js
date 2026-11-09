@@ -135,8 +135,15 @@ function onDriveStatus(status) {
   btn.setAttribute("aria-label", `Google Drive: ${text}`);
   dot.hidden = status === "signed-out" || status === "synced";
   dot.dataset.status = status;
+  // The Google session ends after an hour. Say so once, with a one-tap Reconnect (a tap is needed for the popup).
+  if (status === "expired" && lastDriveStatus && !["expired", "signed-out"].includes(lastDriveStatus)) {
+    toast(t("reconnectText", "Your Google session expired. Reconnect to keep syncing."), "info", { ms: 12000, action: t("reconnect", "Reconnect"), onAction: () => { app.drive?.signIn(); } });
+  }
+  lastDriveStatus = status;
   store.emit("drive-status", status);
 }
+/** @type {string} */
+let lastDriveStatus = "";
 
 async function handleShareLink() {
   const params = new URLSearchParams(location.search);
@@ -159,7 +166,9 @@ async function handleShareLink() {
 }
 
 function registerServiceWorker() {
-  if (!("serviceWorker" in navigator) || location.protocol !== "https:") return;
+  // Local tests can opt in with ?sw to check offline use; normal local runs stay without a worker.
+  const localTest = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has("sw");
+  if (!("serviceWorker" in navigator) || (location.protocol !== "https:" && !localTest)) return;
   const update = registerSW({
     onNeedRefresh() {
       toast(t("updateReady", "A new version of Sonata is ready."), "info", { ms: 15000, action: t("reload", "Reload"), onAction: () => { store.flush(); update(true); } });
@@ -220,6 +229,8 @@ async function boot() {
   document.querySelector(".brand")?.addEventListener("click", (e) => { e.preventDefault(); show("songs"); });
   window.addEventListener("popstate", () => route());
   onStageChange((on) => {
+    // Keyboard and screen readers stay on the stage, not the page behind it.
+    /** @type {any} */ ($("app")).inert = on;
     if (on) syncUrl("push", true);
     else if (/\/stage$/.test(location.pathname)) {
       if (history.state && history.state.stage) history.back(); else syncUrl("replace", false);
@@ -251,6 +262,9 @@ async function boot() {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && app.view === "editor") { e.preventDefault(); openStage(); }
   });
   window.addEventListener("pagehide", () => store.flush());
+  // Offline is fine for Sonata; say it once so nobody wonders why a link or sync waits.
+  window.addEventListener("offline", () => toast(t("offlineNote", "You're offline. Songs still save on this device."), "info", { ms: 4000 }));
+  window.addEventListener("online", () => { if (app.drive?.token) toast(t("onlineNote", "Back online. Syncing…"), "info", { ms: 2500 }); });
   // Another tab saved: pick up its changes when this tab has nothing unsaved.
   window.addEventListener("storage", (e) => {
     if (!e.key || !e.key.startsWith("sonata:v12:") || store.dirty) return;

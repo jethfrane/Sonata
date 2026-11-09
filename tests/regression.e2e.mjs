@@ -126,6 +126,7 @@ async function driveCase(name, setup, check) {
     const json = (o) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(o), headers: { "access-control-allow-origin": "*" } });
     fake.calls.push(m + " " + url.pathname.split("/").slice(-2).join("/") + (url.searchParams.get("alt") ? "?alt" : ""));
     if (url.pathname.startsWith("/upload")) {
+      if (fake.fail > 0) { fake.fail--; return route.fulfill({ status: 503, body: "busy", headers: { "access-control-allow-origin": "*" } }); }
       const text = req.postData() || ""; const body = text.split("\r\n\r\n")[2].split("\r\n--")[0];
       if (m === "POST") { const nid = "new-" + fake.order.length; put(nid, body); if (fake.dupe) fake.dupe(nid); return json({ id: nid }); }
       put(id, body); return json({ id });
@@ -163,6 +164,77 @@ await driveCase("duplicate files", (f, put) => { f.dupe = () => { f.order = ["ol
   const v = f.files.get("older-file") || "";
   ok(v.includes("InOlder") && v.includes("Alpha"), "both libraries end up in the oldest file");
 });
+// v3.2: a failed sync (Drive busy) retries by itself, and coming back online retries too.
+await driveCase("busy drive", (f) => { f.fail = 1; }, async (f, dp) => {
+  const st = await dp.evaluate(() => { const d = window.__sonata.app.drive; return { status: d.status, failures: d.failures, timer: Boolean(d.retryTimer) }; });
+  ok(st.status === "error" && st.failures === 1 && st.timer, "a failed sync schedules a retry");
+  await dp.evaluate(() => window.dispatchEvent(new Event("online"))); await dp.waitForTimeout(1200);
+  const after = await dp.evaluate(() => { const d = window.__sonata.app.drive; return { status: d.status, failures: d.failures }; });
+  ok(after.status === "synced" && after.failures === 0 && [...f.files.values()].some((v) => v.includes("Alpha")), "the retry uploads and clears the error");
+});
+
+// ---- v3.2 audit fixes ----
+async function phone(vp = { width: 360, height: 740 }, init) {
+  const ctx = await b.newContext({ viewport: vp, hasTouch: true, isMobile: vp.width < 1000 });
+  if (init) await ctx.addInitScript(init);
+  const p = await ctx.newPage();
+  p.errs = []; p.on("pageerror", (e) => p.errs.push(e.message));
+  return p;
+}
+p = await phone();
+await p.goto(BASE + "/"); await seed(p); await p.goto(BASE + "/songs"); await p.waitForTimeout(500);
+await p.click("#newSongBtn"); await p.waitForTimeout(400);
+ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "new song on a 360px phone: no sideways scroll");
+await p.click('[data-view="editor"].bn').catch(() => {}); await p.goto(BASE + "/editor"); await p.waitForTimeout(400);
+ok(await p.getByRole("button", { name: "Share" }).isVisible() && await p.getByRole("button", { name: "Present" }).isVisible(), "icon-only Share and Present keep their names on phones");
+await p.click('button[data-pane="preview"]'); await p.waitForTimeout(200);
+ok(await p.evaluate(() => !document.getElementById("view-editor").hasAttribute("aria-pressed") && !document.getElementById("editorPanes").hasAttribute("aria-pressed")), "Edit/View switch only marks its own buttons");
+// Stage: page behind is inert; setlist buttons in the dock; hiding the bars gives the space back
+await p.goto(BASE + "/songs"); await p.waitForTimeout(400);
+await p.evaluate(() => { const s = window.__sonata.store; s.saveSetlist({ title: "Two", items: [{ songId: s.songs[0].id }, { songId: s.songs[0].id }] }); });
+await p.click('[data-filter="setlists"]'); await p.waitForTimeout(200);
+await p.click('[data-act="set-play"]'); await p.waitForTimeout(500);
+const st = await p.evaluate(() => ({ inert: document.getElementById("app").inert, next: !document.getElementById("stageNext").hidden && document.getElementById("stageNext").closest(".stage-dock") !== null, count: document.getElementById("stageCount").textContent }));
+ok(st.inert && st.next && st.count === "1/2", "stage: background inert, next song in the bottom dock, count shown");
+const stageBefore = await p.evaluate(() => document.getElementById("stageScroll").clientHeight);
+await p.mouse.click(180, 400); await p.waitForTimeout(400);
+const stageAfter = await p.evaluate(() => ({ h: document.getElementById("stageScroll").clientHeight, hidden: document.getElementById("stage").classList.contains("chrome-hidden"), top: document.getElementById("stageTop").getBoundingClientRect().bottom }));
+ok(stageAfter.hidden && stageAfter.h === stageBefore && stageAfter.h >= 700, "stage chart uses the full height; bars float over it");
+await p.keyboard.press("Escape"); await p.waitForTimeout(300);
+ok(await p.evaluate(() => !document.getElementById("app").inert), "leaving the stage makes the page usable again");
+// Songs: sort hidden for setlists; empty favorites offers a way back
+ok(await p.evaluate(() => document.getElementById("librarySort").hidden), "sort menu hidden on the Setlists filter");
+await p.evaluate(() => { const s = window.__sonata.store; s.songs.forEach((x) => { x.isFavorite = false; }); s.changed("library"); });
+await p.click('[data-filter="favorites"]'); await p.waitForTimeout(200);
+await p.click('[data-act="all"]'); await p.waitForTimeout(200);
+ok(await p.evaluate(() => document.querySelector('[data-filter="all"]').classList.contains("active") && document.querySelectorAll(".row[data-id]").length > 0), "empty Favorites → Show all songs");
+await p.close();
+
+// Large library: first 200 rows, Show more adds the rest
+p = await phone({ width: 390, height: 844 });
+await p.goto(BASE + "/");
+await p.evaluate(() => { localStorage.clear(); localStorage.setItem("sonata:v12:songs", JSON.stringify(Array.from({ length: 450 }, (_, i) => ({ id: "song-big-" + i, title: "Song " + i, body: "G C", updatedAt: new Date(Date.now() - i * 1e6).toISOString() })))); });
+await p.goto(BASE + "/songs"); await p.waitForTimeout(500);
+ok(await p.locator(".row[data-id]").count() === 200, "450 songs: 200 rows drawn at first");
+await p.click('[data-act="more-rows"]'); await p.waitForTimeout(200);
+ok(await p.locator(".row[data-id]").count() === 450 && await p.locator('[data-act="more-rows"]').count() === 0, "Show more draws the rest");
+await p.fill("#librarySearch", "Song 44"); await p.waitForTimeout(400);
+ok(await p.locator(".row[data-id]").count() === 11, "search in a big library still finds matches (after a short pause)");
+await p.close();
+
+// Phone landscape: the top bar scrolls away and the tab bar is slim
+p = await phone({ width: 844, height: 390 });
+await p.goto(BASE + "/"); await seed(p); await p.goto(BASE + "/editor"); await p.waitForTimeout(400);
+const land = await p.evaluate(() => ({ pos: getComputedStyle(document.querySelector(".sidebar")).position, nav: document.querySelector(".bottom-nav").getBoundingClientRect().height }));
+ok(land.pos === "relative" && land.nav <= 50, "landscape phone: top bar not sticky, tab bar 48px");
+await p.close();
+
+// Tuner: a busy microphone gets a clear message
+p = await phone({ width: 390, height: 844 }, () => { navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error("busy"), { name: "NotReadableError" })); });
+await p.goto(BASE + "/play/tuner"); await p.waitForTimeout(400);
+await p.click("#tunerBtn"); await p.waitForTimeout(300);
+ok((await p.locator(".toast").innerText()).includes("busy in another app"), "busy microphone: says another app is using it");
+await p.close();
 
 console.log(`\n${pass} passed, ${fail} failed`);
 await b.close();

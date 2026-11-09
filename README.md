@@ -38,6 +38,7 @@ Amazing grace, how sweet the sound
 [C]My chains are [G]gone
 > Band note (never transposed)
 C///  G/B///      rhythm slashes
+Intro: G  C6/9  D  (x2)   labels and repeat marks stay on a chord line
 ---               divider
 ```
 
@@ -83,6 +84,8 @@ npm run build          # production build in dist/
 npm run serve:dist     # serve dist/ like Vercel does (routes fall back to index.html)
 BASE=http://127.0.0.1:5391/ node tests/browser.e2e.mjs   # browser tests (Playwright)
 BASE=http://127.0.0.1:5391/ node tests/routes.e2e.mjs    # routes, layout and overflow checks
+npm run test:a11y && npm run test:regression             # axe checks; fixed-bug checks (fake Drive included)
+OUT=/tmp/sonata-audit npm run test:audit                 # 25 screens × 6 sizes: screenshots, overflow, 44px targets, axe
 BASE=http://127.0.0.1:5391 node tests/screenshots.mjs    # refresh the screenshots above
 ```
 
