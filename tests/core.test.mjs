@@ -5,7 +5,7 @@ import * as M from "../js/core/music.js";
 import { buildLines, linesToText, pairSegments, uniqueChords } from "../js/core/chart.js";
 import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
-import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK } from "../js/core/share.js";
+import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
 import { detectPitch, noteFromFreq } from "../js/core/pitch.js";
 import { buildPdf, pdfString } from "../js/lib/export.js";
 
@@ -240,4 +240,97 @@ test("v3.2: labels and repeat marks keep a line a chord line", () => {
   const html = buildLines("Intro: G  C  (x2)", { key: M.parseKey("G") }).map((l) => l.chords).join("");
   assert.equal(html, "Intro: G  C  (x2)");
   assert.deepEqual(M.extractChords("Intro: G  C  (repeat)").map((c) => c.raw), ["G", "C"]);
+});
+
+// ---- v4 ----
+import * as CH from "../js/core/chords.js";
+import { QRCode } from "../js/lib/qr.js";
+import { createRequire } from "node:module";
+const jsQR = createRequire(import.meta.url)("jsqr");
+
+/** Render a QR code to pixels and read it back with an independent decoder. */
+function scan(text, ecc) {
+  const qr = QRCode.generate(text, ecc);
+  const n = qr.getModuleCount(), sc = 4, m = 4, W = (n + 2 * m) * sc;
+  const px = new Uint8ClampedArray(W * W * 4).fill(255);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c))
+    for (let y = 0; y < sc; y++) for (let x = 0; x < sc; x++) { const i = (((r + m) * sc + y) * W + (c + m) * sc + x) * 4; px[i] = px[i + 1] = px[i + 2] = 0; }
+  return { n, data: jsQR(px, W, W)?.data };
+}
+
+test("v4: QR codes scan at every error-correction level, in byte and alphanumeric mode", async () => {
+  for (const ecc of ["L", "M", "Q", "H"]) {
+    assert.equal(scan("https://sonata.jethrofrane.xyz/share/x?s=abc_DEF-123", ecc).data, "https://sonata.jethrofrane.xyz/share/x?s=abc_DEF-123", "byte " + ecc);
+    assert.equal(scan("HTTPS://SONATA.JETHROFRANE.XYZ/Q/ABCDEF234567", ecc).data, "HTTPS://SONATA.JETHROFRANE.XYZ/Q/ABCDEF234567", "alnum " + ecc);
+  }
+  const body = "## Verse\n" + "G        D/F#        Em      C\nHere I am to worship, here I am to bow down\n".repeat(10);
+  const d = packSong({ title: "Here I Am", body });
+  const q = await qrUrl("https://sonata.jethrofrane.xyz", d);
+  const old = "https://sonata.jethrofrane.xyz/share/here-i-am?s=" + (await encodeShare(d));
+  const a = scan(q, "L"), b = scan(old, "L");
+  assert.equal(a.data, q);
+  assert.ok(a.n < b.n, `QR link makes a smaller code (${a.n} < ${b.n})`);
+  assert.equal((await decodeQr(q.split("/Q/")[1])).b, d.b);
+});
+
+test("v4: compact links round-trip songs and setlists; v3 links still open", async () => {
+  const song = packSong({ title: "Way Maker", artist: "Sinach", body: "G C", manualKey: "G:major", capo: 2, bpm: 68, genre: "Worship", links: [{ name: "Ref", url: "https://youtu.be/x" }] });
+  const back = await decodeShare(await encodeShare(song));
+  assert.deepEqual(back, song);
+  const set = packSet({ title: "Sunday", description: "Morning" }, [{ title: "A", body: "G" }, { title: "B", body: "D" }]);
+  assert.deepEqual(await decodeShare(await encodeShare(set)), set);
+  const zlib = await import("node:zlib");
+  const v3 = zlib.deflateRawSync("v3." + JSON.stringify({ t: "Old link", b: "C G" })).toString("base64url");
+  assert.equal((await decodeShare(v3)).t, "Old link");
+});
+
+test("v4: a pasted setlist message rebuilds the setlist", async () => {
+  const msg = await setlistMessage("https://sonata.jethrofrane.xyz/", { title: "Sunday, Nov 9" }, [{ title: "One", body: "G C" }, { title: "Two", artist: "X", body: "D A" }]);
+  const r = await parseLinks("Hi team!\n" + msg + "\nthanks");
+  assert.equal(r.title, "Sunday, Nov 9");
+  assert.deepEqual(r.songs.map((s) => s.t), ["One", "Two"]);
+  const q = await qrUrl("https://sonata.jethrofrane.xyz", packSong({ title: "Three", body: "E" }));
+  assert.equal((await parseLinks(`see ${q.toLowerCase().replace("https://sonata.jethrofrane.xyz", "https://sonata.jethrofrane.xyz")}`)).songs[0].t, "Three");
+  assert.deepEqual((await parseLinks("no links here https://example.com/?s=garbage")).songs, []);
+});
+
+test("v4: chord dictionary names notes, formulas and slash chords", () => {
+  const d = CH.describeChord("Am7/G");
+  assert.deepEqual(d.notes, ["A", "C", "E", "G"]);
+  assert.deepEqual(d.formula, ["1", "♭3", "5", "♭7"]);
+  assert.equal(d.bassNote, "G");
+  assert.equal(CH.describeChord("Bbmaj7").notes.join(" "), "Bb D F A");
+  assert.equal(CH.describeChord("F#m7b5").notes.join(" "), "F# A C E");
+  assert.equal(CH.describeChord("Cmin7").quality, "m7", "aliases map to the catalog");
+  assert.deepEqual(CH.inversions("C"), ["C/E", "C/G", "C/Bb"]);
+  for (const q of CH.QUALITIES) assert.ok(CH.describeChord("C" + q.id), "parses C" + q.id);
+});
+
+test("v4: guitar and ukulele shapes match the chord books and always sound the chord", () => {
+  const first = (n, t) => CH.voicings(n, t)[0].frets.map((x) => (x < 0 ? "x" : x)).join("");
+  const G = CH.TUNINGS.guitar.strings, U = CH.TUNINGS.ukulele.strings;
+  for (const [n, want] of [["C", "x32010"], ["G", "320003"], ["D", "xx0232"], ["Am", "x02210"], ["E", "022100"], ["F", "133211"], ["D/F#", "200232"], ["G/B", "x20003"], ["Am/G", "3x2210"], ["Bm", "x24432"]]) assert.equal(first(n, G), want, n);
+  for (const [n, want] of [["C", "0003"], ["G", "0232"], ["Am", "2000"], ["F", "2010"], ["D", "2220"]]) assert.equal(first(n, U), want, "uke " + n);
+  // Every shape of many chords: lowest guitar note is the bass, and only chord tones sound.
+  for (const n of ["Cmaj9", "Ebsus2", "F#m11", "Ab7#9", "B13", "Dm/C", "E/G#", "Gdim7", "Caug", "A6/9", "C#m7b5", "Bb/D"]) {
+    const d = CH.describeChord(n);
+    const ok = new Set(d.pcs.concat(d.bassPc ?? []));
+    const vs = CH.voicings(n, G);
+    assert.ok(vs.length >= 2, n + " has shapes");
+    for (const v of vs) {
+      assert.ok(v.notes.every((m) => ok.has(((m % 12) + 12) % 12)), n + " only chord tones");
+      assert.equal(((v.notes[0] % 12) + 12) % 12, d.bassPc ?? d.rootPc, n + " bass");
+      assert.ok(v.fingers <= 4, n + " playable");
+    }
+  }
+  assert.ok(CH.bassMap("Am/G").some((p) => p.bass && p.fret === 3 && p.string === 0), "bass map marks the slash note");
+  assert.deepEqual(CH.pianoVoicing("C/E"), { bass: 52, notes: [60, 64, 67] });
+});
+
+test("v4: chord families for a key include slash, walking bass and secondary dominants", () => {
+  const g = M.parseKey("G:major");
+  assert.deepEqual(M.chordsForKey(g, "slash").slice(0, 6).map((c) => c.name), ["G/B", "Am/C", "Bm/D", "C/E", "D/F#", "Em/G"]);
+  assert.deepEqual(M.chordsForKey(g, "walk").map((c) => c.name), ["G", "D/F#", "Em", "Em/D", "C", "G/B", "Am", "D"]);
+  assert.ok(M.chordsForKey(g, "secondary").map((c) => c.name).includes("B7"));
+  for (const t of M.CHORD_TYPES) for (const c of M.chordsForKey(g, t.id)) assert.ok(M.parseChord(c.name), `${t.id}: ${c.name} parses`);
 });

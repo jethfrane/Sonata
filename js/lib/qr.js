@@ -1,8 +1,10 @@
 // @ts-nocheck  (ported third-party style code; kept as-is)
-// QR code generator (byte mode, versions 1-40). Ported unchanged from Sonata v1.
+// QR code generator (byte and alphanumeric modes, versions 1-40). Based on Sonata v1's encoder.
 // Works offline; no network service sees the shared song.
 export const QRCode = (() => {
   const MODE_8BIT_BYTE = 1 << 2;
+  const MODE_ALPHA_NUM = 1 << 1;
+  const ALNUM = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:";
   const ECL = { L: 1, M: 0, Q: 3, H: 2 };
   const EXP_TABLE = new Array(256);
   const LOG_TABLE = new Array(256);
@@ -85,7 +87,8 @@ export const QRCode = (() => {
   ];
 
   function getRSBlocks(typeNumber, errorCorrectLevel) {
-    const rsBlock = RS_BLOCK_TABLE[(typeNumber - 1) * 4 + errorCorrectLevel];
+    // The table lists L, M, Q, H for each version; errorCorrectLevel holds the format bits (M=0, L=1, H=2, Q=3).
+    const rsBlock = RS_BLOCK_TABLE[(typeNumber - 1) * 4 + [1, 0, 3, 2][errorCorrectLevel]];
     if (!rsBlock) throw new Error("bad rs block: " + typeNumber + "/" + errorCorrectLevel);
     const length = rsBlock.length / 3;
     const list = [];
@@ -105,6 +108,7 @@ export const QRCode = (() => {
   }
 
   function getLengthInBits(mode, type) {
+    if (mode === MODE_ALPHA_NUM) return type < 10 ? 9 : type < 27 ? 11 : 13;
     if (1 <= type && type < 10) return 8;
     return 16;
   }
@@ -168,6 +172,19 @@ export const QRCode = (() => {
     write(buffer) { for (let i = 0; i < this.bytes.length; i++) buffer.put(this.bytes[i], 8); }
   }
 
+  // Upper-case letters, digits and " $%*+-./:" pack two characters into 11 bits.
+  class QRAlphaNum {
+    constructor(data) { this.mode = MODE_ALPHA_NUM; this.data = data; }
+    getLength() { return this.data.length; }
+    write(buffer) {
+      const d = this.data;
+      let i = 0;
+      for (; i + 1 < d.length; i += 2) buffer.put(ALNUM.indexOf(d[i]) * 45 + ALNUM.indexOf(d[i + 1]), 11);
+      if (i < d.length) buffer.put(ALNUM.indexOf(d[i]), 6);
+    }
+  }
+  const isAlnum = (t) => /^[0-9A-Z $%*+\-./:]*$/.test(t);
+
   class QRCodeModel {
     constructor(typeNumber, errorCorrectLevel) {
       this.typeNumber = typeNumber;
@@ -177,7 +194,7 @@ export const QRCode = (() => {
       this.dataCache = null;
       this.dataList = [];
     }
-    addData(data) { this.dataList.push(new QR8bitByte(data)); this.dataCache = null; }
+    addData(data) { this.dataList.push(isAlnum(data) ? new QRAlphaNum(data) : new QR8bitByte(data)); this.dataCache = null; }
     isDark(row, col) {
       if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) throw new Error(row + "," + col);
       return this.modules[row][col];
@@ -538,8 +555,17 @@ export function qrSvg(text, o = {}) {
   try { qr = QRCode.generate(text, o.ecc || "L"); } catch { return null; }
   const n = qr.getModuleCount();
   const m = o.margin ?? 3;
+  // One path segment per horizontal run of dark squares (a few KB instead of tens of KB).
   let d = "";
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (!qr.isDark(r, c)) continue;
+      let w = 1;
+      while (c + w < n && qr.isDark(r, c + w)) w++;
+      d += `M${c + m} ${r + m}h${w}v1h-${w}z`;
+      c += w - 1;
+    }
+  }
   const size = n + m * 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${size}" height="${size}" fill="${o.bg || "#fff"}"/><path d="${d}" fill="${o.fg || "#0b1220"}"/></svg>`;
 }

@@ -467,6 +467,12 @@ export const CHORD_TYPES = [
   { id: "6", label: "6ths" },
   { id: "9th", label: "9ths" },
   { id: "power", label: "Power (5)" },
+  { id: "slash", label: "Slash (inversions)" },
+  { id: "walk", label: "Walking bass" },
+  { id: "secondary", label: "Secondary dominants" },
+  { id: "7sus4", label: "7sus4" },
+  { id: "ext", label: "11ths & 13ths" },
+  { id: "passing", label: "Dim & aug (passing)" },
   { id: "borrowed", label: "Borrowed" }
 ];
 
@@ -491,9 +497,48 @@ export function chordsForKey(key, type, spelling = "auto") {
       return { numeral: String(numeral), pc, name: noteName(pc, fl) + q };
     });
   }
+  const T = key.tonic;
+  const dia = diatonicChords(key, spelling);
+  const DEG = ["1", "b2", "2", "b3", "3", "4", "#4", "5", "b6", "6", "b7", "7"];
+  if (type === "slash") {
+    // Each chord over its third (first inversion), then the tonic and IV over their fifths.
+    const first = dia.filter((d) => d.quality !== "diminished").map((d) => {
+      const third = mod12(d.pc + (d.quality === "minor" ? 3 : 4));
+      return { numeral: `${d.numeral}/${DEG[mod12(third - T)]}`, pc: d.pc, name: `${d.name}/${noteName(third, flats)}` };
+    });
+    const second = [dia[0], dia[3], dia[4]].map((d) => ({ numeral: `${d.numeral}/${DEG[mod12(d.pc + 7 - T)]}`, pc: d.pc, name: `${d.name}/${noteName(d.pc + 7, flats)}` }));
+    return first.concat(second);
+  }
+  if (type === "walk") {
+    // A descending bass line: I, V/7, vi, vi/5, IV, I/3, ii, V (G, D/F#, Em, Em/D, C, G/B, Am, D).
+    const I = dia[0], vi = dia[5], IV = dia[3], ii = dia[1], V = dia[4];
+    if (minorKey) {
+      const III = dia[2], VII = dia[6], VI = dia[5], iv = dia[3];
+      return [
+        { numeral: "i", pc: I.pc, name: I.name }, { numeral: "i/b7", pc: I.pc, name: `${I.name}/${noteName(T + 10, flats)}` },
+        { numeral: "VI", pc: VI.pc, name: VI.name }, { numeral: "V", pc: mod12(T + 7), name: noteName(T + 7, flats) },
+        { numeral: "III", pc: III.pc, name: III.name }, { numeral: "VII", pc: VII.pc, name: VII.name }, { numeral: "iv", pc: iv.pc, name: iv.name }
+      ];
+    }
+    return [
+      { numeral: "I", pc: I.pc, name: I.name }, { numeral: "V/7", pc: V.pc, name: `${V.name}/${noteName(T + 11, flats)}` },
+      { numeral: "vi", pc: vi.pc, name: vi.name }, { numeral: "vi/5", pc: vi.pc, name: `${vi.name}/${noteName(T + 7, flats)}` },
+      { numeral: "IV", pc: IV.pc, name: IV.name }, { numeral: "I/3", pc: I.pc, name: `${I.name}/${noteName(T + 4, flats)}` },
+      { numeral: "ii", pc: ii.pc, name: ii.name }, { numeral: "V", pc: V.pc, name: V.name }
+    ];
+  }
+  if (type === "secondary") {
+    // The dominant 7th that leads into each chord of the key (V7/x).
+    return dia.filter((d) => d.quality !== "diminished").map((d) => ({ numeral: d.degree === 1 ? "V7" : `V7/${d.numeral}`, pc: mod12(d.pc + 7), name: noteName(d.pc + 7, flats || d.degree === 4) + "7" }));
+  }
+  if (type === "passing") {
+    return minorKey
+      ? [{ numeral: "vii°7", pc: mod12(T + 11), name: noteName(T + 11, false) + "dim7" }, { numeral: "#iv°7", pc: mod12(T + 6), name: noteName(T + 6, false) + "dim7" }, { numeral: "III+", pc: mod12(T + 3), name: noteName(T + 3, true) + "aug" }, { numeral: "V+", pc: mod12(T + 7), name: noteName(T + 7, flats) + "aug" }]
+      : [{ numeral: "#I°7", pc: mod12(T + 1), name: noteName(T + 1, false) + "dim7" }, { numeral: "#II°7", pc: mod12(T + 3), name: noteName(T + 3, false) + "dim7" }, { numeral: "#IV°7", pc: mod12(T + 6), name: noteName(T + 6, false) + "dim7" }, { numeral: "#V°7", pc: mod12(T + 8), name: noteName(T + 8, false) + "dim7" }, { numeral: "I+", pc: T, name: noteName(T, flats) + "aug" }, { numeral: "V+", pc: mod12(T + 7), name: noteName(T + 7, flats) + "aug" }];
+  }
   /** @type {{ name: string, numeral: string, pc: number }[]} */
   const out = [];
-  for (const d of diatonicChords(key, spelling)) {
+  for (const d of dia) {
     const dominant = minorKey ? d.degree === 7 : d.degree === 5;
     const dim = d.quality === "diminished";
     const minor = d.quality === "minor";
@@ -507,6 +552,8 @@ export function chordsForKey(key, type, spelling = "auto") {
     else if (type === "6") q = dim ? null : minor ? "m6" : "6";
     else if (type === "9th") q = dim ? null : minor ? "m9" : dominant ? "9" : "maj9";
     else if (type === "power") q = dim ? null : "5";
+    else if (type === "7sus4") q = dim ? null : "7sus4";
+    else if (type === "ext") q = dim ? null : minor ? "m11" : dominant ? "13" : "maj13";
     if (q === null) continue;
     out.push({ name: nm(d.pc, q), numeral: d.numeral, pc: d.pc });
   }
