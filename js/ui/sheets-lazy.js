@@ -31,7 +31,7 @@ export const openSettings = () => call("openSettings", []);
 export const loadQr = () => chunk(() => import("../lib/qr.js"));
 /** Chords screen and chord pop-ups. */
 export const chordsModule = () => chunk(() => import("./chords.js"));
-/** Song bank: manager and public page. */
+/** Song Bank: manager and public page. */
 export const bankModule = () => chunk(() => import("./bank.js"));
 /** @param {string} name */ export const openChordSheet = async (name) => (await chordsModule())?.openChordSheet(name);
 export const openBankManager = async () => (await bankModule())?.openBankManager();

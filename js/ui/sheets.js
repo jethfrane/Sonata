@@ -136,7 +136,7 @@ export function openDetails() {
       <div class="field-row">
         <label class="field"><span>${esc(t("genre", "Genre"))}</span><input class="input" id="dGenre" value="${esc(s.genre)}" maxlength="40" list="dGenres" autocomplete="off" placeholder="OPM, Worship, Pop…">
           <datalist id="dGenres">${[...new Set(store.songs.map((x) => x.genre).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist></label>
-        <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my song bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
+        <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my Song Bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
       </div>
       <label class="field"><span>${esc(t("notes", "Notes"))}</span><textarea class="input" id="dNotes" rows="3">${esc(s.description)}</textarea></label>
       <div class="field"><span>${esc(t("links", "Links"))}</span><div id="dLinks">${linkRows(links)}</div>
@@ -533,7 +533,7 @@ export async function openAbout() {
         <li>Free, no account needed. Songs are saved on your device.</li>
         <li>Works offline after the first visit. Install it for the stage.</li>
         <li>Optional Google Drive backup uses one file only Sonata can see.</li>
-        <li>A song bank is shared only when you publish it: one file in your own Drive that anyone with its link can read. Sonata stores no copy.</li>
+        <li>A Song Bank is shared only when you publish it: one file in your own Drive that anyone with its link can read. Sonata stores no copy.</li>
         <li>No ads. Anonymous page-view counts only (Vercel Web Analytics, no cookies).</li>
       </ul>
       <p class="verse">“So whether you eat or drink or whatever you do, do it all for the glory of God.” <span>1 Corinthians 10:31</span></p>

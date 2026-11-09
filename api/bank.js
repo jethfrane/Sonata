@@ -48,7 +48,7 @@ export default async function handler(req, res) {
   const out = await loadBank(String(url.searchParams.get("id") || ""));
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("X-Robots-Tag", "noindex");
-  // A short shared cache: many listeners scanning the same QR at a gig make one Drive request a minute.
+  // A short shared cache: many people scanning the same QR at once make one Drive request a minute.
   res.setHeader("Cache-Control", out.status === 200 ? "public, max-age=30, s-maxage=60, stale-while-revalidate=300" : "no-store");
   res.status(out.status).send(JSON.stringify(out.status === 200 ? out.bank : { error: out.error }));
 }

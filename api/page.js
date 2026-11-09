@@ -1,6 +1,6 @@
 // Serves index.html for every app route (/song/…, /play/piano, /share/…, /q/…, /chords/…, /bank/…)
 // with per-page link-preview tags and images. Shared links get the song's own title; a song bank
-// link gets the musician's list name and size (read from their Drive at request time, not stored).
+// link gets the Song Bank's name and size (read from their Drive at request time, not stored).
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -84,14 +84,14 @@ async function describe(route, query) {
   if (query.s) { const info = sharedInfo(decodeShare(query.s)); if (info) return info; }
   if (seg[0] === "q" && rawSeg[1]) { const info = sharedInfo(decodeQr(rawSeg[1])); if (info) return info; }
   if (seg[0] === "bank" && rawSeg[1]) {
-    // A musician's public song list: name and size, read from their Drive (not stored here).
+    // A public Song Bank: name and size, read from their Drive (not stored here).
     const r = await Promise.race([loadBank(rawSeg[1]), new Promise((ok) => setTimeout(() => ok({ status: 504 }), 2500))]);
     if (r.status === 200) {
       const b = r.bank;
       const gs = [...new Set(b.songs.map((x) => x.g).filter(Boolean))].slice(0, 4).join(", ");
       return { title: clip(b.title, 70), desc: `${b.songs.length} songs${gs ? ` · ${gs}` : ""}${b.name ? ` · ${clip(b.name, 40)}` : ""}. Find a song and send a request with Sonata.`, robots: true, image: og("bank") };
     }
-    return { title: "Song list", desc: "A musician's song list on Sonata. Find a song and send a request.", robots: true, image: og("bank") };
+    return { title: "Song Bank", desc: "A Song Bank on Sonata. Find a song, pick a key and send a request.", robots: true, image: og("bank") };
   }
   if (seg[0] === "chords") {
     const name = chordFromPath(rawSeg[1]);

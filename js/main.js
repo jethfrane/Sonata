@@ -121,7 +121,7 @@ async function showChords(chord) {
   syncUrl("replace");
 }
 
-/** Load and open a musician's public song list. @param {string} id */
+/** Load and open a public Song Bank. @param {string} id */
 async function showBank(id) {
   lazy.bankId = id;
   if (!lazy.bank) { lazy.bank = await bankModule(); if (!lazy.bank) return; lazy.bank.initBank(); }

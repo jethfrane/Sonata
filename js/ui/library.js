@@ -119,7 +119,7 @@ function songMenu(id) {
       <button type="button" class="menu-item" data-m="present">${icon("present")}<span>${esc(t("present", "Present"))}</span></button>
       <button type="button" class="menu-item" data-m="share">${icon("share")}<span>${esc(t("share", "Share"))}</span></button>
       <button type="button" class="menu-item" data-m="dup">${icon("duplicate")}<span>${esc(t("duplicate", "Duplicate"))}</span></button>
-      <button type="button" class="menu-item" data-m="bank">${icon("bank")}<span>${esc(s.inBank ? t("removeFromBank", "Remove from song bank") : t("addToBank", "Add to song bank"))}</span></button>
+      <button type="button" class="menu-item" data-m="bank">${icon("bank")}<span>${esc(s.inBank ? t("removeFromBank", "Remove from Song Bank") : t("addToBank", "Add to Song Bank"))}</span></button>
       <button type="button" class="menu-item danger" data-m="del">${icon("trash")}<span>${esc(t("delete", "Delete"))}</span></button>
     </div>`
   });
@@ -131,7 +131,7 @@ function songMenu(id) {
     if (m === "present") { store.exitSetlist(); store.open(id); app.openStage(); }
     if (m === "share") { store.open(id); openShare(); }
     if (m === "dup") { store.duplicate(s); app.show("editor"); }
-    if (m === "bank") { store.update(s, { inBank: !s.inBank }); renderLibrary(); toast(s.inBank ? t("addedToBank", "Added to your song bank") : t("removedFromBank", "Removed from your song bank"), "success"); }
+    if (m === "bank") { store.update(s, { inBank: !s.inBank }); renderLibrary(); toast(s.inBank ? t("addedToBank", "Added to your Song Bank") : t("removedFromBank", "Removed from your Song Bank"), "success"); }
     if (m === "del") deleteWithUndo([id]);
   });
 }
@@ -210,7 +210,7 @@ export function renderLibrary() {
   if (filter === "setlists") {
     const sets = store.setlists.filter((s) => !q || fold(s.title).includes(q));
     if (!store.setlists.length) {
-      list.innerHTML = empty(t("emptySetlistsTitle", "No setlists yet"), t("emptySetlistsText", "Group songs for Sunday or a gig, then play them in order on stage."), `<button class="btn primary" type="button" data-act="create-set">${icon("plus")}${esc(t("createSetlist", "Create a setlist"))}</button>`);
+      list.innerHTML = empty(t("emptySetlistsTitle", "No setlists yet"), t("emptySetlistsText", "Group songs for a service, a rehearsal or an event, then play them in order on stage."), `<button class="btn primary" type="button" data-act="create-set">${icon("plus")}${esc(t("createSetlist", "Create a setlist"))}</button>`);
       return;
     }
     list.innerHTML = sets.map((s) => {
@@ -254,10 +254,10 @@ export function renderLibrary() {
     </div>`;
     return;
   }
-  // Song bank: a card to manage and share it sits above its songs.
-  const bankCard = filter === "bank" ? `<div class="bank-card"><div><b>${esc(store.bank.fileId ? t("bankIsLive", "Your song list is live") : t("songBank", "Song bank"))}</b><p class="muted">${esc(store.bank.fileId ? t("bankLiveSub", "{n} songs · people scan your QR to request", { n: store.songs.filter((x) => x.inBank).length }) : t("bankPitch", "List the songs you can play. People scan your QR, pick a song and key, and send you a request."))}</p></div><button class="btn primary" type="button" data-act="bank">${icon(store.bank.fileId ? "share" : "bank")}${esc(store.bank.fileId ? t("manageShare", "Manage & share") : t("setUpBank", "Set up"))}</button></div>` : "";
+  // Song Bank: a card to manage and share it sits above its songs.
+  const bankCard = filter === "bank" ? `<div class="bank-card"><div><b>${esc(store.bank.fileId ? t("bankIsLive", "Your Song Bank is live") : t("songBank", "Song Bank"))}</b><p class="muted">${esc(store.bank.fileId ? t("bankLiveSub", "{n} songs · people scan your QR to request", { n: store.songs.filter((x) => x.inBank).length }) : t("bankPitch", "List the songs you know or offer. People scan your QR, pick a song and key, and send you a request."))}</p></div><button class="btn primary" type="button" data-act="bank">${icon(store.bank.fileId ? "share" : "bank")}${esc(store.bank.fileId ? t("manageShare", "Manage & share") : t("setUpBank", "Set up"))}</button></div>` : "";
   if (!songs.length) {
-    if (filter === "bank") { list.innerHTML = bankCard + empty(t("songBank", "Song bank"), t("bankNoSongs", "No songs in your song bank yet. Open Set up, or use a song's ⋮ menu → Add to song bank."), ""); paintIcons(list); return; }
+    if (filter === "bank") { list.innerHTML = bankCard + empty(t("songBank", "Song Bank"), t("bankNoSongs", "No songs in your Song Bank yet. Open Set up, or use a song's ⋮ menu → Add to Song Bank."), ""); paintIcons(list); return; }
     list.innerHTML = q
       ? empty(t("noMatches", "No matches for \"{q}\"", { q: query }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`)
       : empty(t("filterFavorites", "Favorites"), t("noFavorites", "No favorites yet. Tap the star on a song."), `<button class="btn" type="button" data-act="all">${esc(t("showAllSongs", "Show all songs"))}</button>`);

@@ -1,5 +1,6 @@
 // @ts-check
-// Song bank: a musician's public list of songs they can play, for requests.
+// Song Bank: anyone's public list of songs they know or offer (a singer, band, worship team,
+// teacher or choir), so others can find a song, pick a key and send a request.
 // The bank lives as one JSON file in the musician's own Google Drive, shared
 // "anyone with the link can view". Sonata keeps no copy on any server.
 // Pure functions (no DOM, no network) so they are unit-tested.
@@ -73,7 +74,7 @@ export function buildBankFile(profile, songs, keyOf) {
     .sort((a, b) => a.t.localeCompare(b.t, undefined, { sensitivity: "base", numeric: true }));
   return {
     type: BANK_TYPE, v: BANK_VERSION,
-    title: profile.title || (profile.name ? `${profile.name}'s songs` : "Song list"),
+    title: profile.title || (profile.name ? `${profile.name}'s Song Bank` : "Song Bank"),
     name: profile.name, bio: profile.bio, contacts: profile.contacts,
     updatedAt: new Date().toISOString(),
     songs: list
@@ -95,7 +96,7 @@ export function parseBankFile(d) {
     if (typeof s.b === "string" && s.b) o.b = s.b.slice(0, 20000);
     return o;
   });
-  return { type: BANK_TYPE, v: Number(d.v) || 1, title: str(d.title, 80) || "Song list", name: str(d.name, 80), bio: str(d.bio, 400), contacts: normalizeContacts(d.contacts), updatedAt: str(d.updatedAt, 40), songs };
+  return { type: BANK_TYPE, v: Number(d.v) || 1, title: str(d.title, 80) || "Song Bank", name: str(d.name, 80), bio: str(d.bio, 400), contacts: normalizeContacts(d.contacts), updatedAt: str(d.updatedAt, 40), songs };
 }
 
 /** Genres in a bank, most used first. @param {{ g: string }[]} songs */

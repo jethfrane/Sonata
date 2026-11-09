@@ -1,5 +1,5 @@
 // @ts-check
-// Song bank. Musician side: choose songs, genres and how to be contacted, then publish one
+// Song Bank. Owner side: choose songs, genres and how to be contacted, then publish one
 // file to their own Google Drive. Listener side (/bank/<id>): search the list, read a chart in
 // any key, and send a request through the musician's chosen app. No Sonata server stores anything.
 import { $, esc, icon, openSheet, closeSheet, paintIcons, toast, copyText, download } from "./dom.js";
@@ -23,12 +23,12 @@ export const bankSongs = () => store.songs.filter((s) => s.inBank);
 /** Publish (or update) the public file in the musician's Drive. @returns {Promise<boolean>} */
 export async function publishBank() {
   const d = app.drive;
-  if (!d || !d.token) { toast(t("bankNeedsDrive", "Sign in with Google first. Your song list is shared from your own Drive."), "info", { ms: 6000, action: t("signIn", "Sign in"), onAction: () => d?.signIn() }); return false; }
-  if (!bankSongs().length) { toast(t("bankEmpty", "Add at least one song to your song bank first."), "error"); return false; }
+  if (!d || !d.token) { toast(t("bankNeedsDrive", "Sign in with Google first. Your Song Bank is shared from your own Drive."), "info", { ms: 6000, action: t("signIn", "Sign in"), onAction: () => d?.signIn() }); return false; }
+  if (!bankSongs().length) { toast(t("bankEmpty", "Add at least one song to your Song Bank first."), "error"); return false; }
   const file = buildBankFile(store.bank, store.songs, keyOf);
   const r = await d.publishBank(file, store.bank.fileId);
   if (!r.ok) {
-    toast(r.reason === "signin" ? t("reconnectText", "Your Google session expired. Reconnect to keep syncing.") : r.reason === "offline" ? t("offlineNote", "You're offline. Songs still save on this device.") : t("bankPublishFailed", "Couldn't publish the song list. Try again."), "error", { ms: 6000 });
+    toast(r.reason === "signin" ? t("reconnectText", "Your Google session expired. Reconnect to keep syncing.") : r.reason === "offline" ? t("offlineNote", "You're offline. Songs still save on this device.") : t("bankPublishFailed", "Couldn't publish your Song Bank. Try again."), "error", { ms: 6000 });
     return false;
   }
   store.bank = { ...store.bank, fileId: r.id, publishedAt: store.bank.publishedAt || new Date().toISOString(), updatedAt: new Date().toISOString() };
@@ -48,7 +48,7 @@ export function watchBank() {
   });
 }
 
-/** Song bank manager: profile, contacts, songs and sharing. */
+/** Song Bank manager: profile, contacts, songs and sharing. */
 export function openBankManager() {
   const all = store.songs.filter((s) => !s.readonly).slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
   const gl = genres(all.map((s) => ({ g: s.genre })));
@@ -67,15 +67,15 @@ export function openBankManager() {
           ${"share" in navigator ? `<button class="btn" type="button" id="bankShareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
           <button class="btn" type="button" id="bankQr">${icon("qr")}${esc(t("qrPoster", "QR poster"))}</button>
           <button class="btn" type="button" id="bankPublish">${icon("refresh")}${esc(t("bankUpdate", "Update now"))}</button></div>`
-        : `<p class="card-text">${esc(t("bankIntro", "Share the songs you can play. People scan your QR, find a song, pick a key and send you a request. The list is one file in your own Google Drive; Sonata keeps no copy."))}</p>
-          <button class="btn primary wide" type="button" id="bankPublish">${icon("share")}${esc(t("bankPublishBtn", "Publish my song list ({n})", { n }))}</button>`}
+        : `<p class="card-text">${esc(t("bankIntro", "Share the songs you know or offer. Anyone can scan your QR, find a song, pick a key and send you a request. Your Song Bank is one file in your own Google Drive; Sonata keeps no copy."))}</p>
+          <button class="btn primary wide" type="button" id="bankPublish">${icon("share")}${esc(t("bankPublishBtn", "Publish my Song Bank ({n})", { n }))}</button>`}
       </div>
       <h3 class="group-title">${esc(t("bankProfile", "About you"))}</h3>
       <div class="field-row">
         <label class="field"><span>${esc(t("bankName", "Name or band"))}</span><input class="input" data-p="name" value="${esc(p.name)}" maxlength="80" placeholder="${esc(t("bankNamePh", "Your name"))}" autocomplete="name"></label>
-        <label class="field"><span>${esc(t("bankTitle", "List title"))}</span><input class="input" data-p="title" value="${esc(p.title)}" maxlength="80" placeholder="${esc(t("bankTitlePh", "Songs I can play tonight"))}"></label>
+        <label class="field"><span>${esc(t("bankTitle", "List title"))}</span><input class="input" data-p="title" value="${esc(p.title)}" maxlength="80" placeholder="${esc(t("bankTitlePh", "Songs I can play"))}"></label>
       </div>
-      <label class="field"><span>${esc(t("bankBio", "Short note"))}</span><textarea class="input" data-p="bio" rows="2" maxlength="400" placeholder="${esc(t("bankBioPh", "Acoustic covers, OPM and worship. Requests welcome!"))}">${esc(p.bio)}</textarea></label>
+      <label class="field"><span>${esc(t("bankBio", "Short note"))}</span><textarea class="input" data-p="bio" rows="2" maxlength="400" placeholder="${esc(t("bankBioPh", "OPM, pop and worship. Requests welcome!"))}">${esc(p.bio)}</textarea></label>
       <label class="switch-row"><span>${esc(t("bankCharts", "Let listeners see my charts"))}</span><input type="checkbox" class="toggle" data-p="charts"${p.charts ? " checked" : ""}></label>
       <h3 class="group-title">${esc(t("bankRequestsVia", "Send requests to"))}</h3>
       <p class="card-hint">${esc(t("bankContactsHint", "Fill in at least one. Requests open that app with the song already written."))}</p>
@@ -88,7 +88,7 @@ export function openBankManager() {
       ${p.fileId ? `<button class="btn ghost danger-text" type="button" id="bankUnpublish">${esc(t("bankStop", "Stop sharing"))}</button>` : ""}
     </div>`;
   };
-  const body = openSheet({ title: t("songBank", "Song bank"), wide: true, className: "bank-sheet", body: draw(), focus: false });
+  const body = openSheet({ title: t("songBank", "Song Bank"), wide: true, className: "bank-sheet", body: draw(), focus: false });
   const redraw = () => { body.innerHTML = draw(); paintIcons(body); };
   body.addEventListener("input", (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
@@ -105,12 +105,12 @@ export function openBankManager() {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
     if (!b) return;
     if (b.id === "bankAll" || b.id === "bankNone") { const on = b.id === "bankAll"; for (const s of all) if (s.inBank !== on) store.update(s, { inBank: on }); redraw(); }
-    if (b.id === "bankPublish") { b.setAttribute("aria-busy", "true"); if (await publishBank()) { toast(t("bankPublished", "Song list is live"), "success"); redraw(); } else b.removeAttribute("aria-busy"); }
+    if (b.id === "bankPublish") { b.setAttribute("aria-busy", "true"); if (await publishBank()) { toast(t("bankPublished", "Your Song Bank is live"), "success"); redraw(); } else b.removeAttribute("aria-busy"); }
     if (b.id === "bankCopy") { if (await copyText(bankUrl(store.bank.fileId))) toast(t("linkCopied", "Link copied"), "success"); }
-    if (b.id === "bankShareNative") { try { await navigator.share({ title: store.bank.title || t("songBank", "Song bank"), text: t("bankShareText", "Request a song from my list:"), url: bankUrl(store.bank.fileId) }); } catch { /* cancelled */ } }
+    if (b.id === "bankShareNative") { try { await navigator.share({ title: store.bank.title || t("songBank", "Song Bank"), text: t("bankShareText", "Request a song from my list:"), url: bankUrl(store.bank.fileId) }); } catch { /* cancelled */ } }
     if (b.id === "bankQr") { b.setAttribute("aria-busy", "true"); try { await qrPoster(); } finally { b.removeAttribute("aria-busy"); } }
     if (b.id === "bankUnpublish") {
-      if (await app.drive?.unpublishBank(store.bank.fileId)) { store.bank = { ...store.bank, fileId: "", publishedAt: "" }; store.changed("settings"); toast(t("bankStopped", "Your song list is private again."), "info"); redraw(); }
+      if (await app.drive?.unpublishBank(store.bank.fileId)) { store.bank = { ...store.bank, fileId: "", publishedAt: "" }; store.changed("settings"); toast(t("bankStopped", "Your Song Bank is private again."), "info"); redraw(); }
       else toast(t("bankStopFailed", "Couldn't stop sharing. Check your connection and sign-in."), "error");
     }
   });
@@ -118,7 +118,7 @@ export function openBankManager() {
 
 function markDirty() { if (store.bank.fileId) { store.bankDirty = true; clearTimeout(republishTimer); republishTimer = setTimeout(() => { if (store.bankDirty) publishBank(); }, 15000); } }
 
-/** A printable QR poster for the tip jar or mic stand. */
+/** A printable QR poster (for a stand, a table, a church lobby or a classroom). */
 async function qrPoster() {
   const m = await loadQr();
   if (!m) return;
@@ -140,7 +140,7 @@ async function qrPoster() {
   g.fillText(t("posterSteps", "Scan · find a song · pick a key · send"), W / 2, y0 + size + 90);
   g.fillStyle = "#5f5d66"; g.font = "500 30px Inter, system-ui, sans-serif"; g.fillText(t("posterFoot", "{n} songs · made with Sonata", { n: bankSongs().length }), W / 2, y0 + size + 150);
   const blob = await new Promise((ok) => c.toBlob(ok, "image/png"));
-  if (blob) download("sonata-song-list-qr.png", /** @type {Blob} */ (blob));
+  if (blob) download("sonata-song-bank-qr.png", /** @type {Blob} */ (blob));
 }
 
 // ---------- Listener side ----------
@@ -153,7 +153,7 @@ const CACHE = (/** @type {string} */ id) => `sonata_bank_${id}`;
 export async function openBank(id) {
   if (view.id === id && view.data) { renderBank(); return; }
   Object.assign(view, { id, data: null, q: "", genre: "", picks: new Map(), error: "" });
-  if (!validBankId(id)) { view.error = t("bankBadLink", "This song list link is incomplete."); renderBank(); return; }
+  if (!validBankId(id)) { view.error = t("bankBadLink", "This Song Bank link is incomplete."); renderBank(); return; }
   try { const c = localStorage.getItem(CACHE(id)); if (c) view.data = parseBankFile(JSON.parse(c)); } catch { /* ignore */ }
   renderBank(true);
   try {
@@ -164,7 +164,7 @@ export async function openBank(id) {
     view.data = data;
     try { localStorage.setItem(CACHE(id), JSON.stringify(data)); } catch { /* full */ }
   } catch {
-    if (!view.data) view.error = navigator.onLine ? t("bankLoadFailed", "This song list isn't available. The musician may have stopped sharing it.") : t("bankOffline", "You're offline, and this song list hasn't been opened on this device before.");
+    if (!view.data) view.error = navigator.onLine ? t("bankLoadFailed", "This Song Bank isn't available. Its owner may have stopped sharing it.") : t("bankOffline", "You're offline, and this Song Bank hasn't been opened on this device before.");
   }
   if (view.id === id) renderBank();
 }
@@ -173,10 +173,10 @@ export async function openBank(id) {
 function renderBank(loading = false) {
   const host = $("bankBody");
   const d = view.data;
-  document.title = `${d?.title || t("songList", "Song list")} · Sonata`;
+  document.title = `${d?.title || t("songBankTitle", "Song Bank")} · Sonata`;
   if (!d) {
-    $("bankHeading").textContent = t("songList", "Song list");
-    host.innerHTML = loading ? `<p class="muted bank-loading">${esc(t("loading", "Loading…"))}</p>` : `<div class="empty"><div class="empty-art">${icon("music")}</div><h2>${esc(t("bankUnavailable", "Song list unavailable"))}</h2><p>${esc(view.error)}</p><div class="empty-actions"><button class="btn" type="button" data-bk="retry">${esc(t("tryAgain", "Try again"))}</button></div></div>`;
+    $("bankHeading").textContent = t("songBankTitle", "Song Bank");
+    host.innerHTML = loading ? `<p class="muted bank-loading">${esc(t("loading", "Loading…"))}</p>` : `<div class="empty"><div class="empty-art">${icon("music")}</div><h2>${esc(t("bankUnavailable", "Song Bank unavailable"))}</h2><p>${esc(view.error)}</p><div class="empty-actions"><button class="btn" type="button" data-bk="retry">${esc(t("tryAgain", "Try again"))}</button></div></div>`;
     paintIcons(host);
     return;
   }
@@ -195,7 +195,7 @@ function renderBank(loading = false) {
         <button type="button" class="row-main" data-bk="${s.b ? "view" : "pick"}"><span class="key-badge">${esc(s.k || "–")}</span><span class="row-text"><span class="row-title">${esc(s.t)}</span><span class="row-sub">${esc([s.a, s.g].filter(Boolean).join(" · "))}</span></span></button>
         <button type="button" class="btn small${picked ? " primary" : ""}" data-bk="pick" aria-pressed="${picked}">${picked ? icon("check") : icon("plus")}<span>${esc(picked ? t("picked", "Picked") : t("request", "Request"))}</span></button></div>`;
     }).join("") || `<p class="muted bank-none">${esc(t("noMatches", "No matches for \"{q}\"", { q: view.q || view.genre }))}</p>`}</div>
-    <p class="bank-foot">${esc(t("bankFoot", "Made with Sonata. Your request goes straight to the musician; Sonata doesn't see it."))} <a href="/songs">${esc(t("bankMakeOwn", "Make your own song list"))}</a></p>
+    <p class="bank-foot">${esc(t("bankFoot", "Made with Sonata. Your request goes straight to the owner of this Song Bank; Sonata doesn't see it."))} <a href="/songs">${esc(t("bankMakeOwn", "Make your own Song Bank"))}</a></p>
     <div class="bank-bar" ${view.picks.size ? "" : "hidden"}><span>${esc(t("pickedN", "{n} picked", { n: view.picks.size }))}</span><button type="button" class="btn primary" data-bk="send">${icon("send")}${esc(t("sendRequest", "Send request"))}</button></div>`;
   paintIcons(host);
   const input = /** @type {HTMLInputElement|null} */ (host.querySelector("#bankSearch"));
@@ -264,7 +264,7 @@ function requestSheet() {
         return `<li class="set-item"><span class="set-name">${esc(s.t)}</span><label class="sr-only" for="rk-${esc(id)}">${esc(t("key", "Key"))}</label><select class="select rq-key" id="rk-${esc(id)}" data-rk="${esc(id)}">${KEYS12.map((k) => { const v = pretty(k) + (minor ? "m" : ""); return `<option${v === key ? " selected" : ""}>${esc(v)}</option>`; }).join("")}</select>
         <button class="icon-btn small" type="button" data-drop="${esc(id)}" aria-label="${esc(t("remove", "Remove"))}">${icon("x")}</button></li>`; }).join("")}</ul>
       <label class="field"><span>${esc(t("yourName", "Your name (optional)"))}</span><input class="input" id="rqFrom" maxlength="60" autocomplete="given-name"></label>
-      <label class="field"><span>${esc(t("rqNote", "Note (optional)"))}</span><textarea class="input" id="rqNote" rows="2" maxlength="300" placeholder="${esc(t("rqNotePh", "Dedication, table number…"))}"></textarea></label>
+      <label class="field"><span>${esc(t("rqNote", "Note (optional)"))}</span><textarea class="input" id="rqNote" rows="2" maxlength="300" placeholder="${esc(t("rqNotePh", "Dedication, occasion, anything to add…"))}"></textarea></label>
       <p class="mini-label">${esc(t("sendWith", "Send with"))}</p>
       <div class="rq-targets">${targets.map((x) => `<button class="btn${targets[0] === x ? " primary" : ""}" type="button" data-go="${x.kind}">${esc(x.label)}</button>`).join("")}
         ${"share" in navigator ? `<button class="btn" type="button" data-go="share">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}

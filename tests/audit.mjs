@@ -81,7 +81,7 @@ const STATES = [
   { name: "bank-public", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: true, run: async (p) => { await p.click('.bank-list [data-bk="pick"] >> nth=0'); await p.click('.bank-list [data-bk="pick"] >> nth=1'); } },
   { name: "bank-request", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: true, run: async (p) => { await p.click('.bank-list [data-bk="pick"] >> nth=0'); await p.click('[data-bk="send"]'); } }
 ];
-const BANK = { type: "sonata-bank", v: 1, title: "Jethro's busking list", name: "Jethro Frane", bio: "OPM, pop and worship. Requests welcome!", contacts: { whatsapp: "+639170000000", messenger: "someone", email: "j@example.com" }, updatedAt: "2026-11-09",
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro Frane", bio: "OPM, pop and worship. Requests welcome!", contacts: { whatsapp: "+639170000000", messenger: "someone", email: "j@example.com" }, updatedAt: "2026-11-09",
   songs: Array.from({ length: 30 }, (_, i) => ({ id: "b" + i, t: ["Buwan", "Perfect", "Mundo", "Way Maker", "Tadhana", "Hallelujah"][i % 6] + (i > 5 ? " " + i : ""), a: ["Juan Karlos", "Ed Sheeran", "IV of Spades", "Sinach", "Up Dharma Down", "Leonard Cohen"][i % 6], g: ["OPM", "Pop", "OPM", "Worship", "OPM", "Ballad"][i % 6], k: ["Am", "G", "C", "E", "D", "C"][i % 6], b: i % 2 ? "" : "Am  F  C  G\nIkaw ang buwan" })) };
 
 mkdirSync(OUT, { recursive: true });

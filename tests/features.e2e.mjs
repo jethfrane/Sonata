@@ -147,11 +147,11 @@ ok(!drive.perms.some(([, id]) => id === libFile?.[0]), "the private library file
 await p.close();
 
 console.log("Song bank: listener");
-const BANK = { type: "sonata-bank", v: 1, title: "Jethro's busking list", name: "Jethro", bio: "OPM and pop", contacts: { whatsapp: "+639170000000", email: "j@example.com" }, updatedAt: "2026-11-09",
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro", bio: "OPM and pop", contacts: { whatsapp: "+639170000000", email: "j@example.com" }, updatedAt: "2026-11-09",
   songs: [{ id: "a", t: "Buwan", a: "Juan Karlos", g: "OPM", k: "Am", b: "Am  F  C  G\nIkaw ang buwan" }, { id: "b", t: "Perfect", a: "Ed Sheeran", g: "Pop", k: "G" }, { id: "c", t: "Mundo", a: "IV of Spades", g: "OPM", k: "C" }] };
 const BID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345";
 p = await open(`/bank/${BID}`, { touch: true, viewport: { width: 390, height: 844 }, songs: [], route: (page) => page.route(`**/api/bank?id=${BID}`, (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(BANK) })) });
-ok((await p.textContent("#bankHeading")) === "Jethro's busking list" && await p.locator(".bank-list .row").count() === 3, "listener sees the list");
+ok((await p.textContent("#bankHeading")) === "Jethro's Song Bank" && await p.locator(".bank-list .row").count() === 3, "listener sees the list");
 await p.click('.bank-genres [data-genre="OPM"]'); await p.waitForTimeout(150);
 ok(await p.locator(".bank-list .row").count() === 2, "genre filter");
 await p.fill("#bankSearch", "mundo"); await p.waitForTimeout(150);

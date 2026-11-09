@@ -2,11 +2,11 @@
   {
     "version": "4.0.0",
     "date": "2026-11-09",
-    "whatsNew": "A new Chords tab, a song bank for requests, smaller QR codes that scan, and setlists you can send as song links.",
+    "whatsNew": "A new Chords tab, a Song Bank for requests, smaller QR codes that scan, and setlists you can send as song links.",
     "changes": [
       "Chords: look up any chord (slash chords too) with guitar, ukulele, bass and piano diagrams; tap a chord in a chart to see its shapes.",
       "Theory and Play: slash chords, walking bass lines, secondary dominants, 7sus4, 11ths and 13ths, passing chords, and every chord in the song.",
-      "Song bank: publish the songs you can play from your own Google Drive; people scan your QR, pick a song and key, and send a request.",
+      "Song Bank: publish the songs you know or offer from your own Google Drive; people scan your QR, pick a song and key, and send a request.",
       "QR codes now scan reliably (an error in the code builder was fixed) and are smaller; every page has its own link preview.",
       "Setlists can be sent as one link per song; paste the message into Add from links to get the setlist back.",
       "YouTube reference links play inside Sonata; PDFs are about half the size; PNGs use Sonata's own fonts.",

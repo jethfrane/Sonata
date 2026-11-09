@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { packSong, packSet, encodeShare, qrUrl } from "../js/core/share.js";
 
-const BANK = { type: "sonata-bank", v: 1, title: "Jethro's busking list", name: "Jethro", bio: "", contacts: { whatsapp: "+639170000000" }, updatedAt: "2026-11-09", songs: [{ id: "a", t: "Buwan", a: "Juan Karlos", g: "OPM", k: "Am" }, { id: "b", t: "Perfect", a: "Ed Sheeran", g: "Pop", k: "G" }] };
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro", bio: "", contacts: { whatsapp: "+639170000000" }, updatedAt: "2026-11-09", songs: [{ id: "a", t: "Buwan", a: "Juan Karlos", g: "OPM", k: "Am" }, { id: "b", t: "Perfect", a: "Ed Sheeran", g: "Pop", k: "G" }] };
 const ID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345";
 
 /** Replace fetch with a fake Drive for one test. */
@@ -80,7 +80,7 @@ test("link previews: shared songs, QR links, setlists, chords and song banks", {
   const d = fakeDrive(() => json(BANK));
   html = await page(`/bank/${ID}`);
   d.restore();
-  assert.equal(meta(html, "og:title"), "Jethro's busking list · Sonata");
+  assert.equal(meta(html, "og:title"), "Jethro's Song Bank · Sonata");
   assert.match(meta(html, "og:description"), /2 songs · OPM, Pop · Jethro/);
   assert.match(html, /<meta name="robots" content="noindex">/, "personal lists stay out of search engines");
 
