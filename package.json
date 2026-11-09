@@ -17,6 +17,7 @@
     "test:regression": "node tests/regression.e2e.mjs",
     "test:features": "node tests/features.e2e.mjs",
     "test:audit": "node tests/audit.mjs",
+    "test:live": "node tests/live.smoke.mjs",
     "check": "npm test && npm run typecheck && npm run build"
   },
   "devDependencies": {
