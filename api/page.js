@@ -89,9 +89,9 @@ async function describe(route, query) {
     if (r.status === 200) {
       const b = r.bank;
       const gs = [...new Set(b.songs.map((x) => x.g).filter(Boolean))].slice(0, 4).join(", ");
-      return { title: clip(b.title, 70), desc: `${b.songs.length} songs${gs ? ` · ${gs}` : ""}${b.name ? ` · ${clip(b.name, 40)}` : ""}. Find a song and send a request with Sonata.`, robots: true, image: og("bank") };
+      return { title: clip(b.title, 70), desc: `${b.songs.length} songs${gs ? ` · ${gs}` : ""}${b.name ? ` · ${clip(b.name, 40)}` : ""}. Browse the songs and read a chart in your key.`, robots: true, image: og("bank") };
     }
-    return { title: "Song Bank", desc: "A Song Bank on Sonata. Find a song, pick a key and send a request.", robots: true, image: og("bank") };
+    return { title: "Song Bank", desc: "A Song Bank on Sonata. Browse the songs and read a chart in your key.", robots: true, image: og("bank") };
   }
   if (seg[0] === "chords") {
     const name = chordFromPath(rawSeg[1]);

@@ -152,11 +152,23 @@ export function chordInfo(text) {
 const SHAPES = [
   ["", [0, 4, 7]], ["m", [0, 3, 7]], ["7", [0, 4, 7, 10]], ["maj7", [0, 4, 7, 11]], ["m7", [0, 3, 7, 10]],
   ["sus4", [0, 5, 7]], ["sus2", [0, 2, 7]], ["dim", [0, 3, 6]], ["aug", [0, 4, 8]], ["m7b5", [0, 3, 6, 10]],
-  ["dim7", [0, 3, 6, 9]], ["6", [0, 4, 7, 9]], ["m6", [0, 3, 7, 9]], ["add9", [0, 2, 4, 7]], ["madd9", [0, 2, 3, 7]], ["5", [0, 7]]
+  ["dim7", [0, 3, 6, 9]], ["6", [0, 4, 7, 9]], ["m6", [0, 3, 7, 9]], ["add9", [0, 2, 4, 7]], ["madd9", [0, 2, 3, 7]],
+  ["7sus4", [0, 5, 7, 10]], ["9", [0, 2, 4, 7, 10]], ["maj9", [0, 2, 4, 7, 11]], ["m9", [0, 2, 3, 7, 10]],
+  ["6/9", [0, 2, 4, 7, 9]], ["mmaj7", [0, 3, 7, 11]], ["aug7", [0, 4, 8, 10]], ["11", [0, 2, 5, 7, 10]],
+  ["m11", [0, 2, 3, 5, 7, 10]], ["m11", [0, 3, 5, 7, 10]], ["13", [0, 2, 4, 7, 9, 10]], ["13", [0, 4, 7, 9, 10]],
+  ["maj13", [0, 2, 4, 7, 9, 11]], ["maj13", [0, 4, 7, 9, 11]],
+  // Common voicings with the 5th omitted
+  ["7", [0, 4, 10]], ["maj7", [0, 4, 11]], ["m7", [0, 3, 10]],
+  ["9", [0, 2, 4, 10]], ["maj9", [0, 2, 4, 11]], ["m9", [0, 2, 3, 10]], ["6/9", [0, 2, 4, 9]],
+  ["5", [0, 7]]
 ];
+
+export const DEGREE_FROM_SEMITONES = ["1", "♭2", "2", "♭3", "3", "4", "♯4", "5", "♭6", "6", "♭7", "7"];
+export const INTERVAL_LABELS = ["Unison", "m2", "M2", "m3", "M3", "P4", "Tritone", "P5", "m6", "M6", "m7", "M7"];
 
 /**
  * Name the chord a player is holding. Lowest note is the bass; a different root gives a slash chord.
+ * Also recognizes slash chords where the bass note is outside the upper triad (e.g. F/G, D/G).
  * @param {number[]} midis held notes
  * @param {boolean} [flats]
  * @returns {string|null} null when the notes are not a known chord
@@ -172,8 +184,21 @@ export function identifyChord(midis, flats = false) {
   for (const r of roots) {
     const set = new Set(pcs.map((x) => mod12(x - r)));
     for (const [q, iv] of SHAPES) {
+      if (r !== bass && q === "add9" && mod12(bass - r) === 2) continue;
       if (iv.length === set.size && iv.every((i) => set.has(i))) {
         return noteName(r, flats) + q + (r !== bass ? "/" + noteName(bass, flats) : "");
+      }
+    }
+  }
+  // Upper triad or 7th over a non-chord bass note (e.g. F/G = G + F A C)
+  if (pcs.length >= 4) {
+    const upper = pcs.filter((x) => x !== bass);
+    for (const r of upper) {
+      const set = new Set(upper.map((x) => mod12(x - r)));
+      for (const [q, iv] of SHAPES.slice(0, 7)) {
+        if (iv.length === set.size && iv.every((i) => set.has(i))) {
+          return noteName(r, flats) + q + "/" + noteName(bass, flats);
+        }
       }
     }
   }
@@ -354,6 +379,38 @@ export function detectKey(input) {
   const best = cands[0];
   const confidence = Math.round(Math.min(99, Math.max(0, (best.score - cands[1].score + 1) * 12)));
   return { ...keyFromTonic(best.tonic, best.mode), confidence };
+}
+
+/**
+ * Key Finder: given a progression of chords (e.g. "G D/F# Em C" or "Am F C G"),
+ * find the best matching keys, the Roman/Nashville progression, and the scale notes.
+ * @param {string|string[]} input
+ */
+export function findKeysFromChords(input) {
+  const rawTokens = Array.isArray(input)
+    ? input
+    : String(input || "").replace(/[,|–—-]+/g, " ").trim().split(/\s+/).filter(Boolean);
+  /** @type {Chord[]} */
+  const chords = [];
+  for (const tok of rawTokens) {
+    const clean = tok.replace(/♯/g, "#").replace(/♭/g, "b");
+    const fixed = clean.charAt(0).toUpperCase() + clean.slice(1);
+    const c = parseChord(fixed);
+    if (c) chords.push(c);
+  }
+  if (!chords.length) return null;
+  const det = detectKey(chords);
+  if (!det) return null;
+  const best = keyFromTonic(det.tonic, det.mode);
+  const rel = relativeKey(best);
+  const flats = prefersFlats(best);
+  const scale = SCALES[best.mode].map((s) => noteName(mod12(best.tonic + s), flats));
+  const progression = chords.map((c) => ({
+    name: c.root + c.quality + (c.bass ? "/" + c.bass : ""),
+    roman: romanChord(c, best),
+    nashville: nashvilleChord(c, best)
+  }));
+  return { best, relative: rel, confidence: det.confidence, scale, progression };
 }
 
 /**

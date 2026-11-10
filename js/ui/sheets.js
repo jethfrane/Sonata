@@ -5,6 +5,7 @@ import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, rela
 import { t, getLang, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
+import { analyzeRawChart } from "../core/chart.js";
 import { packSong, packSet, shareUrl, unpackSong, qrUrl, parseLinks, setlistMessage } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
 import { exportPdf, exportPng, exportTxt, printChart } from "./exporter.js";
@@ -598,22 +599,50 @@ export function openAccount() {
 export function openLinksImport(text = "") {
   /** @type {Awaited<ReturnType<typeof parseLinks>>} */
   let found = { title: "", songs: [], sets: [] };
+  /** @type {ReturnType<typeof analyzeRawChart>} */
+  let analyzed = null;
   const summary = () => {
     const n = found.songs.length + found.sets.reduce((a, s) => a + s.s.length, 0);
-    if (!n) return `<p class="muted">${esc(t("linksNone", "Paste a message with Sonata links. Each song link adds one song."))}</p>`;
-    return `<p class="status-line synced">${esc(t("linksFound", "Found {n} songs", { n }))}${found.sets.length ? ` · ${esc(t("linksSets", "{n} setlists", { n: found.sets.length }))}` : ""}</p>
-      <ol class="import-list">${found.songs.map((s) => `<li>${esc(s.t || "Untitled")}${s.a ? ` <span class="muted">· ${esc(s.a)}</span>` : ""}</li>`).join("")}${found.sets.map((s) => `<li><b>${esc(s.t)}</b> <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: s.s.length }))}</span></li>`).join("")}</ol>
-      ${found.songs.length > 1 ? `<label class="switch-row"><span>${esc(t("linksMakeSet", "Also make a setlist"))}</span><input type="checkbox" class="toggle" id="lkMakeSet" checked></label>
-        <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="lkSetTitle" value="${esc(found.title || t("importedSetlist", "Imported setlist"))}" maxlength="80"></label>` : ""}`;
+    if (n) {
+      return `<p class="status-line synced">${esc(t("linksFound", "Found {n} songs", { n }))}${found.sets.length ? ` · ${esc(t("linksSets", "{n} setlists", { n: found.sets.length }))}` : ""}</p>
+        <ol class="import-list">${found.songs.map((s) => `<li>${esc(s.t || "Untitled")}${s.a ? ` <span class="muted">· ${esc(s.a)}</span>` : ""}</li>`).join("")}${found.sets.map((s) => `<li><b>${esc(s.t)}</b> <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: s.s.length }))}</span></li>`).join("")}</ol>
+        ${found.songs.length > 1 ? `<label class="switch-row"><span>${esc(t("linksMakeSet", "Also make a setlist"))}</span><input type="checkbox" class="toggle" id="lkMakeSet" checked></label>
+          <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="lkSetTitle" value="${esc(found.title || t("importedSetlist", "Imported setlist"))}" maxlength="80"></label>` : ""}`;
+    }
+    if (analyzed) {
+      return `<div class="analyzed-chart">
+        <p class="status-line synced">${esc(t("chartAnalyzed", "Smart chart analyzed"))} · <strong>${esc(pretty(analyzed.detectedKey))}</strong></p>
+        <p class="muted" style="margin:4px 0">${esc(t("title", "Title"))}: <strong>${esc(analyzed.title)}</strong>${analyzed.artist ? ` · ${esc(analyzed.artist)}` : ""}${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}</p>
+        <p class="muted" style="margin:4px 0">${esc(t("chordsTitle", "Chords"))}: <code>${esc(analyzed.chords.slice(0, 12).map(pretty).join(" · "))}</code></p>
+        ${analyzed.progression ? `<p class="muted" style="margin:4px 0">${esc(t("progression", "Progression"))}: <code>${esc(pretty(analyzed.progression))}</code></p>` : ""}
+      </div>`;
+    }
+    return `<p class="muted">${esc(t("linksNone", "Paste Sonata share links, a chord reference link + progression, or a raw chord sheet to auto-build a chart."))}</p>`;
   };
   const body = openSheet({
     title: t("addFromLinks", "Add from links"), wide: true, focus: !text,
-    body: `<div class="form"><label class="field"><span>${esc(t("linksPaste", "Paste links or a whole message"))}</span><textarea class="input" id="lkText" rows="5" placeholder="https://sonata.jethrofrane.xyz/share/…">${esc(text)}</textarea></label><div id="lkFound">${summary()}</div></div>`,
+    body: `<div class="form"><label class="field"><span>${esc(t("linksPaste", "Paste Sonata links, a reference URL, or raw chord sheet"))}</span><textarea class="input" id="lkText" rows="6" placeholder="https://sonata.jethrofrane.xyz/share/…&#10;or paste a chord reference URL + chords / raw chart text">${esc(text)}</textarea></label><div id="lkFound">${summary()}</div></div>`,
     actions: [
       { label: t("cancel", "Cancel"), kind: "ghost" },
       { label: t("add", "Add"), kind: "primary", onClick: (b) => {
         const n = found.songs.length + found.sets.length;
-        if (!n) { toast(t("linksNone", "Paste a message with Sonata links. Each song link adds one song."), "error"); return false; }
+        if (!n && analyzed) {
+          const song = store.createSong({
+            title: analyzed.title,
+            artist: analyzed.artist,
+            manualKey: analyzed.manualKey,
+            capo: analyzed.capo,
+            bpm: analyzed.bpm,
+            body: analyzed.body,
+            links: analyzed.links
+          });
+          store.open(song.id);
+          toast(t("chartImported", "Created chart in {key}", { key: pretty(analyzed.detectedKey) }), "success");
+          app.show("editor");
+          app.refresh();
+          return;
+        }
+        if (!n) { toast(t("linksNone", "Paste Sonata share links, a chord reference link + progression, or a raw chord sheet to auto-build a chart."), "error"); return false; }
         /** Reuse a song that's already saved (same title and chart). @param {any} d */
         const add = (d) => { const u = unpackSong(d); const same = store.songs.find((x) => x.title === u.title && x.body === u.body); return same ? same.id : store.createSong(/** @type {any} */ (u)).id; };
         const ids = found.songs.map(add);
@@ -629,7 +658,12 @@ export function openLinksImport(text = "") {
   });
   const area = /** @type {HTMLTextAreaElement} */ (body.querySelector("#lkText"));
   let timer = /** @type {any} */ (0);
-  const read = async () => { found = await parseLinks(area.value); /** @type {HTMLElement} */ (body.querySelector("#lkFound")).innerHTML = summary(); };
-  area.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(read, 250); });
+  const read = async () => {
+    found = await parseLinks(area.value);
+    const n = found.songs.length + found.sets.reduce((a, s) => a + s.s.length, 0);
+    analyzed = n ? null : analyzeRawChart(area.value);
+    /** @type {HTMLElement} */ (body.querySelector("#lkFound")).innerHTML = summary();
+  };
+  area.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(read, 200); });
   if (text) read();
 }

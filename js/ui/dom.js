@@ -72,6 +72,8 @@ const ICONS = {
   link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
   send: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
   youtube: '<rect x="2" y="5" width="20" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  chevron: '<path d="m9 6 6 6-6 6"/>',
   bank: '<path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V8"/>' 
 };
 
@@ -245,4 +247,76 @@ export function relativeTime(iso, lang = "en") {
   if (diff < 86400) return rtf.format(-Math.round(diff / 3600), "hour");
   if (diff < 86400 * 7) return rtf.format(-Math.round(diff / 86400), "day");
   return new Date(t).toLocaleDateString(lang === "fil" ? "fil-PH" : undefined, { month: "short", day: "numeric", year: diff > 86400 * 300 ? "numeric" : undefined });
+}
+
+/**
+ * Progressive in-interface dropdowns: clicking any `.select` unfolds a clean inline
+ * option drawer inside the interface instead of an OS-native overlapping popup,
+ * while keeping the `<select>` itself in sync for keyboard & automated `selectOption`.
+ */
+export function initSelectMenus() {
+  /** @type {HTMLSelectElement|null} */
+  let activeSelect = null;
+  /** @type {HTMLElement|null} */
+  let activeDrawer = null;
+
+  const closeDrawer = () => {
+    if (activeSelect) activeSelect.removeAttribute("data-open");
+    if (activeDrawer) activeDrawer.remove();
+    activeSelect = null;
+    activeDrawer = null;
+  };
+
+  document.addEventListener("mousedown", (e) => {
+    const t = /** @type {HTMLElement|null} */ (e.target);
+    const sel = /** @type {HTMLSelectElement|null} */ (t?.closest("select.select:not(:disabled)") || null);
+    if (!sel) {
+      if (activeDrawer && t && !activeDrawer.contains(t)) closeDrawer();
+      return;
+    }
+    e.preventDefault();
+    sel.focus();
+    if (activeSelect === sel) {
+      closeDrawer();
+      return;
+    }
+    closeDrawer();
+    const drawer = document.createElement("div");
+    drawer.className = "ui-select-drawer";
+    drawer.setAttribute("role", "group");
+    drawer.setAttribute("aria-label", sel.getAttribute("aria-label") || "Options");
+    const opts = [...sel.options];
+    drawer.innerHTML = opts.map((o) => {
+      const on = o.value === sel.value;
+      return `<button type="button" class="chip ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-pressed="${on}">${esc(o.textContent || "")}</button>`;
+    }).join("");
+    drawer.addEventListener("click", (ev) => {
+      const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-opt"));
+      if (!btn) return;
+      const val = btn.dataset.val ?? "";
+      const targetSel = sel;
+      closeDrawer();
+      if (targetSel.value !== val) {
+        targetSel.value = val;
+        targetSel.dispatchEvent(new Event("input", { bubbles: true }));
+        targetSel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+    const hostRow = sel.closest(".cp-bar, .card-head, .page-head, .dia-head, .library-toolbar, .chord-bar, .field") || sel.parentElement;
+    if (hostRow && hostRow.parentElement) {
+      hostRow.insertAdjacentElement("afterend", drawer);
+    } else {
+      sel.insertAdjacentElement("afterend", drawer);
+    }
+    sel.setAttribute("data-open", "1");
+    activeSelect = sel;
+    activeDrawer = drawer;
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && activeDrawer) {
+      e.stopPropagation();
+      closeDrawer();
+    }
+  });
 }

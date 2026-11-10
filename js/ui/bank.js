@@ -1,26 +1,27 @@
 // @ts-check
-// Song Bank. Owner side: a Sonata Card (photo, name, links), songs and genres, ways to be
-// requested and supported, then publish one file to their own Google Drive. Visitor side
-// (/bank/<id>/<name>): the card, support codes, search, a chart in any key, and a request sent
-// through the owner's Messenger, Instagram or email. No Sonata server stores anything, and
-// Sonata never handles money: payment codes are shown exactly as the owner uploaded them.
+// Song Bank. Owner side: a Sonata Card (photo, name, links), their look (colors, font, cover),
+// songs and genres, upcoming gigs and ways to be supported, then publish one file to their own
+// Google Drive. Visitor side (/bank/<id>/<name>): a view-only page with the card, gigs, support
+// codes, search and a chart in any key. There are no requests: people ask at the gig or in the
+// live chat. No Sonata server stores anything, and Sonata never handles money: payment codes
+// are shown exactly as the owner uploaded them.
 import { $, esc, icon, openSheet, closeSheet, paintIcons, toast, copyText, download } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import { keyShort, pretty, parseKey, keyFromTonic, detectKey, mod12 } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import {
-  normalizeProfile, buildBankFile, parseBankFile, genres, requestText, requestTargets, searchBank, validBankId,
+  normalizeProfile, buildBankFile, parseBankFile, genres, searchBank, validBankId, THEMES, FONTS, upcomingGigs, paymentPayee,
   SOCIAL_KINDS, PAYMENT_LABELS, guessPaymentLabel, isPaymentQr, bankSlug
 } from "../core/bank.js";
 import { loadQr } from "./sheets-lazy.js";
-import { cardHtml, cardPng, photoData, readQrImage, paymentImage, linkIcon } from "./bankcard.js";
-import { brand } from "./brands.js";
+import { cardHtml, cardPng, photoData, coverData, readQrImage, paymentImage, linkIcon, themeVars } from "./bankcard.js";
 
 /** Link to a Song Bank, with the owner's name at the end so it reads well (the id is what counts). */
 export const bankUrl = (/** @type {string} */ id, /** @type {string} */ name = store.bank.name || store.bank.title) => `${location.origin}/bank/${id}${bankSlug(name) ? "/" + bankSlug(name) : ""}`;
 /** @param {any} s */
 const keyOf = (s) => pretty(keyShort(soundingKey(s)));
+const isDark = () => document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3b5bdb";
 
 // ---------- Owner side ----------
@@ -61,6 +62,12 @@ const SOCIAL_UI = {
   threads: ["Threads", "username"], website: ["Website", "yoursite.com"], email: ["Email", "you@example.com"]
 };
 
+/** "NAME · City" written inside a payment code. @param {string} qr */
+const payeeText = (qr) => { const p = paymentPayee(qr); return p ? [p.name, p.city].filter(Boolean).join(" · ") : ""; };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const THEME_NAMES = /** @type {Record<string, string>} */ ({ auto: "Match app", paper: "Paper", night: "Night", stage: "Stage", sunrise: "Sunrise", ocean: "Ocean", garden: "Garden", rose: "Rose" });
+const FONT_NAMES = /** @type {Record<string, string>} */ ({ modern: "Modern", classic: "Classic serif", rounded: "Rounded" });
+
 /** Song Bank editor: the Sonata Card live on top, then profile, links, support, songs, sharing. */
 export function openBankManager() {
   const all = store.songs.filter((s) => !s.readonly).slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
@@ -69,6 +76,14 @@ export function openBankManager() {
     const p = store.bank;
     return cardHtml({ ...p, songs: bankSongs().map((s) => ({ g: s.genre })) }, { count: bankSongs().length, live: Boolean(p.fileId) });
   };
+  const cardWrapStyle = () => themeVars(store.bank.theme, isDark()).style;
+  const gigRows = () => store.bank.gigs.map((g, i) => `<div class="gig-edit" data-gig="${i}">
+      <div class="field-row"><label class="field"><span>${esc(t("gigDate", "Date"))}</span><input class="input" type="date" data-gk="date" value="${esc(g.date)}" min="${today()}"></label>
+        <label class="field"><span>${esc(t("gigTime", "Time (optional)"))}</span><input class="input" type="time" data-gk="time" value="${esc(g.time)}"></label></div>
+      <label class="field"><span>${esc(t("gigPlace", "Where"))}</span><input class="input" data-gk="place" value="${esc(g.place)}" maxlength="80" placeholder="${esc(t("gigPlacePh", "Cafe, church, town plaza…"))}"></label>
+      <label class="field"><span>${esc(t("gigNote", "Note (optional)"))}</span><input class="input" data-gk="note" value="${esc(g.note)}" maxlength="120" placeholder="${esc(t("gigNotePh", "Acoustic set, free entry…"))}"></label>
+      <label class="field"><span>${esc(t("gigLink", "Link (optional)"))}</span><input class="input" type="url" data-gk="url" value="${esc(g.url)}" maxlength="300" placeholder="https://" inputmode="url" autocapitalize="off"></label>
+      <button class="btn small ghost danger-text" type="button" data-gdel="${i}">${icon("trash")}${esc(t("remove", "Remove"))}</button></div>`).join("");
   const songRows = () => {
     const f = filter.trim().toLowerCase();
     return all.filter((s) => !f || `${s.title} ${s.artist} ${s.genre}`.toLowerCase().includes(f)).map((s) => `<li><label class="bp-check"><input type="checkbox" data-in="${esc(s.id)}"${s.inBank ? " checked" : ""}><span><b>${esc(s.title)}</b><small>${esc(s.artist || "")}</small></span></label>
@@ -80,6 +95,7 @@ export function openBankManager() {
         <label class="field"><span>${esc(t("payWallet", "Wallet or bank"))}</span><select class="select" data-pl="${i}">${PAYMENT_LABELS.map((l) => `<option${l === pm.label ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
         <label class="field"><span>${esc(t("payName", "Account name (optional)"))}</span><input class="input" data-pn="${i}" value="${esc(pm.name)}" maxlength="60" placeholder="J. F."></label>
         <button class="btn small ghost danger-text" type="button" data-pdel="${i}">${icon("trash")}${esc(t("remove", "Remove"))}</button>
+        ${pm.qr && paymentPayee(pm.qr) ? `<p class="card-hint pay-payee">${esc(t("payPays", "Pays: {name}", { name: payeeText(pm.qr) }))}</p>` : ""}
         ${pm.qr ? "" : `<p class="card-hint">${esc(t("payKeptImage", "Couldn't read this code, so the picture is shown as you uploaded it."))}</p>`}
       </div></div>`).join("");
   const draw = () => {
@@ -89,7 +105,7 @@ export function openBankManager() {
     const gl = genres(all.map((s) => ({ g: s.genre })));
     return `<div class="bank-editor">
       <div class="be-preview">
-        <div id="beCard">${card()}</div>
+        <div id="beCard" class="be-themed" style="${esc(cardWrapStyle())}">${card()}</div>
         <div class="be-share">
           ${link ? `<p class="status-line synced">${esc(t("bankLive", "Live: anyone with the link or QR can see {n} songs.", { n }))}</p>
             <div class="share-link"><input class="input" id="bankLink" readonly value="${esc(link)}" aria-label="Link"></div>
@@ -98,7 +114,7 @@ export function openBankManager() {
             <button class="btn" type="button" id="bankCardPng">${icon("image")}${esc(t("cardDownload", "Card image"))}</button>
             <button class="btn" type="button" id="bankOpen">${icon("present")}${esc(t("bankView", "View page"))}</button>
             <button class="btn" type="button" id="bankPublish">${icon("refresh")}${esc(t("bankUpdate", "Update now"))}</button></div>`
-          : `<p class="card-text">${esc(t("bankIntro", "Share the songs you know or offer. Anyone can scan your QR, find a song, pick a key and send you a request. Your Song Bank is one file in your own Google Drive; Sonata keeps no copy."))}</p>
+          : `<p class="card-text">${esc(t("bankIntro", "Share the songs you know or offer. Anyone can scan your QR, browse your songs, read a chart in their key and support you. It is view-only: people ask for songs at your gig or in your live chat. Your Song Bank is one file in your own Google Drive; Sonata keeps no copy."))}</p>
             <button class="btn primary wide" type="button" id="bankPublish">${icon("share")}${esc(t("bankPublishBtn", "Publish my Song Bank ({n})", { n }))}</button>`}
         </div>
       </div>
@@ -111,10 +127,10 @@ export function openBankManager() {
           <label class="field"><span>${esc(t("bankName", "Name, band or team"))}</span><input class="input" data-p="name" value="${esc(p.name)}" maxlength="80" placeholder="${esc(t("bankNamePh", "Your name"))}" autocomplete="name"></label>
           <label class="field"><span>${esc(t("bankTitle", "Title"))}</span><input class="input" data-p="title" value="${esc(p.title)}" maxlength="80" placeholder="${esc(t("bankTitlePh", "Songs I can play"))}"></label>
         </div>
-        <label class="field"><span>${esc(t("bankBio", "Short note"))}</span><textarea class="input" data-p="bio" rows="2" maxlength="400" placeholder="${esc(t("bankBioPh", "OPM, pop and worship. Requests welcome!"))}">${esc(p.bio)}</textarea></label>
+        <label class="field"><span>${esc(t("bankBio", "Short note"))}</span><textarea class="input" data-p="bio" rows="2" maxlength="400" placeholder="${esc(t("bankBioPh", "OPM, pop and worship. Catch me live every Friday!"))}">${esc(p.bio)}</textarea></label>
 
         <h3 class="group-title">${esc(t("bankLinks", "Social links"))}</h3>
-        <p class="card-hint">${esc(t("bankLinksHint", "Requests go to your Messenger (from your Facebook name), Instagram DMs or email."))}</p>
+        <p class="card-hint">${esc(t("bankLinksHint", "Shown on your card so people can follow you. Only https links are kept."))}</p>
         <div class="be-socials">${SOCIAL_KINDS.map((k) => `<label class="be-social"><span class="be-ico" title="${esc(SOCIAL_UI[k][0])}">${linkIcon(k)}</span><span class="sr-only">${esc(SOCIAL_UI[k][0])}</span>
           <input class="input" data-s="${k}" value="${esc(p.socials[k])}" placeholder="${esc(SOCIAL_UI[k][0])}: ${esc(SOCIAL_UI[k][1])}" ${k === "email" ? 'type="email" inputmode="email"' : 'autocapitalize="off" spellcheck="false"'} autocomplete="off"></label>`).join("")}</div>
 
@@ -122,6 +138,21 @@ export function openBankManager() {
         <p class="card-hint">${esc(t("bankSupportHint", "Add a GCash, Maya or bank QR code from a screenshot. People pay you directly; Sonata never handles money."))}</p>
         <div id="bePays">${payRows()}</div>
         ${p.payments.length < 4 ? `<label class="btn small">${icon("qr")}${esc(t("addPayQr", "Add payment QR"))}<input type="file" id="bePay" accept="image/*" hidden></label>` : ""}
+
+        <h3 class="group-title">${esc(t("bankStyle", "Style"))}</h3>
+        <p class="card-hint">${esc(t("bankStyleHint", "Make your page and card match your brand. Sonata keeps colors readable."))}</p>
+        <div class="theme-grid" role="group" aria-label="${esc(t("bankLook", "Look"))}">${Object.entries(THEMES).map(([id, th]) => `<button type="button" class="theme-sw" data-preset="${id}" aria-pressed="${p.theme.preset === id}"><span class="theme-chip" style="${th.bg ? `background:${th.bg};color:${th.text};border-color:${th.text}33` : ""}"><i style="${th.bg ? `background:${th.surface}` : ""}"></i><b>Aa</b></span><span>${esc(t("theme_" + id, THEME_NAMES[id]))}</span></button>`).join("")}</div>
+        <div class="field-row be-look">
+          <label class="field"><span>${esc(t("bankAccent", "Accent color"))}</span><span class="accent-row"><input class="color-input" type="color" id="beAccent" value="${esc(p.theme.accent || "#3b5bdb")}" aria-label="${esc(t("bankAccent", "Accent color"))}">${p.theme.accent ? `<button class="btn small ghost" type="button" id="beAccentReset">${esc(t("reset", "Reset"))}</button>` : `<small class="muted">${esc(t("accentDefault", "Default"))}</small>`}</span></label>
+          <label class="field"><span>${esc(t("bankFont", "Font"))}</span><select class="select" id="beFont">${FONTS.map((f) => `<option value="${f}"${p.theme.font === f ? " selected" : ""}>${esc(t("font_" + f, FONT_NAMES[f]))}</option>`).join("")}</select></label>
+        </div>
+        <div class="be-photo"><label class="btn small">${icon("image")}${esc(p.theme.cover ? t("changeCover", "Change cover") : t("addCover", "Add cover picture"))}<input type="file" id="beCover" accept="image/*" hidden></label>
+          ${p.theme.cover ? `<button class="btn small ghost" type="button" id="beCoverDel">${esc(t("remove", "Remove"))}</button>` : ""}</div>
+
+        <h3 class="group-title">${esc(t("bankGigs", "Upcoming gigs"))} <span class="muted">${p.gigs.length}/6</span></h3>
+        <p class="card-hint">${esc(t("bankGigsHint", "Shown on your page until the day passes."))}</p>
+        <div id="beGigs">${gigRows()}</div>
+        ${p.gigs.length < 6 ? `<button class="btn small" type="button" id="beGigAdd">${icon("plus")}${esc(t("addGig", "Add a gig"))}</button>` : ""}
 
         <label class="switch-row"><span>${esc(t("bankCharts", "Let people see my charts"))}</span><input type="checkbox" class="toggle" data-p="charts"${p.charts ? " checked" : ""}></label>
 
@@ -140,29 +171,40 @@ export function openBankManager() {
     body.querySelectorAll("[data-qr]").forEach((el) => { el.innerHTML = m?.qrSvg(/** @type {HTMLElement} */ (el).dataset.qr || "", { ecc: "M", margin: 2 }) || ""; });
   };
   const redraw = () => { const y = body.scrollTop; body.innerHTML = draw(); paintIcons(body); paintPays(); body.scrollTop = y; };
-  const refreshCard = () => { const c = body.querySelector("#beCard"); if (c) c.innerHTML = card(); };
+  const refreshCard = () => { const c = /** @type {HTMLElement|null} */ (body.querySelector("#beCard")); if (c) { c.innerHTML = card(); c.setAttribute("style", cardWrapStyle()); } };
+  /** Tidy the profile but keep half-typed gigs (they are checked when published). */
+  const tidy = () => { const gigs = store.bank.gigs; store.bank = { ...normalizeProfile(store.bank), gigs }; };
+  const setTheme = (/** @type {any} */ patch) => { store.bank = { ...store.bank, theme: { ...store.bank.theme, ...patch } }; store.changed("settings"); markDirty(); };
+  const setGigs = (/** @type {any[]} */ rows) => { store.bank = { ...store.bank, gigs: rows.slice(0, 6) }; store.changed("settings"); markDirty(); };
   paintIcons(body); paintPays();
-  const save = () => { store.bank = normalizeProfile(store.bank); store.changed("settings"); markDirty(); refreshCard(); };
+  const save = () => { tidy(); store.changed("settings"); markDirty(); refreshCard(); };
   body.addEventListener("input", (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
     if (el.dataset.p && el.type !== "checkbox") { /** @type {any} */ (store.bank)[el.dataset.p] = el.value; save(); }
     if (el.dataset.s) { store.bank.socials = { ...store.bank.socials, [el.dataset.s]: el.value }; store.bank = { ...store.bank, ...{ socials: { ...store.bank.socials } } }; store.changed("settings"); markDirty(); refreshCardSoon(); }
+    if (el.id === "beAccent") { setTheme({ accent: el.value }); refreshCard(); }
+    if (el.dataset.gk) { const i = Number(el.closest("[data-gig]")?.getAttribute("data-gig")); const rows = store.bank.gigs.map((g) => ({ ...g })); if (rows[i]) { /** @type {any} */ (rows[i])[el.dataset.gk] = el.value; setGigs(rows); } }
     if (el.dataset.pn !== undefined) { const pm = store.bank.payments[Number(el.dataset.pn)]; if (pm) { pm.name = el.value.slice(0, 60); store.changed("settings"); markDirty(); } }
     if (el.dataset.genre) { const s = store.song(el.dataset.genre); if (s) { store.update(s, { genre: el.value.slice(0, 40) }); refreshCard(); } }
     if (el.id === "beFilter") { filter = el.value; /** @type {HTMLElement} */ (body.querySelector("#bePick")).innerHTML = songRows(); }
   });
   // Social handles are tidied (links → names) once typing pauses, so the field doesn't jump while typing.
   let socialTimer = /** @type {any} */ (0);
-  const refreshCardSoon = () => { clearTimeout(socialTimer); socialTimer = setTimeout(() => { store.bank = normalizeProfile(store.bank); store.changed("settings"); refreshCard(); }, 500); };
+  const refreshCardSoon = () => { clearTimeout(socialTimer); socialTimer = setTimeout(() => { tidy(); store.changed("settings"); refreshCard(); }, 500); };
   body.addEventListener("change", async (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
-    if (el.dataset.s) { store.bank = normalizeProfile(store.bank); el.value = /** @type {any} */ (store.bank.socials)[el.dataset.s]; save(); }
+    if (el.dataset.s) { tidy(); el.value = /** @type {any} */ (store.bank.socials)[el.dataset.s]; save(); }
+    if (el.id === "beFont") { setTheme({ font: el.value }); refreshCard(); }
     if (el.dataset.p === "charts") { store.bank = { ...store.bank, charts: el.checked }; store.changed("settings"); markDirty(); }
     if (el.dataset.in) { const s = store.song(el.dataset.in); if (s) store.update(s, { inBank: el.checked }); $("bankCount").textContent = `${bankSongs().length}/${all.length}`; refreshCard(); }
     if (el.dataset.pl !== undefined) { const pm = store.bank.payments[Number(el.dataset.pl)]; if (pm) { pm.label = el.value; store.changed("settings"); markDirty(); } }
     const file = el.files?.[0];
     if (el.id === "bePhoto" && file) {
       try { store.bank = { ...store.bank, photo: await photoData(file) }; save(); redraw(); }
+      catch { toast(t("photoFailed", "Couldn't use that picture. Try a JPG or PNG."), "error"); }
+    }
+    if (el.id === "beCover" && file) {
+      try { setTheme({ cover: await coverData(file) }); refreshCard(); redraw(); }
       catch { toast(t("photoFailed", "Couldn't use that picture. Try a JPG or PNG."), "error"); }
     }
     if (el.id === "bePay" && file) {
@@ -173,7 +215,7 @@ export function openBankManager() {
         if (!pay.qr && !pay.img) throw new Error("empty");
         store.bank = normalizeProfile({ ...store.bank, payments: [...store.bank.payments, pay] });
         save(); redraw();
-        toast(qr ? t("payRead", "Payment code read. Check the wallet name.") : t("payImage", "Code added as a picture."), "success");
+        toast(qr ? (paymentPayee(qr) ? t("payReadName", "Payment code read: it pays {name}. Check that this is you.", { name: payeeText(qr) }) : t("payRead", "Payment code read. Check the wallet name.")) : t("payImage", "Code added as a picture."), "success", { ms: 6000 });
       } catch { toast(t("payFailed", "Couldn't use that picture. Try a clear screenshot of the QR code."), "error"); }
     }
   });
@@ -181,12 +223,17 @@ export function openBankManager() {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
     if (!b) return;
     if (b.id === "bankAll" || b.id === "bankNone") { const on = b.id === "bankAll"; for (const s of all) if (s.inBank !== on) store.update(s, { inBank: on }); redraw(); }
+    if (b.dataset.preset) { setTheme({ preset: b.dataset.preset }); refreshCard(); redraw(); }
+    if (b.id === "beAccentReset") { setTheme({ accent: "" }); refreshCard(); redraw(); }
+    if (b.id === "beCoverDel") { setTheme({ cover: "" }); refreshCard(); redraw(); }
+    if (b.id === "beGigAdd") { setGigs([...store.bank.gigs, { date: "", time: "", place: "", note: "", url: "" }]); redraw(); }
+    if (b.dataset.gdel !== undefined) { setGigs(store.bank.gigs.filter((_, j) => j !== Number(b.dataset.gdel))); redraw(); }
     if (b.id === "bePhotoDel") { store.bank = { ...store.bank, photo: "" }; save(); redraw(); }
     if (b.dataset.pdel !== undefined) { const i = Number(b.dataset.pdel); store.bank = normalizeProfile({ ...store.bank, payments: store.bank.payments.filter((_, j) => j !== i) }); save(); redraw(); }
     if (b.id === "bankPublish") { b.setAttribute("aria-busy", "true"); if (await publishBank()) { toast(t("bankPublished", "Your Song Bank is live"), "success"); redraw(); } else b.removeAttribute("aria-busy"); }
     if (b.id === "bankCopy") { if (await copyText(bankUrl(store.bank.fileId))) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "bankOpen") { closeSheet(); app.show("bank", { sub: store.bank.fileId }); }
-    if (b.id === "bankShareNative") { try { await navigator.share({ title: store.bank.title || t("songBank", "Song Bank"), text: t("bankShareText", "Request a song from my Song Bank:"), url: bankUrl(store.bank.fileId) }); } catch { /* cancelled */ } }
+    if (b.id === "bankShareNative") { try { await navigator.share({ title: store.bank.title || t("songBank", "Song Bank"), text: t("bankShareText", "See the songs I play:"), url: bankUrl(store.bank.fileId) }); } catch { /* cancelled */ } }
     if (b.id === "bankCardPng") { b.setAttribute("aria-busy", "true"); try { await downloadCard(); } catch { toast(t("exportFailed", "Couldn't make that file. Please try again."), "error"); } finally { b.removeAttribute("aria-busy"); } }
     if (b.id === "bankUnpublish") {
       if (await app.drive?.unpublishBank(store.bank.fileId)) { store.bank = { ...store.bank, fileId: "", publishedAt: "" }; store.changed("settings"); toast(t("bankStopped", "Your Song Bank is private again."), "info"); redraw(); }
@@ -208,14 +255,14 @@ async function downloadCard() {
 
 // ---------- Visitor side ----------
 
-/** @type {{ id: string, data: import("../core/bank.js").BankFile|null, q: string, genre: string, picks: Map<string, string>, error: string }} */
-const view = { id: "", data: null, q: "", genre: "", picks: new Map(), error: "" };
+/** @type {{ id: string, data: import("../core/bank.js").BankFile|null, q: string, genre: string, error: string }} */
+const view = { id: "", data: null, q: "", genre: "", error: "" };
 const CACHE = (/** @type {string} */ id) => `sonata_bank_${id}`;
 
 /** Open a Song Bank. @param {string} id */
 export async function openBank(id) {
   if (view.id === id && view.data) { renderBank(); return; }
-  Object.assign(view, { id, data: null, q: "", genre: "", picks: new Map(), error: "" });
+  Object.assign(view, { id, data: null, q: "", genre: "", error: "" });
   if (!validBankId(id)) { view.error = t("bankBadLink", "This Song Bank link is incomplete."); renderBank(); return; }
   try { const c = localStorage.getItem(CACHE(id)); if (c) view.data = parseBankFile(JSON.parse(c)); } catch { /* ignore */ }
   renderBank(true);
@@ -237,12 +284,34 @@ export async function openBank(id) {
   }
 }
 
+/** Put the owner's look on the public page (colors, font) without touching the rest of the app. @param {import("../core/bank.js").Theme|undefined} theme */
+function applyLook(theme) {
+  const root = $("view-bank");
+  const v = themeVars(theme, isDark());
+  if (v.style) root.setAttribute("style", v.style); else root.removeAttribute("style");
+  root.classList.toggle("bank-themed", v.themed);
+}
+
+/** @param {import("../core/bank.js").Gig[]} gigs */
+function gigsHtml(gigs) {
+  const day = (/** @type {import("../core/bank.js").Gig} */ g) => { const [y, m, d] = g.date.split("-").map(Number); return new Date(y, m - 1, d); };
+  return `<section class="card bank-gigs" aria-labelledby="gigsTitle"><h2 id="gigsTitle">${icon("calendar")}${esc(t("gigsTitle", "Upcoming gigs"))}</h2>
+    <ul class="gig-list">${gigs.map((g) => {
+      const d = day(g);
+      const when = [d.toLocaleDateString(undefined, { weekday: "long" }), g.time ? new Date(2000, 0, 1, Number(g.time.slice(0, 2)), Number(g.time.slice(3))).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : ""].filter(Boolean).join(" · ");
+      return `<li class="gig"><div class="gig-date" aria-hidden="true"><b>${d.getDate()}</b><small>${esc(d.toLocaleDateString(undefined, { month: "short" }))}</small></div>
+        <div class="gig-body"><strong>${esc(g.place)}</strong><span>${esc([when, g.note].filter(Boolean).join(" · "))}</span></div>
+        ${g.url ? `<a class="btn small" href="${esc(g.url)}" target="_blank" rel="noopener noreferrer nofollow">${esc(t("gigDetails", "Details"))}</a>` : ""}</li>`;
+    }).join("")}</ul></section>`;
+}
+
 /** @param {boolean} [loading] */
 function renderBank(loading = false) {
   const host = $("bankBody");
   const d = view.data;
   document.title = `${d?.title || t("songBankTitle", "Song Bank")} · Sonata`;
   $("bankHeading").textContent = d?.title || t("songBankTitle", "Song Bank");
+  applyLook(d?.theme);
   if (!d) {
     host.innerHTML = loading ? `<p class="muted bank-loading">${esc(t("loading", "Loading…"))}</p>` : `<div class="empty"><div class="empty-art">${icon("music")}</div><h2>${esc(t("bankUnavailable", "Song Bank unavailable"))}</h2><p>${esc(view.error)}</p><div class="empty-actions"><button class="btn" type="button" data-bk="retry">${esc(t("tryAgain", "Try again"))}</button></div></div>`;
     paintIcons(host);
@@ -250,24 +319,21 @@ function renderBank(loading = false) {
   }
   const gl = genres(d.songs);
   const list = searchBank(d.songs, view.q, { genre: view.genre });
-  const targets = requestTargets(d.socials, "");
+  const gigs = upcomingGigs(d.gigs || [], today());
   host.innerHTML = `
     <div class="bank-top">${cardHtml(d, { count: d.songs.length })}
       ${d.payments.length ? `<section class="card bank-support" aria-labelledby="supportTitle"><h2 id="supportTitle">${icon("heart")}${esc(t("supportName", "Support {name}", { name: d.name || t("theOwner", "the owner") }))}</h2>
-        <div class="pay-list">${d.payments.map((pm, i) => `<button type="button" class="pay-card" data-bk="pay" data-i="${i}"><span class="pay-qr">${pm.qr ? `<span class="pay-qr-svg" data-qr="${esc(pm.qr)}"></span>` : `<img src="${esc(pm.img)}" alt="">`}</span><b>${esc(pm.label)}</b>${pm.name ? `<small>${esc(pm.name)}</small>` : ""}</button>`).join("")}</div>
-        <p class="card-hint">${esc(t("payNote", "Scan with your GCash, Maya or bank app. Payments go straight to them; Sonata never handles money."))}</p></section>` : ""}
+        <div class="pay-list">${d.payments.map((pm, i) => `<button type="button" class="pay-card" data-bk="pay" data-i="${i}"><span class="pay-qr">${pm.qr ? `<span class="pay-qr-svg" data-qr="${esc(pm.qr)}"></span>` : `<img src="${esc(pm.img)}" alt="">`}</span><b>${esc(pm.label)}</b>${pm.name || (pm.qr && paymentPayee(pm.qr)) ? `<small>${esc(pm.name || paymentPayee(pm.qr)?.name || "")}</small>` : ""}</button>`).join("")}</div>
+        <p class="card-hint">${esc(t("payNote", "Scan with your GCash, Maya or bank app. Payments go straight to them; Sonata never handles money and can't check who owns a Song Bank. Make sure the name your app shows is the right one."))}</p></section>` : ""}
     </div>
-    <p class="muted bank-meta">${targets.length ? esc(t("requestsBy", "Requests by {apps}", { apps: targets.map((x) => x.label).join(", ") })) : esc(t("requestsCopy", "Pick songs, then copy or share your request."))}</p>
+    ${gigs.length ? gigsHtml(gigs) : ""}
     <label class="search bank-search"><span data-icon="search"></span><input type="search" id="bankSearch" value="${esc(view.q)}" placeholder="${esc(t("bankSearchPh", "Search songs or artists"))}" aria-label="${esc(t("search", "Search"))}" autocomplete="off" enterkeyhint="search"></label>
     ${gl.length ? `<div class="chip-row bank-genres" role="group" aria-label="${esc(t("genre", "Genre"))}"><button type="button" class="chip${view.genre ? "" : " on"}" data-genre="" aria-pressed="${!view.genre}">${esc(t("filterAll", "All"))}</button>${gl.map((g) => `<button type="button" class="chip${view.genre === g ? " on" : ""}" data-genre="${esc(g)}" aria-pressed="${view.genre === g}">${esc(g)}</button>`).join("")}</div>` : ""}
     <div class="library-list bank-list">${list.map((s) => {
-      const picked = view.picks.has(s.id);
-      return `<div class="row${picked ? " active" : ""}" data-sid="${esc(s.id)}">
-        <button type="button" class="row-main" data-bk="${s.b ? "view" : "pick"}"><span class="key-badge">${esc(s.k || "–")}</span><span class="row-text"><span class="row-title">${esc(s.t)}</span><span class="row-sub">${esc([s.a, s.g].filter(Boolean).join(" · "))}</span></span></button>
-        <button type="button" class="btn small${picked ? " primary" : ""}" data-bk="pick" aria-pressed="${picked}">${picked ? icon("check") : icon("plus")}<span>${esc(picked ? t("picked", "Picked") : t("request", "Request"))}</span></button></div>`;
+      const inner = `<span class="key-badge">${esc(s.k || "–")}</span><span class="row-text"><span class="row-title">${esc(s.t)}</span><span class="row-sub">${esc([s.a, s.g].filter(Boolean).join(" · "))}</span></span>`;
+      return `<div class="row" data-sid="${esc(s.id)}">${s.b ? `<button type="button" class="row-main" data-bk="view" aria-label="${esc(t("openChart", "Open chart: {t}", { t: s.t }))}">${inner}<span class="row-go" aria-hidden="true">${icon("chevron")}</span></button>` : `<div class="row-main static">${inner}</div>`}</div>`;
     }).join("") || `<p class="muted bank-none">${esc(t("noMatches", "No matches for \"{q}\"", { q: view.q || view.genre }))}</p>`}</div>
-    <p class="bank-foot">${esc(t("bankFoot", "Made with Sonata. Your request goes straight to the owner of this Song Bank; Sonata doesn't see it."))} <a href="/songs">${esc(t("bankMakeOwn", "Make your own Song Bank"))}</a></p>
-    <div class="bank-bar" ${view.picks.size ? "" : "hidden"}><span>${esc(t("pickedN", "{n} picked", { n: view.picks.size }))}</span><button type="button" class="btn primary" data-bk="send">${icon("send")}${esc(t("sendRequest", "Send request"))}</button></div>`;
+    <p class="bank-foot">${esc(t("bankFoot", "Made with Sonata. This page is view-only; Sonata keeps no copy of it."))} <a href="/songs">${esc(t("bankMakeOwn", "Make your own Song Bank"))}</a></p>`;
   paintIcons(host);
   if (d.payments.some((p) => p.qr)) loadQr().then((m) => host.querySelectorAll("[data-qr]").forEach((el) => { el.innerHTML = m?.qrSvg(/** @type {HTMLElement} */ (el).dataset.qr || "", { ecc: "M", margin: 2 }) || ""; }));
   const input = /** @type {HTMLInputElement|null} */ (host.querySelector("#bankSearch"));
@@ -288,9 +354,7 @@ export function initBank() {
     const s = songById(sid);
     tick();
     if (act === "retry") { const id = view.id; view.id = ""; openBank(id); }
-    if (act === "pick" && s) { if (view.picks.has(s.id)) view.picks.delete(s.id); else view.picks.set(s.id, s.k); renderBank(); }
     if (act === "view" && s) viewSong(s);
-    if (act === "send") requestSheet();
     if (act === "pay") showPayment(Number(b.dataset.i));
   });
 }
@@ -303,8 +367,9 @@ async function showPayment(i) {
   const m = pm.qr ? await loadQr() : null;
   const body = openSheet({
     title: `${pm.label}${pm.name ? ` · ${pm.name}` : ""}`, focus: false,
-    body: `<div class="pay-big">${pm.qr ? m?.qrSvg(pm.qr, { ecc: "M", margin: 4 }) || "" : `<img src="${esc(pm.img)}" alt="${esc(pm.label)} QR">`}
-      <p class="card-hint">${esc(t("payNote", "Scan with your GCash, Maya or bank app. Payments go straight to them; Sonata never handles money."))}</p></div>`,
+    body: `<div class="pay-big" tabindex="0">${pm.qr ? m?.qrSvg(pm.qr, { ecc: "M", margin: 4 }) || "" : `<img src="${esc(pm.img)}" alt="${esc(pm.label)} QR">`}
+      ${pm.qr && paymentPayee(pm.qr) ? `<p class="pay-payee-big">${esc(t("payPaysTo", "This code pays"))} <b>${esc(payeeText(pm.qr))}</b></p>` : ""}
+      <p class="card-hint">${esc(t("payNoteShort", "Check that the name your app shows matches before you pay. Payments go straight to them; Sonata never handles money and can't verify Song Banks."))}</p></div>`,
     actions: [{ label: t("saveImage", "Save image"), kind: "ghost", onClick: async () => { await savePayment(pm); return false; } }, { label: t("done", "Done"), kind: "primary" }]
   });
   paintIcons(body);
@@ -339,7 +404,7 @@ function viewSong(s) {
     title: s.t, wide: true, focus: false, body: draw(),
     actions: [
       { label: t("saveToSongs", "Save to my songs"), kind: "ghost", onClick: () => { store.createSong({ title: s.t, artist: s.a, body: s.b || "", genre: s.g, manualKey: `${written.root}:${written.mode}`, transpose: steps, bpm: s.bpm }); toast(t("savedNow", "Saved"), "success"); } },
-      { label: t("requestInKey", "Request in {k}", { k: keyNow() }), kind: "primary", onClick: () => { view.picks.set(s.id, keyNow()); renderBank(); requestSheet(); return false; } } // the request sheet replaces this one
+      { label: t("done", "Done"), kind: "primary" }
     ]
   });
   paintIcons(body);
@@ -348,52 +413,5 @@ function viewSong(s) {
     if (!b) return;
     steps = mod12(steps + Number(b.dataset.step) + 6) - 6;
     body.innerHTML = draw(); paintIcons(body);
-    const btn = /** @type {HTMLElement|null} */ (document.querySelector("#sheetFoot .btn.primary"));
-    if (btn) btn.textContent = t("requestInKey", "Request in {k}", { k: keyNow() });
   });
-}
-
-/** Choose keys, add a name and note, then open the owner's app. */
-function requestSheet() {
-  const d = view.data;
-  if (!d || !view.picks.size) return;
-  const KEYS12 = ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
-  const picks = () => [...view.picks.entries()].map(([id, key]) => { const s = songById(id); return s ? { t: s.t, a: s.a, key } : null; }).filter((x) => x !== null);
-  const text = (/** @type {HTMLElement} */ body) => requestText(/** @type {any} */ (picks()), { from: /** @type {HTMLInputElement} */ (body.querySelector("#rqFrom")).value.trim(), note: /** @type {HTMLTextAreaElement} */ (body.querySelector("#rqNote")).value.trim(), bank: d.name });
-  const targets = requestTargets(d.socials, "x");
-  const logo = (/** @type {string} */ k) => (k === "email" ? linkIcon("email") : brand(k));
-  const body = openSheet({
-    title: t("sendRequest", "Send request"), focus: false,
-    body: `<div class="form">
-      <ul class="set-items">${[...view.picks.entries()].map(([id, key]) => { const s = songById(id); if (!s) return ""; const minor = /m$/.test(s.k);
-        return `<li class="set-item"><span class="set-name">${esc(s.t)}</span><label class="sr-only" for="rk-${esc(id)}">${esc(t("key", "Key"))}</label><select class="select rq-key" id="rk-${esc(id)}" data-rk="${esc(id)}">${KEYS12.map((k) => { const v = pretty(k) + (minor ? "m" : ""); return `<option${v === key ? " selected" : ""}>${esc(v)}</option>`; }).join("")}</select>
-        <button class="icon-btn small" type="button" data-drop="${esc(id)}" aria-label="${esc(t("remove", "Remove"))}">${icon("x")}</button></li>`; }).join("")}</ul>
-      <label class="field"><span>${esc(t("yourName", "Your name (optional)"))}</span><input class="input" id="rqFrom" maxlength="60" autocomplete="given-name"></label>
-      <label class="field"><span>${esc(t("rqNote", "Note (optional)"))}</span><textarea class="input" id="rqNote" rows="2" maxlength="300" placeholder="${esc(t("rqNotePh", "Dedication, occasion, anything to add…"))}"></textarea></label>
-      <p class="mini-label">${esc(t("sendWith", "Send with"))}</p>
-      <div class="rq-targets">${targets.map((x) => `<button class="btn rq-${x.kind}${targets[0] === x ? " primary" : ""}" type="button" data-go="${x.kind}">${logo(x.kind)}${esc(x.label)}</button>`).join("")}
-        ${"share" in navigator ? `<button class="btn" type="button" data-go="share">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
-        <button class="btn" type="button" data-go="copy">${icon("copy")}${esc(t("copyText", "Copy text"))}</button></div>
-      ${targets.some((x) => !x.prefilled) ? `<p class="card-hint">${esc(t("rqPasteHint", "Instagram opens the chat; your request is copied, so paste it there."))}</p>` : ""}
-      ${targets.length ? "" : `<p class="card-hint">${esc(t("rqNoContact", "No way to message them was added. Copy the request and show it to them."))}</p>`}
-    </div>`
-  });
-  paintIcons(body);
-  body.addEventListener("change", (e) => { const el = /** @type {HTMLSelectElement} */ (e.target); if (el.dataset.rk) view.picks.set(el.dataset.rk, el.value); });
-  body.addEventListener("click", async (e) => {
-    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
-    if (!b) return;
-    if (b.dataset.drop) { view.picks.delete(b.dataset.drop); renderBank(); if (!view.picks.size) closeSheet(); else b.closest("li")?.remove(); return; }
-    const go = b.dataset.go;
-    if (!go) return;
-    const msg = text(body);
-    if (go === "copy") { if (await copyText(msg)) toast(t("copied", "Copied"), "success"); return; }
-    if (go === "share") { try { await navigator.share({ text: msg }); sent(); } catch { /* cancelled */ } return; }
-    const target = requestTargets(d.socials, msg).find((x) => x.kind === go);
-    if (!target) return;
-    if (!target.prefilled) await copyText(msg);
-    window.open(target.href, "_blank", "noopener");
-    sent();
-  });
-  const sent = () => { toast(t("rqSent", "Request ready to send. Thanks!"), "success"); view.picks.clear(); renderBank(); closeSheet(); };
 }

@@ -3,7 +3,7 @@
 import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 import { registerSW } from "virtual:pwa-register";
-import { $, paintIcons, setIcon, toast, esc } from "./ui/dom.js";
+import { $, paintIcons, setIcon, toast, esc, initSelectMenus } from "./ui/dom.js";
 import { t, setLang, applyI18n } from "./ui/i18n.js";
 import { store, app, metronome, storageBlocked } from "./ui/ctx.js";
 import { keepAlive } from "./audio.js";
@@ -174,7 +174,7 @@ async function restoreBank() {
   const found = await app.drive.findBank();
   const file = found && parseBankFile(found.body);
   if (!found || !file) return;
-  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, photo: file.photo, socials: file.socials, links: file.links, payments: file.payments, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
+  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, photo: file.photo, socials: file.socials, links: file.links, payments: file.payments, theme: file.theme, gigs: file.gigs, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
   store.changed("settings");
   (await bankModule())?.watchBank();
 }
@@ -254,6 +254,7 @@ async function boot() {
   paintIcons();
   applyTheme();
   keepAlive();
+  initSelectMenus();
 
   app.show = show;
   app.openStage = openStage;

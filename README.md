@@ -29,7 +29,7 @@ Five places, one job each, plus a Song Bank:
   - **Present**: big stage text, auto-scroll that pauses when you touch, setlist navigation, metronome, three stage colors, screen stays awake.
   - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG, TXT and print in the same sheet. Old Sonata links still open.
 - **Chords**: type or pick any chord (slash chords too: `Am7/G`, `D/F#`) and see it on guitar and ukulele (every playable shape, the chord-book one first), bass (where its notes are) and piano. Tap a chord in a chart for the same view. Links like `/chords/Am7` open straight to it.
-- **Song Bank**: a **Sonata Card** (photo, name, Instagram, TikTok, Facebook, YouTube, Spotify and other links) plus the songs you know or offer, with genres. Add GCash, Maya or bank QR Ph codes so people can support you directly (Sonata never handles money). Publish, then share the link, the QR or the card image. People search, read a chart in their key and send a request through Messenger, Instagram or email.
+- **Song Bank**: a **Sonata Card** (photo, name, Instagram, TikTok, Facebook, YouTube, Spotify and other links) plus the songs you know or offer, with genres. Add GCash, Maya or bank QR Ph codes so people can support you directly (Sonata never handles money). Publish, then share the link, the QR or the card image. The page is view-only: people search, read a chart in their key, see your upcoming gigs and support you. Requests happen at your gig or in your live chat, not in Sonata. Pick a look (preset colors, accent, font, cover picture) so the page and card match your brand.
 - **Theory**: circle of fifths with the key family highlighted, numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.
 - **Play**: piano, fretboard (guitar, Drop D, 4- and 5-string bass, ukulele), chromatic tuner with reference tones, and a metronome on the audio clock (2/4 to 12/8, tap tempo, save tempo to a song).
 
@@ -51,7 +51,7 @@ Intro: G  C6/9  D  (x2)   labels and repeat marks stay on a chord line
 ## Privacy and security
 
 - Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, publish a Song Bank, or choose to shorten a link with TinyURL.
-- No Sonata database. Share links and QR codes carry the song itself. A Song Bank is one file in the owner's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. Requests go straight from the visitor's phone to the owner's Messenger, Instagram or email; payment codes are shown exactly as the owner uploaded them.
+- No Sonata database. Share links and QR codes carry the song itself. A Song Bank is one file in the owner's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. There is no request inbox, so there is nothing to spam; payment codes are shown exactly as the owner uploaded them, with the name written inside the code so visitors can check it.
 - Vercel Web Analytics counts anonymous page views (no cookies). No ads, no trackers.
 - Strict Content Security Policy (scripts only from this site and Google sign-in), HSTS, no inline scripts, fonts served from this site.
 - Share links are size-capped and decompressed with a limit, so a crafted link can't freeze the app or the link-preview function. Song links only open as normal `http(s)` links.

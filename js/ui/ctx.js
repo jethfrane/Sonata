@@ -2,7 +2,7 @@
 // Shared app context: the store, Drive, metronome, and key helpers every view uses.
 import { Store, memoryStorage } from "../core/store.js";
 import { detectKey, parseKey, keyFromTonic, keyShort, mod12 } from "../core/music.js";
-import { Metronome } from "../audio.js";
+import { Metronome, DrumLooper } from "../audio.js";
 
 /**
  * @typedef {import("../core/store.js").Song} Song
@@ -26,6 +26,7 @@ const picked = pickStorage();
 export const storageBlocked = picked.blocked;
 export const store = new Store(picked.storage);
 export const metronome = new Metronome();
+export const drumLooper = new DrumLooper();
 
 /** Late-bound references (avoid import cycles between views). */
 export const app = {

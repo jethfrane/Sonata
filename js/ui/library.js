@@ -281,7 +281,7 @@ export function renderLibrary() {
     return;
   }
   // Song Bank: a card to manage and share it sits above its songs.
-  const bankCard = filter === "bank" ? `<div class="bank-card"><div><b>${esc(store.bank.fileId ? t("bankIsLive", "Your Song Bank is live") : t("songBank", "Song Bank"))}</b><p class="muted">${esc(store.bank.fileId ? t("bankLiveSub", "{n} songs · people scan your QR to request", { n: store.songs.filter((x) => x.inBank).length }) : t("bankPitch", "List the songs you know or offer. People scan your QR, pick a song and key, and send you a request."))}</p></div><button class="btn primary" type="button" data-act="bank">${icon(store.bank.fileId ? "share" : "bank")}${esc(store.bank.fileId ? t("manageShare", "Manage & share") : t("setUpBank", "Set up"))}</button></div>` : "";
+  const bankCard = filter === "bank" ? `<div class="bank-card"><div><b>${esc(store.bank.fileId ? t("bankIsLive", "Your Song Bank is live") : t("songBank", "Song Bank"))}</b><p class="muted">${esc(store.bank.fileId ? t("bankLiveSub", "{n} songs · people scan your QR to browse", { n: store.songs.filter((x) => x.inBank).length }) : t("bankPitch", "List the songs you know or offer. People scan your QR, browse your songs, read charts in their key and support you."))}</p></div><button class="btn primary" type="button" data-act="bank">${icon(store.bank.fileId ? "share" : "bank")}${esc(store.bank.fileId ? t("manageShare", "Manage & share") : t("setUpBank", "Set up"))}</button></div>` : "";
   if (!songs.length) {
     if (filter === "bank") { list.innerHTML = bankCard + empty(t("songBank", "Song Bank"), t("bankNoSongs", "No songs in your Song Bank yet. Open Set up, or use a song's ⋮ menu → Add to Song Bank."), ""); paintIcons(list); return; }
     list.innerHTML = q

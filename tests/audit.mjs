@@ -78,14 +78,28 @@ const STATES = [
   { name: "bank-manager", n: 40, path: "/songs", run: async (p) => { await p.click('[data-filter="bank"]'); await p.click('[data-act="bank"]'); } },
   { name: "links-import", n: 40, path: "/songs", run: async (p) => { await p.click("#addLinksBtn"); } },
   { name: "youtube", n: 40, path: "/editor", run: async (p) => { await p.evaluate(() => { const s = window.__sonata.store; s.update(s.active(), { links: [{ name: "Reference video", url: "https://youtu.be/dQw4w9WgXcQ" }] }); }); await p.waitForTimeout(200); await p.click(".yt-chip"); } },
-  { name: "bank-public", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: true, run: async (p) => { await p.click('.bank-list [data-bk="pick"] >> nth=0'); await p.click('.bank-list [data-bk="pick"] >> nth=1'); } },
-  { name: "bank-request", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: true, run: async (p) => { await p.click('.bank-list [data-bk="pick"] >> nth=0'); await p.click('[data-bk="send"]'); } }
+  { name: "bank-public", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: "plain" },
+  { name: "bank-stage", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: "stage" },
+  { name: "bank-sunrise", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: "sunrise" },
+  { name: "bank-long", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: "long" },
+  { name: "bank-chart", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: "stage", run: async (p) => { await p.click('.bank-list [data-bk="view"] >> nth=0'); } },
+  { name: "bank-pay", n: 0, path: "/bank/1AbCdEfGhIjKlMnOpQrStUvWxYz012345", bank: "plain", run: async (p) => { await p.click('[data-bk="pay"] >> nth=0'); } },
+  { name: "bank-manager-style", n: 40, path: "/songs", run: async (p) => { await p.click('[data-filter="bank"]'); await p.click('[data-act="bank"]'); await p.locator("#beGigAdd").scrollIntoViewIfNeeded(); await p.click("#beGigAdd"); await p.click('[data-preset="stage"]'); await p.locator(".be-look").scrollIntoViewIfNeeded(); } }
 ];
-const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro Frane", bio: "OPM, pop and worship. Requests welcome!", socials: { instagram: "jethrofrane", tiktok: "jethrofrane", facebook: "jethro.frane", youtube: "@jethrofrane", email: "j@example.com" }, payments: [{ label: "GCash", name: "J. F.", qr: "00020101021127830012com.p2pqrpay0111GXCHPHM2XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD" }, { label: "Maya", name: "J. F.", qr: "00020101021127830012com.p2pqrpay0111PAPHPHM1XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD" }], updatedAt: "2026-11-09",
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro Frane", bio: "OPM, pop and worship. Catch me live every Friday!", socials: { instagram: "jethrofrane", tiktok: "jethrofrane", facebook: "jethro.frane", youtube: "@jethrofrane", email: "j@example.com" }, payments: [{ label: "GCash", name: "J. F.", qr: "00020101021127830012com.p2pqrpay0111GXCHPHM2XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD" }, { label: "Maya", name: "J. F.", qr: "00020101021127830012com.p2pqrpay0111PAPHPHM1XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD" }], updatedAt: "2026-11-09",
   songs: Array.from({ length: 30 }, (_, i) => ({ id: "b" + i, t: ["Buwan", "Perfect", "Mundo", "Way Maker", "Tadhana", "Hallelujah"][i % 6] + (i > 5 ? " " + i : ""), a: ["Juan Karlos", "Ed Sheeran", "IV of Spades", "Sinach", "Up Dharma Down", "Leonard Cohen"][i % 6], g: ["OPM", "Pop", "OPM", "Worship", "OPM", "Ballad"][i % 6], k: ["Am", "G", "C", "E", "D", "C"][i % 6], b: i % 2 ? "" : "Am  F  C  G\nIkaw ang buwan" })) };
 
-mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
+/** A real small JPEG for the cover picture. */
+const COVER = await (async () => { const c = await browser.newContext(); const pg = await c.newPage(); const d = await pg.evaluate(() => { const cv = document.createElement("canvas"); cv.width = 960; cv.height = 320; const x = cv.getContext("2d"); const g = x.createLinearGradient(0, 0, 960, 320); g.addColorStop(0, "#f59e0b"); g.addColorStop(1, "#be185d"); x.fillStyle = g; x.fillRect(0, 0, 960, 320); return cv.toDataURL("image/jpeg", 0.7); }); await c.close(); return d; })();
+const GIGS = [{ date: "2099-01-05", time: "19:30", place: "Plaza Miranda, Quiapo", note: "Acoustic set, free entry", url: "https://example.com/gig" }, { date: "2099-02-14", place: "Cafe Uno", note: "", url: "" }];
+const BANKS = {
+  plain: { ...BANK, v: 3, gigs: GIGS },
+  stage: { ...BANK, v: 3, gigs: GIGS, theme: { preset: "stage", accent: "#e11d48", font: "classic", cover: "" } },
+  sunrise: { ...BANK, v: 3, gigs: GIGS, theme: { preset: "sunrise", accent: "#0d9488", font: "rounded", cover: COVER } },
+  long: { ...BANK, v: 3, gigs: GIGS, title: "Sunday Worship Team — Grace Fellowship Church Quezon City Music Ministry", name: "Grace Fellowship Church Music Ministry & Friends", bio: "We serve with worship every Sunday and weddings, debuts, birthdays and corporate events in Metro Manila and nearby provinces.", socials: { instagram: "gracefellowshipqcmusic", tiktok: "gracefellowshipqc", facebook: "gracefellowshipqc", youtube: "@gracefellowshipqc", website: "https://gracefellowshipqc.example.com/music-ministry", email: "musicministry@gracefellowshipqc.example.com" }, theme: { preset: "ocean", accent: "#ffee00", font: "modern", cover: COVER } }
+};
+mkdirSync(OUT, { recursive: true });
 const report = [];
 let hard = 0;
 
@@ -96,7 +110,7 @@ for (const vp of VIEWPORTS) {
     const ctx = await browser.newContext({ bypassCSP: true, viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch && vp.width < 1000, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
     const errors = [];
-    if (st.bank) await page.route("**/api/bank?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(BANK) }));
+    if (st.bank) await page.route("**/api/bank?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(BANKS[st.bank === true ? "plain" : st.bank]) }));
     page.on("pageerror", (e) => errors.push(String(e.message || e)));
     await page.goto(BASE + "/songs");
     await page.evaluate(({ lib }) => {

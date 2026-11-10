@@ -4,7 +4,7 @@ import { t } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import {
   CIRCLE, keyFromTonic, prefersFlats, noteName, diatonicChords, keySignature, relativeKey,
-  pretty, keyShort, keyValue, mod12, chordTones, parseChord, SHARP_NOTES, chordsForKey, CHORD_TYPES, chordInfo
+  pretty, keyShort, keyValue, mod12, chordTones, parseChord, SHARP_NOTES, chordsForKey, CHORD_TYPES, chordInfo, findKeysFromChords
 } from "../core/music.js";
 import { openChordSheet } from "./sheets-lazy.js";
 import { playChord } from "../audio.js";
@@ -75,13 +75,34 @@ export function initTheory() {
   $("diatonic").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
     if (!b) return;
-    tick();
-    lastChord = b.dataset.chord || "";
-    const info = chordInfo(lastChord);
-    if (info) playChord(info.pcs, "piano", info.bassPc); else playChord(chordTones(lastChord));
-    $$("#diatonic .dia").forEach((x) => x.classList.toggle("on", x === b));
-    $("theoryShapes").hidden = false;
-    $("theoryShapesLabel").textContent = t("seeShapes", "See {c} shapes", { c: pretty(lastChord) });
+    triggerDiatonicBtn(b);
+  });
+  window.addEventListener("keydown", (e) => {
+    if (app.view !== "theory") return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    const tgt = /** @type {HTMLElement|null} */ (e.target);
+    if (tgt && (tgt.closest("input, textarea, select") || tgt.isContentEditable)) return;
+    if (document.querySelector("dialog[open]")) return;
+    if (/^[1-9]$/.test(e.key)) {
+      const idx = Number(e.key) - 1;
+      const btns = $$("#diatonic .dia");
+      const b = /** @type {HTMLElement|undefined} */ (btns[idx]);
+      if (b) {
+        e.preventDefault();
+        triggerDiatonicBtn(b);
+      }
+      return;
+    }
+    if (e.key === "[" || e.key === "]") {
+      e.preventDefault();
+      const k = theoryKey();
+      const idx = CIRCLE.indexOf(k.mode === "minor" ? mod12(k.tonic + 3) : k.tonic);
+      const nextMajor = CIRCLE[mod12(idx + (e.key === "]" ? 1 : -1))];
+      picked = keyFromTonic(k.mode === "minor" ? mod12(nextMajor + 9) : nextMajor, k.mode);
+      saveLock();
+      tick();
+      renderTheory();
+    }
   });
   try { const ct = localStorage.getItem("sonata_theory_type"); if (ct && CHORD_TYPES.some((x) => x.id === ct)) chordType = ct; } catch { /* ignore */ }
   const typeSel = /** @type {HTMLSelectElement} */ ($("theoryType"));
@@ -89,6 +110,27 @@ export function initTheory() {
   typeSel.addEventListener("change", () => { chordType = typeSel.value; try { localStorage.setItem("sonata_theory_type", chordType); } catch { /* ignore */ } lastChord = ""; $("theoryShapes").hidden = true; renderTheory(); });
   $("theoryShapes").addEventListener("click", () => { if (lastChord) openChordSheet(lastChord); });
   $("theoryFromSongBtn").addEventListener("click", () => { picked = null; locked = false; saveLock(); renderTheory(); });
+  const kfInput = /** @type {HTMLInputElement|null} */ (document.getElementById("keyFinderInput"));
+  const kfRes = document.getElementById("keyFinderResult");
+  if (kfInput && kfRes) {
+    const updateKf = () => {
+      const res = findKeysFromChords(kfInput.value);
+      if (!res) { kfRes.hidden = true; kfRes.innerHTML = ""; return; }
+      kfRes.hidden = false;
+      const prog = res.progression.map((p) => `${pretty(p.name)} (${format === "nashville" ? p.nashville : p.roman})`).join(" · ");
+      kfRes.innerHTML = `<div class="kf-row"><span class="kf-main">${esc(t("detectedKey", "Key"))}: <strong>${esc(pretty(res.best.name))}</strong> <span class="muted">(${esc(t("relative", "Relative"))}: ${esc(pretty(res.relative.name))})</span></span><button type="button" class="chip accent" data-use-key="${res.best.tonic}:${res.best.mode}">${esc(t("selectKey", "Select {k}", { k: pretty(keyShort(res.best)) }))}</button></div><div class="kf-prog muted">${esc(prog)}</div>`;
+    };
+    kfInput.addEventListener("input", updateKf);
+    kfRes.addEventListener("click", (e) => {
+      const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-use-key]"));
+      if (!btn || !btn.dataset.useKey) return;
+      const [pc, mode] = btn.dataset.useKey.split(":");
+      picked = keyFromTonic(Number(pc), mode === "minor" ? "minor" : "major");
+      saveLock();
+      tick();
+      renderTheory();
+    });
+  }
   $("theoryToSongBtn").addEventListener("click", () => {
     const s = store.active();
     if (!s || s.readonly) return;
@@ -112,6 +154,24 @@ function saveLock() {
     localStorage.setItem("sonata_circle_lock", locked ? "1" : "0");
     if (locked && picked) localStorage.setItem("sonata_circle_key", `${picked.tonic}:${picked.mode}`);
   } catch { /* ignore */ }
+}
+
+/** Play and highlight a diatonic chord button on the Circle of Fifths. @param {HTMLElement} b */
+function triggerDiatonicBtn(b) {
+  tick();
+  lastChord = b.dataset.chord || "";
+  const info = chordInfo(lastChord);
+  if (info) playChord(info.pcs, "piano", info.bassPc); else playChord(chordTones(lastChord));
+  $$("#diatonic .dia").forEach((x) => x.classList.toggle("on", x === b));
+  $("theoryShapes").hidden = false;
+  $("theoryShapesLabel").textContent = t("seeShapes", "See {c} shapes", { c: pretty(lastChord) });
+  if (info) {
+    const ring = info.pcs.includes(mod12(info.rootPc + 3))
+      ? (info.pcs.includes(mod12(info.rootPc + 6)) ? "dim" : "minor")
+      : "major";
+    const wedge = document.querySelector(`#circle .wedge[data-ring="${ring}"][data-pc="${info.rootPc}"]`);
+    if (wedge) ping(wedge);
+  }
 }
 
 /** @param {Event} e */

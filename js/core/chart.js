@@ -4,7 +4,7 @@
 // view, export and the stage share one layout.
 import {
   parseChord, lineKind, mapChords, transposeChord, romanChord, nashvilleChord,
-  keyFromTonic, prefersFlats, isChordLine, isNeutralToken
+  keyFromTonic, prefersFlats, isChordLine, isNeutralToken, extractChords, detectKey, parseKey, keyValue
 } from "./music.js";
 
 /**
@@ -239,4 +239,115 @@ export function uniqueChords(body, o) {
     }
   }
   return seen;
+}
+
+/**
+ * Smart Chord Sheet & Reference Link Analyzer:
+ * Parses raw pasted chord charts (ChordPro, Ultimate Guitar, Worship charts, or progression + reference URL)
+ * into a clean Sonata song object with detected key, capo, BPM, reference links, and Roman progression.
+ * @param {string} raw
+ */
+export function analyzeRawChart(raw) {
+  const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+  let title = "";
+  let artist = "";
+  let manualKey = "auto";
+  let capo = 0;
+  let bpm = 0;
+  /** @type {{ name: string, url: string }[]} */
+  const links = [];
+  /** @type {string[]} */
+  const bodyLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const t = rawLine.trim();
+    if (!t) {
+      if (bodyLines.length && bodyLines[bodyLines.length - 1] !== "") bodyLines.push("");
+      continue;
+    }
+    // Extract standalone http(s) reference links (non-Sonata share links)
+    if (/^https?:\/\/\S+$/i.test(t) && !/(\?s=|\/q\/|\/share\/)/i.test(t)) {
+      const isYt = /youtu\.?be|youtube\.com/i.test(t);
+      links.push({ name: isYt ? "YouTube" : "Chord reference", url: t });
+      continue;
+    }
+    // ChordPro directives: {title: ...}, {artist: ...}, {key: ...}, {capo: ...}, {tempo: ...}
+    const cp = t.match(/^\{\s*([a-z_]+)\s*(?::\s*(.*?))?\s*\}$/i);
+    if (cp) {
+      const k = cp[1].toLowerCase();
+      const v = (cp[2] || "").trim();
+      if ((k === "t" || k === "title") && v) title = v;
+      else if ((k === "st" || k === "subtitle" || k === "artist") && v) artist = v;
+      else if (k === "key" && v) { const pk = parseKey(v); if (pk) manualKey = keyValue(pk); }
+      else if (k === "capo" && v) capo = Math.max(0, Math.min(11, parseInt(v, 10) || 0));
+      else if ((k === "tempo" || k === "bpm") && v) bpm = Math.max(30, Math.min(300, parseInt(v, 10) || 0));
+      else if (k === "soc" || k === "start_of_chorus") bodyLines.push("## Chorus");
+      else if (k === "sov" || k === "start_of_verse") bodyLines.push("## Verse");
+      else if (k === "sob" || k === "start_of_bridge") bodyLines.push("## Bridge");
+      else if ((k === "c" || k === "comment") && v) bodyLines.push(/^verse|chorus|bridge|intro|outro|pre-?chorus|interlude|tag/i.test(v) ? `## ${v}` : `> ${v}`);
+      continue;
+    }
+    // Header metadata lines: "Title: ...", "Artist: ...", "Key: G", "Capo 2", "Tempo: 72 BPM"
+    const metaTitle = t.match(/^title\s*:\s*(.+)$/i);
+    if (metaTitle && !title) { title = metaTitle[1].trim(); continue; }
+    const metaArtist = t.match(/^(?:artist|by|author)\s*:\s*(.+)$/i);
+    if (metaArtist && !artist) { artist = metaArtist[1].trim(); continue; }
+    const metaKey = t.match(/^key\s*:\s*([A-G][#b♯♭]?\s*(?:m|min|minor|maj|major)?)$/i);
+    if (metaKey) { const pk = parseKey(metaKey[1]); if (pk) manualKey = keyValue(pk); continue; }
+    const metaCapo = t.match(/^capo\s*:?\s*(\d{1,2})(?:st|nd|rd|th)?(?:\s+fret)?$/i);
+    if (metaCapo) { capo = Math.max(0, Math.min(11, parseInt(metaCapo[1], 10) || 0)); continue; }
+    const metaBpm = t.match(/^(?:tempo|bpm)\s*:?\s*(\d{2,3})(?:\s*bpm)?$/i) || t.match(/^(\d{2,3})\s*bpm$/i);
+    if (metaBpm) { bpm = Math.max(30, Math.min(300, parseInt(metaBpm[1], 10) || 0)); continue; }
+
+    // Section headers like "[Verse 1]", "[Chorus]", "Verse 1:", "CHORUS"
+    const secBracket = t.match(/^\[((?:intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|tag|ending|refrain|hook|vamp)[^\]]*)\]$/i);
+    if (secBracket && !parseChord(secBracket[1])) {
+      bodyLines.push(`## ${secBracket[1].trim()}`);
+      continue;
+    }
+    const secPlain = t.match(/^((?:intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|tag|ending|refrain)(?:\s+\d+)?)\s*:?$/i);
+    if (secPlain && !parseChord(secPlain[1])) {
+      const label = secPlain[1].trim();
+      bodyLines.push(`## ${label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()}`);
+      continue;
+    }
+    bodyLines.push(rawLine.replace(/\s+$/, ""));
+  }
+
+  // If no explicit Title: was given and the first non-empty line is a plain text title (not chords or section)
+  if (!title && bodyLines.length >= 2) {
+    const first = bodyLines[0].trim();
+    if (first && !first.startsWith("#") && lineKind(first) === "lyrics" && first.length <= 64) {
+      const m = first.match(/^(.+?)\s+[–—-]\s+(.+)$/);
+      if (m) { title = m[1].trim(); if (!artist) artist = m[2].trim(); }
+      else title = first;
+      bodyLines.shift();
+      if (bodyLines[0] === "") bodyLines.shift();
+    }
+  }
+
+  const body = bodyLines.join("\n").trim();
+  const parsedChords = extractChords(body);
+  if (!parsedChords.length) return null;
+
+  const detKey = manualKey !== "auto" ? parseKey(manualKey) : detectKey(parsedChords);
+  const keyObj = detKey || keyFromTonic(0, "major");
+  const distinct = uniqueChords(body, { key: keyObj, mode: "chords" });
+  const romans = [...new Set(parsedChords.slice(0, 8).map((c) => romanChord(c, keyObj)))].slice(0, 6);
+  if (!title) {
+    title = links.length ? `Imported Chart (${keyObj.name})` : `Chart in ${keyObj.name}`;
+  }
+  return {
+    title,
+    artist,
+    manualKey,
+    capo,
+    bpm: bpm || null,
+    links,
+    body,
+    chords: distinct,
+    keyName: keyObj.name,
+    romanSummary: romans.join(" – ")
+  };
 }

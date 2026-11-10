@@ -89,7 +89,7 @@ await shot(page, "desktop-songs.png"); await ctx.close();
 ({ ctx, page } = await open(phone, "light", "/chords/Am7"));
 await shot(page, "phone-chords.png"); await ctx.close();
 
-const SAMPLE_BANK = { type: "sonata-bank", v: 2, title: "Songs I can play", name: "Jethro Frane", bio: "OPM, pop and worship. Requests welcome!",
+const SAMPLE_BANK = { type: "sonata-bank", v: 2, title: "Songs I can play", name: "Jethro Frane", bio: "OPM, pop and worship. Catch me live every Friday!",
   socials: { instagram: "jethrofrane", tiktok: "jethrofrane", facebook: "jethrofrane", youtube: "@jethrofrane" }, links: [], payments: [],
   updatedAt: new Date().toISOString(), songs: SONGS.map((x, i) => ({ id: "b" + i, t: x.title, a: x.artist, g: i % 2 ? "Worship" : "Hymn", k: x.manualKey.split(":")[0], bpm: x.bpm })) };
 for (const [vp, name] of [[phone, "phone-bank.png"], [desk, "desktop-bank.png"]]) {

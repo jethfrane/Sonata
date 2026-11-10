@@ -20,7 +20,9 @@
   .sona-actions button { min-height: 44px; }
   .brand { min-height: 44px; }
   .account-btn { min-height: 44px; }
-  .changelog summary { min-height: 44px; align-items: center; }
+  .changelog summary, .cq-summary { min-height: 44px; min-width: 44px; align-items: center; }
+  .cp-add { min-height: 44px; }
+  .drum-pad, .ui-select-opt { min-height: 44px; min-width: 44px; }
   .stage-btn, .stage-select { min-width: 44px; height: 44px; min-height: 44px; }
   .key-picker { gap: 6px; }
 }

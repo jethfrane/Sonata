@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as M from "../js/core/music.js";
-import { buildLines, linesToText, pairSegments, uniqueChords } from "../js/core/chart.js";
+import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart } from "../js/core/chart.js";
 import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
@@ -363,7 +363,7 @@ test("v4: libraries saved before genre/song bank existed don't count as changed"
   assert.notEqual(libraryFingerprint(old), libraryFingerprint({ ...now, songs: [{ ...now.songs[0], inBank: true }] }));
 });
 
-test("Song Bank v2: social links, payment codes, v1 files and request channels", async () => {
+test("Song Bank v2: social links, payment codes and v1 files", async () => {
   const B = await import("../js/core/bank.js");
   const s = B.normalizeSocials({ instagram: "https://www.instagram.com/jethrofrane/?hl=en", tiktok: "@jethro.frane", facebook: "https://m.facebook.com/jethro.frane", youtube: "https://youtube.com/@jethro", spotify: "https://evil.example.com/x", website: "jethrofrane.xyz", email: "bad" });
   assert.equal(s.instagram, "jethrofrane");
@@ -378,8 +378,7 @@ test("Song Bank v2: social links, payment codes, v1 files and request channels",
   assert.equal(v1.socials.facebook, "old.name");
   assert.equal(v1.socials.email, "a@b.co");
   assert.ok(!("whatsapp" in v1.socials));
-  const targets = B.requestTargets(v1.socials, "hi").map((x) => x.kind);
-  assert.deepEqual(targets, ["messenger", "email"]);
+  assert.ok(!("requestTargets" in B) && !("requestText" in B), "Song Banks are view-only: no request channel");
   // Payment codes: QR Ph text or a small picture; anything else is dropped. At most four.
   const pay = B.normalizePayments([
     { label: "GCash", qr: "00020101021127830012com.p2pqrpay0111GXCHPHM2" },
@@ -395,7 +394,117 @@ test("Song Bank v2: social links, payment codes, v1 files and request channels",
   const links = B.socialLinks({ ...s, email: "me@x.co" }).map((l) => l.kind);
   assert.deepEqual(links, ["instagram", "tiktok", "facebook", "youtube", "website", "email"]);
   const file = B.buildBankFile(B.normalizeProfile({ name: "Jethro", socials: s, payments: pay }), [{ id: "s1", title: "A", inBank: true, body: "G" }], () => "G");
-  assert.equal(file.v, 2);
+  assert.equal(file.v, 3);
   assert.equal(file.title, "Jethro's Song Bank");
   assert.deepEqual(B.parseBankFile(JSON.parse(JSON.stringify(file))).payments, pay);
+});
+
+test("Song Bank v3: theme, readable accent, gigs and payee", async () => {
+  const B = await import("../js/core/bank.js");
+  // Theme: unknown values fall back, colors must be #rrggbb, pictures must be small images.
+  assert.deepEqual(B.normalizeTheme(null), { preset: "auto", accent: "", font: "modern", cover: "" });
+  const t = B.normalizeTheme({ preset: "stage", accent: "#E11D48", font: "classic", cover: "data:image/svg+xml;base64,AAAA" });
+  assert.deepEqual(t, { preset: "stage", accent: "#e11d48", font: "classic", cover: "" });
+  assert.equal(B.normalizeTheme({ preset: "<script>", accent: "red", font: "comic" }).preset, "auto");
+  assert.equal(B.normalizeTheme({ accent: "url(javascript:1)" }).accent, "");
+  // Accent is made readable on the page it sits on (4.5:1), darker on light pages and lighter on dark ones.
+  for (const [accent, surface] of [["#ffee00", "#ffffff"], ["#111133", "#0d0d0f"], ["#3b5bdb", "#fffaf3"], ["#ff69b4", "#fff8fa"]]) {
+    const r = B.readableAccent(accent, surface);
+    assert.ok(B.contrast(r, surface) >= 4.5, `${accent} on ${surface} -> ${r}`);
+  }
+  assert.equal(B.readableAccent("#1d4ed8", "#ffffff"), "#1d4ed8", "already readable colors are kept");
+  assert.equal(B.readableAccent("nope", "#ffffff"), "nope");
+  assert.equal(B.inkOn("#ffee00"), "#111111");
+  assert.equal(B.inkOn("#1d4ed8"), "#ffffff");
+  // Every preset keeps text readable on its page and card.
+  for (const [id, th] of Object.entries(B.THEMES)) if (th.bg) { assert.ok(B.contrast(th.text, th.bg) >= 7, id); assert.ok(B.contrast(th.text, th.surface) >= 7, id); }
+  // Gigs: valid date and place needed, https links only, six at most, soonest first, past ones hidden by upcomingGigs.
+  const g = B.normalizeGigs([
+    { date: "2026-12-24", place: "Plaza", note: "Caroling", url: "http://example.com/x" },
+    { date: "2026-11-20", time: "19:30", place: "Cafe Uno", url: "javascript:alert(1)" },
+    { date: "2026-13-40", place: "Bad date" }, { date: "2026-11-01", place: "" }, { date: "2026-10-01", place: "Past" },
+    ...Array.from({ length: 8 }, (_, i) => ({ date: `2027-01-0${i + 1}`, place: "P" + i }))
+  ]);
+  assert.equal(g.length, 6);
+  assert.equal(g[0].place, "Past");
+  assert.equal(g.find((x) => x.place === "Cafe Uno").url, "");
+  assert.equal(g.find((x) => x.place === "Plaza").url, "https://example.com/x");
+  assert.deepEqual(B.upcomingGigs(g, "2026-11-10").map((x) => x.place).slice(0, 2), ["Cafe Uno", "Plaza"]);
+  assert.equal(B.normalizeGigs("x").length, 0);
+  // Payee: the name written inside a QR Ph code, so a visitor can compare it with their own app.
+  const code = "00020101021127830012com.p2pqrpay0111GXCHPHM2XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD";
+  assert.deepEqual(B.paymentPayee(code), { name: "JETHRO FRANE", city: "Quezon City" });
+  assert.equal(B.paymentPayee("hello"), null);
+  assert.equal(B.paymentPayee("000201" + "5999X"), null, "broken length is refused");
+  // Files: v3 round trip keeps theme and gigs; older files open with defaults.
+  const prof = B.normalizeProfile({ name: "Ana", theme: { preset: "ocean", accent: "#0a7", font: "rounded" }, gigs: [{ date: "2027-02-14", place: "Hall" }] });
+  assert.equal(prof.theme.preset, "ocean"); assert.equal(prof.theme.accent, "", "short hex is refused"); assert.equal(prof.gigs.length, 1);
+  const file = B.buildBankFile(prof, [{ id: "x1", title: "A", inBank: true, body: "C" }], () => "C");
+  assert.equal(file.v, 3);
+  const back = B.parseBankFile(JSON.parse(JSON.stringify(file)));
+  assert.equal(back.theme.preset, "ocean"); assert.equal(back.gigs[0].place, "Hall");
+  const old = B.parseBankFile({ type: "sonata-bank", v: 2, title: "Old", songs: [] });
+  assert.deepEqual(old.theme, { preset: "auto", accent: "", font: "modern", cover: "" }); assert.deepEqual(old.gigs, []);
+});
+
+test("Studio instrument samples: piano, guitar, ukulele and bass multi-samples exist and cover every register", async () => {
+  const { statSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const { SAMPLE_ANCHORS } = await import("../js/audio.js");
+  for (const kind of /** @type {const} */ (["piano", "guitar", "uke", "bass"])) {
+    const anchors = SAMPLE_ANCHORS[kind];
+    assert.ok(anchors.length >= 9, `${kind} has multi-sample anchors`);
+    for (let i = 0; i < anchors.length; i++) {
+      const [midi, file] = anchors[i];
+      if (i > 0) assert.equal(midi - anchors[i - 1][0], 3, `${kind} anchors spaced every minor 3rd`);
+      const p = fileURLToPath(new URL(`../public/samples/${kind}/${file}`, import.meta.url));
+      const st = statSync(p);
+      assert.ok(st.size > 15000, `${kind}/${file} is a non-empty studio sample (${st.size} B)`);
+    }
+  }
+});
+
+test("Chord builder identification: names triads, 7ths, 9ths, 5th-omitted voicings and slash chords", () => {
+  assert.equal(M.identifyChord([60, 64, 67, 71, 74], false), "Cmaj9");
+  assert.equal(M.identifyChord([57, 60, 64, 67, 71], false), "Am9");
+  assert.equal(M.identifyChord([55, 59, 65], false), "G7", "5th-omitted shell voicing G-B-F names G7");
+  assert.equal(M.identifyChord([54, 57, 62], false), "D/F#", "1st-inversion D triad names D/F#");
+  assert.equal(M.identifyChord([55, 60, 65, 69], false), "F/G", "upper triad F over G bass names F/G");
+  assert.equal(M.DEGREE_FROM_SEMITONES[4], "3");
+  assert.equal(M.DEGREE_FROM_SEMITONES[10], "♭7");
+});
+
+test("Key finder, smart raw chart analyzer, and DrumLooper presets", async () => {
+  const kf = M.findKeysFromChords("G D/F# Em C");
+  assert.ok(kf, "finds key from progression");
+  assert.equal(kf.best.name, "G major");
+  assert.equal(kf.relative.name, "E minor");
+  assert.deepEqual(kf.progression.map((x) => x.roman), ["I", "V/7", "vi", "IV"]);
+
+  const raw = "https://tabs.ultimate-guitar.com/tab/hillsong/oceans-chords-123\nTitle: Oceans\nArtist: Hillsong United\nCapo: 2\nBPM: 72\n[Intro]\nBm  A/C#  D  A  G\n[Verse 1]\nBm              A/C#            D\nYou call me out upon the waters";
+  const parsed = analyzeRawChart(raw);
+  assert.ok(parsed, "analyzes raw chord sheet + reference link");
+  assert.equal(parsed.title, "Oceans");
+  assert.equal(parsed.artist, "Hillsong United");
+  assert.equal(parsed.capo, 2);
+  assert.equal(parsed.bpm, 72);
+  assert.equal(parsed.links.length, 1);
+  assert.ok(parsed.body.includes("## Intro") && parsed.body.includes("## Verse 1"));
+  assert.ok(parsed.chords.includes("Bm") && parsed.chords.includes("D"));
+
+  const { DrumLooper, DRUM_PADS, DRUM_PRESETS } = await import("../js/audio.js");
+  const dl = new DrumLooper();
+  assert.equal(DRUM_PADS.length, 8);
+  assert.equal(dl.sig, "4/4");
+  assert.equal(dl.grid.kick.length, 16);
+  assert.equal(dl.grid.kick[0], 1);
+  dl.syncSignature("3/4");
+  assert.equal(dl.sig, "3/4");
+  assert.equal(dl.length, 12);
+  dl.syncSignature("6/8");
+  assert.equal(dl.sig, "6/8");
+  assert.equal(dl.length, 12);
+  assert.ok(Object.values(DRUM_PRESETS).some((p) => p.sig === "3/4"));
+  assert.ok(Object.values(DRUM_PRESETS).some((p) => p.sig === "4/4"));
+  assert.ok(Object.values(DRUM_PRESETS).some((p) => p.sig === "6/8"));
 });

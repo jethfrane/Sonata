@@ -1,13 +1,13 @@
 // @ts-check
-// Song Bank: anyone's public list of songs they know or offer (a singer, band, worship team,
-// teacher or choir), so others can find a song, pick a key and send a request.
+// Song Bank: anyone's public, view-only list of songs they know or offer (a singer, band, worship
+// team, teacher or choir), so others can find a song, read a chart in their key and support them.
 // The bank lives as one JSON file in the owner's own Google Drive, shared "anyone with the
 // link can view". Sonata keeps no copy on any server and never handles money: payment QR
 // codes (QR Ph: GCash, Maya, banks) are shown as the owner uploaded them.
 // Pure functions (no DOM, no network) so they are unit-tested.
 
 export const BANK_TYPE = "sonata-bank";
-export const BANK_VERSION = 2;
+export const BANK_VERSION = 3;
 /** Largest bank file we read (about 2,000 songs with charts, a photo and payment codes). */
 export const MAX_BANK = 3 * 1024 * 1024;
 /** Profile photo and uploaded payment images are small JPEG/PNG/WebP data URLs. */
@@ -19,12 +19,14 @@ export const MAX_IMAGE = 160 * 1024;
  * @typedef {{ label: string, name: string, qr: string, img: string }} Payment
  *   `qr` is the text inside the code (redrawn crisply); `img` is the uploaded picture when the code couldn't be read.
  * @typedef {{ title: string, name: string, bio: string, photo: string, socials: Socials,
- *   links: { label: string, url: string }[], payments: Payment[], charts: boolean,
+ *   links: { label: string, url: string }[], payments: Payment[], charts: boolean, theme: Theme, gigs: Gig[],
  *   fileId: string, publishedAt: string, updatedAt: string }} BankProfile
  * @typedef {{ id: string, t: string, a: string, g: string, k: string, bpm: number|null, b?: string }} BankSong
  * @typedef {{ type: string, v: number, title: string, name: string, bio: string, photo: string,
- *   socials: Socials, links: { label: string, url: string }[], payments: Payment[],
+ *   socials: Socials, links: { label: string, url: string }[], payments: Payment[], theme: Theme, gigs: Gig[],
  *   updatedAt: string, songs: BankSong[] }} BankFile
+ * @typedef {{ preset: string, accent: string, font: string, cover: string }} Theme
+ * @typedef {{ date: string, time: string, place: string, note: string, url: string }} Gig
  */
 
 /** @param {unknown} v @param {number} [max] */
@@ -84,6 +86,86 @@ export function normalizePayments(p) {
 /** @param {any} l */
 const normalizeLinks = (l) => (Array.isArray(l) ? l : []).slice(0, 5).map((x) => ({ label: str(x?.label, 40), url: webLink(x?.url) })).filter((x) => x.url);
 
+/** Looks an owner can pick. `auto` follows the visitor's own light or dark setting. Colors are the page, card and text. */
+export const THEMES = /** @type {const} */ ({
+  auto: { dark: false, bg: "", surface: "", text: "" },
+  paper: { dark: false, bg: "#f6f5f2", surface: "#ffffff", text: "#1b1b1f" },
+  night: { dark: true, bg: "#0d0d0f", surface: "#161619", text: "#f2f2f4" },
+  stage: { dark: true, bg: "#0b0a07", surface: "#1a1710", text: "#fdf3d6" },
+  sunrise: { dark: false, bg: "#fff4e6", surface: "#fffaf3", text: "#2b1608" },
+  ocean: { dark: false, bg: "#e8f2fd", surface: "#f8fbff", text: "#0b2540" },
+  garden: { dark: false, bg: "#e9f4ec", surface: "#f9fcfa", text: "#10281a" },
+  rose: { dark: false, bg: "#fdeaf0", surface: "#fff8fa", text: "#3b0a1e" }
+});
+export const FONTS = ["modern", "classic", "rounded"];
+
+/** @param {string} hex "#rrggbb" @returns {number} relative luminance 0..1 */
+export function luminance(hex) {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+/** WCAG contrast ratio of two "#rrggbb" colors. @param {string} a @param {string} b */
+export function contrast(a, b) { const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); }
+/** @param {string} hex @param {string} toward "#000000" or "#ffffff" @param {number} k 0..1 */
+export function mixHex(hex, toward, k) {
+  const h = (/** @type {string} */ x, /** @type {number} */ i) => parseInt(x.slice(i, i + 2), 16);
+  return "#" + [1, 3, 5].map((i) => Math.round(h(hex, i) + (h(toward, i) - h(hex, i)) * k).toString(16).padStart(2, "0")).join("");
+}
+/**
+ * An accent color that stays readable as text on the given surface (contrast 4.5:1 or more):
+ * the owner's color is nudged darker on light pages and lighter on dark ones until it is.
+ * @param {string} accent "#rrggbb" @param {string} surface "#rrggbb"
+ */
+export function readableAccent(accent, surface) {
+  if (!/^#[0-9a-f]{6}$/i.test(accent) || !/^#[0-9a-f]{6}$/i.test(surface)) return accent;
+  const toward = luminance(surface) > 0.4 ? "#000000" : "#ffffff";
+  let c = accent.toLowerCase();
+  for (let i = 0; i < 20 && contrast(c, surface) < 4.5; i++) c = mixHex(c, toward, 0.08);
+  return c;
+}
+/** Black or white, whichever is readable on this accent. @param {string} accent */
+export const inkOn = (accent) => (contrast(accent, "#ffffff") >= contrast(accent, "#111111") ? "#ffffff" : "#111111");
+
+/** @param {any} t @returns {Theme} */
+export function normalizeTheme(t) {
+  const o = t && typeof t === "object" ? t : {};
+  return {
+    preset: typeof o.preset === "string" && Object.prototype.hasOwnProperty.call(THEMES, o.preset) ? o.preset : "auto",
+    accent: /^#[0-9a-f]{6}$/i.test(String(o.accent || "")) ? String(o.accent).toLowerCase() : "",
+    font: FONTS.includes(o.font) ? o.font : "modern",
+    cover: imageData(o.cover)
+  };
+}
+
+/** Upcoming gigs or events the owner lists (at most six). @param {any} g @returns {Gig[]} */
+export function normalizeGigs(g) {
+  return (Array.isArray(g) ? g : []).map((x) => {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(x?.date)) && !Number.isNaN(Date.parse(String(x.date))) ? String(x.date) : "";
+    return { date, time: /^([01]\d|2[0-3]):[0-5]\d$/.test(String(x?.time)) ? String(x.time) : "", place: str(x?.place, 80), note: str(x?.note, 120), url: webLink(x?.url) };
+  }).filter((x) => x.date && x.place).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)).slice(0, 6);
+}
+/** Gigs that haven't happened yet. @param {Gig[]} gigs @param {string} today "YYYY-MM-DD" */
+export const upcomingGigs = (gigs, today) => gigs.filter((g) => g.date >= today);
+
+/**
+ * Who a QR Ph / EMVCo payment code pays: the merchant name (field 59) and city (field 60) written
+ * inside the code. The visitor can compare it with the name their own app shows before paying.
+ * @param {string} payload @returns {{ name: string, city: string }|null}
+ */
+export function paymentPayee(payload) {
+  const p = String(payload || "");
+  if (!/^000201/.test(p)) return null;
+  /** @type {Record<string, string>} */
+  const f = {};
+  for (let i = 0; i + 4 <= p.length;) {
+    const id = p.slice(i, i + 2), len = Number(p.slice(i + 2, i + 4));
+    if (!/^\d{2}$/.test(id) || !Number.isInteger(len) || i + 4 + len > p.length) break;
+    f[id] = p.slice(i + 4, i + 4 + len);
+    i += 4 + len;
+  }
+  return f["59"] ? { name: f["59"].trim().slice(0, 40), city: (f["60"] || "").trim().slice(0, 30) } : null;
+}
+
 /** @param {any} p @returns {BankProfile} */
 export function normalizeProfile(p) {
   const o = p && typeof p === "object" ? p : {};
@@ -96,6 +178,8 @@ export function normalizeProfile(p) {
     links: normalizeLinks(o.links),
     payments: normalizePayments(o.payments),
     charts: o.charts !== false,
+    theme: normalizeTheme(o.theme),
+    gigs: normalizeGigs(o.gigs),
     fileId: /^[\w-]{10,80}$/.test(str(o.fileId, 80)) ? str(o.fileId, 80) : "",
     publishedAt: str(o.publishedAt, 40),
     updatedAt: str(o.updatedAt, 40)
@@ -130,6 +214,7 @@ export function buildBankFile(profile, songs, keyOf) {
     title: profile.title || (profile.name ? `${profile.name}'s Song Bank` : "Song Bank"),
     name: profile.name, bio: profile.bio, photo: profile.photo,
     socials: profile.socials, links: profile.links, payments: profile.payments,
+    theme: normalizeTheme(profile.theme), gigs: upcomingGigs(normalizeGigs(profile.gigs), new Date(Date.now() - 864e5).toISOString().slice(0, 10)),
     updatedAt: new Date().toISOString(),
     songs: list
   };
@@ -153,6 +238,7 @@ export function parseBankFile(d) {
   return {
     type: BANK_TYPE, v: Number(d.v) || 1, title: str(d.title, 80) || "Song Bank", name: str(d.name, 80), bio: str(d.bio, 400),
     photo: imageData(d.photo), socials: normalizeSocials(d.socials, d.contacts), links: normalizeLinks(d.links), payments: normalizePayments(d.payments),
+    theme: normalizeTheme(d.theme), gigs: normalizeGigs(d.gigs),
     updatedAt: str(d.updatedAt, 40), songs
   };
 }
@@ -183,37 +269,6 @@ export function socialLinks(s, links = []) {
   if (s.website) out.push({ kind: "website", label: "Website", href: s.website, text: s.website.replace(/^https:\/\/(www\.)?/, "").replace(/\/$/, "") });
   for (const l of links) out.push({ kind: "link", label: l.label || "Link", href: l.url, text: l.label || l.url.replace(/^https:\/\/(www\.)?/, "") });
   if (s.email) out.push({ kind: "email", label: "Email", href: `mailto:${s.email}`, text: s.email });
-  return out;
-}
-
-/**
- * The request text someone sends.
- * @param {{ t: string, a?: string, key?: string }[]} picks
- * @param {{ from?: string, note?: string, bank?: string }} [o]
- */
-export function requestText(picks, o = {}) {
-  const lines = picks.map((p, i) => `${picks.length > 1 ? `${i + 1}. ` : ""}${p.t}${p.a ? ` (${p.a})` : ""}${p.key ? ` in ${p.key}` : ""}`);
-  return [
-    `Song request${o.from ? ` from ${o.from}` : ""}${o.bank ? ` · ${o.bank}` : ""}:`,
-    ...lines,
-    o.note ? `\n${o.note}` : "",
-    "\nSent with Sonata"
-  ].filter((l) => l !== "").join("\n");
-}
-
-/**
- * Where a request can go. Messenger and email open with the text written; Instagram opens the
- * chat (the request is copied first so it can be pasted).
- * @param {Socials} s @param {string} text
- * @returns {{ kind: string, label: string, href: string, prefilled: boolean }[]}
- */
-export function requestTargets(s, text) {
-  const e = encodeURIComponent(text);
-  /** @type {{ kind: string, label: string, href: string, prefilled: boolean }[]} */
-  const out = [];
-  if (s.facebook && !/^\d+$/.test(s.facebook)) out.push({ kind: "messenger", label: "Messenger", href: `https://m.me/${s.facebook}?text=${e}`, prefilled: true });
-  if (s.instagram) out.push({ kind: "instagram", label: "Instagram", href: `https://ig.me/m/${s.instagram}`, prefilled: false });
-  if (s.email) out.push({ kind: "email", label: "Email", href: `mailto:${s.email}?subject=${encodeURIComponent("Song request")}&body=${e}`, prefilled: true });
   return out;
 }
 

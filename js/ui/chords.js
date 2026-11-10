@@ -4,11 +4,11 @@
 import { $, esc, icon, openSheet, paintIcons, toast, copyText } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, tick, renderOptions } from "./ctx.js";
-import { pretty, noteName, NOTE_TO_PC } from "../core/music.js";
+import { pretty, noteName, NOTE_TO_PC, findKeysFromChords, keyShort } from "../core/music.js";
 import { uniqueChords } from "../core/chart.js";
 import { QUALITIES, QUALITY_GROUPS, describeChord, voicings, bassMap, pianoVoicing, inversions, TUNINGS, ROOTS } from "../core/chords.js";
 import { chordBox, neckMap, pianoKeys } from "./diagrams.js";
-import { playChord, pluck, piano } from "../audio.js";
+import { playChord, pluck, piano, preloadSamples } from "../audio.js";
 
 const KEY = "sonata_chord";
 let current = "C";
@@ -23,14 +23,21 @@ export function hear(name, voice = "piano") {
   const d = describeChord(name);
   if (!d) return;
   tick();
-  if (voice === "piano") { const v = pianoVoicing(name); if (v) { piano(v.bass, 0.6); v.notes.forEach((m) => piano(m, 0.62)); } return; }
+  if (voice === "piano") {
+    const v = pianoVoicing(name);
+    if (v) {
+      piano(v.bass, 0.72, 0);
+      v.notes.forEach((m, i) => piano(m, i === v.notes.length - 1 ? 0.68 : 0.56, (i + 1) * 0.014));
+    }
+    return;
+  }
   if (voice === "bass") { const v = pianoVoicing(name); if (v) pluck(v.bass - 12, "bass", 0.9); return; }
   const tun = voice === "ukulele" ? TUNINGS.ukulele.strings : TUNINGS.guitar.strings;
   const vs = voicings(name, tun);
   const v = vs[Math.min(shape[voice], vs.length - 1)];
   if (!v) { playChord(d.pcs, "guitar", d.bassPc); return; }
   // Strum low to high (ukulele: string order, its high G rings first).
-  v.frets.forEach((f, i) => { if (f >= 0) pluck(tun[i] + f, voice === "ukulele" ? "uke" : "guitar", 0.8, i * 0.028); });
+  v.frets.forEach((f, i) => { if (f >= 0) pluck(tun[i] + f, voice === "ukulele" ? "uke" : "guitar", i === 0 ? 0.85 : 0.76, i * 0.028); });
 }
 
 /** Chord diagrams for one chord, as HTML. @param {string} name @param {{ compact?: boolean }} [o] */
@@ -86,10 +93,21 @@ function songChords() {
 }
 
 export function initChords() {
+  preloadSamples("piano");
+  preloadSamples("guitar");
+  preloadSamples("uke");
+  preloadSamples("bass");
   try { const c = localStorage.getItem(KEY); if (c && describeChord(c)) current = c; } catch { /* ignore */ }
   const view = $("view-chords");
   $("chordRoots").innerHTML = ROOTS.map((r) => `<button type="button" class="key-btn" data-root="${r}">${esc(pretty(r))}</button>`).join("");
-  $("chordQuals").innerHTML = QUALITY_GROUPS.map((g) => `<div class="cq-group"><span class="cq-label">${esc(g)}</span><div class="chip-row">${QUALITIES.filter((q) => q.group === g).map((q) => `<button type="button" class="chip" data-qual="${esc(q.id)}">${esc(pretty(q.label))}</button>`).join("")}</div></div>`).join("");
+  const BASIC_QUALS = new Set(["", "m", "7", "maj7", "m7", "sus2", "sus4", "add9", "6", "m6", "9", "maj9", "m9", "7sus4", "dim", "aug", "5"]);
+  const chipBtn = (/** @type {{ id: string, label: string }} */ q) => `<button type="button" class="chip" data-qual="${esc(q.id)}">${esc(pretty(q.label))}</button>`;
+  const basicRow = `<div class="chip-row">${QUALITIES.filter((q) => BASIC_QUALS.has(q.id)).map(chipBtn).join("")}</div>`;
+  const moreGroups = QUALITY_GROUPS.map((g) => {
+    const qs = QUALITIES.filter((q) => q.group === g && !BASIC_QUALS.has(q.id));
+    return qs.length ? `<div class="cq-group"><span class="cq-label">${esc(g)}</span><div class="chip-row">${qs.map(chipBtn).join("")}</div></div>` : "";
+  }).join("");
+  $("chordQuals").innerHTML = `${basicRow}<details class="cq-more"><summary class="chip cq-summary">${esc(t("moreChords", "More chord types (11ths, 13ths, altered, jazz)"))}</summary><div class="cq-more-body">${moreGroups}</div></details>`;
   const bassSel = /** @type {HTMLSelectElement} */ ($("chordBass"));
   bassSel.innerHTML = `<option value="">${esc(t("noSlash", "Root (no slash)"))}</option>` + ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"].map((n) => `<option value="${n}">/ ${esc(pretty(n))}</option>`).join("");
   view.addEventListener("click", (e) => {
@@ -116,6 +134,17 @@ export function initChords() {
   };
   search.addEventListener("input", tryName);
   search.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search.blur(); } });
+  const ckfInput = /** @type {HTMLInputElement|null} */ (document.getElementById("chordKeyFinder"));
+  const ckfRes = document.getElementById("chordKeyFinderResult");
+  if (ckfInput && ckfRes) {
+    ckfInput.addEventListener("input", () => {
+      const res = findKeysFromChords(ckfInput.value);
+      if (!res) { ckfRes.hidden = true; ckfRes.innerHTML = ""; return; }
+      ckfRes.hidden = false;
+      const chips = res.progression.map((p) => `<button type="button" class="chip chord-chip" data-pick="${esc(p.name)}">${esc(pretty(p.name))} <small class="muted">${esc(pretty(p.roman))}</small></button>`).join("");
+      ckfRes.innerHTML = `<div class="kf-row"><span class="kf-main">${esc(t("detectedKey", "Key"))}: <strong>${esc(pretty(res.best.name))}</strong> <span class="muted">(${esc(pretty(keyShort(res.relative)))})</span></span></div><div class="chip-row">${chips}</div>`;
+    });
+  }
 }
 
 /** @param {string} spec "guitar:1" */
@@ -148,6 +177,8 @@ export function renderChords() {
   if (!d) return;
   document.querySelectorAll("#chordRoots [data-root]").forEach((b) => { const on = NOTE_TO_PC[/** @type {HTMLElement} */ (b).dataset.root || ""] === d.rootPc; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
   document.querySelectorAll("#chordQuals [data-qual]").forEach((b) => { const on = /** @type {HTMLElement} */ (b).dataset.qual === d.quality; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); });
+  const moreDet = /** @type {HTMLDetailsElement|null} */ (document.querySelector("#chordQuals .cq-more"));
+  if (moreDet && moreDet.querySelector(`[data-qual="${CSS.escape(d.quality)}"]`)) moreDet.open = true;
   /** @type {HTMLSelectElement} */ ($("chordBass")).value = d.bass ? (["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"].find((n) => NOTE_TO_PC[n] === d.bassPc) || "") : "";
   const sc = songChords();
   $("songChordsRow").hidden = !sc.length;

@@ -69,8 +69,12 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .chord-bar { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; }
 .chord-bar::-webkit-scrollbar { display: none; }
 .chord-bar .chip { min-height: 32px; flex: none; }
-.cp-type { width: auto; min-width: 110px; flex: none; min-height: 32px; padding-top: 0; padding-bottom: 0; font-size: var(--fs-sm); }
-.cp-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.cp-type { width: auto; min-width: 138px; flex: none; min-height: 36px; padding-top: 0; padding-bottom: 0; border-radius: 999px; font-size: var(--fs-sm); font-weight: 600; }
+.cp-bar { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 8px; padding-bottom: 2px; scrollbar-width: none; }
+.cp-bar::-webkit-scrollbar { display: none; }
+.cp-bar > * { flex: none; }
+.cp-add { width: 186px; min-height: 34px; padding: 0 12px; border-radius: 999px; font-size: max(16px, var(--fs-sm)); font-weight: 550; }
+.cp-step { font-family: var(--mono); font-weight: 700; padding: 0 10px; }
 .cp-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
 .cp-chips::-webkit-scrollbar { display: none; }
 .cp-chips .chip { flex: none; }

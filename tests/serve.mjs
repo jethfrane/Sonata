@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const project = join(fileURLToPath(import.meta.url), "..", "..");
 const port = Number(process.argv[2] || 5391);
 const root = join(project, process.argv[3] || "dist");
-const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".webmanifest": "application/manifest+json" };
+const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".woff2": "font/woff2", ".webmanifest": "application/manifest+json", ".mp3": "audio/mpeg", ".wav": "audio/wav" };
 
 http.createServer(async (req, res) => {
   let path; try { path = decodeURIComponent((req.url || "/").split("?")[0]); } catch { path = "/"; }

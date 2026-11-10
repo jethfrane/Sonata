@@ -37,7 +37,7 @@ const PAGES = {
   guitar: ["Guitar fretboard", "Chords and scales on guitar, bass and ukulele.", chordBox],
   tuner: ["Tuner", "Tune guitar, bass or ukulele with your phone.", tuner],
   metronome: ["Metronome", "Steady time with tap tempo, 2/4 to 12/8.", metro],
-  bank: ["Song Bank", "Find a song, pick a key and send a request.", list + qr]
+  bank: ["Song Bank", "Browse the songs and read a chart in your key.", list + qr]
 };
 
 const css = `@font-face{font-family:I;src:url(${INTER});font-weight:100 900}@font-face{font-family:M;src:url(${MONO});font-weight:100 900}
