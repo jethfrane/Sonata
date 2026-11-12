@@ -1,5 +1,16 @@
 [
   {
+    "version": "4.4.0",
+    "date": "2026-11-13",
+    "whatsNew": "A clearer start, and your songs are better protected on this device.",
+    "changes": [
+      "An empty library now offers three ways in: import a song, write one, or try the demo.",
+      "Once you have a song, Sonata asks the browser to keep its storage so your songs are not cleared to free space. Settings says whether they are protected or backed up.",
+      "The offer to install Sonata now appears after you have a song, not when you first arrive.",
+      "Chart editor on phones: a fade on the right edge shows when a long chord line continues off-screen."
+    ]
+  },
+  {
     "version": "4.3.0",
     "date": "2026-11-13",
     "whatsNew": "A simpler Sonata: fewer buttons and menus, and a Song Bank that is just your song list.",

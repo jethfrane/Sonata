@@ -440,6 +440,7 @@ export function openSettings() {
       <label class="switch-row"><span>${esc(t("haptics", "Vibrate on tap"))}</span><input type="checkbox" class="toggle" data-set="haptics"${s.haptics ? " checked" : ""}></label>
       <label class="switch-row"><span>${esc(t("autoArranger", "Add my name as arranger"))}</span><input type="checkbox" class="toggle" data-set="autoFillArranger"${s.autoFillArranger ? " checked" : ""}></label>
       <h3 class="group-title">${esc(t("data", "Data & backup"))}</h3>
+      <p class="card-hint" id="storageNote">${esc(t("storageLocal", "Your songs are saved on this device."))}</p>
       <div class="btn-row">
         <button class="btn" type="button" id="exportBackup">${icon("download")}${esc(t("exportBackup", "Export backup file"))}</button>
         <label class="btn">${icon("upload")}${esc(t("importBackup", "Import backup file"))}<input type="file" id="importBackup" accept="application/json,.json" hidden></label>
@@ -451,6 +452,16 @@ export function openSettings() {
       </div>
     </div>`
   });
+  // Say plainly whether the browser may clear the songs, and what to do about it.
+  (async () => {
+    const kept = await navigator.storage?.persisted?.().catch(() => false);
+    const backedUp = Boolean(app.drive?.signedIn);
+    const note = body.querySelector("#storageNote");
+    if (note) note.textContent = kept
+      ? t("storageKept", "Your songs are saved on this device, and the browser will not clear them on its own.")
+      : backedUp ? t("storageDrive", "Your songs are saved on this device and backed up to your Google Drive.")
+      : t("storageRisk", "Your songs are saved on this device only. A browser can clear them when space runs low, so back up to Google Drive or export a backup file.");
+  })();
   body.addEventListener("input", (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
     const k = el.dataset.set;

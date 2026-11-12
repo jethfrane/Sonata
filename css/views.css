@@ -28,12 +28,16 @@
 .empty-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .empty .empty-actions { justify-content: center; }
 
-.welcome { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: center; padding: 36px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.welcome { padding: 36px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .welcome h2 { font-size: var(--fs-xl); font-weight: 750; letter-spacing: -.03em; line-height: 1.2; }
-.welcome p { margin: 10px 0 20px; color: var(--text-2); max-width: 48ch; }
-.welcome-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.welcome-steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); font-size: var(--fs-sm); color: var(--text-2); }
-.welcome-steps .icon { color: var(--accent); width: 18px; height: 18px; margin-top: 1px; }
+.welcome p { margin: 8px 0 22px; color: var(--text-2); }
+.welcome-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.welcome-choice { display: flex; align-items: flex-start; gap: 12px; min-height: 84px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); color: var(--text); text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+.welcome-choice:hover { border-color: var(--accent); }
+.welcome-choice:first-child { background: var(--accent-soft); border-color: var(--accent-mid); }
+.welcome-choice .icon { flex: none; width: 22px; height: 22px; margin-top: 1px; color: var(--accent-strong); }
+.welcome-choice b { display: block; font-size: var(--fs-md, 15px); font-weight: 700; }
+.welcome-choice small { display: block; margin-top: 3px; font-size: var(--fs-sm); line-height: 1.4; color: var(--text-2); }
 
 /* ---------- Chart editor ---------- */
 #view-editor { padding: 22px var(--gutter) 28px; max-width: 1520px; margin: 0 auto; }
@@ -138,7 +142,8 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .meta-row { align-items: flex-start; }
   .details-btn span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .details-btn { width: 36px; padding: 0; flex: none; }
-  .welcome { grid-template-columns: 1fr; padding: 24px; gap: 20px; }
+  .welcome { padding: 24px; }
+  .welcome-choices { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   :root { --chart-size: 15px; }
@@ -174,7 +179,6 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .view-mode button { flex: 1; padding: 0 4px; }
   .chart-input, #preview { padding: 14px; }
   .welcome { padding: 20px 16px; }
-  .welcome .empty-actions .btn { flex: 1; }
 }
 @media (max-width: 380px) {
   .tool-group:first-child .icon-btn { width: 30px; }
@@ -183,3 +187,6 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 /* Sideways-scrolling chip rows fade at the trailing edge so it is clear there is more. The end padding lets the last chip scroll clear of the fade. */
 .chord-bar, .cp-bar, .cp-chips, .quickstart-chips { padding-inline-end: 28px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 [dir="rtl"] .chord-bar, [dir="rtl"] .cp-bar, [dir="rtl"] .cp-chips, [dir="rtl"] .quickstart-chips { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+
+/* A long chord line runs off the right edge of the editor: a fade shows there is more to scroll to. */
+.pane-edit.more-right::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 30px; pointer-events: none; border-radius: 0 var(--radius-lg) var(--radius-lg) 0; background: linear-gradient(to right, transparent, var(--surface)); }

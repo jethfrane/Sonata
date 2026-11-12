@@ -91,6 +91,12 @@ function closePlayer() {
 }
 
 export function initEditor() {
+  // Show a fade on the right edge while a long line has more to scroll to.
+  const edge = () => { const ta = body(); ta.closest(".pane-edit")?.classList.toggle("more-right", ta.scrollWidth - ta.clientWidth - ta.scrollLeft > 4); };
+  for (const ev of ["input", "scroll"]) body().addEventListener(ev, edge, { passive: true });
+  window.addEventListener("resize", edge, { passive: true });
+  store.on("song-open", () => requestAnimationFrame(edge));
+  requestAnimationFrame(edge);
   $("songLinks").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-yt]"));
     if (!b) return;

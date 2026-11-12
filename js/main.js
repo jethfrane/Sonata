@@ -85,6 +85,7 @@ function show(view, opts = {}) {
   if (view === "editor" && !store.active()) store.createSong({}, app.drive?.profile.name || "");
   app.view = view;
   $("app").dataset.view = view;
+  if (view === "songs" && changed && !first) afterFirstSong();
   $("app").dataset.ready = "1";
   document.querySelectorAll("button[data-view]").forEach((b) => {
     const el = /** @type {HTMLElement} */ (b);
@@ -200,6 +201,25 @@ async function handleShareLink() {
   else store.showShared(/** @type {any} */ ({ ...u, id: "shared", isFavorite: false, createdAt: "", updatedAt: "", lastOpenedAt: "" }));
   show("editor");
   return true;
+}
+
+/**
+ * Once there is a real song: ask the browser to keep Sonata's storage (so it is never cleared to
+ * free space), and offer to install, once. Asking on arrival would be noise; now there is something to keep.
+ */
+function afterFirstSong() {
+  if (!store.songs.some((s) => !s.readonly && String(s.body || "").trim().length >= 20)) return;
+  try {
+    if (!localStorage.getItem("sonata_persist_asked") && navigator.storage?.persist) {
+      localStorage.setItem("sonata_persist_asked", "1");
+      navigator.storage.persist().catch(() => {});
+    }
+    const p = /** @type {any} */ (app).installPrompt;
+    if (p && !localStorage.getItem("sonata_install_offered")) {
+      localStorage.setItem("sonata_install_offered", "1");
+      toast(t("installOffer", "Install Sonata to open it like an app, even offline."), "info", { ms: 12000, action: t("install", "Install Sonata"), onAction: () => { p.prompt(); p.userChoice.finally(() => { /** @type {any} */ (app).installPrompt = null; }); } });
+    }
+  } catch { /* storage blocked */ }
 }
 
 function registerServiceWorker() {

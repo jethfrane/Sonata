@@ -314,6 +314,25 @@ for (const w of [360, 390]) {
   await p.close();
 }
 
+console.log("First run");
+p = await open("/songs", { songs: [], touch: true, viewport: { width: 390, height: 844 } });
+ok(await p.locator(".welcome-choice").count() === 3 && await p.locator(".welcome-steps").count() === 0 && (await p.locator(".welcome-choice").first().innerText()).includes("Import"), "an empty library offers three ways in, Import first, and no feature list");
+const fits = await p.evaluate(() => [...document.querySelectorAll(".welcome-choice")].every((el) => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.height >= 44; }));
+ok(fits, "the three choices fit a phone and are easy to tap");
+await p.click('.welcome-choice[data-act="import"]'); await p.waitForTimeout(400);
+ok((await p.textContent("#sheetTitle")).includes("Import") && await p.isVisible("#lkText"), "Import a song opens Import");
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+await p.close();
+p = await open("/editor", { touch: true, viewport: { width: 390, height: 844 }, songs: [{ id: "song-feat-wide00", title: "Wide", body: "G            D/F#          Em7            C              G/B           Am7          Dsus4     D\nA very long line of words that runs well past the right edge of a phone screen for sure" }] });
+ok(await p.locator(".pane-edit.more-right").count() === 1, "a long chord line shows the fade that says the editor scrolls sideways");
+await p.evaluate(() => { const ta = document.getElementById("songBody"); ta.scrollLeft = ta.scrollWidth; ta.dispatchEvent(new Event("scroll")); }); await p.waitForTimeout(150);
+ok(await p.locator(".pane-edit.more-right").count() === 0, "the fade goes away at the end of the line");
+await p.click('.bottom-nav [data-view="songs"]'); await p.waitForTimeout(300);
+ok(await p.evaluate(() => localStorage.getItem("sonata_persist_asked")) === "1", "with a real song saved, Sonata asks the browser to keep its storage");
+await p.click('#settingsBtn, [aria-label="Settings"]'); await p.waitForTimeout(400);
+ok(/saved on this device/.test(await p.textContent("#storageNote")), "Settings says where the songs are kept and whether they are safe");
+await p.close();
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);

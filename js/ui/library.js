@@ -4,7 +4,7 @@ import { t, getLang } from "./i18n.js";
 import { store, app, soundingKey, tick, renderOptions } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
-import { openShare, openSetlistEditor, printSetlist, openBankManager } from "./sheets-lazy.js";
+import { openShare, openSetlistEditor, printSetlist, openBankManager, openLinksImport } from "./sheets-lazy.js";
 import { addDemoSong } from "./editor.js";
 
 /** @type {"all"|"favorites"|"setlists"|"bank"} */
@@ -114,6 +114,7 @@ function onListClick(e) {
   else if (act === "set-more") setlistMenu(id);
   else if (act === "create") newSong();
   else if (act === "demo") { addDemoSong(); app.show("editor"); }
+  else if (act === "import") openLinksImport();
   else if (act === "create-set") openSetlistEditor();
   else if (act === "all") { filter = "all"; renderLibrary(); }
   else if (act === "bank") openBankManager();
@@ -261,22 +262,17 @@ export function renderLibrary() {
   if (q) songs = songs.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.body}`).includes(q));
 
   if (!store.songs.length) {
-    const step = (/** @type {string} */ ic, /** @type {string} */ k, /** @type {string} */ en) => `<li>${icon(ic)}<span>${esc(t(k, en))}</span></li>`;
+    // First visit: three ways in, nothing else. Import comes first: most people already have their songs somewhere.
+    const choice = (/** @type {string} */ act, /** @type {string} */ ic, /** @type {[string, string]} */ title, /** @type {[string, string]} */ sub) =>
+      `<button type="button" class="welcome-choice" data-act="${act}">${icon(ic)}<span><b>${esc(t(title[0], title[1]))}</b><small>${esc(t(sub[0], sub[1]))}</small></span></button>`;
     list.innerHTML = `<div class="welcome">
-      <div class="welcome-text">
-        <h2>${esc(t("welcomeTitle", "Your chord charts, ready for Sunday"))}</h2>
-        <p>${esc(t("welcomeText", "Write a chart, transpose it for your singer and put it on stage. It saves on this device, works offline and needs no account."))}</p>
-        <div class="empty-actions">
-          <button class="btn primary" type="button" data-act="create">${icon("plus")}${esc(t("createSong", "Write a song"))}</button>
-          <button class="btn" type="button" data-act="demo">${icon("sparkles")}${esc(t("tryDemo", "Try the demo song"))}</button>
-        </div>
+      <h2>${esc(t("welcomeTitle", "Your chord charts, ready for Sunday"))}</h2>
+      <p>${esc(t("welcomeText2", "Saved on this device. Works offline. No account."))}</p>
+      <div class="welcome-choices">
+        ${choice("import", "download", ["welcomeImport", "Import a song"], ["welcomeImportSub", "Paste a link to a chord page, or the chords."])}
+        ${choice("create", "edit", ["createSong", "Write a song"], ["welcomeWriteSub", "Start from a blank chart."])}
+        ${choice("demo", "sparkles", ["tryDemo", "Try the demo song"], ["welcomeDemoSub", "See a finished chart and the stage view."])}
       </div>
-      <ul class="welcome-steps">
-        ${step("edit", "welcomeStep1", "Type chords above the words. They stay lined up on any screen.")}
-        ${step("key", "welcomeStep2", "Tap − or + to change key. Capo shapes are shown for you.")}
-        ${step("present", "welcomeStep3", "Present opens a big stage view with auto-scroll.")}
-        ${step("share", "welcomeStep4", "Share a link or QR code. The song travels inside it.")}
-      </ul>
     </div>`;
     return;
   }
