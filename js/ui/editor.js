@@ -365,7 +365,7 @@ function renderChordBar() {
   const used = uniqueChords(s.body, renderOptions(s, "chords")).slice(0, 8);
   const type = CHORD_TYPES.some((x) => x.id === barType) ? barType : "triad";
   const list = [...new Set([...chordsForKey(key, type).map((c) => c.name), ...used])];
-  const select = `<select class="select cp-type" id="barType" aria-label="${esc(t("chordType", "Chord type"))}">${CHORD_TYPES.map((x) => `<option value="${x.id}"${x.id === type ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
+  const select = `<select class="select cp-type" id="barType" aria-label="${esc(t("chordType", "Chord type"))}">${CHORD_TYPES.map((x) => `<option value="${x.id}"${/** @type {any} */ (x).more ? " data-more" : ""}${x.id === type ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
   const html = select + list.map((c) => `<button type="button" class="chip chord-chip" data-chord="${esc(c)}">${esc(pretty(c))}</button>`).join("");
   if (bar.dataset.html !== html) { bar.innerHTML = html; bar.dataset.html = html; }
 }

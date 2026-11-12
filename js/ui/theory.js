@@ -106,7 +106,7 @@ export function initTheory() {
   });
   try { const ct = localStorage.getItem("sonata_theory_type"); if (ct && CHORD_TYPES.some((x) => x.id === ct)) chordType = ct; } catch { /* ignore */ }
   const typeSel = /** @type {HTMLSelectElement} */ ($("theoryType"));
-  typeSel.innerHTML = CHORD_TYPES.map((x) => `<option value="${x.id}"${x.id === chordType ? " selected" : ""}>${esc(x.label)}</option>`).join("");
+  typeSel.innerHTML = CHORD_TYPES.map((x) => `<option value="${x.id}"${/** @type {any} */ (x).more ? " data-more" : ""}${x.id === chordType ? " selected" : ""}>${esc(x.label)}</option>`).join("");
   typeSel.addEventListener("change", () => { chordType = typeSel.value; try { localStorage.setItem("sonata_theory_type", chordType); } catch { /* ignore */ } lastChord = ""; $("theoryShapes").hidden = true; renderTheory(); });
   $("theoryShapes").addEventListener("click", () => { if (lastChord) openChordSheet(lastChord); });
   $("theoryFromSongBtn").addEventListener("click", () => { picked = null; locked = false; saveLock(); renderTheory(); });

@@ -1,7 +1,7 @@
 // @ts-check
 import { $, $$, esc } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, shapeKey, renderOptions, tick, drumLooper } from "./ctx.js";
+import { store, app, shapeKey, renderOptions, tick } from "./ctx.js";
 import { uniqueChords } from "../core/chart.js";
 import { SCALES, mod12, noteName, prefersFlats, keyFromTonic, keyShort, pretty, parseChord, diatonicChords, CHORD_TYPES, chordsForKey, chordInfo, identifyChord, transposeChord, DEGREE_FROM_SEMITONES, INTERVAL_LABELS } from "../core/music.js";
 import { piano, pluck, playChord, preloadSamples } from "../audio.js";
@@ -326,14 +326,6 @@ function onPlayer(name, target) {
     p.custom = [];
   }
   else if (role === "warmup") { playWarmup(name); return; }
-  else if (role === "beat") {
-    drumLooper.toggle();
-    renderPlayer("piano");
-    renderPlayer("guitar");
-    return;
-  }
-  else if (role === "step-down") { stepSemitone(name, -1); return; }
-  else if (role === "step-up") { stepSemitone(name, 1); return; }
   else if (role === "again") {
     if (p.build) playBuilt(name);
     else if (p.chord) playFor(name, p.chord);
@@ -424,7 +416,7 @@ function renderPlayer(name) {
   ];
   const list = chordsFor(name);
   if (p.chord && !list.includes(p.chord)) p.chord = null;
-  const sel = `<select class="select cp-type" data-role="type" aria-label="${esc(t("chordType", "Chord type"))}">${types.map((x) => `<option value="${x.id}"${x.id === type ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
+  const sel = `<select class="select cp-type" data-role="type" aria-label="${esc(t("chordType", "Chord type"))}">${types.map((x) => `<option value="${x.id}"${/** @type {any} */ (x).more ? " data-more" : ""}${x.id === type ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>`;
   const chips = list.map((c) => `<button type="button" class="chip chord-chip${!p.build && p.chord === c ? " on" : ""}" data-chord="${esc(c)}" aria-pressed="${!p.build && p.chord === c}">${esc(pretty(c))}</button>`).join("");
   const builtId = p.build ? identifyChord(builtMidis(name), prefersFlats(playKey())) : null;
   const canPlayAgain = p.build ? builtMidis(name).length > 0 : Boolean(p.chord);
@@ -433,8 +425,7 @@ function renderPlayer(name) {
     ? `${builtId ? `<button type="button" class="chip accent" data-role="save-built">+ ${esc(t("keepChord", "Keep {c}", { c: pretty(builtId) }))}</button>` : ""}<button type="button" class="chip" data-role="clear-build">${esc(t("clearNotes", "Clear"))}</button>`
     : "";
   const addInput = `<input type="text" class="input cp-add" data-role="add-chord" placeholder="${esc(t("addChordPh", "+ Type chord (e.g. D/F#)"))}" aria-label="${esc(t("addChordLabel", "Type a chord to add and play"))}">`;
-  const beatOn = drumLooper.running;
-  $(name + "Player").innerHTML = `<div class="cp-bar">${sel}<button type="button" class="chip${!p.chord && !p.build ? " on" : ""}" data-role="scale" aria-pressed="${!p.chord && !p.build}">${esc(t("scaleChip", "Scale"))}</button><button type="button" class="chip${p.build ? " on" : ""}" data-role="build" aria-pressed="${p.build}">${esc(t("buildChord", "Build chord"))}</button>${canPlayAgain ? `<button type="button" class="chip" data-role="again" aria-label="${esc(t("playAgain", "Play again"))}">▶ ${esc(name === "guitar" ? t("strum", "Strum") : t("playIt", "Play"))}</button>` : ""}${canShapes ? `<button type="button" class="chip" data-role="shapes">${esc(t("chordShapes", "Shapes"))}</button>` : ""}${buildActions}<button type="button" class="chip" data-role="warmup" title="${esc(t("warmupHint", "Play 1–3–5–8–5–3–1 vocal warm-up"))}">♪ ${esc(t("warmup", "Warm-up"))}</button><button type="button" class="chip${beatOn ? " on" : ""}" data-role="beat" aria-pressed="${beatOn}" title="${esc(t("beatLoopHint", "Play/stop the drum beat loop"))}">🥁 ${esc(t("beatLoop", "Beat"))}</button><button type="button" class="chip cp-step" data-role="step-down" aria-label="${esc(t("transposeDown", "Half step down"))}">− ½</button><button type="button" class="chip cp-step" data-role="step-up" aria-label="${esc(t("transposeUp", "Half step up"))}">+ ½</button>${addInput}</div><div class="cp-chips">${chips}</div>`;
+  $(name + "Player").innerHTML = `<div class="cp-bar">${sel}<button type="button" class="chip${!p.chord && !p.build ? " on" : ""}" data-role="scale" aria-pressed="${!p.chord && !p.build}">${esc(t("scaleChip", "Scale"))}</button><button type="button" class="chip${p.build ? " on" : ""}" data-role="build" aria-pressed="${p.build}">${esc(t("buildChord", "Build chord"))}</button>${canPlayAgain ? `<button type="button" class="chip" data-role="again" aria-label="${esc(t("playAgain", "Play again"))}">▶ ${esc(name === "guitar" ? t("strum", "Strum") : t("playIt", "Play"))}</button>` : ""}${canShapes ? `<button type="button" class="chip" data-role="shapes">${esc(t("chordShapes", "Shapes"))}</button>` : ""}${buildActions}<button type="button" class="chip" data-role="warmup" title="${esc(t("warmupHint", "Play 1–3–5–8–5–3–1 vocal warm-up"))}">♪ ${esc(t("warmup", "Warm-up"))}</button>${addInput}</div><div class="cp-chips">${chips}</div>`;
 }
 
 /** Held notes per instrument, so the readout can name what you are playing. @type {Record<string, number[]>} */

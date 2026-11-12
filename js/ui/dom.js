@@ -287,11 +287,17 @@ export function initSelectMenus() {
     drawer.setAttribute("role", "group");
     drawer.setAttribute("aria-label", sel.getAttribute("aria-label") || "Options");
     const opts = [...sel.options];
-    drawer.innerHTML = opts.map((o) => {
-      const on = o.value === sel.value;
-      return `<button type="button" class="chip ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-pressed="${on}">${esc(o.textContent || "")}</button>`;
-    }).join("");
+    // Options marked data-more stay behind a "More" chip unless one of them is the current choice.
+    let showAll = !opts.some((o) => o.dataset.more !== undefined) || opts.some((o) => o.dataset.more !== undefined && o.value === sel.value);
+    const paint = () => {
+      drawer.innerHTML = opts.filter((o) => showAll || o.dataset.more === undefined).map((o) => {
+        const on = o.value === sel.value;
+        return `<button type="button" class="chip ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-pressed="${on}">${esc(o.textContent || "")}</button>`;
+      }).join("") + (showAll ? "" : `<button type="button" class="chip ui-select-more" aria-expanded="false">${esc(document.documentElement.lang === "fil" ? "Iba pa…" : "More…")}</button>`);
+    };
+    paint();
     drawer.addEventListener("click", (ev) => {
+      if (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-more")) { showAll = true; paint(); /** @type {HTMLElement|null} */ (drawer.querySelector(".ui-select-opt[data-val]:not(.on)"))?.focus(); return; }
       const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-opt"));
       if (!btn) return;
       const val = btn.dataset.val ?? "";

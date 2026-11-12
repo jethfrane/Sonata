@@ -19,7 +19,6 @@ import { stopTuner } from "./ui/tuner.js";
 import { initStage, openStage, closeStage, isStageOpen, onStageChange } from "./ui/stage.js";
 import { parsePath, buildPath, findSong, PAGE_META, SECTIONS } from "./router.js";
 import { setInstrument, currentInstrument } from "./ui/play.js";
-import { initMascot } from "./ui/mascot.js";
 import { openSettings, openAccount, openImportSet, chordsModule, bankModule, openLinksImport } from "./ui/sheets-lazy.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
@@ -174,7 +173,7 @@ async function restoreBank() {
   const found = await app.drive.findBank();
   const file = found && parseBankFile(found.body);
   if (!found || !file) return;
-  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, photo: file.photo, socials: file.socials, links: file.links, payments: file.payments, theme: file.theme, gigs: file.gigs, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
+  store.bank = normalizeProfile({ ...store.bank, title: file.title, name: file.name, bio: file.bio, theme: file.theme, gigs: file.gigs, charts: file.songs.some((x) => x.b), fileId: found.id, publishedAt: file.updatedAt });
   store.changed("settings");
   (await bankModule())?.watchBank();
 }
@@ -349,7 +348,6 @@ async function boot() {
   store.emit("song-open", store.active());
 
   fetch("/version.json", { cache: "no-cache" }).then((r) => r.json()).then((v) => { /** @type {any} */ (app).version = v.version; }).catch(() => {});
-  initMascot();
   registerServiceWorker();
   // Test hook for the local browser tests only; never on the published site.
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, renderPlay };

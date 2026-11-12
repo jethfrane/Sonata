@@ -23,7 +23,7 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,woff2,svg,png,json,webmanifest}"],
         // Only the Latin font files are stored for offline use; the browser fetches other
         // scripts (Cyrillic, Greek, Vietnamese) and instrument sample banks on demand.
-        globIgnores: ["screenshots/**", "og/**", "samples/**", "assets/jsQR-*.js", "icons/og-image.png", "icons/*-512.png", "**/*-{latin-ext,cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2"],
+        globIgnores: ["screenshots/**", "og/**", "samples/**", "icons/og-image.png", "icons/*-512.png", "**/*-{latin-ext,cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2"],
         runtimeCaching: [
           {
             urlPattern: /^\/samples\/.*\.(mp3|wav)$/i,

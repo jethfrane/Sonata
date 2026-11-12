@@ -42,7 +42,6 @@ export const DEFAULT_SETTINGS = {
   haptics: true,
   enharmonicPref: "auto",
   viewMode: "chords",
-  buddy: true,
   a4: 440,
   autoFillArranger: true
 };
@@ -134,7 +133,6 @@ export function normalizeSettings(raw) {
   s.autoScrollSpeed = int(s.autoScrollSpeed, 5, 180, 30);
   s.a4 = int(s.a4, 415, 466, 440);
   s.editorLineHeight = Math.min(2.4, Math.max(1.2, Number(s.editorLineHeight) || 1.55));
-  s.buddy = s.buddy !== false;
   s.haptics = s.haptics !== false;
   return s;
 }

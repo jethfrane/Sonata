@@ -1,7 +1,7 @@
 // @ts-check
 // Dialog sheets: key & capo, song details, share, setlist editor, settings,
 // Drive account, about, and shared-setlist import.
-import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime, paintIcons } from "./dom.js";
+import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime } from "./dom.js";
 import { t, getLang, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
@@ -271,9 +271,7 @@ export async function openShare(setId) {
   const many = set ? store.setlistSongs(set).length : (store.currentSetlist()?.songs.length || 1);
   const draw = () => {
     // The QR holds the upper-case form of the link (QR alphanumeric mode: a smaller, easier-to-scan code).
-    const qrText = url.includes("tinyurl.com") ? url : qrLink;
-    const svg = qrSvg(qrText, { ecc: "L", margin: 4 });
-    const short = !url.includes("tinyurl.com") && url.length > 300;
+    const svg = qrSvg(qrLink, { ecc: "L", margin: 4 });
     return `<div class="share">
       <div class="share-top">
         <div class="qr-box">${svg || `<p>${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p>`}</div>
@@ -285,10 +283,8 @@ export async function openShare(setId) {
             ${"share" in navigator ? `<button class="btn" type="button" id="shareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
             ${svg ? `<button class="btn" type="button" id="shareQr">${icon("qr")}${esc(t("downloadQr", "QR image"))}</button>` : ""}
             ${set ? `<button class="btn" type="button" id="shareSongLinks">${icon("link")}${esc(t("songLinks", "Song links"))}</button>` : ""}
-            ${short ? `<button class="btn" type="button" id="shareShort">${esc(t("shortLink", "Make a short link"))}</button>` : ""}
           </div>
-          ${short ? `<p class="card-hint">${esc(t("shortLinkNote", "This sends the link to TinyURL to shorten it."))}</p>` : ""}
-          ${set ? `<p class="card-hint">${esc(t("songLinksHint", "Song links: one short link per song in a message. Anyone can paste the whole message into Sonata (Songs → Add from links) to get the setlist."))}</p>` : ""}
+          ${set ? `<p class="card-hint">${esc(t("songLinksHint", "Song links: one short link per song in a message. Anyone can paste the whole message into Sonata (Songs → Import) to get the setlist."))}</p>` : ""}
         </div>
       </div>
       <h3 class="group-title">${esc(t("exportFiles", "Export"))}${many > 1 ? ` <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: many }))}</span>` : ""}</h3>
@@ -327,20 +323,12 @@ export async function openShare(setId) {
     if (kind === "print") { closeSheet(); printChart(opts, set?.id); }
     if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
-    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(url.includes("tinyurl.com") ? url : qrLink, title)));
+    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(qrLink, title)));
     if (b.id === "shareSongLinks" && set) busy(b, async () => {
       const msg = await setlistMessage(BASE(), set, store.setlistSongs(set));
       if ("share" in navigator && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ title: `${set.title} · Sonata`, text: msg }); return; } catch { /* cancelled: copy instead */ } }
       if (await copyText(msg)) toast(t("songLinksCopied", "Setlist message copied. Paste it in your group chat."), "success", { ms: 4000 });
     });
-    if (b.id === "shareShort") {
-      try {
-        const r = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(url), { signal: AbortSignal.timeout(6000), referrerPolicy: "no-referrer" });
-        const shortUrl = (await r.text()).trim();
-        if (r.ok && /^https:\/\/tinyurl\.com\/[A-Za-z0-9]+$/.test(shortUrl)) { url = shortUrl; body.innerHTML = draw(); paintIcons(body); }
-        else toast(t("shortFailed", "Couldn't shorten the link"), "error");
-      } catch { toast(t("offline", "Offline"), "error"); }
-    }
   });
   body.querySelector("#shareUrl")?.addEventListener("focus", (e) => /** @type {HTMLInputElement} */ (e.target).select());
 }
@@ -449,7 +437,6 @@ export function openSettings() {
       <div class="field"><span>${esc(t("color", "Color"))}</span><div class="swatches">${accents.map(([v, l]) => `<button type="button" class="swatch${s.accentTheme === v ? " on" : ""}" data-accent="${v}" style="--sw:var(--sw-${v})" aria-label="${l}" aria-pressed="${s.accentTheme === v}"></button>`).join("")}</div></div>
       <label class="field"><span>${esc(t("chartText", "Chart text size"))} <output id="fsOut">${s.previewFontSize}px</output></span><input class="range" type="range" min="12" max="28" data-set="previewFontSize" value="${s.previewFontSize}"></label>
       <label class="field"><span>${esc(t("lineSpacing", "Line spacing"))} <output id="lhOut">${s.editorLineHeight.toFixed(2)}</output></span><input class="range" type="range" min="1.2" max="2.2" step="0.05" data-set="editorLineHeight" value="${s.editorLineHeight}"></label>
-      <label class="switch-row"><span>${esc(t("buddyLabel", "Show Sona, the buddy"))}</span><input type="checkbox" class="toggle" data-set="buddy"${s.buddy ? " checked" : ""}></label>
       <label class="switch-row"><span>${esc(t("haptics", "Vibrate on tap"))}</span><input type="checkbox" class="toggle" data-set="haptics"${s.haptics ? " checked" : ""}></label>
       <label class="switch-row"><span>${esc(t("autoArranger", "Add my name as arranger"))}</span><input type="checkbox" class="toggle" data-set="autoFillArranger"${s.autoFillArranger ? " checked" : ""}></label>
       <h3 class="group-title">${esc(t("data", "Data & backup"))}</h3>

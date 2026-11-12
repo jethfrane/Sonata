@@ -1,4 +1,4 @@
-/* Dialog sheets, toasts, stage view, Sona, print. */
+/* Dialog sheets, toasts, stage view, print. */
 
 /* ---------- Sheet (dialog) ---------- */
 .sheet { width: min(520px, calc(100vw - 24px)); max-height: min(88dvh, 840px); padding: 0; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); color: var(--text); box-shadow: var(--shadow-lg); }
@@ -146,32 +146,7 @@ html[data-theme="dark"] .toast-action { color: #2c47b5; }
 @keyframes beat { from { background: var(--chord); transform: scale(1.4); } }
 body.stage-open { overflow: hidden; }
 
-/* ---------- Sona ---------- */
-.sona { position: fixed; left: var(--side-w); bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; width: var(--w, 60px); transform: translateX(var(--x, 0)); pointer-events: none; }
-.sona-body { position: relative; display: block; width: 100%; aspect-ratio: 24 / 16; padding: 0; border: 0; background: none; pointer-events: auto; cursor: pointer; }
-.sona-sprite { position: absolute; inset: 0; background-size: 100% 100%; image-rendering: pixelated; transform: scaleX(calc(var(--face, 1) * -1)); }
-.sona-shadow { position: absolute; left: 18%; right: 18%; bottom: -3px; height: 4px; border-radius: 50%; background: rgba(20, 18, 15, .18); }
-.sona.beat .sona-sprite { animation: bob .18s ease-out; }
-.sona.hop .sona-body { animation: hop .6s cubic-bezier(.3, 1.6, .5, 1); }
-.sona[data-state="sleep"] .sona-sprite { filter: saturate(.7); }
-@keyframes bob { 40% { transform: scaleX(calc(var(--face, 1) * -1)) translateY(-8%) scaleY(1.04); } }
-@keyframes hop { 40% { transform: translateY(-40%); } }
-.sona-notes { position: absolute; left: 0; right: 0; bottom: 70%; height: 60px; pointer-events: none; }
-.sona-note { position: absolute; bottom: 0; font: 750 16px var(--ui); color: var(--accent); animation: float 1.6s ease-out forwards; }
-.sona-note.z { font-size: 13px; color: var(--muted); }
-@keyframes float { to { transform: translate(10px, -46px) rotate(12deg); opacity: 0; } }
-.sona-bubble { position: absolute; bottom: calc(100% + 12px); left: var(--bx, 0); padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); color: var(--text); font-size: var(--fs-sm); font-weight: 550; pointer-events: auto; animation: rise .2s ease-out; }
-.sona-actions { display: flex; gap: 6px; margin-top: 10px; }
-.sona-actions button { flex: 1; min-height: 32px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); font-size: 12.5px; font-weight: 650; }
-.sona-actions .sona-next { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-/* Sona keeps out of the way: never over the chart you're writing, only on the song list on small screens. */
-.app[data-view="editor"] ~ .sona, .app:has(input:focus) ~ .sona { display: none; }
-
 /* ---------- Responsive ---------- */
-@media (max-width: 1023px) {
-  .sona { left: 0; bottom: calc(var(--nav-h) + 6px + env(safe-area-inset-bottom)); }
-  .app:not([data-view="songs"]) ~ .sona { display: none; }
-}
 @media (max-width: 640px) {
   .sheet { width: 100vw; max-width: 100vw; max-height: 92dvh; margin: auto 0 0; border-radius: 22px 22px 0 0; border-bottom: 0; }
   .sheet.wide { width: 100vw; }

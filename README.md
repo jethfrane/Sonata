@@ -33,7 +33,7 @@ Five places, one job each, plus a Song Bank:
 - **Theory**: circle of fifths with the key family highlighted, numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.
 - **Play**: piano, fretboard (guitar, Drop D, 4- and 5-string bass, ukulele), chromatic tuner with reference tones, and a metronome on the audio clock (2/4 to 12/8, tap tempo, save tempo to a song).
 
-Also: optional Google Drive backup to one file only Sonata can see (`sonata_library.json`), backup files you can export and import, English and Filipino, light and dark themes, and **Sona**, a small pixel musician with tips (hide Sona in Settings).
+Also: optional Google Drive backup to one file only Sonata can see (`sonata_library.json`), backup files you can export and import, English and Filipino, light and dark themes.
 
 ## Writing a chart
 
@@ -50,7 +50,7 @@ Intro: G  C6/9  D  (x2)   labels and repeat marks stay on a chord line
 
 ## Privacy and security
 
-- Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, publish a Song Bank, or choose to shorten a link with TinyURL.
+- Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, publish a Song Bank.
 - Import reads one page you paste through the `/api/import` function: public https pages only, no cookies, size and time limits, and only the chart text comes back. Nothing is kept.
 - No Sonata database. Share links and QR codes carry the song itself. A Song Bank is one file in the owner's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. There is no request inbox, so there is nothing to spam; payment codes are shown exactly as the owner uploaded them, with the name written inside the code so visitors can check it.
 - Vercel Web Analytics counts anonymous page views (no cookies). No ads, no trackers.
@@ -68,7 +68,7 @@ js/main.js             start-up, routing, service worker
 js/router.js           URL for every screen and song (/song/<slug>/stage, /play/metronome…)
 js/core/               music theory, chart layout, storage, share links, pitch detection (no DOM, unit-tested)
 js/lib/                QR codes and PDF/PNG export (loaded only when used)
-js/ui/                 the views: editor, library, theory, play, tuner, metronome, stage, sheets, Sona
+js/ui/                 the views: editor, library, theory, play, tuner, metronome, stage, sheets
 js/audio.js            piano, plucked strings, metronome
 js/drive.js            Google Drive backup
 api/page.js            link previews: per-page and per-shared-song titles for chat apps

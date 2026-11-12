@@ -5,28 +5,10 @@ import { t } from "./i18n.js";
 import { store, app, metronome, drumLooper } from "./ctx.js";
 import { TIME_SIGNATURES, DRUM_PADS, DRUM_PRESETS, playDrum } from "../audio.js";
 
-const DRUM_KEYS_STORAGE = "sonata_drum_keys";
-/** @type {Record<string, string>} padId -> key */
+/** Laptop key for each pad. @type {Record<string, string>} */
 const padKeys = Object.fromEntries(DRUM_PADS.map((p) => [p.id, p.defaultKey]));
-let bindMode = false;
-/** @type {string|null} */
-let waitingPadId = null;
-
-function loadPadKeys() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(DRUM_KEYS_STORAGE) || "null");
-    if (raw && typeof raw === "object") {
-      for (const p of DRUM_PADS) if (typeof raw[p.id] === "string" && raw[p.id].length === 1) padKeys[p.id] = raw[p.id].toLowerCase();
-    }
-  } catch { /* ignore */ }
-}
-
-function savePadKeys() {
-  try { localStorage.setItem(DRUM_KEYS_STORAGE, JSON.stringify(padKeys)); } catch { /* ignore */ }
-}
 
 export function initMetronome() {
-  loadPadKeys();
   const sig = /** @type {HTMLSelectElement} */ ($("sigSelect"));
   sig.innerHTML = TIME_SIGNATURES.map((x) => `<option value="${x.id}">${x.id}</option>`).join("");
   const savedSig = TIME_SIGNATURES.find((x) => x.beats === store.settings.metronomeBeats) || TIME_SIGNATURES[2];
@@ -91,38 +73,17 @@ function initDrumsAndLooper() {
     }
   });
 
-  const bindBtn = document.getElementById("drumBindBtn");
-  bindBtn?.addEventListener("click", () => {
-    bindMode = !bindMode;
-    waitingPadId = null;
-    bindBtn.classList.toggle("on", bindMode);
-    bindBtn.setAttribute("aria-pressed", String(bindMode));
-    const sub = document.getElementById("drumSub");
-    if (sub) sub.textContent = bindMode
-      ? t("drumBindHint", "Tap a pad below, then press any laptop key to assign it.")
-      : t("drumSub", "Practice over 3/4, 4/4 and 6/8 drum beats, or tap the pads.");
-    const keysHint = document.getElementById("drumKeysHint");
-    if (keysHint) keysHint.hidden = bindMode;
-    renderDrumPads();
-  });
-
   const padsEl = document.getElementById("drumPads");
   padsEl?.addEventListener("pointerdown", (e) => {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-pad]"));
     if (!btn || !btn.dataset.pad) return;
     e.preventDefault();
-    const padId = btn.dataset.pad;
-    if (bindMode) {
-      waitingPadId = padId;
-      renderDrumPads();
-      return;
-    }
-    triggerPad(padId);
+    triggerPad(btn.dataset.pad);
   });
   padsEl?.addEventListener("keydown", (e) => {
     const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-pad]"));
     if (!btn || !btn.dataset.pad) return;
-    if (!bindMode && (e.key === "Enter" || e.key === " ")) {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       triggerPad(btn.dataset.pad);
     }
@@ -141,20 +102,12 @@ function initDrumsAndLooper() {
   window.addEventListener("keydown", (e) => {
     if (app.view !== "play") return;
     const playView = document.getElementById("view-play");
-    if (playView?.dataset.inst !== "metronome") return;
+    if (playView?.dataset.inst !== "drums") return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const tgt = /** @type {HTMLElement|null} */ (e.target);
     if (tgt && (tgt.closest("input, textarea, select") || tgt.isContentEditable)) return;
     if (document.querySelector("dialog[open]")) return;
     const k = e.key.toLowerCase();
-    if (bindMode && waitingPadId && k.length === 1 && /^[a-z0-9]$/.test(k)) {
-      e.preventDefault();
-      padKeys[waitingPadId] = k;
-      waitingPadId = null;
-      savePadKeys();
-      renderDrumPads();
-      return;
-    }
     if (e.repeat) return;
     const hit = DRUM_PADS.find((p) => padKeys[p.id] === k);
     if (hit) {
@@ -186,10 +139,9 @@ function renderDrumPads() {
   if (!host) return;
   host.innerHTML = DRUM_PADS.map((p) => {
     const k = (padKeys[p.id] || p.defaultKey).toUpperCase();
-    const waiting = bindMode && waitingPadId === p.id;
-    return `<button type="button" class="drum-pad${waiting ? " waiting" : ""}" data-pad="${p.id}" aria-label="${esc(p.label)} (${esc(k)})">
+    return `<button type="button" class="drum-pad" data-pad="${p.id}" aria-label="${esc(p.label)} (${esc(k)})">
       <span class="dp-name">${esc(p.label)}</span>
-      <kbd class="dp-key">${esc(waiting ? "Press key…" : k)}</kbd>
+      <kbd class="dp-key">${esc(k)}</kbd>
     </button>`;
   }).join("");
 }

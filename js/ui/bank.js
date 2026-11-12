@@ -1,28 +1,21 @@
 // @ts-check
-// Song Bank. Owner side: a Sonata Card (photo, name, links), their look (colors, font, cover),
-// songs and genres, upcoming gigs and ways to be supported, then publish one file to their own
-// Google Drive. Visitor side (/bank/<id>/<name>): a view-only page with the card, gigs, support
-// codes, search and a chart in any key. There are no requests: people ask at the gig or in the
-// live chat. No Sonata server stores anything, and Sonata never handles money: payment codes
-// are shown exactly as the owner uploaded them.
-import { $, esc, icon, openSheet, closeSheet, paintIcons, toast, copyText, download } from "./dom.js";
+// Song Bank. Owner side: name, a short note, their look (colors, font, cover), songs and genres,
+// and upcoming gigs, then publish one file to their own Google Drive. Visitor side
+// (/bank/<id>/<name>): a view-only page with search, gigs and a chart in any key.
+// No Sonata server stores anything.
+import { $, esc, icon, openSheet, closeSheet, paintIcons, toast, copyText } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";
 import { keyShort, pretty, parseKey, keyFromTonic, detectKey, mod12 } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
-import {
-  normalizeProfile, buildBankFile, parseBankFile, genres, searchBank, validBankId, THEMES, FONTS, upcomingGigs, paymentPayee,
-  SOCIAL_KINDS, PAYMENT_LABELS, guessPaymentLabel, isPaymentQr, bankSlug
-} from "../core/bank.js";
-import { loadQr } from "./sheets-lazy.js";
-import { cardHtml, cardPng, photoData, coverData, readQrImage, paymentImage, linkIcon, themeVars } from "./bankcard.js";
+import { normalizeProfile, buildBankFile, parseBankFile, genres, searchBank, validBankId, THEMES, FONTS, upcomingGigs, bankSlug } from "../core/bank.js";
+import { cardHtml, coverData, themeVars } from "./bankcard.js";
 
 /** Link to a Song Bank, with the owner's name at the end so it reads well (the id is what counts). */
 export const bankUrl = (/** @type {string} */ id, /** @type {string} */ name = store.bank.name || store.bank.title) => `${location.origin}/bank/${id}${bankSlug(name) ? "/" + bankSlug(name) : ""}`;
 /** @param {any} s */
 const keyOf = (s) => pretty(keyShort(soundingKey(s)));
 const isDark = () => document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
-const accent = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#3b5bdb";
 
 // ---------- Owner side ----------
 
@@ -56,19 +49,11 @@ function markDirty() {
 }
 export function watchBank() { store.on("library-change", markDirty); }
 
-const SOCIAL_UI = {
-  instagram: ["Instagram", "username"], tiktok: ["TikTok", "username"], facebook: ["Facebook", "username or page"],
-  youtube: ["YouTube", "@channel"], spotify: ["Spotify", "https://open.spotify.com/artist/…"], x: ["X", "username"],
-  threads: ["Threads", "username"], website: ["Website", "yoursite.com"], email: ["Email", "you@example.com"]
-};
-
-/** "NAME · City" written inside a payment code. @param {string} qr */
-const payeeText = (qr) => { const p = paymentPayee(qr); return p ? [p.name, p.city].filter(Boolean).join(" · ") : ""; };
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const THEME_NAMES = /** @type {Record<string, string>} */ ({ auto: "Match app", paper: "Paper", night: "Night", stage: "Stage", sunrise: "Sunrise", ocean: "Ocean", garden: "Garden", rose: "Rose" });
 const FONT_NAMES = /** @type {Record<string, string>} */ ({ modern: "Modern", classic: "Classic serif", rounded: "Rounded" });
 
-/** Song Bank editor: the Sonata Card live on top, then profile, links, support, songs, sharing. */
+/** Song Bank editor: the header live on top, then name and note, look, gigs, songs, sharing. */
 export function openBankManager() {
   const all = store.songs.filter((s) => !s.readonly).slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
   let filter = "";
@@ -89,15 +74,6 @@ export function openBankManager() {
     return all.filter((s) => !f || `${s.title} ${s.artist} ${s.genre}`.toLowerCase().includes(f)).map((s) => `<li><label class="bp-check"><input type="checkbox" data-in="${esc(s.id)}"${s.inBank ? " checked" : ""}><span><b>${esc(s.title)}</b><small>${esc(s.artist || "")}</small></span></label>
       <input class="input bp-genre" data-genre="${esc(s.id)}" value="${esc(s.genre)}" list="genreList" placeholder="${esc(t("genre", "Genre"))}" aria-label="${esc(t("genreFor", "Genre for {t}", { t: s.title }))}"></li>`).join("") || `<li class="muted">${esc(all.length ? t("noMatches", "No matches for \"{q}\"", { q: filter }) : t("noSongsYet", "No songs yet."))}</li>`;
   };
-  const payRows = () => store.bank.payments.map((pm, i) => `<div class="pay-edit" data-pay="${i}">
-      <div class="pay-qr">${pm.qr ? `<div class="pay-qr-svg" data-qr="${esc(pm.qr)}"></div>` : `<img src="${esc(pm.img)}" alt="">`}</div>
-      <div class="pay-fields">
-        <label class="field"><span>${esc(t("payWallet", "Wallet or bank"))}</span><select class="select" data-pl="${i}">${PAYMENT_LABELS.map((l) => `<option${l === pm.label ? " selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
-        <label class="field"><span>${esc(t("payName", "Account name (optional)"))}</span><input class="input" data-pn="${i}" value="${esc(pm.name)}" maxlength="60" placeholder="J. F."></label>
-        <button class="btn small ghost danger-text" type="button" data-pdel="${i}">${icon("trash")}${esc(t("remove", "Remove"))}</button>
-        ${pm.qr && paymentPayee(pm.qr) ? `<p class="card-hint pay-payee">${esc(t("payPays", "Pays: {name}", { name: payeeText(pm.qr) }))}</p>` : ""}
-        ${pm.qr ? "" : `<p class="card-hint">${esc(t("payKeptImage", "Couldn't read this code, so the picture is shown as you uploaded it."))}</p>`}
-      </div></div>`).join("");
   const draw = () => {
     const p = store.bank;
     const n = bankSongs().length;
@@ -111,36 +87,22 @@ export function openBankManager() {
             <div class="share-link"><input class="input" id="bankLink" readonly value="${esc(link)}" aria-label="Link"></div>
             <div class="share-actions"><button class="btn primary" type="button" id="bankCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
             ${"share" in navigator ? `<button class="btn" type="button" id="bankShareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
-            <button class="btn" type="button" id="bankCardPng">${icon("image")}${esc(t("cardDownload", "Card image"))}</button>
             <button class="btn" type="button" id="bankOpen">${icon("present")}${esc(t("bankView", "View page"))}</button>
             <button class="btn" type="button" id="bankPublish">${icon("refresh")}${esc(t("bankUpdate", "Update now"))}</button></div>`
-          : `<p class="card-text">${esc(t("bankIntro", "Share the songs you know or offer. Anyone can scan your QR, browse your songs, read a chart in their key and support you. It is view-only: people ask for songs at your gig or in your live chat. Your Song Bank is one file in your own Google Drive; Sonata keeps no copy."))}</p>
+          : `<p class="card-text">${esc(t("bankIntro", "Share the songs you know or offer. Anyone can scan your QR, browse your songs, read a chart in their key. It is view-only: people ask for songs at your gig or in your live chat. Your Song Bank is one file in your own Google Drive; Sonata keeps no copy."))}</p>
             <button class="btn primary wide" type="button" id="bankPublish">${icon("share")}${esc(t("bankPublishBtn", "Publish my Song Bank ({n})", { n }))}</button>`}
         </div>
       </div>
       <div class="be-form form">
-        <h3 class="group-title">${esc(t("bankProfile", "Your card"))}</h3>
-        <div class="be-photo"><div class="sc-photo">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : icon("music")}</div>
-          <label class="btn small">${icon("upload")}${esc(p.photo ? t("changePhoto", "Change photo") : t("addPhoto", "Add photo"))}<input type="file" id="bePhoto" accept="image/*" hidden></label>
-          ${p.photo ? `<button class="btn small ghost" type="button" id="bePhotoDel">${esc(t("remove", "Remove"))}</button>` : ""}</div>
+        <h3 class="group-title">${esc(t("bankProfile", "About you"))}</h3>
         <div class="field-row">
           <label class="field"><span>${esc(t("bankName", "Name, band or team"))}</span><input class="input" data-p="name" value="${esc(p.name)}" maxlength="80" placeholder="${esc(t("bankNamePh", "Your name"))}" autocomplete="name"></label>
           <label class="field"><span>${esc(t("bankTitle", "Title"))}</span><input class="input" data-p="title" value="${esc(p.title)}" maxlength="80" placeholder="${esc(t("bankTitlePh", "Songs I can play"))}"></label>
         </div>
         <label class="field"><span>${esc(t("bankBio", "Short note"))}</span><textarea class="input" data-p="bio" rows="2" maxlength="400" placeholder="${esc(t("bankBioPh", "OPM, pop and worship. Catch me live every Friday!"))}">${esc(p.bio)}</textarea></label>
 
-        <h3 class="group-title">${esc(t("bankLinks", "Social links"))}</h3>
-        <p class="card-hint">${esc(t("bankLinksHint", "Shown on your card so people can follow you. Only https links are kept."))}</p>
-        <div class="be-socials">${SOCIAL_KINDS.map((k) => `<label class="be-social"><span class="be-ico" title="${esc(SOCIAL_UI[k][0])}">${linkIcon(k)}</span><span class="sr-only">${esc(SOCIAL_UI[k][0])}</span>
-          <input class="input" data-s="${k}" value="${esc(p.socials[k])}" placeholder="${esc(SOCIAL_UI[k][0])}: ${esc(SOCIAL_UI[k][1])}" ${k === "email" ? 'type="email" inputmode="email"' : 'autocapitalize="off" spellcheck="false"'} autocomplete="off"></label>`).join("")}</div>
-
-        <h3 class="group-title">${esc(t("bankSupport", "Support (QR Ph)"))}</h3>
-        <p class="card-hint">${esc(t("bankSupportHint", "Add a GCash, Maya or bank QR code from a screenshot. People pay you directly; Sonata never handles money."))}</p>
-        <div id="bePays">${payRows()}</div>
-        ${p.payments.length < 4 ? `<label class="btn small">${icon("qr")}${esc(t("addPayQr", "Add payment QR"))}<input type="file" id="bePay" accept="image/*" hidden></label>` : ""}
-
         <h3 class="group-title">${esc(t("bankStyle", "Style"))}</h3>
-        <p class="card-hint">${esc(t("bankStyleHint", "Make your page and card match your brand. Sonata keeps colors readable."))}</p>
+        <p class="card-hint">${esc(t("bankStyleHint", "Make your page match your brand. Sonata keeps colors readable."))}</p>
         <div class="theme-grid" role="group" aria-label="${esc(t("bankLook", "Look"))}">${Object.entries(THEMES).map(([id, th]) => `<button type="button" class="theme-sw" data-preset="${id}" aria-pressed="${p.theme.preset === id}"><span class="theme-chip" style="${th.bg ? `background:${th.bg};color:${th.text};border-color:${th.text}33` : ""}"><i style="${th.bg ? `background:${th.surface}` : ""}"></i><b>Aa</b></span><span>${esc(t("theme_" + id, THEME_NAMES[id]))}</span></button>`).join("")}</div>
         <div class="field-row be-look">
           <label class="field"><span>${esc(t("bankAccent", "Accent color"))}</span><span class="accent-row"><input class="color-input" type="color" id="beAccent" value="${esc(p.theme.accent || "#3b5bdb")}" aria-label="${esc(t("bankAccent", "Accent color"))}">${p.theme.accent ? `<button class="btn small ghost" type="button" id="beAccentReset">${esc(t("reset", "Reset"))}</button>` : `<small class="muted">${esc(t("accentDefault", "Default"))}</small>`}</span></label>
@@ -166,57 +128,31 @@ export function openBankManager() {
     </div>`;
   };
   const body = openSheet({ title: t("songBank", "Song Bank"), wide: true, className: "bank-sheet", body: draw(), focus: false });
-  const paintPays = async () => {
-    const m = await loadQr();
-    body.querySelectorAll("[data-qr]").forEach((el) => { el.innerHTML = m?.qrSvg(/** @type {HTMLElement} */ (el).dataset.qr || "", { ecc: "M", margin: 2 }) || ""; });
-  };
-  const redraw = () => { const y = body.scrollTop; body.innerHTML = draw(); paintIcons(body); paintPays(); body.scrollTop = y; };
+  const redraw = () => { const y = body.scrollTop; body.innerHTML = draw(); paintIcons(body); body.scrollTop = y; };
   const refreshCard = () => { const c = /** @type {HTMLElement|null} */ (body.querySelector("#beCard")); if (c) { c.innerHTML = card(); c.setAttribute("style", cardWrapStyle()); } };
   /** Tidy the profile but keep half-typed gigs (they are checked when published). */
   const tidy = () => { const gigs = store.bank.gigs; store.bank = { ...normalizeProfile(store.bank), gigs }; };
   const setTheme = (/** @type {any} */ patch) => { store.bank = { ...store.bank, theme: { ...store.bank.theme, ...patch } }; store.changed("settings"); markDirty(); };
   const setGigs = (/** @type {any[]} */ rows) => { store.bank = { ...store.bank, gigs: rows.slice(0, 6) }; store.changed("settings"); markDirty(); };
-  paintIcons(body); paintPays();
+  paintIcons(body);
   const save = () => { tidy(); store.changed("settings"); markDirty(); refreshCard(); };
   body.addEventListener("input", (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
     if (el.dataset.p && el.type !== "checkbox") { /** @type {any} */ (store.bank)[el.dataset.p] = el.value; save(); }
-    if (el.dataset.s) { store.bank.socials = { ...store.bank.socials, [el.dataset.s]: el.value }; store.bank = { ...store.bank, ...{ socials: { ...store.bank.socials } } }; store.changed("settings"); markDirty(); refreshCardSoon(); }
     if (el.id === "beAccent") { setTheme({ accent: el.value }); refreshCard(); }
     if (el.dataset.gk) { const i = Number(el.closest("[data-gig]")?.getAttribute("data-gig")); const rows = store.bank.gigs.map((g) => ({ ...g })); if (rows[i]) { /** @type {any} */ (rows[i])[el.dataset.gk] = el.value; setGigs(rows); } }
-    if (el.dataset.pn !== undefined) { const pm = store.bank.payments[Number(el.dataset.pn)]; if (pm) { pm.name = el.value.slice(0, 60); store.changed("settings"); markDirty(); } }
     if (el.dataset.genre) { const s = store.song(el.dataset.genre); if (s) { store.update(s, { genre: el.value.slice(0, 40) }); refreshCard(); } }
     if (el.id === "beFilter") { filter = el.value; /** @type {HTMLElement} */ (body.querySelector("#bePick")).innerHTML = songRows(); }
   });
-  // Social handles are tidied (links → names) once typing pauses, so the field doesn't jump while typing.
-  let socialTimer = /** @type {any} */ (0);
-  const refreshCardSoon = () => { clearTimeout(socialTimer); socialTimer = setTimeout(() => { tidy(); store.changed("settings"); refreshCard(); }, 500); };
   body.addEventListener("change", async (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
-    if (el.dataset.s) { tidy(); el.value = /** @type {any} */ (store.bank.socials)[el.dataset.s]; save(); }
     if (el.id === "beFont") { setTheme({ font: el.value }); refreshCard(); }
     if (el.dataset.p === "charts") { store.bank = { ...store.bank, charts: el.checked }; store.changed("settings"); markDirty(); }
     if (el.dataset.in) { const s = store.song(el.dataset.in); if (s) store.update(s, { inBank: el.checked }); $("bankCount").textContent = `${bankSongs().length}/${all.length}`; refreshCard(); }
-    if (el.dataset.pl !== undefined) { const pm = store.bank.payments[Number(el.dataset.pl)]; if (pm) { pm.label = el.value; store.changed("settings"); markDirty(); } }
     const file = el.files?.[0];
-    if (el.id === "bePhoto" && file) {
-      try { store.bank = { ...store.bank, photo: await photoData(file) }; save(); redraw(); }
-      catch { toast(t("photoFailed", "Couldn't use that picture. Try a JPG or PNG."), "error"); }
-    }
     if (el.id === "beCover" && file) {
       try { setTheme({ cover: await coverData(file) }); refreshCard(); redraw(); }
       catch { toast(t("photoFailed", "Couldn't use that picture. Try a JPG or PNG."), "error"); }
-    }
-    if (el.id === "bePay" && file) {
-      try {
-        const qr = await readQrImage(file);
-        if (qr && !isPaymentQr(qr)) toast(t("payNotQrPh", "That code isn't a QR Ph payment code, but it was added as it is."), "info", { ms: 5000 });
-        const pay = qr ? { label: guessPaymentLabel(qr), name: "", qr, img: "" } : { label: "Other", name: "", qr: "", img: await paymentImage(file) };
-        if (!pay.qr && !pay.img) throw new Error("empty");
-        store.bank = normalizeProfile({ ...store.bank, payments: [...store.bank.payments, pay] });
-        save(); redraw();
-        toast(qr ? (paymentPayee(qr) ? t("payReadName", "Payment code read: it pays {name}. Check that this is you.", { name: payeeText(qr) }) : t("payRead", "Payment code read. Check the wallet name.")) : t("payImage", "Code added as a picture."), "success", { ms: 6000 });
-      } catch { toast(t("payFailed", "Couldn't use that picture. Try a clear screenshot of the QR code."), "error"); }
     }
   });
   body.addEventListener("click", async (e) => {
@@ -228,29 +164,15 @@ export function openBankManager() {
     if (b.id === "beCoverDel") { setTheme({ cover: "" }); refreshCard(); redraw(); }
     if (b.id === "beGigAdd") { setGigs([...store.bank.gigs, { date: "", time: "", place: "", note: "", url: "" }]); redraw(); }
     if (b.dataset.gdel !== undefined) { setGigs(store.bank.gigs.filter((_, j) => j !== Number(b.dataset.gdel))); redraw(); }
-    if (b.id === "bePhotoDel") { store.bank = { ...store.bank, photo: "" }; save(); redraw(); }
-    if (b.dataset.pdel !== undefined) { const i = Number(b.dataset.pdel); store.bank = normalizeProfile({ ...store.bank, payments: store.bank.payments.filter((_, j) => j !== i) }); save(); redraw(); }
     if (b.id === "bankPublish") { b.setAttribute("aria-busy", "true"); if (await publishBank()) { toast(t("bankPublished", "Your Song Bank is live"), "success"); redraw(); } else b.removeAttribute("aria-busy"); }
     if (b.id === "bankCopy") { if (await copyText(bankUrl(store.bank.fileId))) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "bankOpen") { closeSheet(); app.show("bank", { sub: store.bank.fileId }); }
     if (b.id === "bankShareNative") { try { await navigator.share({ title: store.bank.title || t("songBank", "Song Bank"), text: t("bankShareText", "See the songs I play:"), url: bankUrl(store.bank.fileId) }); } catch { /* cancelled */ } }
-    if (b.id === "bankCardPng") { b.setAttribute("aria-busy", "true"); try { await downloadCard(); } catch { toast(t("exportFailed", "Couldn't make that file. Please try again."), "error"); } finally { b.removeAttribute("aria-busy"); } }
     if (b.id === "bankUnpublish") {
       if (await app.drive?.unpublishBank(store.bank.fileId)) { store.bank = { ...store.bank, fileId: "", publishedAt: "" }; store.changed("settings"); toast(t("bankStopped", "Your Song Bank is private again."), "info"); redraw(); }
       else toast(t("bankStopFailed", "Couldn't stop sharing. Check your connection and sign-in."), "error");
     }
   });
-}
-
-/** The Sonata Card as an image, with a QR code to the Song Bank. */
-async function downloadCard() {
-  const m = await loadQr();
-  if (!m) return;
-  const url = bankUrl(store.bank.fileId);
-  const qr = m.qrModules(url, ["M", "L"]);
-  if (!qr) return;
-  const blob = await cardPng({ ...store.bank, songs: bankSongs().map((s) => ({ g: s.genre })) }, { count: bankSongs().length, url, qr, accent: accent() });
-  download(`sonata-card-${bankSlug(store.bank.name || "song-bank") || "song-bank"}.png`, blob);
 }
 
 // ---------- Visitor side ----------
@@ -322,9 +244,6 @@ function renderBank(loading = false) {
   const gigs = upcomingGigs(d.gigs || [], today());
   host.innerHTML = `
     <div class="bank-top">${cardHtml(d, { count: d.songs.length })}
-      ${d.payments.length ? `<section class="card bank-support" aria-labelledby="supportTitle"><h2 id="supportTitle">${icon("heart")}${esc(t("supportName", "Support {name}", { name: d.name || t("theOwner", "the owner") }))}</h2>
-        <div class="pay-list">${d.payments.map((pm, i) => `<button type="button" class="pay-card" data-bk="pay" data-i="${i}"><span class="pay-qr">${pm.qr ? `<span class="pay-qr-svg" data-qr="${esc(pm.qr)}"></span>` : `<img src="${esc(pm.img)}" alt="">`}</span><b>${esc(pm.label)}</b>${pm.name || (pm.qr && paymentPayee(pm.qr)) ? `<small>${esc(pm.name || paymentPayee(pm.qr)?.name || "")}</small>` : ""}</button>`).join("")}</div>
-        <p class="card-hint">${esc(t("payNote", "Scan with your GCash, Maya or bank app. Payments go straight to them; Sonata never handles money and can't check who owns a Song Bank. Make sure the name your app shows is the right one."))}</p></section>` : ""}
     </div>
     ${gigs.length ? gigsHtml(gigs) : ""}
     <label class="search bank-search"><span data-icon="search"></span><input type="search" id="bankSearch" value="${esc(view.q)}" placeholder="${esc(t("bankSearchPh", "Search songs or artists"))}" aria-label="${esc(t("search", "Search"))}" autocomplete="off" enterkeyhint="search"></label>
@@ -335,7 +254,6 @@ function renderBank(loading = false) {
     }).join("") || `<p class="muted bank-none">${esc(t("noMatches", "No matches for \"{q}\"", { q: view.q || view.genre }))}</p>`}</div>
     <p class="bank-foot">${esc(t("bankFoot", "Made with Sonata. This page is view-only; Sonata keeps no copy of it."))} <a href="/songs">${esc(t("bankMakeOwn", "Make your own Song Bank"))}</a></p>`;
   paintIcons(host);
-  if (d.payments.some((p) => p.qr)) loadQr().then((m) => host.querySelectorAll("[data-qr]").forEach((el) => { el.innerHTML = m?.qrSvg(/** @type {HTMLElement} */ (el).dataset.qr || "", { ecc: "M", margin: 2 }) || ""; }));
   const input = /** @type {HTMLInputElement|null} */ (host.querySelector("#bankSearch"));
   input?.addEventListener("input", () => { view.q = input.value; const pos = input.selectionStart; renderBank(); const again = /** @type {HTMLInputElement} */ ($("bankSearch")); again.focus(); again.setSelectionRange(pos, pos); });
 }
@@ -355,40 +273,7 @@ export function initBank() {
     tick();
     if (act === "retry") { const id = view.id; view.id = ""; openBank(id); }
     if (act === "view" && s) viewSong(s);
-    if (act === "pay") showPayment(Number(b.dataset.i));
   });
-}
-
-/** A payment code, big, for scanning from another phone or saving. @param {number} i */
-async function showPayment(i) {
-  const d = view.data;
-  const pm = d?.payments[i];
-  if (!d || !pm) return;
-  const m = pm.qr ? await loadQr() : null;
-  const body = openSheet({
-    title: `${pm.label}${pm.name ? ` · ${pm.name}` : ""}`, focus: false,
-    body: `<div class="pay-big" tabindex="0">${pm.qr ? m?.qrSvg(pm.qr, { ecc: "M", margin: 4 }) || "" : `<img src="${esc(pm.img)}" alt="${esc(pm.label)} QR">`}
-      ${pm.qr && paymentPayee(pm.qr) ? `<p class="pay-payee-big">${esc(t("payPaysTo", "This code pays"))} <b>${esc(payeeText(pm.qr))}</b></p>` : ""}
-      <p class="card-hint">${esc(t("payNoteShort", "Check that the name your app shows matches before you pay. Payments go straight to them; Sonata never handles money and can't verify Song Banks."))}</p></div>`,
-    actions: [{ label: t("saveImage", "Save image"), kind: "ghost", onClick: async () => { await savePayment(pm); return false; } }, { label: t("done", "Done"), kind: "primary" }]
-  });
-  paintIcons(body);
-}
-
-/** Save a payment code as a PNG (to scan from the gallery in GCash or Maya). @param {import("../core/bank.js").Payment} pm */
-async function savePayment(pm) {
-  const name = `${bankSlug(pm.label) || "payment"}-qr.png`;
-  if (pm.img) { const r = await fetch(pm.img); download(name, await r.blob()); return; }
-  const m = await loadQr();
-  const qr = m?.qrModules(pm.qr, ["M", "L"]);
-  if (!qr) return;
-  const mod = 12, quiet = 4, side = (qr.n + quiet * 2) * mod;
-  const c = document.createElement("canvas"); c.width = side; c.height = side;
-  const g = /** @type {CanvasRenderingContext2D} */ (c.getContext("2d"));
-  g.fillStyle = "#fff"; g.fillRect(0, 0, side, side); g.fillStyle = "#000";
-  for (let r = 0; r < qr.n; r++) for (let col = 0; col < qr.n; col++) if (qr.dark(r, col)) g.fillRect((col + quiet) * mod, (r + quiet) * mod, mod, mod);
-  const blob = await new Promise((ok) => c.toBlob(ok, "image/png"));
-  if (blob) download(name, /** @type {Blob} */ (blob));
 }
 
 /** Read a chart from the list, in any key. @param {import("../core/bank.js").BankSong} s */

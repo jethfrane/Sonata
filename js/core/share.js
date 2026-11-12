@@ -283,13 +283,13 @@ export async function parseLinks(text) {
 
 /**
  * A setlist as a plain message: one link per song, so each link stays short and opens on its own.
- * Pasting the whole message into Sonata (Songs → Add from links) rebuilds the setlist.
+ * Pasting the whole message into Sonata (Songs → Import) rebuilds the setlist.
  * @param {string} base @param {{ title: string }} set @param {any[]} songs
  */
 export async function setlistMessage(base, set, songs) {
   const lines = [`Setlist: ${set.title}`];
   let i = 0;
   for (const s of songs) lines.push(`${++i}. ${s.title}${s.artist ? ` (${s.artist})` : ""}\n${await shareUrl(base, packSong(s))}`);
-  lines.push("", "Open a link to see the chart, or paste this whole message into Sonata → Songs → Add from links to get the setlist.");
+  lines.push("", "Open a link to see the chart, or paste this whole message into Sonata → Songs → Import to get the setlist.");
   return lines.join("\n");
 }

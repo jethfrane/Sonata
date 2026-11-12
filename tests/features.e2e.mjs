@@ -10,7 +10,6 @@ const b = await chromium.launch();
 let pass = 0, fail = 0;
 const ok = (c, msg) => { if (c) { pass++; console.log("  ✓", msg); } else { fail++; console.log("  ✗", msg); } };
 const errors = [];
-const PAYQR = "00020101021127830012com.p2pqrpay0111GXCHPHM2XXX02089996440303152170200000006560417DWQM4TK3JDO83CHRN5204601653036085802PH5912JETHRO FRANE6011Quezon City6304ABCD";
 
 const SONGS = [
   { id: "song-feat-aaaaaa", title: "Here I Am to Worship", artist: "Tim Hughes", genre: "Worship", body: "## Verse\nG        D/F#      Em\nLight of the world\nC         Am/G\nYou stepped down", links: [{ name: "Reference", url: "https://youtu.be/dQw4w9WgXcQ" }] },
@@ -92,9 +91,13 @@ await p.keyboard.up("a"); await p.keyboard.up("d"); await p.keyboard.up("g"); aw
 await p.fill('#pianoPlayer [data-role="add-chord"]', "Bbmaj9");
 await p.press('#pianoPlayer [data-role="add-chord"]', "Enter"); await p.waitForTimeout(120);
 ok((await p.textContent("#pianoReadout .ro-name")) === "B♭maj9", "typing Bbmaj9 in Play adds and plays it immediately");
-// Half-step up button transposes Bbmaj9 -> Bmaj9 for vocalists
-await p.click('#pianoPlayer [data-role="step-up"]'); await p.waitForTimeout(120);
-ok((await p.textContent("#pianoReadout .ro-name")) === "Bmaj9", "stepping + ½ transposes the active chord up a half step");
+ok(await p.locator('#pianoPlayer [data-role="beat"], #pianoPlayer [data-role="step-up"]').count() === 0, "the piano toolbar has no drum or half-step chips");
+// Chord types: six everyday ones first, the rest behind More
+await p.dispatchEvent('#pianoPlayer select[data-role="type"]', "mousedown"); await p.waitForTimeout(150);
+ok(await p.locator(".ui-select-drawer .ui-select-opt").count() === 8 && await p.locator(".ui-select-more").count() === 1, "the chord type menu shows song, all and six common types, with More");
+await p.click(".ui-select-more"); await p.waitForTimeout(100);
+ok(await p.locator(".ui-select-drawer .ui-select-opt").count() === 17 && await p.locator(".ui-select-more").count() === 0, "More reveals every chord type");
+await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 // Build chord mode on piano: tap D4, F4, A4, C5 -> auto-names Dm7
 await p.click('#pianoPlayer [data-role="build"]'); await p.waitForTimeout(80);
 await p.click('#pianoPlayer [data-role="clear-build"]').catch(() => {});
@@ -250,19 +253,8 @@ await p.click('[data-act="more"] >> nth=0'); await p.click('.menu-item[data-m="b
 await p.click('[data-filter="bank"]'); await p.waitForTimeout(200);
 ok(await p.locator(".row[data-id]").count() === 1 && await p.locator(".bank-card").isVisible(), "song menu adds a song to the bank; Song bank filter shows it");
 await p.click('[data-act="bank"]'); await p.waitForTimeout(400);
-await p.fill('[data-p="name"]', "Jethro"); await p.fill('[data-s="instagram"]', "https://www.instagram.com/jethrofrane/"); await p.fill('[data-s="facebook"]', "jethro.frane");
-await p.locator('[data-s="instagram"]').dispatchEvent("change"); await p.waitForTimeout(700);
-ok((await p.inputValue('[data-s="instagram"]')) === "jethrofrane", "a pasted Instagram link becomes the user name");
-ok(await p.locator('#beCard .sc-link.sc-instagram').count() === 1 && (await p.textContent("#beCard .sc-name")) === "Jethro", "the Sonata Card updates while you type");
-// Payment QR: a screenshot of a QR Ph code is read and redrawn
-const qrFile = await (async () => {
-  const { QRCode } = await import("../js/lib/qr.js");
-  const qr = QRCode.generate(PAYQR, "M"); const n = qr.getModuleCount(), sc = 8, m = 4, W = (n + 2 * m) * sc;
-  const { PNG } = await import("./png.mjs");
-  return PNG(W, W, (x, y) => { const r = Math.floor(y / sc) - m, c = Math.floor(x / sc) - m; return r >= 0 && c >= 0 && r < n && c < n && qr.isDark(r, c); });
-})();
-await p.setInputFiles("#bePay", { name: "gcash.png", mimeType: "image/png", buffer: qrFile }); await p.waitForTimeout(1500);
-ok(await p.locator(".pay-edit").count() === 1 && (await p.inputValue('[data-pl="0"]')) === "GCash", "uploaded GCash QR is read and labelled");
+await p.fill('[data-p="name"]', "Jethro"); await p.waitForTimeout(400);
+ok((await p.textContent("#beCard .sc-name")) === "Jethro" && await p.locator('[data-s], #bePay, #bePhoto, #bankCardPng').count() === 0, "the header updates while you type; no social, payment, photo or card-image controls");
 // Look and gigs: preset, accent, font, one upcoming gig (half-typed gigs are kept while editing)
 await p.click('[data-preset="stage"]'); await p.waitForTimeout(200);
 await p.evaluate(() => { const i = document.getElementById("beAccent"); i.value = "#e11d48"; i.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -277,21 +269,16 @@ ok(await p.locator('[data-preset="stage"]').getAttribute("aria-pressed") === "tr
 await p.click("#bankPublish"); await p.waitForTimeout(1500);
 const published = [...drive.files.entries()].find(([k]) => k.startsWith("bankfile"));
 const bankJson = published ? JSON.parse(published[1]) : null;
-if (process.env.DEBUG) console.log("bank:", JSON.stringify({ v: bankJson?.v, n: bankJson?.songs?.length, name: bankJson?.name, s: bankJson?.socials, p: bankJson?.payments?.map((x) => x.label + ":" + (x.qr === PAYQR)) }));
-ok(bankJson?.type === "sonata-bank" && bankJson.v === 3 && bankJson.songs.length === 1 && bankJson.name === "Jethro" && bankJson.socials.instagram === "jethrofrane" && bankJson.payments[0]?.qr === PAYQR && !("whatsapp" in (bankJson.socials || {})), "publishing writes the Song Bank (card, links, payment code) to the owner's Drive");
+ok(bankJson?.type === "sonata-bank" && bankJson.v === 4 && bankJson.songs.length === 1 && bankJson.name === "Jethro" && !("socials" in bankJson) && !("payments" in bankJson) && !("photo" in bankJson), "publishing writes the song list file without social, payment or photo fields");
 ok(drive.perms.some(([m, , body]) => m === "POST" && body.includes('"type":"anyone"')), "the bank file (only) is shared as anyone-with-link");
 ok((await p.inputValue("#bankLink")).endsWith("/bank/" + published?.[0] + "/jethro"), "public link shown, ending with the owner's name");
 ok(bankJson?.theme?.preset === "stage" && bankJson.theme.accent === "#e11d48" && bankJson.theme.font === "classic" && bankJson.theme.cover?.startsWith("data:image/jpeg") && bankJson.gigs?.length === 1 && bankJson.gigs[0].place === "Plaza Miranda" && bankJson.gigs[0].url === "https://example.com/gig", "the look and the gig are published in the file (https link only)");
-const [cardDl] = await Promise.all([p.waitForEvent("download"), p.click("#bankCardPng")]);
-const cardImg = require("node:fs").readFileSync(await cardDl.path());
-if (process.env.CARD_OUT) require("node:fs").writeFileSync(process.env.CARD_OUT, cardImg);
-ok(cardImg.subarray(1, 4).toString() === "PNG" && cardImg.readUInt32BE(16) === 1080 && cardImg.readUInt32BE(20) === 1350, "Sonata Card downloads as a 1080×1350 image");
 const libFile = [...drive.files.entries()].find(([k]) => !k.startsWith("bankfile"));
 ok(!drive.perms.some(([, id]) => id === libFile?.[0]), "the private library file is never shared");
 await p.close();
 
 console.log("Song bank: listener");
-const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro", bio: "OPM and pop", socials: { facebook: "jethro.frane", instagram: "jethrofrane", tiktok: "jethrofrane", email: "j@example.com" }, payments: [{ label: "GCash", name: "J. F.", qr: PAYQR }], updatedAt: "2026-11-09",
+const BANK = { type: "sonata-bank", v: 1, title: "Jethro's Song Bank", name: "Jethro", bio: "OPM and pop", socials: { facebook: "jethro.frane", instagram: "jethrofrane", tiktok: "jethrofrane", email: "j@example.com" }, payments: [{ label: "GCash", name: "J. F.", qr: "000201010211" }], updatedAt: "2026-11-09",
   theme: { preset: "stage", accent: "#e11d48", font: "classic", cover: "" }, gigs: [{ date: "2099-01-05", time: "19:30", place: "Plaza Miranda", note: "Acoustic set", url: "https://example.com/gig" }, { date: "2020-01-05", place: "Long ago" }],
   songs: [{ id: "a", t: "Buwan", a: "Juan Karlos", g: "OPM", k: "Am", b: "Am  F  C  G\nIkaw ang buwan" }, { id: "b", t: "Perfect", a: "Ed Sheeran", g: "Pop", k: "G" }, { id: "c", t: "Mundo", a: "IV of Spades", g: "OPM", k: "C" }] };
 const BID = "1AbCdEfGhIjKlMnOpQrStUvWxYz012345";
@@ -313,13 +300,12 @@ ok(await p.locator(".bank-gigs .gig").count() === 1 && txt.includes("Plaza Miran
 ok(await p.locator('.bank-list .row[data-sid="b"] button').count() === 0 && await p.locator('.bank-list .row[data-sid="a"] button[data-bk="view"]').count() === 1, "only songs with a chart open; the others are plain rows");
 const look = await p.evaluate(() => { const r = document.getElementById("view-bank"); const cs = getComputedStyle(r); return { themed: r.classList.contains("bank-themed"), bg: cs.getPropertyValue("--bg").trim(), font: cs.getPropertyValue("--ui").trim(), accent: cs.getPropertyValue("--accent").trim() }; });
 ok(look.themed && look.bg === "#0b0a07" && look.font.includes("Iowan") && /^#[0-9a-f]{6}$/.test(look.accent), "the owner's look is applied to the public page");
-await p.click('[data-bk="pay"]'); await p.waitForTimeout(400);
-ok((await p.locator(".pay-payee-big").innerText()).includes("JETHRO FRANE"), "the payment sheet shows the name written inside the code");
+ok(await p.locator('[data-bk="pay"], .bank-support, .sc-links, .sc-photo').count() === 0, "an older bank file opens without payment codes, social links or photo");
 await p.close();
 p = await open(`/bank/${BID}`, { songs: [], route: (page) => page.route("**/api/bank?**", (r) => r.fulfill({ status: 404, contentType: "application/json", body: '{"error":"x"}' })) });
 ok((await p.textContent("#bankBody")).includes("isn't available"), "a stopped or wrong list says so");
 await p.close();
-// A long name, title, bio and many long links must stay inside the Sonata Card on a small phone.
+// A long name, title and bio must stay inside the header on a small phone.
 const LONGBANK = { ...BANK, title: "Sunday Worship Team — Grace Fellowship Church Quezon City Music Ministry", name: "Grace Fellowship Church Music Ministry & Friends", bio: "We serve with worship every Sunday and weddings, debuts, birthdays and corporate events in Metro Manila and nearby provinces.", socials: { instagram: "gracefellowshipqcmusic", tiktok: "gracefellowshipqc", facebook: "gracefellowshipqc", youtube: "@gracefellowshipqc", website: "https://gracefellowshipqc.example.com/music-ministry", email: "musicministry@gracefellowshipqc.example.com" } };
 for (const w of [360, 390]) {
   p = await open(`/bank/${BID}`, { touch: true, viewport: { width: w, height: 800 }, songs: [], route: (page) => page.route("**/api/bank?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(LONGBANK) })) });

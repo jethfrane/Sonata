@@ -514,23 +514,23 @@ export function diatonicChords(key, spelling = "auto") {
   });
 }
 
-/** Chord families offered for every key (chord bar, chord players). */
+/** Chord families offered for every key (chord bar, chord players). The six everyday ones show first; `more` ones sit behind "More". */
 export const CHORD_TYPES = [
   { id: "triad", label: "Triads" },
   { id: "7th", label: "7ths" },
   { id: "sus4", label: "Sus4" },
   { id: "sus2", label: "Sus2" },
   { id: "add9", label: "Add9" },
-  { id: "6", label: "6ths" },
-  { id: "9th", label: "9ths" },
-  { id: "power", label: "Power (5)" },
   { id: "slash", label: "Slash (inversions)" },
-  { id: "walk", label: "Walking bass" },
-  { id: "secondary", label: "Secondary dominants" },
-  { id: "7sus4", label: "7sus4" },
-  { id: "ext", label: "11ths & 13ths" },
-  { id: "passing", label: "Dim & aug (passing)" },
-  { id: "borrowed", label: "Borrowed" }
+  { id: "6", label: "6ths", more: true },
+  { id: "9th", label: "9ths", more: true },
+  { id: "power", label: "Power (5)", more: true },
+  { id: "walk", label: "Walking bass", more: true },
+  { id: "secondary", label: "Secondary dominants", more: true },
+  { id: "7sus4", label: "7sus4", more: true },
+  { id: "ext", label: "11ths & 13ths", more: true },
+  { id: "passing", label: "Dim & aug (passing)", more: true },
+  { id: "borrowed", label: "Borrowed", more: true }
 ];
 
 /**
