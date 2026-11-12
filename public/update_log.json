@@ -1,5 +1,17 @@
 [
   {
+    "version": "4.3.0",
+    "date": "2026-11-13",
+    "whatsNew": "A simpler Sonata: fewer buttons and menus, and a Song Bank that is just your song list.",
+    "changes": [
+      "Song Bank is now a public song list with your name, note, look and gigs. The Sonata Card image, photo, social links and payment codes are removed. Song Banks you already published still open.",
+      "Chord type menus show the six everyday types first; the rest are under More.",
+      "Piano and guitar toolbars are shorter. Drum beats live in the Drums tab; change key with the key menu or the [ and ] keys.",
+      "Drum pad keys Q W E R / A S D F now work on the Drums tab. Changing which key plays which pad is removed.",
+      "Sona the mascot and the TinyURL short-link button are removed. Nothing is sent to a link shortener any more."
+    ]
+  },
+  {
     "version": "4.2.0",
     "date": "2026-11-12",
     "whatsNew": "Import: paste a link to a chord page and Sonata fills in the chart for you.",

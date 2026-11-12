@@ -297,7 +297,7 @@ export function initSelectMenus() {
     };
     paint();
     drawer.addEventListener("click", (ev) => {
-      if (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-more")) { showAll = true; paint(); /** @type {HTMLElement|null} */ (drawer.querySelector(".ui-select-opt[data-val]:not(.on)"))?.focus(); return; }
+      if (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-more")) { ev.stopPropagation(); showAll = true; paint(); /** @type {HTMLElement|null} */ (drawer.querySelector(".ui-select-opt[data-val]:not(.on)"))?.focus(); return; }
       const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-opt"));
       if (!btn) return;
       const val = btn.dataset.val ?? "";
