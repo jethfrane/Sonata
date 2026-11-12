@@ -1,5 +1,13 @@
 [
   {
+    "version": "5.0.1",
+    "date": "2026-11-13",
+    "whatsNew": "Play opens with an even smaller download.",
+    "changes": [
+      "Play fetches starter sounds only for the instrument tab you are on. Chords fetches piano and guitar; ukulele and bass load when you first play them."
+    ]
+  },
+  {
     "version": "5.0.0",
     "date": "2026-11-13",
     "whatsNew": "Instrument sounds now work offline, and the piano opens with a much smaller download.",

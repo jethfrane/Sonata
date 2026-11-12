@@ -93,10 +93,9 @@ function songChords() {
 }
 
 export function initChords() {
+  // Starter sounds for the two most-heard instruments; ukulele and bass load when first played.
   preloadSamples("piano");
   preloadSamples("guitar");
-  preloadSamples("uke");
-  preloadSamples("bass");
   try { const c = localStorage.getItem(KEY); if (c && describeChord(c)) current = c; } catch { /* ignore */ }
   const view = $("view-chords");
   $("chordRoots").innerHTML = ROOTS.map((r) => `<button type="button" class="key-btn" data-root="${r}">${esc(pretty(r))}</button>`).join("");

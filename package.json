@@ -1,6 +1,6 @@
 {
   "name": "sonata",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "private": true,
   "description": "Sonata: chord charts and music tools for musicians and worship teams. Offline-first PWA.",
   "type": "module",

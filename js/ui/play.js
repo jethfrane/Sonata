@@ -67,6 +67,13 @@ export function setInstrument(name) {
   try { localStorage.setItem("sonata_play_inst", inst); } catch { /* ignore */ }
   if (inst !== "tuner") stopTuner();
   paintInstrument();
+  warmInstrument();
+}
+
+/** Starter sounds for the tab that is showing only. The tuner, metronome and drums need none. */
+function warmInstrument() {
+  if (inst === "piano") preloadSamples("piano");
+  else if (inst === "guitar") preloadSamples(/** @type {any} */ (TUNINGS[tuning].kind));
 }
 
 function paintInstrument() {
@@ -757,8 +764,7 @@ function renderFretboard() {
 }
 
 export function renderPlay() {
-  preloadSamples("piano");
-  preloadSamples(/** @type {any} */ (TUNINGS[tuning].kind));
+  warmInstrument();
   const s = store.active();
   const sel = /** @type {HTMLSelectElement} */ ($("playKeySelect"));
   const songK = shapeKey(s);

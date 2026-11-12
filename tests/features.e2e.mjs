@@ -387,7 +387,7 @@ const sampleReqs = [];
 p.on("request", (r) => { if (r.url().includes("/samples/")) sampleReqs.push(new URL(r.url()).pathname); });
 await p.goto(BASE + "/play/piano"); await p.waitForTimeout(1500);
 const beforeSound = sampleReqs.filter((u) => u.includes("/piano/")).length;
-ok(beforeSound > 0 && beforeSound <= 3 && sampleReqs.length <= 6, `opening the piano fetches a small starter set, not the whole bank (${beforeSound} piano files, ${sampleReqs.length} in all)`);
+ok(beforeSound > 0 && beforeSound <= 3 && sampleReqs.length <= 3, `opening the piano fetches a small starter set, not the whole bank (${beforeSound} piano files, ${sampleReqs.length} in all)`);
 await p.locator('#piano .pk[data-midi="60"]').dispatchEvent("pointerdown"); await p.waitForTimeout(2500);
 ok(sampleReqs.filter((u) => u.includes("/piano/")).length >= 12, "playing a note loads the rest of the piano in the background");
 await p.click('[aria-label="Settings"]'); await p.waitForTimeout(400);
