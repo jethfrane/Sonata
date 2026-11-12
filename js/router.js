@@ -1,7 +1,8 @@
 // @ts-check
 // Pure URL helpers: every section, song, stage and instrument has its own path.
 //   /songs  /chords  /chords/<chord>  /theory  /play  /play/piano|guitar|tuner|metronome|drums   (old /tools links open the chart)
-//   /bank/<drive file id>   a public Song Bank      /q/<CODE>   a song or setlist from a QR code
+//   /bank/<drive file id>   a public Song Bank      /set/<drive file id>   a live setlist
+//       /q/<CODE>   a song or setlist from a QR code
 //   /song/<slug>  /song/<slug>/stage  /song/<slug>/play/piano
 // A song's slug is its title plus the tail of its id. The tail is what we look
 // up, so a link keeps working after the song is renamed.
@@ -38,7 +39,7 @@ export function parsePath(pathname) {
   const decode = (/** @type {string} */ x) => { try { return decodeURIComponent(x); } catch { return x; } };
   const rawSeg = pathname.split("/").filter(Boolean).map(decode);
   const seg = rawSeg.map((x) => x.toLowerCase());
-  if (seg[0] === "q" || seg[0] === "bank" || seg[0] === "chords") {
+  if (seg[0] === "q" || seg[0] === "bank" || seg[0] === "chords" || seg[0] === "set") {
     return { view: seg[0] === "q" ? "q" : seg[0], slug: "", sub: "", stage: false, raw: (rawSeg[1] || "").replace(/-over-/i, "/") };
   }
   let slug = "";

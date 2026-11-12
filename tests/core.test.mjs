@@ -537,3 +537,28 @@ test("import: reads a chart out of a chord page and refuses unsafe addresses", a
   assert.equal(I.loneLink("https://sonata.jethrofrane.xyz/?s=abc"), "", "a Sonata share link is not a web page to read");
   assert.equal(I.loneLink("https://site.com/song\nG C D"), "", "a link with chords under it is a reference, not a page to read");
 });
+
+test("sharing: a share id travels with a song; live setlist files are checked", async () => {
+  const S = await import("../js/core/share.js");
+  const { normalizeSong, normalizeSetlist } = await import("../js/core/store.js");
+  const { parsePath } = await import("../js/router.js");
+  const packed = S.packSong({ id: "song-abc123def456", title: "A", body: "G C" });
+  assert.equal(packed.i, "abc123def4".length === 10 ? S.shareId({ id: "song-abc123def456" }) : "");
+  assert.equal(S.shareId({ id: "song-abc123def456" }), "c123def456".padStart(10, "b").slice(-10));
+  assert.equal(S.shareId({ id: "song-zzz", origin: "c123def456" }), "c123def456", "a saved copy keeps the id of the song it came from");
+  assert.equal(S.shareId({ id: "shared" }), "", "an unsaved preview has no id of its own");
+  const round = S.unpackSong(S.fromCompact(JSON.parse(JSON.stringify(S.toCompact(packed)))));
+  assert.equal(round.origin, packed.i); assert.equal(round.title, "A");
+  assert.equal(S.unpackSong({ t: "Old link", b: "G" }).origin, "", "older links without an id still open");
+  assert.equal(normalizeSong({ id: "x1", title: "A", body: "G", origin: "c123def456" }).origin, "c123def456");
+  assert.ok(!("origin" in normalizeSong({ id: "x1", title: "A", body: "G" })), "songs written here carry no origin");
+  const file = S.buildSetFile({ title: "Sunday", description: "9am" }, [{ id: "song-abc123def456", title: "A", body: "G C" }, { id: "song-2", title: "B", body: "[D]hi" }]);
+  assert.equal(file.type, "sonata-set"); assert.equal(file.s.length, 2); assert.equal(file.s[0].i, packed.i);
+  const back = S.parseSetFile(JSON.parse(JSON.stringify(file)));
+  assert.equal(back.type, "set"); assert.equal(back.t, "Sunday"); assert.equal(back.s[1].t, "B");
+  for (const bad of [null, [], { type: "sonata-bank", songs: [] }, { type: "sonata-set", s: [] }, { type: "sonata-set", s: [{ t: 1 }] }, { s: [{ t: "A", b: "G" }] }]) assert.equal(S.parseSetFile(bad), null);
+  const set = normalizeSetlist({ id: "set-1", title: "S", items: [], liveId: "1AbCdEfGhIjKlMnOpQrStUvWxYz012345", source: "<script>" });
+  assert.equal(set.liveId, "1AbCdEfGhIjKlMnOpQrStUvWxYz012345"); assert.ok(!("source" in set), "only real Drive file ids are kept");
+  const r = parsePath("/set/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/sunday");
+  assert.equal(r.view, "set"); assert.equal(r.raw, "1AbCdEfGhIjKlMnOpQrStUvWxYz012345", "the file id keeps its case");
+});

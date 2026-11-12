@@ -108,3 +108,37 @@ export function nudgeTranspose(song, delta) {
 export function tick() {
   if (store.settings.haptics && navigator.vibrate) { try { navigator.vibrate(6); } catch { /* unsupported */ } }
 }
+
+/**
+ * A copy of a shared song already in the library, if any: one saved from the same song before
+ * (same share id), the song itself when the reader wrote it, or one with the same title and chart.
+ * @param {{ title: string, body: string, origin?: string }} u from unpackSong
+ * @returns {{ song: Song, own: boolean, same: boolean }|null}
+ */
+export function findCopy(u) {
+  const tail = (/** @type {string} */ id) => String(id).replace(/[^a-z0-9]/gi, "").slice(-10);
+  const mine = u.origin ? store.songs.find((s) => s.origin === u.origin) : null;
+  const own = !mine && u.origin ? store.songs.find((s) => !s.origin && tail(s.id) === u.origin) : null;
+  const song = mine || own || store.songs.find((s) => s.title === u.title && s.body === u.body);
+  return song ? { song, own: Boolean(own), same: song.title === u.title && song.body === u.body } : null;
+}
+
+/**
+ * Add a shared song to the library, or bring the copy already there up to date. An update
+ * replaces the chart and its details but keeps the reader's own key and capo: if the leader
+ * rewrote the chart in another key, the reader still hears it in the key they chose.
+ * A song the reader wrote is never overwritten by a link to it.
+ * @param {ReturnType<typeof import("../core/share.js").unpackSong>} u
+ * @returns {{ song: Song, status: "new"|"same"|"updated" }}
+ */
+export function adoptShared(u) {
+  const found = findCopy(u);
+  if (!found) return { song: store.createSong(/** @type {any} */ (u)), status: "new" };
+  const { song } = found;
+  if (found.own || found.same) return { song, status: "same" };
+  const before = soundingKey(song).tonic;
+  store.update(song, { title: u.title, body: u.body, manualKey: u.manualKey, artist: u.artist, creator: u.creator, description: u.description, links: u.links, bpm: u.bpm, genre: u.genre || song.genre });
+  const shift = mod12(before - soundingKey(song).tonic);
+  if (shift) store.update(song, { transpose: mod12(song.transpose + shift + 5) - 5 });
+  return { song, status: "updated" };
+}

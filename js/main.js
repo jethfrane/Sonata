@@ -5,7 +5,7 @@ import "@fontsource-variable/jetbrains-mono";
 import { registerSW } from "virtual:pwa-register";
 import { $, paintIcons, setIcon, toast, esc, initSelectMenus } from "./ui/dom.js";
 import { t, setLang, applyI18n } from "./ui/i18n.js";
-import { store, app, metronome, storageBlocked } from "./ui/ctx.js";
+import { store, app, metronome, storageBlocked, findCopy } from "./ui/ctx.js";
 import { keepAlive } from "./audio.js";
 import { Drive } from "./drive.js";
 import { decodeShare, decodeQr, unpackSong } from "./core/share.js";
@@ -182,6 +182,9 @@ async function restoreBank() {
 let lastDriveStatus = "";
 
 async function handleShareLink() {
+  // A live setlist link: /set/<drive file id>/<name>.
+  const live = location.pathname.match(/^\/set\/([\w-]{20,80})/i);
+  if (live) { history.replaceState(null, "", "/songs"); show("songs"); (await import("./ui/liveset.js")).openLiveSet(live[1]); return true; }
   const params = new URLSearchParams(location.search);
   const raw = params.get("s") || params.get("share");
   // QR codes use /Q/<CODE> (upper case, so the code is smaller); links use ?s=.
@@ -196,8 +199,10 @@ async function handleShareLink() {
   if (data.type === "set") { show("songs"); openImportSet(data); return true; }
   // Already saved? open it; otherwise preview read-only with a Save button.
   const u = unpackSong(data);
-  const same = store.songs.find((s) => s.title === u.title && s.body === u.body);
-  if (same) store.open(same.id);
+  // My own song, or a copy that is already the same: open it. A copy that is behind: show the
+  // new version with "Update my copy".
+  const copy = findCopy(u);
+  if (copy && (copy.own || copy.same)) store.open(copy.song.id);
   else store.showShared(/** @type {any} */ ({ ...u, id: "shared", isFavorite: false, createdAt: "", updatedAt: "", lastOpenedAt: "" }));
   show("editor");
   return true;
@@ -243,6 +248,7 @@ function registerServiceWorker() {
 /** Open whatever the address bar says. */
 function route() {
   const r = parsePath(location.pathname);
+  if (r.view === "set") { history.replaceState(null, "", "/songs"); show("songs"); import("./ui/liveset.js").then((m) => m.openLiveSet(r.raw)); return; }
   if (r.view === "bank") { show("bank", { sub: r.raw, replace: true }); return; }
   if (r.view === "chords") { show("chords", { sub: r.raw, replace: true }); return; }
   let view = /** @type {View} */ (SECTIONS.includes(r.view) ? r.view : "");
@@ -353,6 +359,8 @@ async function boot() {
   if (!opened) route();
   if (storageBlocked) toast(t("storageBlocked", "This browser blocks storage, so songs are kept only until you close this tab. Export a backup in Settings to keep them."), "error", { ms: 9000 });
   renderRecent();
+  // Live setlists: keep the ones this device publishes current, and check the ones it follows.
+  if (store.setlists.some((s) => s.liveId || s.source)) import("./ui/liveset.js").then((m) => { m.watchLiveSets(); setTimeout(() => m.refreshFollowed(), 3000); });
   // Shared into Sonata from another app (manifest share_target): a link or some text arrives in the address.
   const sharedIn = new URLSearchParams(location.search);
   const sharedText = [sharedIn.get("url"), sharedIn.get("text")].filter(Boolean).join("\n").trim();

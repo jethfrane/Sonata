@@ -25,7 +25,7 @@ const call = async (id, args) => {
 /** @param {...any} a */ export const openDetails = (...a) => call("openDetails", a);
 /** @param {string} [setId] */ export const openShare = (setId) => call("openShare", [setId]);
 /** @param {string} [id] */ export const openSetlistEditor = (id) => call("openSetlistEditor", [id]);
-/** @param {any} data */ export const openImportSet = (data) => call("openImportSet", [data]);
+/** @param {any} data */ export const openImportSet = (data, /** @type {string} */ source = "") => call("openImportSet", [data, source]);
 export const openSettings = () => call("openSettings", []);
 /** QR encoder (loaded on first use). */
 export const loadQr = () => chunk(() => import("../lib/qr.js"));

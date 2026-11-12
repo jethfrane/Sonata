@@ -6,7 +6,7 @@ import { slugify } from "../router.js";
 /**
  * @typedef {import("./store.js").Song} Song
  * @typedef {{ t: string, b: string, k?: string, c?: number, tr?: number, a?: string,
- *   cr?: string, d?: string, l?: { name: string, url: string }[], bpm?: number, g?: string }} SharedSong
+ *   cr?: string, d?: string, l?: { name: string, url: string }[], bpm?: number, g?: string, i?: string }} SharedSong
  * @typedef {{ type: "set", t: string, d?: string, l?: { name: string, url: string }[],
  *   s: SharedSong[] }} SharedSet
  */
@@ -47,7 +47,19 @@ export function packSong(song) {
   const links = cleanLinks(song.links ?? song.l); if (links.length) d.l = links;
   const bpm = Number(song.bpm); if (bpm >= 30 && bpm <= 300) d.bpm = Math.round(bpm);
   const g = String(song.genre ?? song.g ?? "").trim(); if (g) d.g = g;
+  const i = shareId(song); if (i) d.i = i;
   return d;
+}
+
+/**
+ * The id that travels with a shared song, so a copy saved from a link can be brought up to date
+ * later instead of saved twice. A copy keeps the id of the song it came from.
+ * @param {any} song
+ */
+export function shareId(song) {
+  const kept = String(song?.origin ?? song?.i ?? "");
+  if (kept) return kept.replace(/[^a-z0-9]/gi, "").slice(-12);
+  return song?.id && song.id !== "shared" ? String(song.id).replace(/[^a-z0-9]/gi, "").slice(-10) : "";
 }
 
 /**
@@ -76,7 +88,8 @@ export function unpackSong(d) {
     description: typeof d?.d === "string" ? d.d : "",
     links: cleanLinks(d?.l),
     bpm: Number(d?.bpm) || null,
-    genre: typeof d?.g === "string" ? d.g : ""
+    genre: typeof d?.g === "string" ? d.g : "",
+    origin: typeof d?.i === "string" ? d.i.replace(/[^a-z0-9]/gi, "").slice(-12) : ""
   };
 }
 
@@ -88,9 +101,9 @@ const toBase64Url = (bytes) => {
 };
 
 // ---- v4: positional arrays (no field names) ----
-// Song: [4, title, body, key, capo, transpose, artist, arranger, notes, links, bpm, genre]
+// Song: [4, title, body, key, capo, transpose, artist, arranger, notes, links, bpm, genre, id]
 // Set:  [5, title, notes, links, [song, song, …]]   (each song as above, without the leading 4)
-const SONG_FIELDS = ["t", "b", "k", "c", "tr", "a", "cr", "d", "l", "bpm", "g"];
+const SONG_FIELDS = ["t", "b", "k", "c", "tr", "a", "cr", "d", "l", "bpm", "g", "i"];
 
 /** @param {any} d */
 function songToArray(d) {
@@ -292,4 +305,26 @@ export async function setlistMessage(base, set, songs) {
   for (const s of songs) lines.push(`${++i}. ${s.title}${s.artist ? ` (${s.artist})` : ""}\n${await shareUrl(base, packSong(s))}`);
   lines.push("", "Open a link to see the chart, or paste this whole message into Sonata → Songs → Import to get the setlist.");
   return lines.join("\n");
+}
+
+// ---- Live setlist: one file in the leader's Drive that the band's link always reads ----
+export const SET_TYPE = "sonata-set";
+
+/** The public file for a live setlist. @param {{ title?: string, description?: string, links?: any[] }} set @param {any[]} songs */
+export function buildSetFile(set, songs) {
+  const d = packSet(set, songs);
+  return { type: SET_TYPE, v: 1, t: d.t, d: d.d || "", l: d.l || [], s: d.s, updatedAt: new Date().toISOString() };
+}
+
+/**
+ * Check a downloaded live setlist. Anything that is not one is refused, so the reader can't be
+ * used to fetch other Drive files.
+ * @param {any} d @returns {{ type: "set", t: string, d: string, l: { name: string, url: string }[], s: SharedSong[], updatedAt: string }|null}
+ */
+export function parseSetFile(d) {
+  if (!d || typeof d !== "object" || Array.isArray(d) || d.type !== SET_TYPE || !Array.isArray(d.s)) return null;
+  const s = d.s.filter((/** @type {any} */ x) => x && typeof x === "object" && typeof x.t === "string" && typeof x.b === "string").slice(0, 200)
+    .map((/** @type {any} */ x) => packSong({ ...x, b: String(x.b).slice(0, 20000), t: String(x.t).slice(0, 160) }));
+  if (!s.length) return null;
+  return { type: "set", t: String(d.t || "Setlist").slice(0, 120), d: String(d.d || "").slice(0, 2000), l: cleanLinks(d.l), s, updatedAt: String(d.updatedAt || "").slice(0, 40) };
 }

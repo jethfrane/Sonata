@@ -27,20 +27,30 @@ async function capped(r) {
   return Buffer.concat(parts.map((p) => Buffer.from(p))).toString("utf8");
 }
 
-/** @param {string} id */
-export async function loadBank(id) {
+/**
+ * Download a publicly shared Sonata file and check it. @template T
+ * @param {string} id @param {(d: any) => T|null} parse @param {string} wrong error when it is another kind of file
+ * @returns {Promise<{ status: number, error?: string, file?: T }>}
+ */
+export async function loadPublic(id, parse, wrong) {
   if (!validBankId(id)) return { status: 400, error: "bad id" };
   for (const url of SOURCES(id)) {
     try {
       const r = await fetch(url, { redirect: "follow", signal: AbortSignal.timeout(6000), headers: { "User-Agent": "Sonata song bank reader" } });
       if (!r.ok) continue;
       if (/text\/html/i.test(r.headers.get("content-type") || "")) continue; // a sign-in or warning page, not the file
-      const bank = parseBankFile(JSON.parse(await capped(r)));
-      if (bank) return { status: 200, bank };
-      return { status: 404, error: "not a song bank" };
+      const file = parse(JSON.parse(await capped(r)));
+      if (file) return { status: 200, file };
+      return { status: 404, error: wrong };
     } catch { /* try the next address */ }
   }
   return { status: 404, error: "not shared or not found" };
+}
+
+/** @param {string} id */
+export async function loadBank(id) {
+  const r = await loadPublic(id, parseBankFile, "not a song bank");
+  return r.file ? { status: 200, bank: r.file } : { status: r.status, error: r.error };
 }
 
 export default async function handler(req, res) {

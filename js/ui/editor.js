@@ -1,7 +1,7 @@
 // @ts-check
 import { $, $$, esc, icon, toast, copyText, paintIcons } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick } from "./ctx.js";
+import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails, openShare, openChordSheet } from "./sheets-lazy.js";
@@ -158,8 +158,20 @@ export function initEditor() {
     if (await copyText(text)) toast(t("copied", "Copied"), "success");
   });
   $("saveSharedBtn").addEventListener("click", () => {
-    const s = store.saveShared();
-    if (s) toast(t("savedNow", "Saved"), "success");
+    const shared = store.shared;
+    if (!shared) return;
+    // A copy saved from this song before is brought up to date; the reader's key and capo stay.
+    if (findCopy(shared)) {
+      const { song } = adoptShared(/** @type {any} */ (shared));
+      store.closeShared(); store.open(song.id);
+      toast(t("copyUpdated", "Your copy is up to date. Your key and capo were kept."), "success", { ms: 4500 });
+      return;
+    }
+    if (store.saveShared()) toast(t("savedNow", "Saved"), "success");
+  });
+  // The button says what it will do: save a new song, or update the copy already here.
+  store.on("song-open", (/** @type {any} */ s) => {
+    if (s?.readonly) $("saveSharedBtn").textContent = findCopy(s) ? t("updateCopy", "Update my copy") : t("saveToSongs", "Save to my songs");
   });
   $("closeSharedBtn").addEventListener("click", () => store.closeShared());
   $("setPrevBtn").addEventListener("click", () => stepSetlist(-1));

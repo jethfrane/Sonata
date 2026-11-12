@@ -118,3 +118,23 @@ test("import reader: fetches one public page, follows safe redirects only, retur
   assert.equal(status, 403, "other sites cannot use the reader");
   assert.equal(JSON.parse(body).error, "forbidden");
 });
+
+test("live setlist reader: passes on a Sonata setlist, refuses anything else", async () => {
+  const { default: handler, loadSet } = await import("../api/set.js");
+  const SET = { type: "sonata-set", v: 1, t: "Sunday", s: [{ t: "A", b: "G C", i: "abc1234567" }], updatedAt: "2026-11-13" };
+  let d = fakeDrive(() => json(SET));
+  let r = await call(handler, `/api/set?id=${ID}`);
+  d.restore();
+  assert.equal(r.status, 200);
+  const body = JSON.parse(r.body);
+  assert.equal(body.type, "sonata-set"); assert.equal(body.t, "Sunday"); assert.equal(body.s[0].i, "abc1234567");
+  assert.ok(/s-maxage/.test(r.headers["cache-control"]));
+  d = fakeDrive(() => json(BANK));
+  assert.equal((await loadSet(ID)).status, 404, "a song bank is not a setlist");
+  d.restore();
+  d = fakeDrive(() => json({ secret: "private file" }));
+  r = await call(handler, `/api/set?id=${ID}`);
+  d.restore();
+  assert.equal(r.status, 404); assert.ok(!r.body.includes("private file"), "other Drive files are never passed on");
+  assert.equal((await call(handler, "/api/set?id=../etc")).status, 400);
+});

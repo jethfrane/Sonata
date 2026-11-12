@@ -27,6 +27,7 @@ Five places, one job each, plus a Song Bank:
   - **Key button**: transpose, song key, capo (shows the shapes you actually play), sharps or flats, and *Write into chart* to make the new key permanent.
   - **Views**: Chords, Nashville numbers, Roman numerals, or lyrics only.
   - **Present**: big stage text, auto-scroll that pauses when you touch, setlist navigation, metronome, three stage colors, screen stays awake.
+  - **Live setlist link**: publish a setlist once from your own Google Drive; the band's link always shows the latest version, and each player keeps their own key and capo. No accounts.
   - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG, TXT and print in the same sheet. Old Sonata links still open.
 - **Chords**: type or pick any chord (slash chords too: `Am7/G`, `D/F#`) and see it on guitar and ukulele (every playable shape, the chord-book one first), bass (where its notes are) and piano. Tap a chord in a chart for the same view. Links like `/chords/Am7` open straight to it.
 - **Song Bank**: the songs you know or offer, with genres, your name, a short note, your own colors and upcoming gigs. Publish, then share the link. The page is view-only: people search and read a chart in their key.
@@ -52,7 +53,7 @@ Intro: G  C6/9  D  (x2)   labels and repeat marks stay on a chord line
 
 - Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, publish a Song Bank.
 - Import reads one page you paste through the `/api/import` function: public https pages only, no cookies, size and time limits, and only the chart text comes back. Nothing is kept.
-- No Sonata database. Share links and QR codes carry the song itself. A Song Bank is one file in the owner's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. There is no request inbox, so there is nothing to spam; payment codes are shown exactly as the owner uploaded them, with the name written inside the code so visitors can check it.
+- No Sonata database. Share links and QR codes carry the song itself. A Song Bank is one file in the owner's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. A live setlist works the same way through `/api/set`. There is no request inbox, so there is nothing to spam; payment codes are shown exactly as the owner uploaded them, with the name written inside the code so visitors can check it.
 - Vercel Web Analytics counts anonymous page views (no cookies). No ads, no trackers.
 - Strict Content Security Policy (scripts only from this site and Google sign-in), HSTS, no inline scripts, fonts served from this site.
 - Share links are size-capped and decompressed with a limit, so a crafted link can't freeze the app or the link-preview function. Song links only open as normal `http(s)` links.

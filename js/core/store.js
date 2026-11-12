@@ -18,9 +18,10 @@ export const KEYS = {
  * @typedef {{ id: string, title: string, artist: string, creator: string, description: string,
  *   links: Link[], body: string, manualKey: string, isFavorite: boolean, transpose: number,
  *   capo: number, bpm: number|null, genre: string, inBank: boolean, createdAt: string, updatedAt: string,
- *   lastOpenedAt: string, readonly?: boolean }} Song
+ *   lastOpenedAt: string, readonly?: boolean, origin?: string }} Song
+ *   `origin`: the share id of the song this copy was saved from (see shareId in share.js).
  * @typedef {{ id: string, title: string, description: string, links: Link[],
- *   items: { songId: string }[], date: string, updatedAt: string }} Setlist
+ *   items: { songId: string }[], date: string, updatedAt: string, liveId?: string, source?: string }} Setlist
  * @typedef {typeof DEFAULT_SETTINGS} Settings
  */
 
@@ -97,6 +98,8 @@ export function normalizeSong(s) {
     lastOpenedAt: time(s.lastOpenedAt, updatedAt)
   };
   if (s.readonly) song.readonly = true;
+  const origin = str(s.origin).replace(/[^a-z0-9]/gi, "").slice(-12);
+  if (origin) song.origin = origin;
   return song;
 }
 
@@ -104,7 +107,8 @@ export function normalizeSong(s) {
 export function normalizeSetlist(s) {
   if (!s || typeof s !== "object" || Array.isArray(s) || !s.id) return null;
   const items = Array.isArray(s.items) ? s.items.filter((i) => i && typeof i.songId === "string").map((i) => ({ songId: i.songId })) : [];
-  return {
+  /** @type {Setlist} */
+  const set = {
     id: str(s.id),
     title: str(s.title).trim() || "Untitled Setlist",
     description: str(s.description),
@@ -113,6 +117,10 @@ export function normalizeSetlist(s) {
     date: time(s.date, now()),
     updatedAt: time(s.updatedAt, time(s.date, now()))
   };
+  // Live setlists: `liveId` is the Drive file this setlist is published to (the leader's side);
+  // `source` is the Drive file this setlist follows (a band member's side).
+  for (const k of /** @type {const} */ (["liveId", "source"])) { const v = str(s[k]); if (/^[\w-]{20,80}$/.test(v)) set[k] = v; }
+  return set;
 }
 
 /** @param {any} raw @returns {Settings} */

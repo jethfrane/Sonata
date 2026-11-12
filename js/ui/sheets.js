@@ -3,10 +3,11 @@
 // Drive account, about, and shared-setlist import.
 import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime } from "./dom.js";
 import { t, getLang, setLang, applyI18n } from "./i18n.js";
-import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
+import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick, adoptShared } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
 import { analyzeRawChart } from "../core/chart.js";
 import { loneLink } from "../core/import.js";
+import { liveSetUrl, publishLiveSet, stopLiveSet, watchLiveSets } from "./liveset.js";
 import { packSong, packSet, shareUrl, unpackSong, qrUrl, parseLinks, setlistMessage } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
 import { exportPdf, exportPng, exportTxt, printChart } from "./exporter.js";
@@ -269,6 +270,20 @@ export async function openShare(setId) {
   let url = link;
   const opts = readExportOpts();
   const many = set ? store.setlistSongs(set).length : (store.currentSetlist()?.songs.length || 1);
+  // A live link: one address that always shows the latest version of this setlist.
+  const liveBlock = () => {
+    const id = set?.liveId || "";
+    return `<h3 class="group-title">${esc(t("liveLink", "Live link"))}</h3>` + (id
+      ? `<p class="status-line synced">${esc(t("liveOn", "Live: this link always shows the latest version."))}</p>
+        <div class="share-link"><input class="input" id="liveUrl" readonly value="${esc(liveSetUrl(id, set?.title))}" aria-label="${esc(t("liveLink", "Live link"))}"></div>
+        <div class="share-actions">
+          <button class="btn primary" type="button" id="liveCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
+          <button class="btn" type="button" id="liveUpdate">${icon("refresh")}${esc(t("bankUpdate", "Update now"))}</button>
+          <button class="btn ghost danger-text" type="button" id="liveStop">${esc(t("bankStop", "Stop sharing"))}</button>
+        </div>`
+      : `<p class="card-text">${esc(t("liveIntro", "One link for the band that always shows the latest version. Change the setlist or a chart and everyone gets it; each player keeps their own key. It is shared from your Google Drive."))}</p>
+        <button class="btn" type="button" id="liveStart">${icon("link")}${esc(t("liveStart", "Make a live link"))}</button>`);
+  };
   const draw = () => {
     // The QR holds the upper-case form of the link (QR alphanumeric mode: a smaller, easier-to-scan code).
     const svg = qrSvg(qrLink, { ecc: "L", margin: 4 });
@@ -287,6 +302,7 @@ export async function openShare(setId) {
           ${set ? `<p class="card-hint">${esc(t("songLinksHint", "Song links: one short link per song in a message. Anyone can paste the whole message into Sonata (Songs → Import) to get the setlist."))}</p>` : ""}
         </div>
       </div>
+      ${set ? liveBlock() : ""}
       <h3 class="group-title">${esc(t("exportFiles", "Export"))}${many > 1 ? ` <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: many }))}</span>` : ""}</h3>
       <div class="export-grid">
         <button class="btn" type="button" data-export="pdf">${icon("file")}PDF</button>
@@ -324,6 +340,18 @@ export async function openShare(setId) {
     if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
     if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(qrLink, title)));
+    if (set && (b.id === "liveStart" || b.id === "liveUpdate")) busy(b, async () => {
+      if (!(await publishLiveSet(set.id))) return;
+      watchLiveSets();
+      body.innerHTML = draw();
+      if (b.id === "liveStart" && await copyText(liveSetUrl(set.liveId || "", set.title))) toast(t("liveCopied", "Live link copied. Send it to the band."), "success", { ms: 4500 });
+      else toast(t("livePublished", "The live link is up to date."), "success");
+    });
+    if (set && b.id === "liveCopy") { if (await copyText(liveSetUrl(set.liveId || "", set.title))) toast(t("linkCopied", "Link copied"), "success"); }
+    if (set && b.id === "liveStop") busy(b, async () => {
+      if (await stopLiveSet(set.id)) { body.innerHTML = draw(); toast(t("liveStopped", "The live link is off. The setlist is private again."), "info"); }
+      else toast(t("bankStopFailed", "Couldn't stop sharing. Check your connection and sign-in."), "error");
+    });
     if (b.id === "shareSongLinks" && set) busy(b, async () => {
       const msg = await setlistMessage(BASE(), set, store.setlistSongs(set));
       if ("share" in navigator && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ title: `${set.title} · Sonata`, text: msg }); return; } catch { /* cancelled: copy instead */ } }
@@ -396,21 +424,21 @@ export function openSetlistEditor(id) {
 }
 
 /** Import a shared setlist after the user confirms. @param {any} data */
-export function openImportSet(data) {
+/**
+ * @param {any} data a shared setlist @param {string} [source] the live setlist file it came from;
+ *   the saved setlist then follows that file and is brought up to date when it changes
+ */
+export function openImportSet(data, source = "") {
   const songs = Array.isArray(data?.s) ? data.s : [];
   openSheet({
     title: t("importSetTitle", "Open shared setlist"),
-    body: `<h3 class="sheet-sub">${esc(data.t || "Setlist")}</h3><p class="sheet-text">${esc(t("importSetText", "{n} songs. The setlist and its songs will be saved to your library.", { n: songs.length }))}</p>
+    body: `<h3 class="sheet-sub">${esc(data.t || "Setlist")}</h3><p class="sheet-text">${esc(t("importSetText", "{n} songs. The setlist and its songs will be saved to your library.", { n: songs.length }))}</p>${source ? `<p class="card-hint">${esc(t("liveFollow", "This is a live setlist. When its owner changes it, your copy is brought up to date and your own keys are kept."))}</p>` : ""}
       <ol class="import-list">${songs.map((s) => `<li>${esc(s?.t || "")}${s?.a ? ` <span class="muted">· ${esc(s.a)}</span>` : ""}</li>`).join("")}</ol>`,
     actions: [
       { label: t("cancel", "Cancel"), kind: "ghost" },
       { label: t("importSet", "Save setlist"), kind: "primary", onClick: () => {
-        const ids = songs.map((/** @type {any} */ sd) => {
-          const u = unpackSong(sd);
-          const same = store.songs.find((x) => x.title === u.title && x.body === u.body);
-          return same ? same.id : store.createSong(/** @type {any} */ (u)).id;
-        });
-        const set = store.saveSetlist({ title: data.t || "Setlist", description: data.d || "", items: ids.map((/** @type {string} */ songId) => ({ songId })) });
+        const ids = songs.map((/** @type {any} */ sd) => adoptShared(unpackSong(sd)).song.id);
+        const set = store.saveSetlist({ title: data.t || "Setlist", description: data.d || "", items: ids.map((/** @type {string} */ songId) => ({ songId })), ...(source ? { source } : {}) });
         store.playSetlist(set.id);
         app.show("editor");
         toast(t("setlistSaved", "Setlist saved"), "success");
@@ -657,8 +685,8 @@ export function openLinksImport(text = "") {
           return;
         }
         if (!n) { toast(t("importNone", "Paste a link or chords to see what will be added."), "error"); return false; }
-        /** Reuse a song that's already saved (same title and chart). @param {any} d */
-        const add = (d) => { const u = unpackSong(d); const same = store.songs.find((x) => x.title === u.title && x.body === u.body); return same ? same.id : store.createSong(/** @type {any} */ (u)).id; };
+        /** Reuse a song that is already saved, bringing an older copy up to date. @param {any} d */
+        const add = (d) => adoptShared(unpackSong(d)).song.id;
         const ids = found.songs.map(add);
         for (const set of found.sets) store.saveSetlist({ title: set.t || "Setlist", description: set.d || "", items: set.s.map((d) => ({ songId: add(d) })) });
         const make = /** @type {HTMLInputElement|null} */ (b.querySelector("#lkMakeSet"));

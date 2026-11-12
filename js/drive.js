@@ -227,10 +227,11 @@ export class Drive {
   /**
    * Publish the song bank: write sonata_songbank.json and let anyone with the link read it.
    * Only this one file is shared; the library file stays private.
-   * @param {object} file the public bank JSON @param {string} [fileId] existing file to update
+   * @param {object} file the public JSON @param {string} [fileId] existing file to update
+   * @param {string} [name] file name (live setlists use their own)
    * @returns {Promise<{ ok: true, id: string } | { ok: false, reason: "signin"|"offline"|"error" }>}
    */
-  async publishBank(file, fileId = "") {
+  async publishBank(file, fileId = "", name = BANK_NAME) {
     if (!this.token || !this.tokenValid()) return { ok: false, reason: "signin" };
     if (!navigator.onLine) return { ok: false, reason: "offline" };
     try {
@@ -238,7 +239,7 @@ export class Drive {
       if (id) {
         try { const r = await this.api(`https://www.googleapis.com/drive/v3/files/${id}?fields=id,trashed`); const d = await r.json(); if (!d.id || d.trashed) id = ""; } catch (e) { if (/** @type {any} */ (e).expired) throw e; id = ""; }
       }
-      id = await this.upload(id || null, JSON.stringify(file), BANK_NAME);
+      id = await this.upload(id || null, JSON.stringify(file), name);
       await this.api(`https://www.googleapis.com/drive/v3/files/${id}/permissions?fields=id`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role: "reader", type: "anyone", allowFileDiscovery: false })
       });

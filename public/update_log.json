@@ -1,5 +1,16 @@
 [
   {
+    "version": "4.5.0",
+    "date": "2026-11-13",
+    "whatsNew": "Live setlist links: one link for the band that always shows the latest version.",
+    "changes": [
+      "Live link for a setlist (Share → Live link): the setlist is published as one file in your own Google Drive. Change the setlist or a chart and everyone who opens the link gets the change. No accounts for the band.",
+      "Band members keep their own key and capo when a chart is updated, even if the leader rewrote it in another key.",
+      "Opening a link to a newer version of a song you already saved now offers \"Update my copy\" instead of adding a second song.",
+      "Setlists you follow are checked for changes when you open Sonata."
+    ]
+  },
+  {
     "version": "4.4.0",
     "date": "2026-11-13",
     "whatsNew": "A clearer start, and your songs are better protected on this device.",

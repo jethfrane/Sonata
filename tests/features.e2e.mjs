@@ -241,10 +241,10 @@ const fakeDrive = async (page) => page.route("https://www.googleapis.com/**", as
   const json = (o) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(o), headers: { "access-control-allow-origin": "*" } });
   const id = (url.pathname.match(/files\/([^/?]+)/) || [])[1];
   if (url.pathname.includes("/permissions")) { drive.perms.push([m, id, req.postData()]); return json({ id: "anyoneWithLink" }); }
-  if (url.pathname.startsWith("/upload")) { drive.uploads++; const body = (req.postData() || "").split("\r\n\r\n")[2]?.split("\r\n--")[0] || ""; const nid = id || ((req.postData() || "").includes("sonata_songbank.json") ? "bankfile-" + "x".repeat(24) : "libraryfile-" + "y".repeat(20)); drive.files.set(nid, body); return json({ id: nid }); }
+  if (url.pathname.startsWith("/upload")) { drive.uploads++; const body = (req.postData() || "").split("\r\n\r\n")[2]?.split("\r\n--")[0] || ""; const nid = id || ((req.postData() || "").includes("sonata_songbank.json") ? "bankfile-" + "x".repeat(24) : (req.postData() || "").includes("sonata_setlist_") ? "setfile-" + "z".repeat(24) : "libraryfile-" + "y".repeat(20)); drive.files.set(nid, body); return json({ id: nid }); }
   if (url.searchParams.get("alt") === "media") return json(JSON.parse(drive.files.get(id) || "{}"));
   if (id) return json(drive.files.has(id) ? { id, trashed: false, md5Checksum: "1", modifiedTime: "t" } : {});
-  return json({ files: [...drive.files.keys()].filter((k) => !k.startsWith("bankfile") || url.searchParams.get("q")?.includes("songbank")).map((x) => ({ id: x })) });
+  return json({ files: [...drive.files.keys()].filter((k) => !k.startsWith("setfile") && (!k.startsWith("bankfile") || url.searchParams.get("q")?.includes("songbank"))).map((x) => ({ id: x })) });
 });
 p = await open("/songs", { route: fakeDrive });
 await p.evaluate(() => { sessionStorage.setItem("sonata_google_token", "tok"); sessionStorage.setItem("sonata_google_token_expiry", String(Date.now() + 3600000)); localStorage.setItem("sonata_user_profile", JSON.stringify({ email: "t@example.com" })); });
@@ -313,6 +313,54 @@ for (const w of [360, 390]) {
   ok(cut.length === 0, `long card content stays inside the card at ${w}px${cut.length ? " (cut: " + cut.join(", ") + ")" : ""}`);
   await p.close();
 }
+
+console.log("Band sharing");
+const { encodeShare } = await import("../js/core/share.js");
+const SID = "1SeTlIsTfIlEiD0123456789abcdefghi";
+let liveFile = { type: "sonata-set", v: 1, t: "Sunday Set", d: "", l: [], s: [{ t: "Song One", b: "G  C\nwords one", k: "G:major", i: "aaaaaaaaaa" }, { t: "Song Two", b: "D  A\nwords two", i: "bbbbbbbbbb" }] };
+const libOf = (pg) => pg.evaluate(() => { window.__sonata.store.flush?.(); return { songs: window.__sonata.store.songs.map((x) => ({ t: x.title, b: x.body, tr: x.transpose, c: x.capo, o: x.origin })), sets: window.__sonata.store.setlists.map((x) => ({ t: x.title, n: x.items.length, source: x.source, liveId: x.liveId })) }; });
+p = await open("/songs", { songs: [], route: (page) => page.route("**/api/set?**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(liveFile) })) });
+await p.goto(BASE + "/set/" + SID + "/sunday-set"); await p.waitForTimeout(1500);
+ok((await p.textContent("#sheetBody, .sheet-body")).includes("Sunday Set") && (await p.textContent("#sheetBody, .sheet-body")).includes("live setlist") && !p.url().includes("/set/"), "a live setlist link opens the setlist with a note that it stays up to date");
+await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(600);
+let libNow = await libOf(p);
+ok(libNow.songs.length === 2 && libNow.sets.length === 1 && libNow.sets[0].source === SID && libNow.songs.every((x) => x.o), "saving it adds the songs and a setlist that follows the link");
+// The player picks their own key and capo; then the leader edits a chart, rewrites it in A, and adds a song.
+await p.evaluate(() => { const st = window.__sonata.store; const mine = st.songs.find((x) => x.title === "Song One"); st.update(mine, { transpose: 2, capo: 3 }); });
+liveFile = { ...liveFile, s: [{ t: "Song One", b: "A  D\nnew words one", k: "A:major", i: "aaaaaaaaaa" }, liveFile.s[1], { t: "Song Three", b: "E  B\nwords three", i: "cccccccccc" }] };
+await p.goto(BASE + "/set/" + SID); await p.waitForTimeout(1500);
+libNow = await libOf(p);
+const songOne = libNow.songs.find((x) => x.t === "Song One");
+ok(libNow.songs.length === 3 && libNow.sets.length === 1 && libNow.sets[0].n === 3, "opening the link again updates the same setlist and songs, with no duplicates");
+ok(songOne?.b.includes("new words one") && songOne.c === 3 && songOne.tr === 0, `the updated chart keeps the player's sounding key (A) and capo (transpose ${songOne?.tr}, capo ${songOne?.c})`);
+// A single song link to a newer version offers "Update my copy".
+await p.goto(BASE + "/?s=" + await encodeShare({ t: "Song Two", b: "D  A\nnewer words two", i: "bbbbbbbbbb" })); await p.waitForTimeout(1200);
+ok((await p.textContent("#saveSharedBtn")).includes("Update my copy"), "a link to a newer version of a saved song offers Update my copy");
+await p.click("#saveSharedBtn"); await p.waitForTimeout(500);
+libNow = await libOf(p);
+ok(libNow.songs.length === 3 && libNow.songs.find((x) => x.t === "Song Two")?.b.includes("newer words two"), "Update my copy replaces the chart instead of adding a second song");
+await p.close();
+// A link that is no longer shared says so.
+p = await open("/set/" + SID, { songs: [], route: (page) => page.route("**/api/set?**", (r) => r.fulfill({ status: 404, contentType: "application/json", body: '{"error":"x"}' })) });
+await p.waitForTimeout(800);
+ok((await p.textContent("body")).includes("isn't shared any more"), "a live link that was stopped says so");
+await p.close();
+// Leader: publish a live link from the share sheet (fake Drive).
+drive.files.clear(); drive.perms.length = 0;
+p = await open("/songs", { route: fakeDrive });
+await p.evaluate(() => { sessionStorage.setItem("sonata_google_token", "tok"); sessionStorage.setItem("sonata_google_token_expiry", String(Date.now() + 3600000)); localStorage.setItem("sonata_user_profile", JSON.stringify({ email: "t@example.com" })); const songs = JSON.parse(localStorage.getItem("sonata:v12:songs")); localStorage.setItem("sonata:v12:setlists", JSON.stringify([{ id: "set-live-1", title: "Friday Night", items: songs.map((x) => ({ songId: x.id })), date: "2026-11-13T00:00:00.000Z" }])); });
+await p.reload(); await p.waitForTimeout(1500);
+await p.click('[data-filter="setlists"]'); await p.waitForTimeout(200);
+await p.click('[data-act="set-more"]'); await p.click('.menu-item[data-m="share"]'); await p.waitForTimeout(900);
+await p.click("#liveStart"); await p.waitForTimeout(1500);
+const liveSetFile = [...drive.files.entries()].find(([k]) => k.startsWith("setfile"));
+const setJson = liveSetFile ? JSON.parse(liveSetFile[1]) : null;
+ok(setJson?.type === "sonata-set" && setJson.t === "Friday Night" && setJson.s.length === 2 && setJson.s.every((x) => x.i), "Make a live link writes the setlist file to the leader's Drive, each song with its id");
+ok(drive.perms.some(([m, id, body]) => m === "POST" && id === liveSetFile?.[0] && body.includes('"type":"anyone"')) && (await p.inputValue("#liveUrl")).includes("/set/" + liveSetFile?.[0] + "/friday-night"), "the file is shared by link and the live link is shown");
+ok(!drive.perms.some(([, id]) => id?.startsWith("libraryfile")), "the private library file is still never shared");
+await p.click("#liveStop"); await p.waitForTimeout(800);
+ok(drive.perms.some(([m, id]) => m === "DELETE" && id === liveSetFile?.[0]) && await p.locator("#liveStart").count() === 1, "Stop sharing makes the file private again");
+await p.close();
 
 console.log("First run");
 p = await open("/songs", { songs: [], touch: true, viewport: { width: 390, height: 844 } });
