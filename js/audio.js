@@ -137,8 +137,6 @@ export function audio() {
     } catch {
       reverbIn = null;
     }
-    preloadSamples("piano");
-    preloadSamples("guitar");
   }
   if (ctx.state !== "running" && ctx.state !== "closed") ctx.resume().catch(() => {});
   return ctx;
@@ -232,13 +230,14 @@ function closestAnchorDef(kind, midi) {
  * @returns {{ anchorMidi: number, entry: SampleEntry } | null}
  */
 function getReadySample(kind, midi) {
+  // The instrument is being played: load the rest of its bank in the background.
+  if (!savingData()) preloadSamples(kind, true);
   const exact = closestAnchorDef(kind, midi);
   const exactKey = `${kind}:${exact[0]}`;
   const exactHit = sampleCache.get(exactKey);
   if (exactHit) return { anchorMidi: exact[0], entry: exactHit };
-  // Trigger high-priority fetch for the exact anchor first, then background-load the rest
+  // Fetch the exact anchor first
   loadAnchor(kind, exact[0], exact[1]);
-  preloadSamples(kind);
   // If a nearby anchor (within 6 semitones) is already decoded, use it right away
   let bestMidi = -1;
   let bestDist = 7;
@@ -256,24 +255,34 @@ function getReadySample(kind, midi) {
   return bestEntry ? { anchorMidi: bestMidi, entry: bestEntry } : null;
 }
 
+/** Data saver is on: fetch only the samples that are actually played. */
+const savingData = () => Boolean(/** @type {any} */ (navigator).connection?.saveData);
+/** Instruments whose starter samples were requested. @type {Set<string>} */
+const started = new Set();
+
 /**
- * Warm up the multi-sample bank for an instrument in the background (middle register first).
- * @param {InstrumentKind} [kind]
+ * Get an instrument's samples ready, middle register first.
+ * Opening a view asks for a starter set only (the three middle samples, about 200 kB for the
+ * piano), so nothing large downloads for someone who never plays a note. The whole bank loads
+ * once the instrument is actually played (`full`), and never on its own when data saver is on.
+ * @param {InstrumentKind} [kind] @param {boolean} [full]
  */
-export function preloadSamples(kind = "piano") {
-  if (preloading.has(kind) || !getDecoder()) return;
+export function preloadSamples(kind = "piano", full = false) {
   const list = SAMPLE_ANCHORS[kind];
-  if (!list) return;
-  preloading.add(kind);
-  // Load from middle register outward so the most-played notes are ready first
+  if (!list || !getDecoder()) return;
+  if (full ? preloading.has(kind) : started.has(kind) || preloading.has(kind)) return;
+  (full ? preloading : started).add(kind);
   const mid = list[Math.floor(list.length / 2)][0];
   const ordered = [...list].sort((a, b) => Math.abs(a[0] - mid) - Math.abs(b[0] - mid));
   (async () => {
-    for (const [m, file] of ordered) {
+    for (const [m, file] of full ? ordered : ordered.slice(0, 3)) {
       await loadAnchor(kind, m, file);
     }
   })();
 }
+
+/** Every sample file, for "keep sounds on this device". */
+export const sampleUrls = () => Object.entries(SAMPLE_ANCHORS).flatMap(([kind, list]) => list.map(([, file]) => `/samples/${kind}/${file}`));
 
 /**
  * Connect a voice node to master + stereo pan + studio room reverb send.

@@ -381,6 +381,24 @@ await p.click('#settingsBtn, [aria-label="Settings"]'); await p.waitForTimeout(4
 ok(/saved on this device/.test(await p.textContent("#storageNote")), "Settings says where the songs are kept and whether they are safe");
 await p.close();
 
+console.log("Sounds");
+p = await open("/songs");
+const sampleReqs = [];
+p.on("request", (r) => { if (r.url().includes("/samples/")) sampleReqs.push(new URL(r.url()).pathname); });
+await p.goto(BASE + "/play/piano"); await p.waitForTimeout(1500);
+const beforeSound = sampleReqs.filter((u) => u.includes("/piano/")).length;
+ok(beforeSound > 0 && beforeSound <= 3 && sampleReqs.length <= 6, `opening the piano fetches a small starter set, not the whole bank (${beforeSound} piano files, ${sampleReqs.length} in all)`);
+await p.locator('#piano .pk[data-midi="60"]').dispatchEvent("pointerdown"); await p.waitForTimeout(2500);
+ok(sampleReqs.filter((u) => u.includes("/piano/")).length >= 12, "playing a note loads the rest of the piano in the background");
+await p.click('[aria-label="Settings"]'); await p.waitForTimeout(400);
+await p.click("#soundsBtn"); await p.waitForTimeout(6000);
+const kept = await p.evaluate(async () => (await (await caches.open("sonata-samples")).keys()).length);
+ok(kept === 50 && (await p.textContent("#soundsRow")).includes("work offline"), `Keep instrument sounds saves every sample for offline use (${kept} files)`);
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+await p.click('[aria-label="Settings"]'); await p.waitForTimeout(600);
+ok(await p.locator("#soundsBtn").count() === 0 && (await p.textContent("#soundsRow")).includes("work offline"), "Settings remembers that the sounds are already saved");
+await p.close();
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);

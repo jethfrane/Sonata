@@ -34,6 +34,8 @@ Five places, one job each, plus a Song Bank:
 - **Theory**: circle of fifths with the key family highlighted, numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.
 - **Play**: piano, fretboard (guitar, Drop D, 4- and 5-string bass, ukulele), chromatic tuner with reference tones, and a metronome on the audio clock (2/4 to 12/8, tap tempo, save tempo to a song).
 
+Instrument sounds are saved on the device the first time they are played (or all at once from Settings), so Play works offline.
+
 Also: optional Google Drive backup to one file only Sonata can see (`sonata_library.json`), backup files you can export and import, English and Filipino, light and dark themes.
 
 ## Writing a chart

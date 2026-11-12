@@ -26,11 +26,14 @@ export default defineConfig({
         globIgnores: ["screenshots/**", "og/**", "samples/**", "icons/og-image.png", "icons/*-512.png", "**/*-{latin-ext,cyrillic,cyrillic-ext,greek,greek-ext,vietnamese}-*.woff2"],
         runtimeCaching: [
           {
-            urlPattern: /^\/samples\/.*\.(mp3|wav)$/i,
+            // Matched on the path: a RegExp here is tested against the whole address, so /^\/samples/ never matched
+            // and no instrument sound was ever kept for offline use.
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && /^\/samples\/.+\.(mp3|wav)$/i.test(url.pathname),
             handler: "CacheFirst",
             options: {
               cacheName: "sonata-samples",
-              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 90 }
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 365 }
             }
           }
         ],

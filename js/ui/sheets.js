@@ -7,6 +7,7 @@ import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tic
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
 import { analyzeRawChart } from "../core/chart.js";
 import { loneLink } from "../core/import.js";
+import { sampleUrls } from "../audio.js";
 import { liveSetUrl, publishLiveSet, stopLiveSet, watchLiveSets } from "./liveset.js";
 import { packSong, packSet, shareUrl, unpackSong, qrUrl, parseLinks, setlistMessage } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
@@ -473,12 +474,35 @@ export function openSettings() {
         <button class="btn" type="button" id="exportBackup">${icon("download")}${esc(t("exportBackup", "Export backup file"))}</button>
         <label class="btn">${icon("upload")}${esc(t("importBackup", "Import backup file"))}<input type="file" id="importBackup" accept="application/json,.json" hidden></label>
       </div>
+      <div id="soundsRow"><button class="btn wide" type="button" id="soundsBtn">${icon("download")}${esc(t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)"))}</button></div>
       ${standalone ? "" : `<button class="btn wide" type="button" id="installBtn">${icon("download")}${esc(t("install", "Install Sonata"))}</button>`}
       <div class="btn-row">
         <button class="btn ghost" type="button" id="aboutBtn">${icon("info")}${esc(t("aboutTitle", "About Sonata"))}</button>
         <button class="btn ghost" type="button" id="resetSettings">${esc(t("resetSettings", "Reset settings"))}</button>
       </div>
     </div>`
+  });
+  // Instrument sounds: normally each is saved the first time it is played. This saves them all, for playing offline.
+  const soundsRow = /** @type {HTMLElement} */ (body.querySelector("#soundsRow"));
+  const soundsDone = () => { soundsRow.innerHTML = `<p class="status-line synced">${esc(t("soundsKept", "All instrument sounds are on this device and work offline."))}</p>`; };
+  const soundsCache = () => ("caches" in window ? caches.open("sonata-samples") : Promise.reject(new Error("no cache")));
+  soundsCache().then(async (c) => { if ((await c.keys()).length >= sampleUrls().length) soundsDone(); }).catch(() => { soundsRow.hidden = true; });
+  soundsRow.addEventListener("click", async (e) => {
+    const b = /** @type {HTMLButtonElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("#soundsBtn"));
+    if (!b || b.disabled) return;
+    b.disabled = true;
+    const urls = sampleUrls();
+    try {
+      const c = await soundsCache();
+      for (let i = 0; i < urls.length; i++) {
+        if (!(await c.match(urls[i]))) { const r = await fetch(urls[i]); if (!r.ok) throw new Error(String(r.status)); await c.put(urls[i], r); }
+        b.textContent = t("soundsSaving", "Saving sounds… {n} of {m}", { n: i + 1, m: urls.length });
+      }
+      soundsDone();
+    } catch {
+      b.disabled = false; b.textContent = t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)");
+      toast(navigator.onLine ? t("soundsFailed", "Couldn't save the sounds. Please try again.") : t("offline", "Offline"), "error");
+    }
   });
   // Say plainly whether the browser may clear the songs, and what to do about it.
   (async () => {

@@ -1,6 +1,6 @@
 {
   "name": "sonata",
-  "version": "4.5.0",
+  "version": "5.0.0",
   "private": true,
   "description": "Sonata: chord charts and music tools for musicians and worship teams. Offline-first PWA.",
   "type": "module",
@@ -18,7 +18,8 @@
     "test:features": "node tests/features.e2e.mjs",
     "test:audit": "node tests/audit.mjs",
     "test:live": "node tests/live.smoke.mjs",
-    "check": "npm test && npm run typecheck && npm run build"
+    "test:size": "node tests/size.mjs",
+    "check": "npm test && npm run typecheck && npm run build && node tests/size.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.10.2",

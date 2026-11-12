@@ -1,5 +1,16 @@
 [
   {
+    "version": "5.0.0",
+    "date": "2026-11-13",
+    "whatsNew": "Instrument sounds now work offline, and the piano opens with a much smaller download.",
+    "changes": [
+      "Fixed: instrument sounds were not being saved on your device, so the piano, guitar, bass and ukulele samples did not work offline. They are now saved the first time you play them.",
+      "Settings → Keep instrument sounds on this device saves every sound at once (3.8 MB) for playing offline.",
+      "Opening Play or Chords fetches a small starter set of sounds instead of the whole bank. The rest loads once you play, and not at all on its own when your phone's data saver is on.",
+      "Sonata now checks its own size on every build so it stays fast as it grows."
+    ]
+  },
+  {
     "version": "4.5.0",
     "date": "2026-11-13",
     "whatsNew": "Live setlist links: one link for the band that always shows the latest version.",
