@@ -18,7 +18,8 @@ const head = async (path) => p.evaluate(async (u) => { const r = await fetch(u, 
 const meta = (html, prop) => (html.match(new RegExp(`<meta (?:property|name)="${prop}" content="([^"]*)"`)) || [])[1] || "";
 
 const v = await p.evaluate(async (u) => (await (await fetch(u + "/version.json", { cache: "no-store" })).json()).version, BASE);
-ok(v === "4.0.0", `version.json is ${v}`);
+const want = JSON.parse((await import("node:fs")).readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+ok(v === want, `version.json is ${v} (this checkout is ${want})`);
 
 for (const [path, title, img] of [["/chords", "Chord finder", "chords"], ["/chords/Am7-over-G", "Am7/G chord", "chords"], ["/theory", "Circle of fifths", "theory"], ["/play/tuner", "Tuner", "tuner"], ["/songs", "Songs", "songs"]]) {
   const r = await head(path);
