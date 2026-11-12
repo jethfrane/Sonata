@@ -88,3 +88,33 @@ test("link previews: shared songs, QR links, setlists, chords and song banks", {
   html = await page("/share/x", `&s=${await encodeShare(packSong({ title: '"><script>alert(1)</script>', body: "G" }))}`);
   assert.ok(!html.includes("<script>alert(1)"));
 });
+
+test("import reader: fetches one public page, follows safe redirects only, returns chart text only", async () => {
+  const { importPage, default: handler } = await import("../api/import.js");
+  const html = "<html><head><title>Song - Artist chords</title></head><body><pre>G  C  D\nwords here\nEm  C\nmore words</pre></body></html>";
+  const calls = [];
+  const io = (routes, ips = {}) => ({
+    resolve: async (host) => ips[host] || ["93.184.216.34"],
+    fetch: async (url, init) => { calls.push({ url, init }); const r = routes[url]; if (!r) return new Response("", { status: 404 }); return typeof r === "function" ? r() : r; }
+  });
+  const page = (body = html, type = "text/html; charset=utf-8") => new Response(body, { status: 200, headers: { "content-type": type } });
+  let r = await importPage("https://site.com/song", io({ "https://site.com/song": page() }));
+  assert.equal(r.status, 200); assert.equal(r.title, "Song"); assert.equal(r.artist, "Artist");
+  assert.ok(r.text.startsWith("G  C  D\nwords here") && !r.text.includes("<"), "chart text only");
+  assert.equal(calls[0].init.redirect, "manual"); assert.equal(calls[0].init.credentials, "omit");
+  r = await importPage("https://site.com/a", io({ "https://site.com/a": new Response("", { status: 302, headers: { location: "https://www.site.com/b" } }), "https://www.site.com/b": page() }));
+  assert.equal(r.status, 200); assert.equal(r.source, "https://www.site.com/b");
+  r = await importPage("https://site.com/a", io({ "https://site.com/a": new Response("", { status: 302, headers: { location: "http://169.254.169.254/latest/meta-data" } }) }));
+  assert.equal(r.error, "bad-url", "a redirect to a private address is refused");
+  r = await importPage("https://rebind.example.org/x", io({ "https://rebind.example.org/x": page() }, { "rebind.example.org": ["10.0.0.5"] }));
+  assert.equal(r.error, "bad-url", "a name that resolves to a private address is refused");
+  assert.equal((await importPage("https://localhost/x", io({}))).error, "bad-url");
+  assert.equal((await importPage("https://site.com/403", io({ "https://site.com/403": new Response("no", { status: 403 }) }))).error, "blocked");
+  assert.equal((await importPage("https://site.com/pdf", io({ "https://site.com/pdf": page("%PDF", "application/pdf") }))).error, "not-a-page");
+  assert.equal((await importPage("https://site.com/blog", io({ "https://site.com/blog": page("<html><body><p>No chart here.</p></body></html>") }))).error, "no-chords");
+  assert.equal((await importPage("https://site.com/big", io({ "https://site.com/big": page("x".repeat(2 * 1024 * 1024)) }))).error, "too-large");
+  let status = 0, body = "";
+  await handler({ url: "/api/import?url=https://site.com/song", headers: { "sec-fetch-site": "cross-site", origin: "https://evil.example" } }, { setHeader() {}, status(s) { status = s; return this; }, send(b) { body = b; } });
+  assert.equal(status, 403, "other sites cannot use the reader");
+  assert.equal(JSON.parse(body).error, "forbidden");
+});

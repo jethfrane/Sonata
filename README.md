@@ -22,7 +22,7 @@ Chord charts and music tools for musicians and worship teams. Write a chart, tra
 
 Five places, one job each, plus a Song Bank:
 
-- **Songs**: search titles, artists and lyrics; favorites; setlists you reorder and play in order. On a computer, recent songs stay in the sidebar.
+- **Songs**: **Import** a chart from a link to a chord page, pasted chords, a `.txt`/ChordPro file or Sonata links; search titles, artists and lyrics; favorites; setlists you reorder and play in order. On a computer, recent songs stay in the sidebar.
 - **Chart**: chords above the lyrics or inline (`[G]Amazing`). Chords stay over the right word even when a line wraps on a phone. Chord chips insert at the cursor. Autosave, undo and redo per song.
   - **Key button**: transpose, song key, capo (shows the shapes you actually play), sharps or flats, and *Write into chart* to make the new key permanent.
   - **Views**: Chords, Nashville numbers, Roman numerals, or lyrics only.
@@ -51,6 +51,7 @@ Intro: G  C6/9  D  (x2)   labels and repeat marks stay on a chord line
 ## Privacy and security
 
 - Songs are stored in your browser. Nothing leaves the device unless you turn on Drive backup, share a link, publish a Song Bank, or choose to shorten a link with TinyURL.
+- Import reads one page you paste through the `/api/import` function: public https pages only, no cookies, size and time limits, and only the chart text comes back. Nothing is kept.
 - No Sonata database. Share links and QR codes carry the song itself. A Song Bank is one file in the owner's own Google Drive, shared "anyone with the link can view"; the `/api/bank` function reads it when someone opens the list and keeps nothing. There is no request inbox, so there is nothing to spam; payment codes are shown exactly as the owner uploaded them, with the name written inside the code so visitors can check it.
 - Vercel Web Analytics counts anonymous page views (no cookies). No ads, no trackers.
 - Strict Content Security Policy (scripts only from this site and Google sign-in), HSTS, no inline scripts, fonts served from this site.

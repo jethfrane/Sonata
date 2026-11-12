@@ -6,6 +6,7 @@ import { t, getLang, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
 import { analyzeRawChart } from "../core/chart.js";
+import { loneLink } from "../core/import.js";
 import { packSong, packSet, shareUrl, unpackSong, qrUrl, parseLinks, setlistMessage } from "../core/share.js";
 import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
 import { exportPdf, exportPng, exportTxt, printChart } from "./exporter.js";
@@ -601,7 +602,21 @@ export function openLinksImport(text = "") {
   let found = { title: "", songs: [], sets: [] };
   /** @type {ReturnType<typeof analyzeRawChart>} */
   let analyzed = null;
+  /** What happened to a pasted web link: "" (none), "reading", or why it could not be read. */
+  let web = "";
+  const WEB_NOTE = /** @type {Record<string, [string, string]>} */ ({
+    reading: ["webReading", "Reading the page…"],
+    offline: ["webOffline", "You are offline. Open the page, copy the chords and paste them here."],
+    "no-chords": ["webNoChords", "No chords were found on that page. Copy the chords from it and paste them here."],
+    "not-found": ["webNotFound", "That page could not be found. Check the link."],
+    "bad-url": ["webBadUrl", "That link can't be read. Copy the chords from the page and paste them here."],
+    blocked: ["webBlocked", "That site does not let Sonata read its pages. Open it, copy the chords and paste them here."]
+  });
   const summary = () => {
+    if (web && !analyzed) {
+      const [key, en] = WEB_NOTE[web] || WEB_NOTE.blocked;
+      return `<p class="status-line${web === "reading" ? "" : " error"}" role="status">${esc(t(key, en))}</p>`;
+    }
     const n = found.songs.length + found.sets.reduce((a, s) => a + s.s.length, 0);
     if (n) {
       return `<p class="status-line synced">${esc(t("linksFound", "Found {n} songs", { n }))}${found.sets.length ? ` · ${esc(t("linksSets", "{n} setlists", { n: found.sets.length }))}` : ""}</p>
@@ -611,17 +626,18 @@ export function openLinksImport(text = "") {
     }
     if (analyzed) {
       return `<div class="analyzed-chart">
-        <p class="status-line synced">${esc(t("chartAnalyzed", "Smart chart analyzed"))} · <strong>${esc(pretty(analyzed.detectedKey))}</strong></p>
-        <p class="muted" style="margin:4px 0">${esc(t("title", "Title"))}: <strong>${esc(analyzed.title)}</strong>${analyzed.artist ? ` · ${esc(analyzed.artist)}` : ""}${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}</p>
-        <p class="muted" style="margin:4px 0">${esc(t("chordsTitle", "Chords"))}: <code>${esc(analyzed.chords.slice(0, 12).map(pretty).join(" · "))}</code></p>
-        ${analyzed.progression ? `<p class="muted" style="margin:4px 0">${esc(t("progression", "Progression"))}: <code>${esc(pretty(analyzed.progression))}</code></p>` : ""}
+        <p class="status-line synced">${esc(t("chartReady", "Chart ready"))} · <strong>${esc(pretty(analyzed.keyName))}</strong>${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}</p>
+        <p class="import-title"><strong>${esc(analyzed.title)}</strong>${analyzed.artist ? ` <span class="muted">· ${esc(analyzed.artist)}</span>` : ""}</p>
+        <pre class="import-preview" tabindex="0" aria-label="${esc(t("preview", "Preview"))}">${esc(pretty(analyzed.body.split("\n").slice(0, 10).join("\n")))}</pre>
       </div>`;
     }
-    return `<p class="muted">${esc(t("linksNone", "Paste Sonata share links, a chord reference link + progression, or a raw chord sheet to auto-build a chart."))}</p>`;
+    return `<p class="muted">${esc(t("importNone", "Paste a link or chords to see what will be added."))}</p>`;
   };
   const body = openSheet({
-    title: t("addFromLinks", "Add from links"), wide: true, focus: !text,
-    body: `<div class="form"><label class="field"><span>${esc(t("linksPaste", "Paste Sonata links, a reference URL, or raw chord sheet"))}</span><textarea class="input" id="lkText" rows="6" placeholder="https://sonata.jethrofrane.xyz/share/…&#10;or paste a chord reference URL + chords / raw chart text">${esc(text)}</textarea></label><div id="lkFound">${summary()}</div></div>`,
+    title: t("importSongs", "Import"), wide: true, focus: !text,
+    body: `<div class="form"><label class="field"><span>${esc(t("importPaste", "Paste a link to a chord page, the chords themselves, or Sonata links"))}</span><textarea class="input" id="lkText" rows="6" placeholder="${esc(t("importPh", "https://…  or  G   D/F#   Em   C"))}">${esc(text)}</textarea></label>
+      <label class="btn small ghost import-file"><span data-icon="file"></span><span>${esc(t("importFile", "Choose a file (.txt, ChordPro)"))}</span><input type="file" id="lkFile" accept=".txt,.cho,.chopro,.chordpro,.pro,.crd,text/plain" hidden></label>
+      <div id="lkFound" aria-live="polite">${summary()}</div></div>`,
     actions: [
       { label: t("cancel", "Cancel"), kind: "ghost" },
       { label: t("add", "Add"), kind: "primary", onClick: (b) => {
@@ -637,12 +653,12 @@ export function openLinksImport(text = "") {
             links: analyzed.links
           });
           store.open(song.id);
-          toast(t("chartImported", "Created chart in {key}", { key: pretty(analyzed.detectedKey) }), "success");
+          toast(t("chartImported", "Added in {key}. Check it, then edit anything that is off.", { key: pretty(analyzed.keyName) }), "success", { ms: 4500 });
           app.show("editor");
           app.refresh();
           return;
         }
-        if (!n) { toast(t("linksNone", "Paste Sonata share links, a chord reference link + progression, or a raw chord sheet to auto-build a chart."), "error"); return false; }
+        if (!n) { toast(t("importNone", "Paste a link or chords to see what will be added."), "error"); return false; }
         /** Reuse a song that's already saved (same title and chart). @param {any} d */
         const add = (d) => { const u = unpackSong(d); const same = store.songs.find((x) => x.title === u.title && x.body === u.body); return same ? same.id : store.createSong(/** @type {any} */ (u)).id; };
         const ids = found.songs.map(add);
@@ -658,12 +674,44 @@ export function openLinksImport(text = "") {
   });
   const area = /** @type {HTMLTextAreaElement} */ (body.querySelector("#lkText"));
   let timer = /** @type {any} */ (0);
+  let turn = 0;
   const read = async () => {
-    found = await parseLinks(area.value);
+    const mine = ++turn;
+    const value = area.value;
+    found = await parseLinks(value);
+    if (mine !== turn) return;
     const n = found.songs.length + found.sets.reduce((a, s) => a + s.s.length, 0);
-    analyzed = n ? null : analyzeRawChart(area.value);
-    /** @type {HTMLElement} */ (body.querySelector("#lkFound")).innerHTML = summary();
+    const link = n ? "" : loneLink(value);
+    web = "";
+    analyzed = n || link ? null : analyzeRawChart(value);
+    const paint = () => { /** @type {HTMLElement} */ (body.querySelector("#lkFound")).innerHTML = summary(); };
+    if (!link) { paint(); return; }
+    // One web link on its own: read the page and build the chart from it.
+    if (!navigator.onLine) { web = "offline"; paint(); return; }
+    web = "reading"; paint();
+    /** @type {any} */
+    let page = null;
+    try {
+      const r = await fetch(`/api/import?url=${encodeURIComponent(link)}`, { cache: "no-store", signal: AbortSignal.timeout(12000) });
+      page = await r.json();
+    } catch { page = { error: "blocked" }; }
+    if (mine !== turn) return;
+    analyzed = page && typeof page.text === "string"
+      ? analyzeRawChart([link, page.title ? `Title: ${page.title}` : "", page.artist ? `Artist: ${page.artist}` : "", page.text].filter(Boolean).join("\n"))
+      : null;
+    web = analyzed ? "" : String(page?.error || "no-chords");
+    paint();
   };
+  const file = /** @type {HTMLInputElement} */ (body.querySelector("#lkFile"));
+  const takeFile = async (/** @type {File|undefined} */ f) => {
+    if (!f) return;
+    if (f.size > 512 * 1024) { toast(t("importTooBig", "That file is too large to be a chord chart."), "error"); return; }
+    area.value = await f.text();
+    read();
+  };
+  file.addEventListener("change", () => { takeFile(file.files?.[0]); file.value = ""; });
+  body.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) e.preventDefault(); });
+  body.addEventListener("drop", (e) => { const f = e.dataTransfer?.files?.[0]; if (f) { e.preventDefault(); takeFile(f); } });
   area.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(read, 200); });
   if (text) read();
 }

@@ -1,5 +1,17 @@
 [
   {
+    "version": "4.2.0",
+    "date": "2026-11-12",
+    "whatsNew": "Import: paste a link to a chord page and Sonata fills in the chart for you.",
+    "changes": [
+      "Import (was \"Add from links\"): paste a link to a chord page, the chords themselves, or Sonata links. Title, artist, key, capo, tempo and sections are filled in, with a preview before you add it.",
+      "Some large chord sites do not let apps read their pages. Sonata says so and you can paste the chords instead.",
+      "Open a .txt or ChordPro file from the Import sheet, or drop it in.",
+      "Installed app: share a page or text from your browser straight into Sonata.",
+      "Import preview now shows the detected key (it used to say \"undefined\")."
+    ]
+  },
+  {
     "version": "4.1.0",
     "date": "2026-11-10",
     "whatsNew": "Song Bank gets a Sonata Card, social links and payment QR codes; Songs shows the chart beside the list on bigger screens.",

@@ -89,6 +89,30 @@
       ]
     }
   ],
+  "share_target": {
+    "action": "/songs",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/songs",
+      "accept": {
+        "text/plain": [
+          ".txt",
+          ".cho",
+          ".chopro",
+          ".chordpro",
+          ".pro",
+          ".crd"
+        ]
+      }
+    }
+  ],
   "screenshots": [
     {
       "src": "/screenshots/desktop-chart.png",

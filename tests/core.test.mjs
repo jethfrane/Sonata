@@ -530,3 +530,34 @@ test("exports: accent is readable on white, timing marks are quiet, long charts 
   assert.ok(text.includes("(VERSE)") && !text.includes("(Verse:)"), "a plain 'Verse:' line prints as a section name");
   assert.ok((text.match(/\/Type \/Page /g) || []).length > 1 && text.includes("Page 2 of"), "a long chart continues on more pages");
 });
+
+test("import: reads a chart out of a chord page and refuses unsafe addresses", async () => {
+  const I = await import("../js/core/import.js");
+  const page = `<html><head><title>Way Maker - Sinach Chords | SomeSite</title><style>.x{}</style></head><body><nav>Home Artists G C D</nav>
+    <h1>Way Maker</h1><p>Posted by admin in Worship</p>
+    <pre>Capo 2\n[Verse 1]\n<span class="chord">E</span>                 <span>B</span>\nYou are here, moving in our midst\nC#m            A\nI worship You\n\n[Chorus]\nE      B\nWay maker, miracle worker</pre>
+    <footer>Copyright 2026. A B C.</footer><script>var chords = "G C D Em";</script></body></html>`;
+  const got = I.extractChart(page);
+  assert.equal(got.title, "Way Maker"); assert.equal(got.artist, "Sinach");
+  assert.ok(got.text.startsWith("Capo 2\n[Verse 1]\nE                 B\nYou are here"), got.text);
+  assert.ok(got.text.includes("C#m            A\nI worship You") && got.text.endsWith("Way maker, miracle worker"), "spacing and last lyric kept");
+  assert.ok(!/Home Artists|Copyright|var chords/.test(got.text), "menus, footer and scripts are left out");
+  // No <pre>: chords in spans inside divs, with entities.
+  const divs = `<body><div class="menu">Login &amp; Register</div><div class="song"><div>[Intro]</div><div><b>G</b>&nbsp;&nbsp;&nbsp;<b>D/F#</b>&nbsp;&nbsp;<b>Em7</b></div><div>Here I am to worship</div><div><b>C</b>   <b>G</b></div><div>Here I am to bow down</div></div><div>Related songs: 10,000 Reasons</div></body>`;
+  const d = I.extractChart(divs);
+  assert.ok(d.text.startsWith("[Intro]\nG   D/F#  Em7\nHere I am to worship") && !d.text.includes("Related") && !d.text.includes("Login"), d.text);
+  assert.equal(I.extractChart("<html><body><p>Just a blog post about a concert in G minor.</p></body></html>"), null, "a page with no chart");
+  assert.ok(I.extractChart("{title: X}\n[G]Amazing [C]grace how [G]sweet\n[Em]the [D]sound", "text/plain").text.includes("[G]Amazing"), "plain ChordPro text");
+  assert.deepEqual(I.splitTitle("Amazing Grace by Chris Tomlin - Guitar Chords"), { title: "Amazing Grace", artist: "Chris Tomlin" });
+  assert.deepEqual(I.splitTitle("Way Maker Chords by Sinach"), { title: "Way Maker", artist: "Sinach" });
+  assert.equal(I.extractChart("<body><p>B</p><p>A preview of the first page. Buy the chart to see more.</p></body>"), null, "a paid preview with one chord is not a chart");
+  assert.equal(I.extractChart("<body><p>B</p><p>Available Keys</p><p> A,  Ab,  B,  Bb,  C,  C#,  D,  Db,  E,  Eb,  F,  F#,  G</p></body>"), null, "a list of keys is not a chart");
+  assert.equal(I.chordsIn("Am I the only one").chordLine, false, "a lyric that starts with a chord-like word is not a chord line");
+  assert.equal(I.chordsIn("A / - E/G# / - F#m x2").count, 3);
+  for (const bad of ["http://localhost/x", "https://127.0.0.1/x", "https://192.168.1.4/x", "https://[::1]/x", "ftp://site.com/x", "https://user:pw@site.com/x", "https://site.com:8443/x", "https://intranet/x", "https://printer.local/x", "file:///etc/passwd", "javascript:alert(1)"]) assert.equal(I.publicUrl(bad), null, bad);
+  assert.equal(I.publicUrl("http://site.com/song").href, "https://site.com/song", "plain http is upgraded");
+  for (const ip of ["10.0.0.1", "127.0.0.1", "169.254.169.254", "172.16.0.9", "192.168.0.1", "100.64.0.1", "::1", "fd00::1", "fe80::1", "::ffff:10.0.0.1", "0.0.0.0"]) assert.equal(I.privateAddress(ip), true, ip);
+  for (const ip of ["8.8.8.8", "76.76.21.21", "2606:4700::1111"]) assert.equal(I.privateAddress(ip), false, ip);
+  assert.equal(I.loneLink("https://sonata.jethrofrane.xyz/?s=abc"), "", "a Sonata share link is not a web page to read");
+  assert.equal(I.loneLink("https://site.com/song\nG C D"), "", "a link with chords under it is a reference, not a page to read");
+});

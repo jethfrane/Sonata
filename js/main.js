@@ -289,7 +289,7 @@ async function boot() {
   // Pasting Sonata links into the song search offers to add them.
   $("librarySearch").addEventListener("paste", (e) => {
     const text = /** @type {ClipboardEvent} */ (e).clipboardData?.getData("text") || "";
-    if (/https?:\/\/\S+(\?s=|\/q\/)/i.test(text)) { e.preventDefault(); openLinksImport(text); }
+    if (/^\s*https?:\/\/\S+\s*$/i.test(text) || /https?:\/\/\S+(\?s=|\/q\/)/i.test(text)) { e.preventDefault(); openLinksImport(text.trim()); }
   });
   app.onChordChange = () => { if (app.view === "chords") syncUrl("replace"); };
   if (store.bank.fileId) bankModule().then((m) => m?.watchBank());
@@ -334,6 +334,16 @@ async function boot() {
   if (!opened) route();
   if (storageBlocked) toast(t("storageBlocked", "This browser blocks storage, so songs are kept only until you close this tab. Export a backup in Settings to keep them."), "error", { ms: 9000 });
   renderRecent();
+  // Shared into Sonata from another app (manifest share_target): a link or some text arrives in the address.
+  const sharedIn = new URLSearchParams(location.search);
+  const sharedText = [sharedIn.get("url"), sharedIn.get("text")].filter(Boolean).join("\n").trim();
+  if (!opened && sharedText) { history.replaceState(history.state, "", location.pathname); show("songs"); openLinksImport(sharedText.slice(0, 60000)); }
+  // A chart file opened with Sonata (manifest file_handlers).
+  /** @type {any} */ (window).launchQueue?.setConsumer(async (/** @type {any} */ launch) => {
+    const handle = launch?.files?.[0];
+    if (!handle) return;
+    try { const f = await handle.getFile(); if (f.size <= 512 * 1024) { show("songs"); openLinksImport(await f.text()); } } catch { /* unreadable file */ }
+  });
   // Home-screen shortcut "New song" (manifest shortcuts) opens /songs?new=1.
   if (!opened && new URLSearchParams(location.search).has("new")) { history.replaceState(history.state, "", location.pathname); newSong(); }
   store.emit("song-open", store.active());

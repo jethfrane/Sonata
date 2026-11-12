@@ -38,6 +38,19 @@ const FIL = {
   leftHand: "Kaliwang kamay",
   rightHand: "kanang kamay",
   addFromLinks: "Idagdag mula sa links",
+  importSongs: "Mag-import",
+  chartReady: "Handa na ang chart",
+  chartImported: "Naidagdag sa {key}. Tingnan at ayusin kung may mali.",
+  importPaste: "I-paste ang link ng chord page, ang mismong chords, o mga Sonata link",
+  importFile: "Pumili ng file (.txt, ChordPro)",
+  importNone: "Mag-paste ng link o chords para makita ang idadagdag.",
+  importTooBig: "Masyadong malaki ang file para maging chord chart.",
+  webReading: "Binabasa ang page…",
+  webOffline: "Offline ka. Buksan ang page, kopyahin ang chords at i-paste dito.",
+  webNoChords: "Walang nakitang chords sa page. Kopyahin ang chords at i-paste dito.",
+  webNotFound: "Hindi mahanap ang page. Tingnan ang link.",
+  webBadUrl: "Hindi mabasa ang link na iyan. Kopyahin ang chords at i-paste dito.",
+  webBlocked: "Hindi pinapayagan ng site na basahin ng Sonata ang page. Buksan ito, kopyahin ang chords at i-paste dito.",
   filterBank: "Song Bank",
   songBank: "Song Bank",
   songBankTitle: "Song Bank",
@@ -370,7 +383,6 @@ const FIL = {
   beatLoopHint: "I-play o ihinto ang drum beat loop",
   chartAnalyzed: "Nasuri na ang chart",
   progression: "Progression",
-  chartImported: "Nagawa na ang chart sa {key}"
 };
 
 /** @param {string} l */

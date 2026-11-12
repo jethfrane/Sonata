@@ -43,6 +43,7 @@
   ],
   "functions": {
     "api/page.js": { "includeFiles": "dist/index.html", "maxDuration": 10 },
-    "api/bank.js": { "maxDuration": 10 }
+    "api/bank.js": { "maxDuration": 10 },
+    "api/import.js": { "maxDuration": 15 }
   }
 }

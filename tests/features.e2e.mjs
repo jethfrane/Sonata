@@ -141,12 +141,34 @@ await p.keyboard.press("6"); await p.waitForTimeout(100);
 ok((await p.locator("#diatonic .dia.on .dia-name").textContent()) === "Em", "pressing 6 on the keyboard in Circle of Fifths plays and highlights the vi chord (Em)");
 await p.keyboard.press("7"); await p.waitForTimeout(100);
 ok((await p.locator("#diatonic .dia.on .dia-name").textContent()) === "F♯°", "pressing 7 on the keyboard in Circle of Fifths plays and highlights the vii° diminished chord (F♯°)");
+// Import from a web link: Sonata reads the page through /api/import and fills the editor.
+await p.route("**/api/import*", (route) => {
+  const u = new URL(route.request().url()).searchParams.get("url") || "";
+  if (u.includes("blocked")) return route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "blocked" }) });
+  return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ title: "Goodness of God", artist: "Bethel Music", source: u, text: "Capo 1\n[Verse 1]\nG                 C\nI love You Lord\nG           D\nOh Your mercy never fails me" }) });
+});
+await p.click('button.tab[data-view="songs"]'); await p.waitForTimeout(150);
+await p.click("#addLinksBtn"); await p.waitForTimeout(200);
+ok((await p.textContent("#sheetTitle")).includes("Import"), "the Songs button opens Import");
+await p.fill("#lkText", "https://chords.example-site.com/blocked-song"); await p.waitForTimeout(700);
+ok((await p.textContent("#lkFound")).includes("copy the chords and paste them here"), "a site that blocks reading says so and offers paste");
+await p.fill("#lkText", "https://chords.example-site.com/goodness-of-god"); await p.waitForTimeout(700);
+ok((await p.textContent("#lkFound")).includes("Goodness of God") && (await p.textContent("#lkFound")).includes("Capo 1") && (await p.textContent(".import-preview")).includes("I love You Lord"), "a web link is read and previewed with title, capo and chart");
+await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(400);
+ok((await p.inputValue("#songTitle")) === "Goodness of God" && (await p.inputValue("#songBody")).includes("## Verse 1") && (await p.inputValue("#songBody")).includes("Oh Your mercy"), "Add opens the editor filled with the imported chart");
+await p.goto(BASE + "/songs?text=" + encodeURIComponent("https://chords.example-site.com/goodness-of-god")); await p.waitForTimeout(1200);
+ok(!p.url().includes("text=") && (await p.textContent("#lkFound")).includes("Goodness of God"), "sharing a link into Sonata opens Import with the chart read");
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+await p.click("#addLinksBtn"); await p.waitForTimeout(200);
+await p.setInputFiles("#lkFile", { name: "song.cho", mimeType: "text/plain", buffer: Buffer.from("{title: Cornerstone}\n{artist: Hillsong}\n{key: C}\n{soc}\n[C]Christ alone, [F]cornerstone\n{eoc}") }); await p.waitForTimeout(500);
+ok((await p.textContent("#lkFound")).includes("Cornerstone") && (await p.textContent("#lkFound")).includes("Hillsong"), "a ChordPro file is read into Import");
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 // Smart raw chart + reference link analyzer in Add from links
 await p.click('button.tab[data-view="songs"]'); await p.waitForTimeout(150);
 await p.click("#addLinksBtn"); await p.waitForTimeout(200);
 await p.fill("#lkText", "https://tabs.ultimate-guitar.com/tab/example\nTitle: Way Maker\nArtist: Sinach\n[Chorus]\nF  C  G  Am\nWay maker miracle worker");
 await p.waitForTimeout(300);
-ok((await p.textContent("#lkFound")).includes("Smart chart analyzed") && (await p.textContent("#lkFound")).includes("Way Maker"), "Add from links analyzes a reference URL + raw chord progression");
+ok((await p.textContent("#lkFound")).includes("Chart ready") && !(await p.textContent("#lkFound")).includes("undefined") && (await p.textContent("#lkFound")).includes("Way Maker"), "Add from links analyzes a reference URL + raw chord progression");
 await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(200);
 ok((await p.inputValue("#songTitle")) === "Way Maker", "clicking Add creates and opens the analyzed chart");
 await p.close();

@@ -235,3 +235,8 @@ body.stage-open { overflow: hidden; }
   .print-chart { --chart-size: 11pt; --chord: #1f3fae; --muted: #555; --accent-soft: #e8edff; --accent-strong: #1f3fae; column-count: var(--print-cols, 1); column-gap: 10mm; }
   .print-chart .ln-pair, .print-chart .ln-section { break-inside: avoid; }
 }
+
+.import-file { align-self: flex-start; cursor: pointer; }
+.import-file:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.import-title { margin: 10px 0 6px; }
+.import-preview { margin: 0; padding: 10px 12px; max-height: 190px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); font: 500 var(--fs-xs)/1.5 var(--mono); white-space: pre; }
