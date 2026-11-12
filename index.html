@@ -230,7 +230,7 @@
                 <div><dt data-i18n="relative">Relative key</dt><dd id="keyRelative">—</dd></div>
               </dl>
               <div class="dia-head">
-                <p class="mini-label" data-i18n="chordsInKey">Chords in this key · tap or press 1–7 to play</p>
+                <p class="mini-label"><span data-i18n="chordsInKey">Chords in this key · tap to play</span><span class="kbd-hint" data-i18n="chordsKeysHint"> · or press 1–7</span></p>
                 <select class="select cp-type" id="theoryType" aria-label="Chord type" data-i18n-attr="aria-label:chordType"></select>
               </div>
               <div class="diatonic" id="diatonic"></div>
@@ -305,6 +305,7 @@
             <button type="button" role="tab" data-inst="guitar"><span data-icon="guitar"></span><span data-i18n="guitar">Guitar</span></button>
             <button type="button" role="tab" data-inst="tuner"><span data-icon="tuner"></span><span data-i18n="tuner">Tuner</span></button>
             <button type="button" role="tab" data-inst="metronome"><span data-icon="metronome"></span><span data-i18n="metronome">Metronome</span></button>
+            <button type="button" role="tab" data-inst="drums"><span data-icon="drum"></span><span data-i18n="drums">Drums</span></button>
           </div>
 
           <article class="card instrument-card" data-inst-panel="piano">
@@ -368,20 +369,26 @@
                 <button class="btn" type="button" id="songTempoBtn" data-i18n="saveTempo">Save to song</button>
                 <button class="btn primary" type="button" id="metroBtn"><span data-icon="play"></span><span data-i18n="start">Start</span></button>
               </div>
-              <section class="drum-section" id="drumSection" aria-labelledby="drumTitle">
-                <header class="drum-head">
-                  <div>
-                    <h3 id="drumTitle" data-i18n="drumsAndLooper">Drum Beats &amp; Pads</h3>
-                    <p class="drum-sub" id="drumSub" data-i18n="drumSub">Practice over 3/4, 4/4 and 6/8 drum beats, or tap pads with laptop keys (Q W E R / A S D F).</p>
-                  </div>
-                  <div class="drum-head-controls">
-                    <select class="select" id="drumPreset" aria-label="Drum groove" data-i18n-attr="aria-label:drumGroove"></select>
-                    <button class="btn primary" type="button" id="loopPlayBtn" aria-pressed="false"><span data-icon="play"></span><span data-i18n="playLoop">Play beat</span></button>
-                    <button class="btn small ghost" type="button" id="drumBindBtn" aria-pressed="false" data-i18n="customizeKeys">Keys</button>
-                  </div>
-                </header>
-                <div class="drum-pads" id="drumPads" role="group" aria-label="Drum pads"></div>
-              </section>
+            </article>
+            <article class="card instrument-card drum-card" id="drumSection" data-inst-panel="drums" aria-labelledby="drumTitle">
+              <header class="drum-head">
+                <div>
+                  <h2 id="drumTitle"><span data-icon="drum"></span><span data-i18n="drumsAndLooper">Drum Beats &amp; Pads</span></h2>
+                  <p class="drum-sub"><span id="drumSub" data-i18n="drumSub">Practice over 3/4, 4/4 and 6/8 drum beats, or tap the pads.</span><span class="kbd-hint" id="drumKeysHint" data-i18n="drumKeysHint"> Laptop keys: Q W E R / A S D F.</span></p>
+                </div>
+                <div class="drum-head-controls">
+                  <select class="select" id="drumPreset" aria-label="Drum groove" data-i18n-attr="aria-label:drumGroove"></select>
+                  <button class="btn primary" type="button" id="loopPlayBtn" aria-pressed="false"><span data-icon="play"></span><span data-i18n="playLoop">Play beat</span></button>
+                  <button class="btn small ghost kbd-hint" type="button" id="drumBindBtn" aria-pressed="false" data-i18n="customizeKeys">Keys</button>
+                </div>
+              </header>
+              <div class="drum-tempo">
+                <span class="mini-label" data-i18n="tempo">Tempo</span>
+                <button class="icon-btn" type="button" id="drumBpmDown" aria-label="Slower" data-i18n-attr="aria-label:slower"><span data-icon="minus"></span></button>
+                <input class="input tiny" id="drumBpm" type="number" min="30" max="300" inputmode="numeric" aria-label="BPM"><span class="drum-tempo-unit">BPM</span>
+                <button class="icon-btn" type="button" id="drumBpmUp" aria-label="Faster" data-i18n-attr="aria-label:faster"><span data-icon="plus"></span></button>
+              </div>
+              <div class="drum-pads" id="drumPads" role="group" aria-label="Drum pads"></div>
             </article>
 
         </div>

@@ -179,3 +179,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 @media (max-width: 380px) {
   .tool-group:first-child .icon-btn { width: 30px; }
 }
+
+/* Sideways-scrolling chip rows fade at the trailing edge so it is clear there is more. The end padding lets the last chip scroll clear of the fade. */
+.chord-bar, .cp-bar, .cp-chips, .quickstart-chips { padding-inline-end: 28px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+[dir="rtl"] .chord-bar, [dir="rtl"] .cp-bar, [dir="rtl"] .cp-chips, [dir="rtl"] .quickstart-chips { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }

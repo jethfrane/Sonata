@@ -24,6 +24,8 @@
 html[data-theme="dark"] .wedge.family path { fill: color-mix(in srgb, var(--accent) 24%, var(--surface)); }
 html[data-theme="dark"] .wedge.family.minor path { fill: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
 html[data-theme="dark"] .wedge.family.dim path { fill: color-mix(in srgb, var(--accent) 36%, var(--surface)); }
+/* The key itself stays solid in both themes (the dark family rules above are more specific than .wedge.tonic). */
+html[data-theme="dark"] .wedge.tonic path { fill: var(--accent); }
 .wedge.ping path { animation: wping .45s ease-out; }
 @keyframes wping { 30% { fill: var(--accent-mid); } }
 .wedge:hover path, .wedge:focus-visible path { filter: brightness(.95); }
@@ -64,7 +66,7 @@ html[data-theme="dark"] .wedge:hover path { filter: brightness(1.25); }
 /* ---------- Play ---------- */
 .play-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .play-controls .select { width: auto; min-width: 150px; }
-#view-play[data-inst="tuner"] .play-controls, #view-play[data-inst="metronome"] .play-controls { visibility: hidden; }
+#view-play[data-inst="tuner"] .play-controls, #view-play[data-inst="metronome"] .play-controls, #view-play[data-inst="drums"] .play-controls { visibility: hidden; }
 .inst-tabs { margin-bottom: 12px; }
 .inst-tabs .icon { width: 16px; height: 16px; }
 .song-chords { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -175,9 +177,15 @@ html[data-theme="dark"] .pk.white { background: linear-gradient(#ecebef, #d6d5db
 .metronome-card #metroBtn { min-width: 120px; }
 
 /* Drum Beats & Pads */
-.drum-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); display: grid; gap: 12px; }
+.drum-card { display: grid; gap: 12px; }
+.drum-head h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--fs-lg); font-weight: 750; }
+.drum-tempo { display: flex; align-items: center; gap: 6px; }
+.drum-tempo .mini-label { margin: 0 6px 0 0; }
+.drum-tempo .input { width: 64px; text-align: center; font-family: var(--mono); font-weight: 700; }
+.drum-tempo-unit { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); letter-spacing: .08em; margin-right: 4px; }
+/* Keyboard shortcut hints are noise on phones and tablets with no keyboard. */
+@media (hover: none) and (pointer: coarse) { .kbd-hint, .pk-kbd, .dp-key { display: none !important; } }
 .drum-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.drum-head h3 { margin: 0; font-size: var(--fs-lg); font-weight: 750; }
 .drum-sub { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--muted); }
 .drum-head-controls { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .drum-head-controls .select { width: auto; min-width: 140px; }
@@ -206,7 +214,7 @@ html[data-theme="dark"] .pk.white { background: linear-gradient(#ecebef, #d6d5db
   .diatonic { grid-template-columns: repeat(4, 1fr); }
   .play-controls { width: 100%; }
   .play-controls .select { flex: 1; }
-  #view-play[data-inst="tuner"] .play-controls, #view-play[data-inst="metronome"] .play-controls { display: none; }
+  #view-play[data-inst="tuner"] .play-controls, #view-play[data-inst="metronome"] .play-controls, #view-play[data-inst="drums"] .play-controls { display: none; }
   .inst-tabs button { padding: 0 4px; gap: 4px; font-size: var(--fs-xs); }
   .instrument-card .card-head { flex-wrap: wrap; }
   .piano { min-width: 500px; height: 160px; }

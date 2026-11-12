@@ -55,6 +55,7 @@ const STATES = [
   { name: "play-guitar", n: 40, path: "/play/guitar" },
   { name: "play-tuner", n: 40, path: "/play/tuner" },
   { name: "play-metronome", n: 40, path: "/play/metronome" },
+  { name: "play-drums", n: 40, path: "/play/drums" },
   { name: "stage", n: 40, path: "/editor", run: async (p) => { await p.click("#presentBtn"); } },
   { name: "stage-setlist", n: 40, path: "/songs", run: async (p) => { await p.click('[data-filter="setlists"]'); await p.click('[data-act="set-play"]'); } },
   { name: "sheet-key", n: 40, path: "/editor", run: async (p) => { await p.click("#keyPill"); } },

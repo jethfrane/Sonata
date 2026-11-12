@@ -1,13 +1,13 @@
 // @ts-check
 // Pure URL helpers: every section, song, stage and instrument has its own path.
-//   /songs  /chords  /chords/<chord>  /theory  /play  /play/piano|guitar|tuner|metronome   (old /tools links open the chart)
+//   /songs  /chords  /chords/<chord>  /theory  /play  /play/piano|guitar|tuner|metronome|drums   (old /tools links open the chart)
 //   /bank/<drive file id>   a public Song Bank      /q/<CODE>   a song or setlist from a QR code
 //   /song/<slug>  /song/<slug>/stage  /song/<slug>/play/piano
 // A song's slug is its title plus the tail of its id. The tail is what we look
 // up, so a link keeps working after the song is renamed.
 
 export const SECTIONS = ["songs", "editor", "chords", "theory", "play", "bank"];
-export const INSTRUMENTS = ["piano", "guitar", "tuner", "metronome"];
+export const INSTRUMENTS = ["piano", "guitar", "tuner", "metronome", "drums"];
 
 /** @param {string} s */
 export function slugify(s) {

@@ -9,7 +9,13 @@
       "Support: add GCash, Maya or bank QR Ph codes from a screenshot. Sonata reads the code and shows it crisply; payments go straight to you and Sonata never handles money.",
       "Song Bank links end with your name (…/bank/<id>/your-name).",
       "Tablets in landscape and computers: tap a song to see its chart beside the list, with Edit, Present and Share. Double-click opens the editor.",
-      "Fresh screenshots, including Chords and Song Bank."
+      "Fresh screenshots, including Chords and Song Bank.",
+      "Chart images and PDFs have a cleaner look: bigger type, section names with a rule, key and tempo as tags, timing marks in a quieter colour, and a smaller QR code.",
+      "Long charts export as several pages of the same size instead of one very tall image. On a phone the pages save together from the share sheet.",
+      "A plain line such as \"Verse:\" or \"Chorus:\" prints as a section name in exports.",
+      "Chord colour in exports is always dark enough to read on white, also when the app is in dark mode.",
+      "Drums have their own tab in Play, with their own tempo control.",
+      "Keyboard shortcut hints are hidden on phones and tablets. The selected key on the Circle of Fifths is solid in dark mode. Chip rows fade at the edge to show they scroll."
     ]
   },
   {

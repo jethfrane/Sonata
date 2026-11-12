@@ -54,6 +54,9 @@ export function initMetronome() {
   };
   $("bpmDown").addEventListener("click", () => setBpm(metronome.bpm - 1));
   $("bpmUp").addEventListener("click", () => setBpm(metronome.bpm + 1));
+  $("drumBpmDown").addEventListener("click", () => setBpm(metronome.bpm - 1));
+  $("drumBpmUp").addEventListener("click", () => setBpm(metronome.bpm + 1));
+  $("drumBpm").addEventListener("change", (e) => setBpm(Number(/** @type {HTMLInputElement} */ (e.target).value)));
   $("bpmRange").addEventListener("input", (e) => setBpm(Number(/** @type {HTMLInputElement} */ (e.target).value)));
   $("bpmInput").addEventListener("change", (e) => setBpm(Number(/** @type {HTMLInputElement} */ (e.target).value)));
   $("tapBtn").addEventListener("click", () => { const b = metronome.tap(); if (b) setBpm(b); flash(0, "strong"); });
@@ -97,7 +100,9 @@ function initDrumsAndLooper() {
     const sub = document.getElementById("drumSub");
     if (sub) sub.textContent = bindMode
       ? t("drumBindHint", "Tap a pad below, then press any laptop key to assign it.")
-      : t("drumSub", "Practice over 3/4, 4/4 and 6/8 drum beats, or tap pads with laptop keys (Q W E R / A S D F).");
+      : t("drumSub", "Practice over 3/4, 4/4 and 6/8 drum beats, or tap the pads.");
+    const keysHint = document.getElementById("drumKeysHint");
+    if (keysHint) keysHint.hidden = bindMode;
     renderDrumPads();
   });
 
@@ -219,6 +224,7 @@ function flash(b, accent) {
 
 function syncBpm() {
   /** @type {HTMLInputElement} */ ($("bpmInput")).value = String(metronome.bpm);
+  /** @type {HTMLInputElement} */ ($("drumBpm")).value = String(metronome.bpm);
   /** @type {HTMLInputElement} */ ($("bpmRange")).value = String(metronome.bpm);
   const st = document.getElementById("stageBpm");
   if (st) st.textContent = String(metronome.bpm);

@@ -26,7 +26,7 @@ const seed = async (theme) => {
   await page.reload(); await page.waitForTimeout(600);
 };
 
-const routes = ["/songs", "/song/alpha-a", "/theory", "/play/piano", "/play/guitar", "/play/tuner", "/play/metronome"];
+const routes = ["/songs", "/song/alpha-a", "/theory", "/play/piano", "/play/guitar", "/play/tuner", "/play/metronome", "/play/drums"];
 for (const theme of ["light", "dark"]) {
   await seed(theme);
   for (const r of routes) {
@@ -46,11 +46,11 @@ await page.keyboard.press("ArrowRight"); await page.waitForTimeout(250);
 ok(page.url().endsWith("/play/guitar"), "ArrowRight → guitar");
 ok(await page.evaluate(() => document.activeElement?.getAttribute("data-inst")) === "guitar", "focus follows to guitar tab");
 await page.keyboard.press("End"); await page.waitForTimeout(250);
-ok(page.url().endsWith("/play/metronome"), "End → metronome");
+ok(page.url().endsWith("/play/drums"), "End → drums");
 await page.keyboard.press("ArrowRight"); await page.waitForTimeout(250);
 ok(page.url().endsWith("/play/piano"), "ArrowRight wraps to piano");
 await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(250);
-ok(page.url().endsWith("/play/metronome"), "ArrowLeft wraps to metronome");
+ok(page.url().endsWith("/play/drums"), "ArrowLeft wraps to drums");
 ok(await page.locator('button[data-inst][tabindex="0"]').count() === 1, "one tab in the tab order");
 
 // Setlist print shortcut

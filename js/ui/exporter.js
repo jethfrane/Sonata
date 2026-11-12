@@ -39,7 +39,7 @@ export async function exportPdf(name, o, setId) {
 export async function exportPng(o) {
   const doc = exportDocs()[0];
   if (!doc) return;
-  const [{ renderPng }, { qrModules }] = await Promise.all([import("../lib/export.js"), import("../lib/qr.js")]);
+  const [{ renderPngPages }, { qrModules }] = await Promise.all([import("../lib/export.js"), import("../lib/qr.js")]);
   await document.fonts?.ready;
   const logo = /** @type {HTMLImageElement|null} */ (document.querySelector(".brand img"));
   // The QR opens this exact chart; if the song is too long for a code it points to the app instead.
@@ -52,7 +52,20 @@ export async function exportPng(o) {
     if (qr) qrNote = "Opens this song in Sonata on any phone.";
   }
   if (!qr) { qr = qrModules(`${location.origin}/`); qrNote = "Opens Sonata on any phone."; }
-  download(`${slug(doc.title)}.png`, await renderPng(doc, { ...o, accent: accent(), logo, qr, qrNote }));
+  const pages = await renderPngPages(doc, { ...o, accent: accent(), logo, qr, qrNote });
+  const name = (/** @type {number} */ i) => `${slug(doc.title)}${pages.length > 1 ? `-page-${i + 1}` : ""}.png`;
+  // Several pages on a phone: one share sheet saves them all to Photos, instead of a row of download prompts.
+  if (pages.length > 1 && matchMedia("(pointer: coarse)").matches && navigator.canShare) {
+    const files = pages.map((b, i) => new File([b], name(i), { type: "image/png" }));
+    if (navigator.canShare({ files })) {
+      try { await navigator.share({ files, title: doc.title }); return; }
+      catch (e) { if (/** @type {any} */ (e)?.name === "AbortError") return; /* otherwise download instead */ }
+    }
+  }
+  for (let i = 0; i < pages.length; i++) {
+    download(name(i), pages[i]);
+    if (i < pages.length - 1) await new Promise((r) => setTimeout(r, 350));
+  }
 }
 
 /** @param {string} [setId] */

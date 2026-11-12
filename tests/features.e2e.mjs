@@ -117,8 +117,11 @@ await p.dispatchEvent("#tuningSelect", "mousedown"); await p.waitForTimeout(100)
 ok(await p.locator(".ui-select-drawer").isVisible(), "clicking a select opens an in-interface option drawer");
 await p.click('.ui-select-drawer .ui-select-opt[data-val="uke"]'); await p.waitForTimeout(120);
 ok((await p.inputValue("#tuningSelect")) === "uke", "choosing an option in the inline drawer updates the select and fretboard");
-// Drum beat loops (3/4, 4/4, 6/8) & pads in Play -> Metronome
-await p.click('button[data-inst="metronome"]'); await p.waitForTimeout(150);
+// Drum beat loops (3/4, 4/4, 6/8) & pads in Play -> Drums
+await p.click('button[data-inst="drums"]'); await p.waitForTimeout(150);
+ok(p.url().endsWith("/play/drums") && await p.isVisible("#drumPads") && !(await p.isVisible("#metroBtn")), "drums have their own tab and link");
+await p.click("#drumBpmUp"); await p.waitForTimeout(60);
+ok((await p.inputValue("#drumBpm")) === (await p.inputValue("#bpmInput")), "tempo on the drums tab stays in step with the metronome");
 ok(await p.locator("#drumPads .drum-pad").count() === 8 && await p.locator("#loopRecBtn, #drumSteps").count() === 0, "8 drum pads rendered without complicated step grid or recorder");
 await p.selectOption("#drumPreset", "3/4-waltz"); await p.waitForTimeout(100);
 ok((await p.inputValue("#sigSelect")) === "3/4", "selecting a 3/4 drum groove syncs the time signature to 3/4");
@@ -195,6 +198,15 @@ ok(pdf.startsWith("%PDF") && pdf.includes("/FlateDecode"), "PDF downloads, compr
 [dl] = await Promise.all([p.waitForEvent("download"), p.click('[data-export="png"]')]);
 const png = require("node:fs").readFileSync(await dl.path());
 ok(png.subarray(1, 4).toString() === "PNG" && png.length > 20000, "PNG downloads");
+ok(png.readUInt32BE(16) === 2160 && png.readUInt32BE(20) < 2880, "a short chart makes one image, cropped to the chart");
+await p.close();
+p = await open("/editor", { songs: [{ id: "song-feat-long00", title: "Long Song", body: "Verse:\nG        D/F#      Em        C\nHere I am to worship, here I am to bow down\n\n".repeat(30) }] });
+await p.click("#shareSongBtn"); await p.waitForTimeout(600);
+const pngPages = [];
+p.on("download", (d) => pngPages.push(d));
+await p.click('[data-export="png"]'); await p.waitForTimeout(3000);
+const pngSizes = await Promise.all(pngPages.map(async (d) => { const f = require("node:fs").readFileSync(await d.path()); return `${f.readUInt32BE(16)}x${f.readUInt32BE(20)}`; }));
+ok(pngPages.length >= 2 && pngPages[0].suggestedFilename() === "long-song-page-1.png" && pngSizes.every((x) => x === "2160x2880"), `a long chart exports one image per page, all the same size (${pngPages.length} pages)`);
 await p.close();
 
 console.log("Song bank: musician");

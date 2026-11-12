@@ -508,3 +508,25 @@ test("Key finder, smart raw chart analyzer, and DrumLooper presets", async () =>
   assert.ok(Object.values(DRUM_PRESETS).some((p) => p.sig === "4/4"));
   assert.ok(Object.values(DRUM_PRESETS).some((p) => p.sig === "6/8"));
 });
+
+test("exports: accent is readable on white, timing marks are quiet, long charts flow onto pages", async () => {
+  const { accentInk, chordRuns, flowRows, buildPdf: pdf } = await import("../js/lib/export.js");
+  const lum = (rgb) => rgb.map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+  for (const hex of ["#8ea2ff", "#3b5bdb", "#ffffff", "#facc15"]) assert.ok(1.05 / (lum(accentInk(hex)) + 0.05) >= 4.5, `${hex} reads on white`);
+  assert.deepEqual(chordRuns("A / - E/G# x2").map((r) => [r.i, r.mark]), [[0, false], [2, true], [4, true], [6, false], [11, true]]);
+  const rows = [];
+  for (let i = 0; i < 40; i++) rows.push({ kind: "section", text: "VERSE" }, { kind: "chord", text: "G", keep: true }, { kind: "lyric", text: "words" }, { kind: "gap", text: "" });
+  const flow = flowRows(rows, { size: 20, columns: 1, first: 1000, rest: 1200 });
+  assert.ok(flow.pages.length > 1, "more than one page");
+  for (const page of flow.pages) {
+    const last = rows[page[page.length - 1].row];
+    assert.ok(last.kind !== "section" && !last.keep, "no page ends on a section name or a chord line without its words");
+    assert.ok(rows[page[0].row].kind !== "gap", "no page starts with a gap");
+  }
+  assert.equal(flow.pages.flat().filter((it) => rows[it.row].kind !== "gap").length, 120, "every line is placed once");
+  const two = flowRows(rows.slice(0, 16), { size: 20, columns: 2, first: 1000, rest: 1200 });
+  assert.ok(two.pages.length === 1 && two.pages[0].some((it) => it.col === 1), "a short chart balances across both columns");
+  const text = await pdf([{ title: "Song", meta: "Key A", lines: buildLines("Verse:\nA / - E /\n\n" + "G  C\nline\n".repeat(80), { key: M.parseKey("A") }) }]).text();
+  assert.ok(text.includes("(VERSE)") && !text.includes("(Verse:)"), "a plain 'Verse:' line prints as a section name");
+  assert.ok((text.match(/\/Type \/Page /g) || []).length > 1 && text.includes("Page 2 of"), "a long chart continues on more pages");
+});
