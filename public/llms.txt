@@ -1,0 +1,20 @@
+# Sonata
+
+> Sonata is a free, offline-first web app for writing, transposing and presenting chord charts. It also includes a chord finder, circle of fifths, piano, guitar fretboard, tuner, metronome and drum pads for singers, bands, students and worship teams. No account is needed; songs stay on the user's device, with optional Google Drive backup.
+
+Made by Jethro Frane. App: https://sonata.jethrofrane.xyz
+
+## Pages
+- [Home](https://sonata.jethrofrane.xyz/): Overview and song library.
+- [Chord finder](https://sonata.jethrofrane.xyz/chords): Any chord with guitar, ukulele, bass and piano diagrams, slash chords included.
+- [Circle of fifths](https://sonata.jethrofrane.xyz/theory): Explore keys and the chords that belong to them.
+- [Play](https://sonata.jethrofrane.xyz/play): Piano, fretboard, tuner and metronome for practice.
+- [Piano](https://sonata.jethrofrane.xyz/play/piano)
+- [Guitar fretboard](https://sonata.jethrofrane.xyz/play/guitar)
+- [Tuner](https://sonata.jethrofrane.xyz/play/tuner)
+- [Metronome](https://sonata.jethrofrane.xyz/play/metronome)
+- [Privacy & terms](https://sonata.jethrofrane.xyz/privacy): What stays on the device and what Drive backup can see.
+
+## Notes
+- Shared songs, setlists and personal pages are private and marked noindex; please do not crawl them.
+- Sitemap: https://sonata.jethrofrane.xyz/sitemap.xml

@@ -21,6 +21,7 @@
   <meta name="twitter:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
   <meta name="twitter:image" content="https://sonata.jethrofrane.xyz/og/home.png">
   <!--meta:end-->
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://sonata.jethrofrane.xyz/#app","name":"Sonata","url":"https://sonata.jethrofrane.xyz/","description":"Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app.","applicationCategory":"MusicApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"image":"https://sonata.jethrofrane.xyz/og/home.png","author":{"@type":"Person","name":"Jethro Frane","url":"https://jethrofrane.xyz"}},{"@type":"WebSite","@id":"https://sonata.jethrofrane.xyz/#site","name":"Sonata","url":"https://sonata.jethrofrane.xyz/"}]}</script>
   <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0d0d0f" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -36,6 +37,7 @@
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
+  <noscript><div style="max-width:640px;margin:0 auto;padding:16px;font:16px/1.5 system-ui,sans-serif"><h1>Sonata</h1><p>Sonata needs JavaScript to run. Turn it on in your browser settings, then reload this page.</p><nav aria-label="Pages"><ul><li><a href="/songs">Songs</a></li><li><a href="/chords">Chord finder</a></li><li><a href="/theory">Circle of fifths</a></li><li><a href="/play">Piano, fretboard, tuner and metronome</a></li><li><a href="/privacy">Privacy &amp; terms</a></li></ul></nav></div></noscript>
   <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to content</a>
 
   <div class="app" id="app" data-view="songs">
@@ -54,7 +56,7 @@
       </nav>
 
       <section class="side-recent" aria-labelledby="recentTitle">
-        <h2 class="side-label" id="recentTitle" data-i18n="recent">Recent</h2>
+        <p class="side-label" id="recentTitle" data-i18n="recent">Recent</p>
         <div class="recent-list" id="recentList"></div>
       </section>
 
@@ -187,7 +189,6 @@
           </div>
         </div>
         <div class="song-links" id="songLinks" hidden></div>
-        <div class="yt-player" id="ytPlayer" hidden></div>
       </section>
 
       <!-- THEORY -->
