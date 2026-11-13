@@ -1,7 +1,7 @@
 // @ts-check
 import { $, $$, esc, icon, toast, openSheet, confirmSheet, relativeTime, paintIcons } from "./dom.js";
 import { t, getLang } from "./i18n.js";
-import { store, app, soundingKey, tick, renderOptions } from "./ctx.js";
+import { store, app, soundingKey, tick, renderOptions, profileName } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { openShare, openSetlistEditor, printSetlist, openBankManager, openLinksImport } from "./sheets-lazy.js";
@@ -91,7 +91,7 @@ export function renderRecent() {
 
 export function newSong() {
   tick();
-  store.createSong({}, app.drive?.profile.name || "");
+  store.createSong({}, profileName());
   app.show("editor");
   setTimeout(() => /** @type {HTMLInputElement} */ ($("songTitle")).focus(), 60);
 }
@@ -237,7 +237,7 @@ export function renderLibrary() {
   if (filter === "setlists") {
     const sets = store.setlists.filter((s) => !q || fold(s.title).includes(q));
     if (!store.setlists.length) {
-      list.innerHTML = empty(t("emptySetlistsTitle", "No setlists yet"), t("emptySetlistsText", "Group songs for a service, a rehearsal or an event, then play them in order on stage."), `<button class="btn primary" type="button" data-act="create-set">${icon("plus")}${esc(t("createSetlist", "Create a setlist"))}</button>`);
+      list.innerHTML = empty(t("emptySetlistsTitle", "No setlists yet"), t("emptySetlistsText", "Group songs for a gig, a rehearsal or a service, then play them in order on stage."), `<button class="btn primary" type="button" data-act="create-set">${icon("plus")}${esc(t("createSetlist", "Create a setlist"))}</button>`);
       return;
     }
     list.innerHTML = sets.map((s) => {
@@ -266,7 +266,7 @@ export function renderLibrary() {
     const choice = (/** @type {string} */ act, /** @type {string} */ ic, /** @type {[string, string]} */ title, /** @type {[string, string]} */ sub) =>
       `<button type="button" class="welcome-choice" data-act="${act}">${icon(ic)}<span><b>${esc(t(title[0], title[1]))}</b><small>${esc(t(sub[0], sub[1]))}</small></span></button>`;
     list.innerHTML = `<div class="welcome">
-      <h2>${esc(t("welcomeTitle", "Your chord charts, ready for Sunday"))}</h2>
+      <h2>${esc(t("welcomeTitle", "Your chord charts, ready to play"))}</h2>
       <p>${esc(t("welcomeText2", "Saved on this device. Works offline. No account."))}</p>
       <div class="welcome-choices">
         ${choice("import", "download", ["welcomeImport", "Import a song"], ["welcomeImportSub", "Paste a link to a chord page, or the chords."])}

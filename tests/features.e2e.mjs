@@ -220,7 +220,9 @@ await p.click("#shareSongBtn"); await p.waitForTimeout(600);
 let [dl] = await Promise.all([p.waitForEvent("download"), p.click('[data-export="pdf"]')]);
 const pdf = require("node:fs").readFileSync(await dl.path(), "latin1");
 ok(pdf.startsWith("%PDF") && pdf.includes("/FlateDecode"), "PDF downloads, compressed");
-[dl] = await Promise.all([p.waitForEvent("download"), p.click('[data-export="png"]')]);
+await p.click('[data-export="png"]'); await p.waitForTimeout(1500);
+ok(await p.locator(".png-page img").count() === 1 && (await p.textContent("#sheetTitle")) === "Image preview" && await p.locator('#sheetFoot .btn.primary:has-text("Copy image")').count() === 1, "PNG export opens a preview with Copy image, Download and Back");
+[dl] = await Promise.all([p.waitForEvent("download"), p.click('#sheetFoot .btn:has-text("Download")')]);
 const png = require("node:fs").readFileSync(await dl.path());
 ok(png.subarray(1, 4).toString() === "PNG" && png.length > 20000, "PNG downloads");
 ok(png.readUInt32BE(16) === 2160 && png.readUInt32BE(20) < 2880, "a short chart makes one image, cropped to the chart");
@@ -230,6 +232,10 @@ await p.click("#shareSongBtn"); await p.waitForTimeout(600);
 const pngPages = [];
 p.on("download", (d) => pngPages.push(d));
 await p.click('[data-export="png"]'); await p.waitForTimeout(3000);
+ok(pngPages.length === 0 && await p.locator(".png-page img").count() >= 2 && await p.locator(".png-page [data-copy]").count() >= 2, "PNG export shows a preview of every page first, each with Copy image, and downloads nothing on its own");
+await p.click(".png-page [data-copy]"); await p.waitForTimeout(600);
+ok(await p.evaluate(async () => { const items = await navigator.clipboard.read(); return items.some((i) => i.types.includes("image/png")); }), "Copy image puts the PNG on the clipboard");
+await p.click('#sheetFoot .btn:has-text("Download all")'); await p.waitForTimeout(2500);
 const pngSizes = await Promise.all(pngPages.map(async (d) => { const f = require("node:fs").readFileSync(await d.path()); return `${f.readUInt32BE(16)}x${f.readUInt32BE(20)}`; }));
 ok(pngPages.length >= 2 && pngPages[0].suggestedFilename() === "long-song-page-1.png" && pngSizes.every((x) => x === "2160x2880"), `a long chart exports one image per page, all the same size (${pngPages.length} pages)`);
 await p.close();
@@ -397,6 +403,78 @@ ok(kept === 50 && (await p.textContent("#soundsRow")).includes("work offline"), 
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 await p.click('[aria-label="Settings"]'); await p.waitForTimeout(600);
 ok(await p.locator("#soundsBtn").count() === 0 && (await p.textContent("#soundsRow")).includes("work offline"), "Settings remembers that the sounds are already saved");
+await p.close();
+
+console.log("Help, tour and backup");
+p = await open("/songs");
+await p.click("#helpBtn"); await p.waitForTimeout(500);
+ok((await p.textContent("#sheetTitle")) === "Help" && /On this screen: Songs/.test(await p.textContent(".help-here")), "the ? button opens Help with tips for the screen that is open");
+ok(await p.locator(".help-topic").count() >= 8, "Help answers the common questions");
+await p.click("#helpTour"); await p.waitForTimeout(500);
+ok(await p.locator(".tour-card[role=dialog]").count() === 1 && /1 of 8/.test(await p.textContent("#tourCount")), "Help starts the guided tour");
+ok(await p.evaluate(() => document.getElementById("app").inert === true && document.activeElement?.getAttribute("data-tour") === "next"), "during the tour the keyboard stays on the tour card");
+await p.keyboard.press("ArrowRight"); await p.waitForTimeout(400);
+ok(/2 of 8/.test(await p.textContent("#tourCount")) && await p.evaluate(() => { const h = document.querySelector(".tour-hole").getBoundingClientRect(); const t = document.querySelector(".page-actions").getBoundingClientRect(); return h.left <= t.left && h.right >= t.right && h.top <= t.top; }), "step 2 puts the spotlight on Import and New song");
+for (let i = 0; i < 6; i++) { await p.keyboard.press("ArrowRight"); await p.waitForTimeout(350); }
+ok(/8 of 8/.test(await p.textContent("#tourCount")) && (await p.textContent('[data-tour="next"]')) === "Done", "the tour walks through all eight steps");
+await p.keyboard.press("ArrowRight"); await p.waitForTimeout(300);
+ok(await p.locator(".tour").count() === 0 && await p.evaluate(() => !document.getElementById("app").inert && localStorage.getItem("sonata_tour_seen") === "1"), "finishing the tour gives the app back and remembers it was seen");
+await p.keyboard.press("?"); await p.waitForTimeout(500);
+ok((await p.textContent("#sheetTitle")) === "Help", "the ? key opens Help");
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+await p.close();
+
+// A first visit with an empty library: the tour opens the demo song so there is something to point at.
+p = await open("/songs");
+await p.evaluate(() => { localStorage.clear(); }); await p.goto(BASE + "/songs?tour=1"); await p.waitForTimeout(3200);
+ok(await p.locator(".tour-card").count() === 1 && (await p.textContent('[data-tour="next"]')) === "Start tour", "a first visit is offered the tour (here forced with ?tour)");
+await p.click('[data-tour="next"]'); await p.waitForTimeout(350); await p.click('[data-tour="next"]'); await p.waitForTimeout(500);
+ok(await p.evaluate(() => window.__sonata.store.songs.length === 1 && window.__sonata.store.songs[0].title === "Auld Lang Syne"), "with no songs yet, the tour opens the demo song");
+await p.click('[data-tour="skip"]'); await p.waitForTimeout(300);
+ok(await p.locator(".tour").count() === 0, "Skip ends the tour at any step");
+await p.close();
+
+p = await open("/songs");
+await p.evaluate(async () => { await new Promise((r) => { const q = indexedDB.deleteDatabase("sonata-backups"); q.onsuccess = q.onerror = q.onblocked = () => r(null); }); });
+await p.click("#accountBtn"); await p.waitForTimeout(700);
+ok((await p.textContent("#sheetTitle")) === "Backup & restore" && /on this device only/.test(await p.textContent(".bk-status")), "Back up opens one sheet that says plainly the songs are on this device only");
+ok(await p.locator("#gSignIn").count() === 1 && await p.locator("#exportBackup").count() === 1 && await p.locator("#importBackup").count() === 1, "Google Drive, a backup file and restore are all in that one sheet");
+const [bkDl] = await Promise.all([p.waitForEvent("download"), p.click("#exportBackup")]);
+const backupText = require("node:fs").readFileSync(await bkDl.path(), "utf8");
+const backup = JSON.parse(backupText);
+ok(/^sonata-backup-\d{4}-\d\d-\d\d\.json$/.test(bkDl.suggestedFilename()) && backup.app === "sonata" && backup.songs.length === 2 && /^[0-9a-f]{64}$/.test(backup.checksum), "Save backup file downloads every song with a checksum");
+await p.waitForTimeout(400);
+ok(/up to date/.test(await p.textContent(".bk-status")), "after saving, the sheet says the backup file is up to date");
+// Lose a song, then bring it back from the file.
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+await p.evaluate(() => { const s = window.__sonata.store; s.deleteSongs([s.songs[0].id]); });
+await p.click("#accountBtn"); await p.waitForTimeout(500);
+ok(/Changes since/.test(await p.textContent(".bk-status")), "a change after the last backup file is called out");
+await p.setInputFiles("#importBackup", { name: "sonata-backup.json", mimeType: "application/json", buffer: Buffer.from(backupText) }); await p.waitForTimeout(900);
+ok(await p.evaluate(() => window.__sonata.store.songs.length) === 2, "restoring from the file brings the deleted song back");
+ok(await p.locator(".bk-list li").count() >= 1 && /Before a restore/.test(await p.textContent(".bk-list")), "a restore point is kept before every restore");
+// Go back to that restore point (the library with one song); songs are never removed by a restore.
+await p.evaluate(() => { const s = window.__sonata.store; s.update(s.songs.find((x) => x.title === "Buwan"), { body: "wrecked by mistake" }); });
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+await p.click("#accountBtn"); await p.waitForTimeout(500);
+await p.click(".bk-list [data-snap]"); await p.waitForTimeout(400);
+await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(900);
+ok(await p.evaluate(() => { const s = window.__sonata.store; return s.songs.length === 2 && s.songs.find((x) => x.title === "Buwan").body.startsWith("Am  F  C  G"); }), "an earlier version on this device restores a song that was changed by mistake");
+await p.setInputFiles("#importBackup", { name: "notes.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ app: "other", songs: [] })) }); await p.waitForTimeout(600);
+ok(await p.evaluate(() => window.__sonata.store.songs.length) === 2, "a file that is not a Sonata backup is refused");
+await p.close();
+
+// Screens load when first opened, not with the app.
+p = await open("/songs");
+const loaded = () => p.evaluate(() => performance.getEntriesByType("resource").map((r) => r.name.split("/").pop()).filter((n) => /\.js$/.test(n)));
+const atStart = await loaded();
+ok(!atStart.some((n) => /^(playview|audio|theory|stage|drive|help|backup)-/.test(n)), "Play, the audio engine, Theory, Stage, Drive, Help and Backup are not fetched on the first screen");
+await p.click('.tabs [data-view="play"]'); await p.waitForTimeout(700);
+ok((await loaded()).some((n) => /^playview-/.test(n)) && await p.locator("#piano .pk").count() > 20, "opening Play loads it and draws the piano");
+await p.click('.tabs [data-view="editor"]'); await p.waitForTimeout(300);
+await p.click("#presentBtn"); await p.waitForTimeout(700);
+ok(await p.locator("#stage:not([hidden])").count() === 1 && /\/stage$/.test(new URL(p.url()).pathname), "Present loads the stage and opens it");
+await p.keyboard.press("Escape"); await p.waitForTimeout(400);
 await p.close();
 
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);

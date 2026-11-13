@@ -253,3 +253,9 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 @media (max-width: 420px) { .theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .gig .btn { text-decoration: none; }
 .theme-sw[data-preset="auto"] .theme-chip b { color: #8a8a93; }
+
+/* PNG export preview */
+.png-preview { display: grid; gap: 14px; }
+.png-page { margin: 0; display: grid; gap: 8px; }
+.png-page img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: contain; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
+.png-page figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: var(--fs-sm); }

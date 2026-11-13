@@ -8,34 +8,33 @@ import { openKeySheet, openDetails, openShare, openChordSheet } from "./sheets-l
 import { safeHref } from "../core/share.js";
 
 export const DEMO_SONG = {
-  title: "Amazing Grace (My Chains Are Gone)",
-  artist: "John Newton, Chris Tomlin",
+  title: "Auld Lang Syne",
+  artist: "Traditional (Robert Burns, 1788)",
   creator: "",
   manualKey: "G:major",
-  bpm: 72,
-  description: "Classic hymn with the modern chorus. Build on the second chorus.",
-  links: [{ name: "Reference", url: "https://www.youtube.com/results?search_query=amazing+grace+my+chains+are+gone" }],
+  bpm: 84,
+  description: "Demo song. Change the key, open Present, then make it yours or delete it.",
+  links: [],
   body: `## Verse 1
-G           G/B       C        G
-Amazing grace, how sweet the sound
-G                   Em      D
-That saved a wretch like me
-G            G/B        C          G
-I once was lost, but now am found
-G         Em      D         G
-Was blind but now I see
+G                 D
+Should old acquaintance be forgot
+    G              C
+And never brought to mind
+G                 D
+Should old acquaintance be forgot
+    Em    C     G
+And auld lang syne
 
 ## Chorus
-> All in, full band
-[C]My chains are [G]gone, I've been set [D]free
-My [Em]God, my [C]Savior has [G]ransomed [D]me
-And [C]like a flood His [G]mercy [Em]reigns
-Un[C]ending [G]love, a[D]mazing [G]grace
+> Everyone in, full band
+For [G]auld lang [D]syne, my dear
+For [G]auld lang [C]syne
+We'll [G]take a cup of [D]kindness yet
+For [Em]auld [C]lang [G]syne
 
-## Bridge
-C///  G/B///  Am7///  G///
-// Drums build here
-C  D  Em  G/D  C  D  G
+## Outro
+G///  D///  Em///  C///
+G  D  G
 `
 };
 
@@ -128,6 +127,7 @@ export function initEditor() {
     h.redo = [];
     store.update(s, { body: body().value });
     autosize();
+    followCaret();
     queueRender();
   });
   window.addEventListener("resize", autosize);
@@ -210,8 +210,35 @@ const compact = matchMedia("(max-width: 960px)");
 function autosize() {
   const ta = body();
   if (!compact.matches) { ta.style.height = ""; return; }
+  // Measuring needs the box collapsed for a moment. That makes the page shorter, and the browser
+  // answers by scrolling up; without putting the scroll back, typing near the bottom of a long
+  // chart threw the page to the top on every key.
+  const y = window.scrollY;
   ta.style.height = "auto";
   ta.style.height = `${Math.max(ta.scrollHeight + 2, 320)}px`;
+  if (window.scrollY !== y) window.scrollTo({ top: y, behavior: "instant" });
+}
+
+/**
+ * On phones and tablets the chart box does not scroll, the page does. So after typing, keep the
+ * line being typed on screen: above the bottom tabs or the on-screen keyboard, below the toolbar.
+ */
+function followCaret() {
+  const ta = body();
+  if (!compact.matches || document.activeElement !== ta) return;
+  const cs = getComputedStyle(ta);
+  const lineH = parseFloat(cs.lineHeight) || 24;
+  const line = ta.value.slice(0, ta.selectionStart).split("\n").length - 1;
+  const top = ta.getBoundingClientRect().top + (parseFloat(cs.paddingTop) || 0) + line * lineH;
+  const vv = window.visualViewport;
+  const viewTop = vv ? vv.offsetTop : 0;
+  const viewBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  const nav = /** @type {HTMLElement|null} */ (document.querySelector(".bottom-nav"))?.getBoundingClientRect();
+  const floor = Math.min(viewBottom, nav && nav.height ? nav.top : viewBottom) - 12;
+  const bar = /** @type {HTMLElement|null} */ (document.querySelector(".editor-toolbar"))?.getBoundingClientRect();
+  const ceiling = Math.max(viewTop, bar ? bar.bottom : 0) + 8;
+  if (top + lineH > floor) window.scrollBy({ top: top + lineH - floor, behavior: "instant" });
+  else if (top < ceiling) window.scrollBy({ top: top - ceiling, behavior: "instant" });
 }
 
 /** @param {string} pane */
@@ -250,6 +277,7 @@ function step(dir) {
   body().value = value;
   store.update(s, { body: value });
   autosize();
+  followCaret();
   updateHistoryButtons();
   queueRender();
 }

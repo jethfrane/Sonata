@@ -36,7 +36,10 @@ const ICONS = {
   "chevron-up": '<path d="m18 15-6-6-6 6"/>',
   "chevron-down": '<path d="m6 9 6 6 6-6"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  fullscreen: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  "fullscreen-exit": '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.3 9.3a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.3-2.7 3.9M12 17.4h.01"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
   redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>',
   copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
@@ -142,7 +145,12 @@ let current = null;
  */
 export function openSheet(o) {
   const dlg = /** @type {HTMLDialogElement} */ ($("sheet"));
-  const body = $("sheetBody");
+  // Every sheet gets a fresh body element. The dialog is shared, and each sheet adds its own click
+  // and input listeners to its body; on a reused element those piled up, so an action in a sheet
+  // opened twice ran twice (two downloads, two restores).
+  const stale = $("sheetBody");
+  const body = /** @type {HTMLElement} */ (stale.cloneNode(false));
+  stale.replaceWith(body);
   const foot = $("sheetFoot");
   // Finish the sheet being replaced right away. Its "close" event arrives later, after this
   // sheet is open, and must not be mistaken for this sheet closing.

@@ -29,6 +29,20 @@ const call = async (id, args) => {
 export const openSettings = () => call("openSettings", []);
 /** QR encoder (loaded on first use). */
 export const loadQr = () => chunk(() => import("../lib/qr.js"));
+/** Play: instruments, tuner, metronome, drums and the audio engine. */
+export const playModule = () => chunk(() => import("./playview.js"));
+/** Circle of fifths. */
+export const theoryModule = () => chunk(() => import("./theory.js"));
+/** Stage view. */
+export const stageModule = () => chunk(() => import("./stage.js"));
+/** Google Drive backup. */
+export const driveModule = () => chunk(() => import("../drive.js"));
+/** Backup and restore. */
+export const openBackup = async () => (await chunk(() => import("./backup.js")))?.openBackup();
+/** Help and the guided tour. */
+export const helpModule = () => chunk(() => import("./help.js"));
+export const openHelp = async () => (await helpModule())?.openHelp();
+export const startTour = async () => (await helpModule())?.startTour();
 /** Chords screen and chord pop-ups. */
 export const chordsModule = () => chunk(() => import("./chords.js"));
 /** Song Bank: manager and public page. */
@@ -36,7 +50,6 @@ export const bankModule = () => chunk(() => import("./bank.js"));
 /** @param {string} name */ export const openChordSheet = async (name) => (await chordsModule())?.openChordSheet(name);
 export const openBankManager = async () => (await bankModule())?.openBankManager();
 export const openLinksImport = (/** @type {string} */ text = "") => call("openLinksImport", [text]);
-export const openAccount = () => call("openAccount", []);
 
 /** Print every song in a setlist using the saved print layout. @param {string} id */
 export async function printSetlist(id) {

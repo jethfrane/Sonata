@@ -24,7 +24,7 @@ export const bankSongs = () => store.songs.filter((s) => s.inBank);
 
 /** Publish (or update) the public file in the owner's Drive. @returns {Promise<boolean>} */
 export async function publishBank() {
-  const d = app.drive;
+  const d = await app.loadDrive();
   if (!d || !d.token) { toast(t("bankNeedsDrive", "Sign in with Google first. Your Song Bank is shared from your own Drive."), "info", { ms: 6000, action: t("signIn", "Sign in"), onAction: () => d?.signIn() }); return false; }
   if (!bankSongs().length) { toast(t("bankEmpty", "Add at least one song to your Song Bank first."), "error"); return false; }
   const file = buildBankFile(store.bank, store.songs, keyOf);

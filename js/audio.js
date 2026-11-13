@@ -855,7 +855,7 @@ export const DRUM_PADS = [
  */
 export const DRUM_PRESETS = {
   "4/4-worship": {
-    label: "4/4 · Worship Groove",
+    label: "4/4 · Steady Groove",
     sig: "4/4",
     sub: 4,
     length: 16,
@@ -890,7 +890,7 @@ export const DRUM_PRESETS = {
     }
   },
   "3/4-waltz": {
-    label: "3/4 · Waltz / Hymn",
+    label: "3/4 · Waltz",
     sig: "3/4",
     sub: 4,
     length: 12,
@@ -901,7 +901,7 @@ export const DRUM_PRESETS = {
     }
   },
   "6/8-ballad": {
-    label: "6/8 · Worship Ballad",
+    label: "6/8 · Ballad",
     sig: "6/8",
     sub: 6,
     length: 12,
@@ -1161,3 +1161,6 @@ export class DrumLooper {
     }
   }
 }
+
+// The engine loads the first time a screen needs sound; from then on keep the audio session awake.
+if (typeof document !== "undefined") keepAlive();

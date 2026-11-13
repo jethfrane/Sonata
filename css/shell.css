@@ -58,6 +58,9 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
 .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .account-btn[data-status="synced"] .account-label { color: var(--success); }
 .account-btn[data-status="expired"] .account-label, .account-btn[data-status="error"] .account-label { color: var(--warning); }
+/* Songs only on this device: a small amber dot on the Back up button. */
+.account-btn[data-unprotected] .account-avatar { position: relative; overflow: visible; }
+.account-btn[data-unprotected] .account-avatar::after { content: ""; position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 0 2px var(--bg); }
 .sync-dot { position: absolute; left: 26px; top: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface-2); background: var(--muted); }
 .sync-dot[data-status="syncing"], .sync-dot[data-status="connecting"] { background: var(--accent); animation: pulse 1s infinite; }
 .sync-dot[data-status="expired"], .sync-dot[data-status="error"] { background: var(--warning); }
@@ -71,10 +74,13 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
 .bottom-nav { display: none; }
 
 /* Small laptops and tablets in landscape: a narrower sidebar leaves the chart room for two panes. */
+/* Desktop: Back up gets its own full-width row so its status is never cut short; Help, theme and Settings sit under it. */
+@media (min-width: 1024px) {
+  .side-foot { flex-wrap: wrap; row-gap: 2px; }
+  .account-btn { flex: 1 1 100%; }
+}
 @media (min-width: 1024px) and (max-width: 1279px) {
   :root { --side-w: 204px; --gutter: 20px; }
-  /* Theme is also in Settings; the backup button keeps a readable label. */
-  .side-foot #themeBtn { display: none; }
 }
 
 /* ---------- Phone & tablet shell ---------- */

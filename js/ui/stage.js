@@ -1,10 +1,11 @@
 // @ts-check
 import { $, esc, setIcon, paintIcons } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, metronome, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick } from "./ctx.js";
+import { store, app, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick } from "./ctx.js";
+import { metronome } from "./sound.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { keyShort, pretty } from "../core/music.js";
-import { syncMetroButton } from "./metronome.js";
+import { syncMetroButton, initMetronome } from "./metronome.js";
 import { stepSetlist } from "./editor.js";
 
 const THEMES = ["stage", "dark", "light"];
@@ -24,6 +25,7 @@ const stage = () => $("stage");
 const scroller = () => $("stageScroll");
 
 export function initStage() {
+  initMetronome();
   $("stageExit").addEventListener("click", closeStage);
   $("stagePrev").addEventListener("click", () => stepSetlist(-1));
   $("stageNext").addEventListener("click", () => stepSetlist(1));
@@ -52,7 +54,10 @@ export function initStage() {
   scroller().addEventListener("wheel", () => { pausedUntil = performance.now() + 1500; }, { passive: true });
   stage().addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") wake(); });
   document.addEventListener("keydown", onKey);
-  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && open && stage().dataset.fs === "1") { stage().dataset.fs = ""; } });
+  // Full screen is a choice: a button (and the F key), never forced when the stage opens.
+  $("stageFsBtn").addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", syncFullscreen);
+  document.addEventListener("webkitfullscreenchange", syncFullscreen);
   document.addEventListener("visibilitychange", () => { if (open && document.visibilityState === "visible") lockScreen(); });
   app.beatListeners.add((b) => {
     const el = $("stageBeat");
@@ -84,6 +89,7 @@ function onKey(e) {
   else if (e.key === "ArrowLeft") { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(-1); } }
   else if (e.key === "ArrowUp" && scrolling) { e.preventDefault(); speed(5); }
   else if (e.key === "ArrowDown" && scrolling) { e.preventDefault(); speed(-5); }
+  else if (e.key === "f" || e.key === "F") { if (!e.metaKey && !e.ctrlKey && !e.altKey) toggleFullscreen(); }
   else if (e.key === "]" || e.key === "=") font(4);
   else if (e.key === "[" || e.key === "-") font(-4);
 }
@@ -112,6 +118,29 @@ async function lockScreen() {
   try { if ("wakeLock" in navigator && !wakeLock) { wakeLock = await /** @type {any} */ (navigator).wakeLock.request("screen"); wakeLock.addEventListener?.("release", () => { wakeLock = null; }); } } catch { wakeLock = null; }
 }
 
+const fsElement = () => document.fullscreenElement || /** @type {any} */ (document).webkitFullscreenElement || null;
+/** Whether this device can put the stage in full screen (iPhone cannot). */
+const fsRequest = () => { const el = /** @type {any} */ (stage()); return el.requestFullscreen || el.webkitRequestFullscreen || null; };
+
+function toggleFullscreen() {
+  try {
+    if (fsElement()) { const exit = document.exitFullscreen || /** @type {any} */ (document).webkitExitFullscreen; exit?.call(document)?.catch?.(() => {}); }
+    else fsRequest()?.call(stage())?.catch?.(() => {});
+  } catch { /* not allowed */ }
+}
+
+/** Show the button only where full screen exists, and keep its icon and label in step. */
+function syncFullscreen() {
+  const b = $("stageFsBtn");
+  const on = Boolean(fsElement());
+  b.hidden = !fsRequest();
+  b.setAttribute("aria-pressed", String(on));
+  const label = on ? t("exitFullscreen", "Exit full screen") : t("fullscreen", "Full screen");
+  b.setAttribute("aria-label", label);
+  b.title = `${label} (F)`;
+  setIcon(/** @type {HTMLElement} */ (b.firstElementChild), on ? "fullscreen-exit" : "fullscreen");
+}
+
 /** @type {((on: boolean) => void)|null} */
 let stageListener = null;
 export const isStageOpen = () => open;
@@ -134,11 +163,7 @@ export function openStage() {
   if (s.bpm && !metronome.running) metronome.setBpm(s.bpm);
   renderStage();
   paintIcons(stage());
-  const el = /** @type {any} */ (stage());
-  const req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (req && matchMedia("(pointer: coarse)").matches === false) {
-    try { const p = req.call(el); stage().dataset.fs = "1"; if (p?.catch) p.catch(() => {}); } catch { /* not allowed */ }
-  }
+  syncFullscreen();
   lockScreen();
   scroller().focus({ preventScroll: true });
   stageListener?.(true);
@@ -150,7 +175,7 @@ export function closeStage() {
   stopScroll();
   stage().hidden = true;
   document.body.classList.remove("stage-open");
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  if (fsElement()) toggleFullscreen();
   try { wakeLock?.release(); } catch { /* ignore */ }
   wakeLock = null;
   // A click started from the stage dock should not keep ticking after you leave.

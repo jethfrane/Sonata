@@ -236,6 +236,54 @@ await p.click("#tunerBtn"); await p.waitForTimeout(300);
 ok((await p.locator(".toast").innerText()).includes("busy in another app"), "busy microphone: says another app is using it");
 await p.close();
 
+// Typing near the bottom of a long chart must not throw the page back up, and the typed line stays on screen.
+const LONG_BODY = Array.from({ length: 90 }, (_, i) => (i % 2 ? `Line ${i} of the lyrics goes here` : "G     C     D     Em")).join("\n");
+for (const vp of [{ width: 390, height: 760, touch: true }, { width: 900, height: 700 }, { width: 1366, height: 700 }]) {
+  const c = await b.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: Boolean(vp.touch), isMobile: Boolean(vp.touch) });
+  const q = await c.newPage();
+  await q.goto(BASE + "/songs");
+  await q.evaluate((body) => { localStorage.clear(); localStorage.setItem("sonata:v12:songs", JSON.stringify([{ id: "song-long-aaaaaa", title: "Long", body }])); localStorage.setItem("sonata:v12:active", "song-long-aaaaaa"); }, LONG_BODY);
+  await q.goto(BASE + "/editor"); await q.waitForTimeout(600);
+  await q.evaluate(() => { const ta = document.getElementById("songBody"); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollTop = ta.scrollHeight; window.scrollTo(0, document.documentElement.scrollHeight); });
+  await q.waitForTimeout(150);
+  const y0 = await q.evaluate(() => scrollY + document.getElementById("songBody").scrollTop);
+  await q.keyboard.type("\nAm  F  C  G\nnew words typed at the end"); await q.waitForTimeout(300);
+  const end = await q.evaluate(() => {
+    const ta = document.getElementById("songBody");
+    const cs = getComputedStyle(ta), lh = parseFloat(cs.lineHeight);
+    const caretY = ta.getBoundingClientRect().top + parseFloat(cs.paddingTop) + (ta.value.split("\n").length - 1) * lh - ta.scrollTop;
+    const nav = document.querySelector(".bottom-nav").getBoundingClientRect();
+    return { y: scrollY + ta.scrollTop, visible: caretY > 0 && caretY + lh <= (nav.height ? nav.top : innerHeight) + 1 };
+  });
+  ok(end.y >= y0 && end.visible, `${vp.width}px: typing at the end of a long chart keeps the page where it is and the new line on screen (${y0} → ${end.y})`);
+  // Typing in the middle while reading the middle: nothing moves.
+  await q.evaluate(() => { const ta = document.getElementById("songBody"); const at = ta.value.indexOf("Line 41"); ta.setSelectionRange(at, at); });
+  await q.evaluate(() => { const ta = document.getElementById("songBody"); const lh = parseFloat(getComputedStyle(ta).lineHeight); if (ta.scrollHeight > ta.clientHeight + 4) ta.scrollTop = 41 * lh - 120; else window.scrollTo(0, ta.getBoundingClientRect().top + scrollY + 41 * lh - 300); });
+  await q.waitForTimeout(150);
+  const m0 = await q.evaluate(() => scrollY + document.getElementById("songBody").scrollTop);
+  await q.keyboard.type("x"); await q.waitForTimeout(250);
+  const m1 = await q.evaluate(() => scrollY + document.getElementById("songBody").scrollTop);
+  ok(Math.abs(m1 - m0) <= 2, `${vp.width}px: typing in the middle of a long chart does not move the page (${m0} → ${m1})`);
+  await c.close();
+}
+
+// Stage: full screen is offered, never forced.
+{
+  const c = await b.newContext({ viewport: { width: 1280, height: 800 } });
+  const q = await c.newPage();
+  await q.goto(BASE + "/songs");
+  await q.evaluate(() => { localStorage.clear(); localStorage.setItem("sonata:v12:songs", JSON.stringify([{ id: "song-st-aaaaaaa", title: "Stage", body: "G  C  D\nWords for the stage view here" }])); localStorage.setItem("sonata:v12:active", "song-st-aaaaaaa"); });
+  await q.goto(BASE + "/editor"); await q.waitForTimeout(500);
+  await q.evaluate(() => { window.__fs = 0; const o = Element.prototype.requestFullscreen; Element.prototype.requestFullscreen = function () { window.__fs++; return o.call(this); }; });
+  await q.click("#presentBtn"); await q.waitForTimeout(700);
+  ok(await q.evaluate(() => window.__fs === 0 && !document.fullscreenElement) && await q.locator("#stage:not([hidden])").count() === 1, "Present opens the stage without forcing full screen");
+  ok(await q.locator("#stageFsBtn:not([hidden])").count() === 1 && (await q.getAttribute("#stageFsBtn", "aria-label")) === "Full screen", "the stage has a Full screen button");
+  await q.click("#stageFsBtn"); await q.waitForTimeout(400);
+  ok(await q.evaluate(() => window.__fs === 1), "the button asks for full screen");
+  await q.keyboard.press("Escape"); await q.waitForTimeout(400);
+  await c.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 await b.close();
 process.exit(fail ? 1 : 0);

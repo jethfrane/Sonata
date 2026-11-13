@@ -2,13 +2,18 @@
 // Metronome + Simple Studio Drum Beat Loops (3/4, 4/4, 6/8) & Drum Pads (Play → Metronome).
 import { $, esc, toast, paintIcons } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, metronome, drumLooper } from "./ctx.js";
+import { store, app } from "./ctx.js";
+import { metronome, drumLooper } from "./sound.js";
 import { TIME_SIGNATURES, DRUM_PADS, DRUM_PRESETS, playDrum } from "../audio.js";
 
 /** Laptop key for each pad. @type {Record<string, string>} */
 const padKeys = Object.fromEntries(DRUM_PADS.map((p) => [p.id, p.defaultKey]));
 
+let ready = false;
+/** Wire the metronome once. Play and Stage both need it, whichever opens first. */
 export function initMetronome() {
+  if (ready) return;
+  ready = true;
   const sig = /** @type {HTMLSelectElement} */ ($("sigSelect"));
   sig.innerHTML = TIME_SIGNATURES.map((x) => `<option value="${x.id}">${x.id}</option>`).join("");
   const savedSig = TIME_SIGNATURES.find((x) => x.beats === store.settings.metronomeBeats) || TIME_SIGNATURES[2];
@@ -50,10 +55,13 @@ export function initMetronome() {
     toast(t("tempoSaved", "Saved {bpm} BPM to the song", { bpm: metronome.bpm }), "success");
   });
   metronome.onBeat((b, accent) => { flash(b, accent); app.beatListeners.forEach((fn) => fn(b, accent)); });
-  store.on("song-open", (/** @type {any} */ s) => { if (s?.bpm && !metronome.running && !drumLooper.running) { metronome.setBpm(s.bpm); drumLooper.setBpm(s.bpm); syncBpm(); } renderMetronome(); });
+  const followSong = (/** @type {any} */ s) => { if (s?.bpm && !metronome.running && !drumLooper.running) { metronome.setBpm(s.bpm); drumLooper.setBpm(s.bpm); syncBpm(); } renderMetronome(); };
+  store.on("song-open", followSong);
+  store.on("change", (/** @type {string} */ kind) => { if (kind === "settings") metronome.volume = store.settings.metronomeVolume; });
   initDrumsAndLooper();
   renderDots();
-  renderMetronome();
+  // This screen now loads after the app has opened a song, so pick up that song's tempo here.
+  followSong(store.active());
 }
 
 function initDrumsAndLooper() {

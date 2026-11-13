@@ -2,7 +2,8 @@
 
 /* ---------- Theory ---------- */
 .theory-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(340px, .75fr); gap: 16px; align-items: start; }
-.circle-wrap { position: relative; display: grid; place-items: center; padding: 20px; }
+/* Clipped: while the circle turns, the corners of its square would otherwise stick out and make a phone scroll sideways. */
+.circle-wrap { position: relative; display: grid; place-items: center; padding: 20px; overflow: hidden; overflow: clip; }
 .circle-tools { justify-self: end; display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .lock-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-2); font-weight: 600; font-size: var(--fs-sm); }
 .lock-btn .icon { width: 16px; height: 16px; }

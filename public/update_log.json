@@ -1,5 +1,25 @@
 [
   {
+    "version": "6.0.0",
+    "date": "2026-11-13",
+    "whatsNew": "A guided tour and Help, one Backup & restore screen with earlier versions, and a lighter, faster start.",
+    "changes": [
+      "New: a one-minute guided tour on your first visit, and a Help button (?) with tips for the screen you are on and short answers to common questions. Press ? on a keyboard. English and Filipino.",
+      "New: Backup & restore in one place (tap Back up). It says plainly whether your songs are safe, and holds Google Drive, a one-tap backup file and restore.",
+      "New: earlier versions. Sonata keeps a copy of your library on your device when you open it after changes (the last 15), and before every restore, so a mistake can be undone.",
+      "New: PNG export shows the image first. Copy it to paste straight into a chat, share it, or download it; nothing is saved to your device unless you ask.",
+      "Stage view no longer forces full screen on a computer. A Full screen button (or the F key) is there when you want it.",
+      "Backup files now carry a checksum, so a file that was cut off or changed is noticed before it is restored. Saving a backup on a phone opens the share sheet, so it can go straight to Files, Drive or a chat.",
+      "A gentle reminder to back up when you have songs on this device only, at most once a week.",
+      "Faster start: Play, Theory, Stage, the audio engine and Google Drive now load when you first open them. The first screen downloads about a third less script.",
+      "Sonata is for every musician: wording, the demo song (now Auld Lang Syne) and drum loop names no longer assume a church setting.",
+      "Safer: tighter browser security rules, a limit on how fast links can be imported, and stricter checks on backup files.",
+      "Fixed: an action in a dialog that had been opened more than once could run more than once.",
+      "Fixed: on phones the circle of fifths could make the page scroll sideways while it turned.",
+      "Fixed: typing near the bottom of a long chart on a phone, tablet or narrow window threw the page back up. The page now stays put and the line you are typing stays on screen."
+    ]
+  },
+  {
     "version": "5.0.1",
     "date": "2026-11-13",
     "whatsNew": "Play opens with an even smaller download.",

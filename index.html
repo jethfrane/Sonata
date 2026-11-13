@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <!--meta:start-->
   <title>Sonata · Chord charts &amp; music tools</title>
-  <meta name="description" content="Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app for musicians and worship teams.">
+  <meta name="description" content="Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app for singers, bands, students and worship teams.">
   <link rel="canonical" href="https://sonata.jethrofrane.xyz/">
   <meta property="og:site_name" content="Sonata">
   <meta property="og:title" content="Sonata · Chord charts &amp; music tools">
@@ -64,6 +64,7 @@
           <span class="account-label" id="accountLabel" data-i18n="backup">Back up</span>
           <span class="sync-dot" id="syncDot" hidden></span>
         </button>
+        <button class="icon-btn" id="helpBtn" type="button" aria-label="Help" aria-haspopup="dialog" data-i18n-attr="aria-label:help,title:help"><span data-icon="help"></span></button>
         <button class="icon-btn" id="themeBtn" type="button" aria-label="Dark mode" data-i18n-attr="aria-label:toggleTheme,title:toggleTheme"><span data-icon="moon"></span></button>
         <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" data-i18n-attr="aria-label:settings,title:settings"><span data-icon="settings"></span></button>
       </div>
@@ -424,6 +425,7 @@
           <option value="lyrics" data-i18n="modeLyrics">Lyrics</option>
         </select>
       </div>
+      <button class="stage-btn" id="stageFsBtn" type="button" aria-label="Full screen" aria-pressed="false" data-i18n-attr="aria-label:fullscreen,title:fullscreen" hidden><span data-icon="fullscreen"></span></button>
       <button class="stage-btn exit" id="stageExit" type="button" aria-label="Exit stage view" data-i18n-attr="aria-label:exitStage"><span data-icon="x"></span></button>
     </header>
     <div class="stage-scroll" id="stageScroll" tabindex="0">

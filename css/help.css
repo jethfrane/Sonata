@@ -1,0 +1,33 @@
+/* Help sheet and the guided tour. Loaded with js/ui/help.js, not on first paint. */
+.help { display: grid; gap: 14px; }
+.help-here { padding: 14px 16px; border-radius: var(--radius); background: var(--accent-soft); border: 1px solid var(--accent-mid); }
+.help-here h3 { font-size: var(--fs-sm); font-weight: 700; color: var(--accent-strong); }
+.help-here ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 5px; color: var(--text); font-size: var(--fs-sm); line-height: 1.5; }
+.help .group-title { margin: 6px 0 -4px; }
+.help-topics { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.help-topic + .help-topic { border-top: 1px solid var(--line); }
+.help-topic summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 0 14px; font-weight: 650; font-size: var(--fs-sm); cursor: pointer; list-style: none; }
+.help-topic summary::-webkit-details-marker { display: none; }
+.help-topic summary .icon { flex: none; width: 16px; height: 16px; color: var(--muted); transition: transform .15s; }
+.help-topic[open] summary .icon { transform: rotate(90deg); }
+.help-topic summary:hover { background: var(--surface-2); }
+.help-topic > div { padding: 0 14px 14px; display: grid; gap: 8px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.55; }
+.help-topic ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.help-pre { margin: 0; padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-family: var(--mono); font-size: var(--fs-xs); line-height: 1.6; overflow-x: auto; white-space: pre; color: var(--text); }
+
+/* ---------- Tour ---------- */
+.tour { position: fixed; inset: 0; z-index: 80; }
+.tour-hole { position: fixed; border-radius: 12px; box-shadow: 0 0 0 200vmax rgba(10, 10, 14, .62), 0 0 0 2px var(--accent); transition: left .22s ease, top .22s ease, width .22s ease, height .22s ease; pointer-events: none; }
+.tour.center .tour-hole { box-shadow: 0 0 0 200vmax rgba(10, 10, 14, .62); }
+.tour-card { position: fixed; width: min(360px, calc(100vw - 24px)); padding: 18px; border-radius: var(--radius-lg); background: var(--surface); color: var(--text); border: 1px solid var(--line); box-shadow: var(--shadow-lg); transition: left .22s ease, top .22s ease; }
+.tour-count { font-size: var(--fs-xs); font-weight: 650; color: var(--muted); }
+.tour-card h2 { margin-top: 4px; font-size: var(--fs-lg, 18px); font-weight: 750; letter-spacing: -.02em; line-height: 1.25; outline: none; }
+.tour-text { margin-top: 8px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.55; }
+.tour-actions { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+.tour-dots { flex: 1; display: flex; justify-content: center; gap: 5px; }
+.tour-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.tour-dots i.on { background: var(--accent); }
+.tour-actions [hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tour-hole, .tour-card, .help-topic summary .icon { transition: none; }
+}

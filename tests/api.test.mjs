@@ -117,6 +117,13 @@ test("import reader: fetches one public page, follows safe redirects only, retur
   await handler({ url: "/api/import?url=https://site.com/song", headers: { "sec-fetch-site": "cross-site", origin: "https://evil.example" } }, { setHeader() {}, status(s) { status = s; return this; }, send(b) { body = b; } });
   assert.equal(status, 403, "other sites cannot use the reader");
   assert.equal(JSON.parse(body).error, "forbidden");
+  // A burst from one address is slowed down; other addresses and later requests are not.
+  const { tooMany } = await import("../api/import.js");
+  const t0 = 1_000_000;
+  for (let i = 0; i < 20; i++) assert.equal(tooMany("203.0.113.9", t0 + i), false);
+  assert.equal(tooMany("203.0.113.9", t0 + 30), true, "the 21st request inside a minute is refused");
+  assert.equal(tooMany("203.0.113.10", t0 + 30), false, "another address is unaffected");
+  assert.equal(tooMany("203.0.113.9", t0 + 61_000), false, "and it clears after a minute");
 });
 
 test("live setlist reader: passes on a Sonata setlist, refuses anything else", async () => {

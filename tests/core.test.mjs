@@ -562,3 +562,37 @@ test("sharing: a share id travels with a song; live setlist files are checked", 
   const r = parsePath("/set/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/sunday");
   assert.equal(r.view, "set"); assert.equal(r.raw, "1AbCdEfGhIjKlMnOpQrStUvWxYz012345", "the file id keeps its case");
 });
+
+test("backup files: checksum, limits, and going back to an earlier version", async () => {
+  const { buildBackupFile, readBackupFile } = await import("../js/core/backupfile.js");
+  const { validateBackup, BACKUP_LIMITS } = await import("../js/core/store.js");
+  const { fingerprint } = await import("../js/core/snapshots.js");
+  const st = freshStore();
+  const a = st.createSong({ title: "A", body: "G C D G and some words" });
+  const text = await buildBackupFile(st.snapshot());
+  let r = await readBackupFile(text);
+  assert.ok(r.ok && !r.damaged && r.songs === 1, "a fresh backup file reads back clean");
+  r = await readBackupFile(text.replace("G C D G", "G C D A"));
+  assert.ok(r.ok && r.damaged, "a backup changed after saving is flagged, not silently restored");
+  r = await readBackupFile(JSON.stringify({ songs: [a], setlists: [] }));
+  assert.ok(r.ok && !r.damaged, "older backups without a checksum still open");
+  assert.equal((await readBackupFile("not json")).ok, false);
+  assert.equal((await readBackupFile(JSON.stringify({ app: "other", songs: [] }))).ok, false, "a file from another app is refused");
+  assert.equal(validateBackup({ songs: new Array(BACKUP_LIMITS.songs + 1).fill({}) }).ok, false, "an absurdly large backup is refused");
+
+  // Going back: the earlier version of a song wins over a later edit; songs added since stay.
+  const earlier = JSON.parse(JSON.stringify(st.snapshot()));
+  st.update(st.song(a.id), { body: "changed later, by mistake" });
+  const b = st.createSong({ title: "B", body: "added after the restore point" });
+  st.importBackup(earlier, { prefer: true });
+  assert.equal(st.song(a.id).body, "G C D G and some words", "the song is back to the earlier version");
+  assert.ok(st.song(b.id), "a song added since is kept");
+  // A plain restore from a file never overwrites newer work.
+  st.update(st.song(a.id), { body: "newer than the file" });
+  st.importBackup(earlier);
+  assert.equal(st.song(a.id).body, "newer than the file");
+
+  const lib = st.snapshot();
+  assert.equal(fingerprint(lib), fingerprint({ ...lib, songs: lib.songs.map((x) => ({ ...x, lastOpenedAt: "2030-01-01T00:00:00.000Z" })) }), "opening a song is not a change worth a restore point");
+  assert.notEqual(fingerprint(lib), fingerprint({ ...lib, songs: lib.songs.slice(1) }));
+});

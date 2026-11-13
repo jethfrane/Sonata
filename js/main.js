@@ -5,26 +5,84 @@ import "@fontsource-variable/jetbrains-mono";
 import { registerSW } from "virtual:pwa-register";
 import { $, paintIcons, setIcon, toast, esc, initSelectMenus } from "./ui/dom.js";
 import { t, setLang, applyI18n } from "./ui/i18n.js";
-import { store, app, metronome, storageBlocked, findCopy } from "./ui/ctx.js";
-import { keepAlive } from "./audio.js";
-import { Drive } from "./drive.js";
+import { store, app, storageBlocked, findCopy, profileName } from "./ui/ctx.js";
 import { decodeShare, decodeQr, unpackSong } from "./core/share.js";
 import { normalizeProfile, parseBankFile } from "./core/bank.js";
 import { initEditor, refreshEditor } from "./ui/editor.js";
 import { initLibrary, renderLibrary, renderRecent, newSong } from "./ui/library.js";
-import { initMetronome, renderMetronome } from "./ui/metronome.js";
-import { initTheory, renderTheory } from "./ui/theory.js";
-import { initPlay, renderPlay } from "./ui/play.js";
-import { stopTuner } from "./ui/tuner.js";
-import { initStage, openStage, closeStage, isStageOpen, onStageChange } from "./ui/stage.js";
 import { parsePath, buildPath, findSong, PAGE_META, SECTIONS } from "./router.js";
-import { setInstrument, currentInstrument } from "./ui/play.js";
-import { openSettings, openAccount, openImportSet, chordsModule, bankModule, openLinksImport } from "./ui/sheets-lazy.js";
+import { openSettings, openImportSet, chordsModule, bankModule, openLinksImport, playModule, theoryModule, stageModule, driveModule, openBackup, openHelp, startTour } from "./ui/sheets-lazy.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
 const VIEWS = /** @type {View[]} */ (["songs", "editor", "chords", "theory", "play", "bank"]);
-/** Lazy screens: loaded the first time they open. */
-const lazy = { chords: /** @type {any} */ (null), bank: /** @type {any} */ (null), bankId: "" };
+/**
+ * Lazy screens: loaded the first time they open. Songs and Chart start with the app; Chords, Theory,
+ * Play (with the audio engine), Stage, the Song Bank and Google Drive each arrive when first needed.
+ */
+const lazy = { chords: /** @type {any} */ (null), bank: /** @type {any} */ (null), bankId: "", play: /** @type {any} */ (null), theory: /** @type {any} */ (null), stage: /** @type {any} */ (null) };
+/** The instrument tab to show on Play before that screen has loaded. */
+let playSub = "";
+try { playSub = localStorage.getItem("sonata_play_inst") || ""; } catch { /* ignore */ }
+const currentInstrument = () => (lazy.play ? lazy.play.currentInstrument() : playSub || "piano");
+const isStageOpen = () => Boolean(lazy.stage?.isStageOpen());
+
+/** Load and wire the Play screen once. */
+async function loadPlay() {
+  if (!lazy.play) {
+    const m = await playModule();
+    if (!m) return null;
+    if (!lazy.play) { m.initMetronome(); m.initPlay(); lazy.play = m; }
+  }
+  return lazy.play;
+}
+
+/** Load and wire the Theory screen once. */
+async function loadTheory() {
+  if (!lazy.theory) {
+    const m = await theoryModule();
+    if (!m) return null;
+    if (!lazy.theory) { m.initTheory(); lazy.theory = m; }
+  }
+  return lazy.theory;
+}
+
+/** Load and wire the stage once. */
+async function loadStage() {
+  if (!lazy.stage) {
+    const m = await stageModule();
+    if (!m) return null;
+    if (!lazy.stage) {
+      m.initStage();
+      m.onStageChange((/** @type {boolean} */ on) => {
+        // Keyboard and screen readers stay on the stage, not the page behind it.
+        /** @type {any} */ ($("app")).inert = on;
+        if (on) syncUrl("push", true);
+        else if (/\/stage$/.test(location.pathname)) {
+          if (history.state && history.state.stage) history.back(); else syncUrl("replace", false);
+        }
+        setTitle();
+      });
+      lazy.stage = m;
+    }
+  }
+  return lazy.stage;
+}
+async function openStage() { (await loadStage())?.openStage(); }
+function closeStage() { lazy.stage?.closeStage(); }
+
+/** Load Google Drive (only people who use it pay for it) and start it. */
+let driveLoading = /** @type {Promise<any>|null} */ (null);
+function loadDrive() {
+  if (app.drive) return Promise.resolve(app.drive);
+  driveLoading ||= driveModule().then((m) => {
+    if (!m) { driveLoading = null; return null; }
+    const drive = new m.Drive(store, onDriveStatus);
+    app.drive = drive;
+    drive.init();
+    return drive;
+  });
+  return driveLoading;
+}
 const dark = matchMedia("(prefers-color-scheme: dark)");
 
 function applyTheme() {
@@ -80,9 +138,9 @@ function show(view, opts = {}) {
   if (!VIEWS.includes(view)) view = "editor";
   const first = !$("app").dataset.ready;
   const changed = app.view !== view || first;
-  if (app.view === "play" && view !== "play") stopTuner();
+  if (app.view === "play" && view !== "play") lazy.play?.stopTuner();
   // The chart always has a song to show: a new, empty one if the library is empty.
-  if (view === "editor" && !store.active()) store.createSong({}, app.drive?.profile.name || "");
+  if (view === "editor" && !store.active()) store.createSong({}, profileName());
   app.view = view;
   $("app").dataset.view = view;
   if (view === "songs" && changed && !first) afterFirstSong();
@@ -95,7 +153,7 @@ function show(view, opts = {}) {
   });
   try { localStorage.setItem("sonata_active_view", view); } catch { /* ignore */ }
   const subChanged = view === "play" && Boolean(opts.sub) && opts.sub !== currentInstrument();
-  if (view === "play" && opts.sub) setInstrument(opts.sub);
+  if (view === "play" && opts.sub) { playSub = opts.sub === "fretboard" ? "guitar" : opts.sub; lazy.play?.setInstrument(opts.sub); }
   renderView(view);
   if (view === "chords") showChords(opts.sub);
   if (view === "bank" && opts.sub) showBank(opts.sub);
@@ -108,8 +166,13 @@ function show(view, opts = {}) {
 function renderView(view) {
   if (view === "songs") renderLibrary();
   if (view === "editor") refreshEditor();
-  if (view === "theory") renderTheory();
-  if (view === "play") { renderPlay(); renderMetronome(); }
+  if (view === "theory") loadTheory().then((m) => { if (m && app.view === "theory") m.renderTheory(); });
+  if (view === "play") loadPlay().then((m) => {
+    if (!m || app.view !== "play") return;
+    if (playSub && playSub !== m.currentInstrument()) m.setInstrument(playSub);
+    m.renderPlay(); m.renderMetronome();
+    syncUrl("replace");
+  });
   if (view === "chords") lazy.chords?.renderChords();
 }
 
@@ -154,13 +217,14 @@ function onDriveStatus(status) {
     offline: t("offline", "Offline")
   }[status];
   label.textContent = text;
-  btn.setAttribute("aria-label", `Google Drive: ${text}`);
+  btn.setAttribute("aria-label", `${t("backupTitle", "Backup & restore")}: ${text}`);
   dot.hidden = status === "signed-out" || status === "synced";
   dot.dataset.status = status;
   // The Google session ends after an hour. Say so once, with a one-tap Reconnect (a tap is needed for the popup).
   if (status === "expired" && lastDriveStatus && !["expired", "signed-out"].includes(lastDriveStatus)) {
     toast(t("reconnectText", "Your Google session expired. Reconnect to keep syncing."), "info", { ms: 12000, action: t("reconnect", "Reconnect"), onAction: () => { app.drive?.signIn(); } });
   }
+  markUnprotected();
   lastDriveStatus = status;
   store.emit("drive-status", status);
   if (status === "synced") restoreBank();
@@ -227,6 +291,47 @@ function afterFirstSong() {
   } catch { /* storage blocked */ }
 }
 
+/** A small dot on the Back up button while songs exist only on this device. */
+function markUnprotected() {
+  const real = store.songs.filter((s) => !s.readonly && String(s.body || "").trim().length >= 20).length;
+  let fileAt = "";
+  try { fileAt = localStorage.getItem("sonata_backup_at") || ""; } catch { /* ignore */ }
+  const safe = Boolean(app.drive?.signedIn) || Boolean(fileAt);
+  $("accountBtn").toggleAttribute("data-unprotected", real >= 3 && !safe);
+}
+
+/**
+ * Work that can wait until the first screen is up: a restore point of the library as it was when
+ * the app opened, a gentle backup reminder, and the first-visit tour.
+ */
+function afterBoot() {
+  const idle = /** @type {any} */ (window).requestIdleCallback || ((/** @type {() => void} */ fn) => setTimeout(fn, 1200));
+  idle(async () => {
+    markUnprotected();
+    const real = store.songs.filter((s) => !s.readonly && String(s.body || "").trim().length >= 20).length;
+    if (real && !storageBlocked) {
+      try { (await import("./core/snapshots.js")).autoSnapshot(store.snapshot()); } catch { /* no IndexedDB */ }
+    }
+    try {
+      // Reminder: three or more songs, no Drive, and no backup file in the last two weeks. At most once a week.
+      const day = 86400000;
+      const last = Date.parse(localStorage.getItem("sonata_backup_at") || "") || 0;
+      const nudged = Number(localStorage.getItem("sonata_backup_nudged") || 0);
+      if (real >= 3 && !app.drive?.signedIn && Date.now() - last > 14 * day && Date.now() - nudged > 7 * day) {
+        localStorage.setItem("sonata_backup_nudged", String(Date.now()));
+        toast(t("backupNudge", "Your {n} songs are saved on this device only. Back them up so you never lose them.", { n: real }), "info", { ms: 12000, action: t("backup", "Back up"), onAction: () => openBackup() });
+      }
+      // First visit: offer the one-minute tour (never during automated tests, and never twice).
+      const first = !localStorage.getItem("sonata_tour_seen") && !store.songs.length;
+      const forced = new URLSearchParams(location.search).has("tour");
+      if (forced || (first && !navigator.webdriver && !isStageOpen() && !/** @type {HTMLDialogElement} */ ($("sheet")).open)) {
+        if (forced) history.replaceState(history.state, "", location.pathname);
+        startTour();
+      }
+    } catch { /* storage blocked */ }
+  }, { timeout: 2500 });
+}
+
 function registerServiceWorker() {
   // Local tests can opt in with ?sw to check offline use; normal local runs stay without a worker.
   const localTest = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && new URLSearchParams(location.search).has("sw");
@@ -278,31 +383,26 @@ async function boot() {
   applyI18n();
   paintIcons();
   applyTheme();
-  keepAlive();
   initSelectMenus();
 
   app.show = show;
   app.openStage = openStage;
+  app.loadDrive = loadDrive;
   app.refresh = () => renderView(app.view);
   initEditor();
   initLibrary();
-  initMetronome();
-  initTheory();
-  initPlay();
-  initStage();
 
-  document.querySelectorAll("button[data-view]").forEach((b) => b.addEventListener("click", () => show(/** @type {View} */ (/** @type {HTMLElement} */ (b).dataset.view))));
+  document.querySelectorAll("button[data-view]").forEach((b) => {
+    const view = /** @type {View} */ (/** @type {HTMLElement} */ (b).dataset.view);
+    b.addEventListener("click", () => show(view));
+    // Start fetching a screen as the finger or pointer reaches its tab, so it is there by the tap.
+    const warm = () => { if (view === "play") loadPlay(); else if (view === "theory") loadTheory(); else if (view === "chords" && !lazy.chords) chordsModule(); };
+    b.addEventListener("pointerenter", warm, { passive: true });
+    b.addEventListener("touchstart", warm, { passive: true });
+    b.addEventListener("focus", warm);
+  });
   document.querySelector(".brand")?.addEventListener("click", (e) => { e.preventDefault(); show("songs"); });
   window.addEventListener("popstate", () => route());
-  onStageChange((on) => {
-    // Keyboard and screen readers stay on the stage, not the page behind it.
-    /** @type {any} */ ($("app")).inert = on;
-    if (on) syncUrl("push", true);
-    else if (/\/stage$/.test(location.pathname)) {
-      if (history.state && history.state.stage) history.back(); else syncUrl("replace", false);
-    }
-    setTitle();
-  });
   store.on("song-open", () => { if (app.view === "editor" || isStageOpen()) syncUrl("replace"); });
   store.on("change", (/** @type {string} */ kind) => {
     if (kind !== "library" || app.view !== "editor") return;
@@ -310,6 +410,7 @@ async function boot() {
     titleTimer = setTimeout(() => syncUrl("replace"), 700);
   });
   $("presentBtn").addEventListener("click", () => openStage());
+  $("presentBtn").addEventListener("pointerenter", () => { loadStage(); }, { passive: true });
   $("addLinksBtn").addEventListener("click", () => openLinksImport());
   // Pasting Sonata links into the song search offers to add them.
   $("librarySearch").addEventListener("paste", (e) => {
@@ -319,7 +420,8 @@ async function boot() {
   app.onChordChange = () => { if (app.view === "chords") syncUrl("replace"); };
   if (store.bank.fileId) bankModule().then((m) => m?.watchBank());
   $("settingsBtn").addEventListener("click", () => openSettings());
-  $("accountBtn").addEventListener("click", () => openAccount());
+  $("accountBtn").addEventListener("click", () => openBackup());
+  $("helpBtn").addEventListener("click", () => openHelp());
   $("themeBtn").addEventListener("click", () => {
     const now = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     store.settings.theme = now;
@@ -328,12 +430,16 @@ async function boot() {
   store.on("change", (/** @type {string} */ kind) => {
     if (kind !== "settings") return;
     applyTheme();
-    metronome.volume = store.settings.metronomeVolume;
   });
   dark.addEventListener("change", () => { if (store.settings.theme === "system") applyTheme(); });
   document.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); store.persist(); toast(t("savedNow", "Saved"), "success", { ms: 1400 }); }
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && app.view === "editor") { e.preventDefault(); openStage(); }
+    // "?" opens Help anywhere except while typing.
+    if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey && !isStageOpen() && !/** @type {HTMLDialogElement} */ ($("sheet")).open) {
+      const el = /** @type {HTMLElement} */ (e.target);
+      if (!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !el.isContentEditable) { e.preventDefault(); openHelp(); }
+    }
   });
   window.addEventListener("pagehide", () => store.flush());
   // Offline is fine for Sonata; say it once so nobody wonders why a link or sync waits.
@@ -350,10 +456,13 @@ async function boot() {
   });
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); /** @type {any} */ (app).installPrompt = e; });
 
-  const drive = new Drive(store, onDriveStatus);
-  app.drive = drive;
   onDriveStatus("signed-out");
-  drive.init();
+  // Earlier versions kept the Google access token in localStorage; make sure none is left behind.
+  try { localStorage.removeItem("sonata_google_token"); localStorage.removeItem("sonata_google_token_expiry"); } catch { /* ignore */ }
+  // Drive loads now only for someone who has signed in before; everyone else gets it when they open Backup.
+  let usesDrive = false;
+  try { usesDrive = Boolean(localStorage.getItem("sonata_user_profile") || localStorage.getItem("sonata_drive_file_id") || sessionStorage.getItem("sonata_google_token")); } catch { /* ignore */ }
+  if (usesDrive) loadDrive();
 
   const opened = await handleShareLink();
   if (!opened) route();
@@ -378,7 +487,8 @@ async function boot() {
   fetch("/version.json", { cache: "no-cache" }).then((r) => r.json()).then((v) => { /** @type {any} */ (app).version = v.version; }).catch(() => {});
   registerServiceWorker();
   // Test hook for the local browser tests only; never on the published site.
-  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, renderPlay };
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, renderPlay: () => lazy.play?.renderPlay(), loadPlay, loadTheory, loadStage, loadDrive, startTour };
+  afterBoot();
   // Caches from the hand-written service worker (v2 and older) are replaced by Workbox's.
   if ("caches" in window) caches.keys().then((keys) => keys.filter((k) => /^sonata-(cache-|v\d|fonts$)/.test(k)).forEach((k) => caches.delete(k))).catch(() => {});
 }

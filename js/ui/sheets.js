@@ -1,8 +1,8 @@
 // @ts-check
 // Dialog sheets: key & capo, song details, share, setlist editor, settings,
 // Drive account, about, and shared-setlist import.
-import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, relativeTime } from "./dom.js";
-import { t, getLang, setLang, applyI18n } from "./i18n.js";
+import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug } from "./dom.js";
+import { t, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick, adoptShared } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
 import { analyzeRawChart } from "../core/chart.js";
@@ -10,7 +10,8 @@ import { loneLink } from "../core/import.js";
 import { sampleUrls } from "../audio.js";
 import { liveSetUrl, publishLiveSet, stopLiveSet, watchLiveSets } from "./liveset.js";
 import { packSong, packSet, shareUrl, unpackSong, qrUrl, parseLinks, setlistMessage } from "../core/share.js";
-import { normalizeSettings, validateBackup, DEFAULT_SETTINGS } from "../core/store.js";
+import { normalizeSettings, DEFAULT_SETTINGS } from "../core/store.js";
+import { openBackup } from "./sheets-lazy.js";
 import { exportPdf, exportPng, exportTxt, printChart } from "./exporter.js";
 
 /** The QR library is ~20 KB, so it loads the first time a share sheet opens. */
@@ -384,8 +385,8 @@ export function openSetlistEditor(id) {
     title: existing ? t("editSetlistTitle", "Edit setlist") : t("newSetlistTitle", "New setlist"),
     wide: true,
     body: `<div class="form">
-      <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="slTitle" value="${esc(existing?.title || "")}" placeholder="Sunday Service" autocomplete="off"></label>
-      <label class="field"><span>${esc(t("setNotes", "Notes (service order, etc.)"))}</span><textarea class="input" id="slNotes" rows="2">${esc(existing?.description || "")}</textarea></label>
+      <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="slTitle" value="${esc(existing?.title || "")}" placeholder="${esc(t("setTitlePh", "Friday gig, rehearsal, Sunday service…"))}" autocomplete="off"></label>
+      <label class="field"><span>${esc(t("setNotes", "Notes (order, cues, who sings)"))}</span><textarea class="input" id="slNotes" rows="2">${esc(existing?.description || "")}</textarea></label>
       <div class="field"><span id="slCount">${esc(t("songsInSetN", "Songs in this setlist ({n})", { n: items.length }))}</span><ol class="set-items" id="slItems">${chosen()}</ol></div>
       <div class="field"><span>${esc(t("addSongs", "Add songs"))}</span>
         <input class="input" id="slSearch" type="search" placeholder="${esc(t("search", "Search"))}" autocomplete="off">
@@ -470,10 +471,7 @@ export function openSettings() {
       <label class="switch-row"><span>${esc(t("autoArranger", "Add my name as arranger"))}</span><input type="checkbox" class="toggle" data-set="autoFillArranger"${s.autoFillArranger ? " checked" : ""}></label>
       <h3 class="group-title">${esc(t("data", "Data & backup"))}</h3>
       <p class="card-hint" id="storageNote">${esc(t("storageLocal", "Your songs are saved on this device."))}</p>
-      <div class="btn-row">
-        <button class="btn" type="button" id="exportBackup">${icon("download")}${esc(t("exportBackup", "Export backup file"))}</button>
-        <label class="btn">${icon("upload")}${esc(t("importBackup", "Import backup file"))}<input type="file" id="importBackup" accept="application/json,.json" hidden></label>
-      </div>
+      <button class="btn wide" type="button" id="openBackupBtn">${icon("cloud")}${esc(t("backupTitle", "Backup & restore"))}</button>
       <div id="soundsRow"><button class="btn wide" type="button" id="soundsBtn">${icon("download")}${esc(t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)"))}</button></div>
       ${standalone ? "" : `<button class="btn wide" type="button" id="installBtn">${icon("download")}${esc(t("install", "Install Sonata"))}</button>`}
       <div class="btn-row">
@@ -512,7 +510,7 @@ export function openSettings() {
     if (note) note.textContent = kept
       ? t("storageKept", "Your songs are saved on this device, and the browser will not clear them on its own.")
       : backedUp ? t("storageDrive", "Your songs are saved on this device and backed up to your Google Drive.")
-      : t("storageRisk", "Your songs are saved on this device only. A browser can clear them when space runs low, so back up to Google Drive or export a backup file.");
+      : t("storageRisk", "Your songs are saved on this device only. A browser can clear them when space runs low, so back up to Google Drive or save a backup file.");
   })();
   body.addEventListener("input", (e) => {
     const el = /** @type {HTMLInputElement} */ (e.target);
@@ -534,11 +532,7 @@ export function openSettings() {
       store.changed("settings");
     }
     const id = /** @type {HTMLElement|null} */ (el.closest("button"))?.id;
-    if (id === "exportBackup") {
-      const stamp = new Date().toISOString().slice(0, 10);
-      download(`sonata-backup-${stamp}.json`, new Blob([JSON.stringify(store.snapshot(), null, 2)], { type: "application/json" }));
-      toast(t("exported", "Exported"), "success");
-    }
+    if (id === "openBackupBtn") openBackup();
     if (id === "installBtn") showInstall();
     if (id === "aboutBtn") openAbout();
     if (id === "resetSettings") {
@@ -548,21 +542,6 @@ export function openSettings() {
       closeSheet();
       toast(t("settingsReset", "Settings reset"), "success");
     }
-  });
-  body.querySelector("#importBackup")?.addEventListener("change", async (e) => {
-    const file = /** @type {HTMLInputElement} */ (e.target).files?.[0];
-    if (!file) return;
-    try {
-      const data = JSON.parse(await file.text());
-      const ok = validateBackup(data);
-      if (!ok.ok) { toast(t("badBackup", ok.error), "error"); return; }
-      const before = store.songs.length;
-      store.importBackup(data);
-      app.refresh();
-      const added = Math.max(0, store.songs.length - before);
-      toast(added ? t("backupRestored", "Restored {n} songs", { n: added }) : t("backupNothingNew", "Backup merged. Nothing new to add."), "success");
-      closeSheet();
-    } catch { toast(t("badBackup", "That file isn't a Sonata backup."), "error"); }
   });
 }
 
@@ -580,11 +559,11 @@ export async function openAbout() {
     wide: true,
     body: `<div class="about">
       <div class="about-head"><img src="/icons/icon.svg" alt="" width="56" height="56"><div><h3>Sonata <span class="version">v${esc(/** @type {any} */ (app).version || "")}</span></h3>
-      <p class="muted">Chord charts and music tools for musicians and worship teams. Made by Jethro Frane.</p></div></div>
+      <p class="muted">Chord charts and music tools for every musician: gigs, practice, lessons and church. Made by Jethro Frane.</p></div></div>
       <ul class="about-points">
         <li>Free, no account needed. Songs are saved on your device.</li>
         <li>Works offline after the first visit. Install it for the stage.</li>
-        <li>Optional Google Drive backup uses one file only Sonata can see.</li>
+        <li>Optional Google Drive backup uses one file only Sonata can see. Earlier versions of your library are kept on your device.</li>
         <li>A Song Bank is shared only when you publish it: one file in your own Drive that anyone with its link can read. Sonata stores no copy.</li>
         <li>No ads. Anonymous page-view counts only (Vercel Web Analytics, no cookies).</li>
       </ul>
@@ -599,48 +578,6 @@ export async function openAbout() {
       <p class="log-lead">${esc(v.whatsNew || "")}</p><ul>${(v.changes || []).map((/** @type {string} */ c) => `<li>${esc(c)}</li>`).join("")}</ul></details>`).join("");
   } catch { /** @type {HTMLElement} */ (body.querySelector("#changelog")).innerHTML = `<p class="muted">Release notes are available online.</p>`; }
 }
-
-/** Google Drive account sheet. */
-export function openAccount() {
-  const d = app.drive;
-  if (!d) return;
-  const draw = () => {
-    const p = d.profile;
-    if (d.status === "signed-out" || (!d.token && !p.email)) {
-      return `<div class="account">
-        <div class="account-hero">${icon("cloud")}</div>
-        <p class="sheet-text">${esc(t("accountIntro", "Keep your songs safe and the same on all your devices. Sonata only sees the one file it creates in your Drive (sonata_library.json)."))}</p>
-        ${d.error ? `<p class="error-text">${esc(d.error)}</p>` : ""}
-        <button class="btn primary wide google" type="button" id="gSignIn"><svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7.1H2.1a11 11 0 0 0 0 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>${esc(t("signInGoogle", "Continue with Google"))}</button>
-        <p class="card-hint">${esc(t("accountLocal", "Without signing in, songs stay on this device only. You can still export a backup file in Settings."))}</p>
-      </div>`;
-    }
-    const when = d.lastSynced ? t("lastSynced", "Last synced {when}", { when: relativeTime(d.lastSynced, getLang()) }) : t("neverSynced", "Not synced yet");
-    const statusText = d.status === "syncing" ? t("syncing", "Syncing…") : d.status === "expired" ? t("reconnectText", "Your Google session expired. Reconnect to keep syncing.") : d.status === "offline" ? t("offline", "Offline") : d.error || when;
-    return `<div class="account">
-      <div class="profile">${p.picture ? `<img src="${esc(p.picture)}" alt="" width="48" height="48" referrerpolicy="no-referrer">` : `<span class="avatar-fallback">${esc((p.givenName || p.email || "?").charAt(0).toUpperCase())}</span>`}
-        <div><strong>${esc(p.name || p.givenName || "Google")}</strong><span class="muted">${esc(p.email || "")}</span></div></div>
-      <p class="status-line ${d.status}">${esc(statusText)}</p>
-      <div class="btn-row">
-        ${d.status === "expired" ? `<button class="btn primary" type="button" id="gSignIn">${icon("refresh")}${esc(t("reconnect", "Reconnect"))}</button>` : `<button class="btn primary" type="button" id="gSync"${d.status === "syncing" ? " disabled" : ""}>${icon("refresh")}${esc(t("syncNow", "Sync now"))}</button>`}
-        <button class="btn ghost" type="button" id="gOut">${icon("logout")}${esc(t("signOut", "Sign out"))}</button>
-      </div>
-      <p class="card-hint">${esc(t("autoSyncNote", "Changes sync automatically while you're signed in."))}</p>
-    </div>`;
-  };
-  /** Stop redrawing once this sheet is gone (the dialog is shared with every other sheet). */
-  let unsub = () => {};
-  const body = openSheet({ title: t("accountTitle", "Google Drive backup"), body: draw(), onClose: () => unsub() });
-  unsub = store.on("drive-status", () => { body.innerHTML = draw(); });
-  body.addEventListener("click", async (e) => {
-    const id = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"))?.id;
-    if (id === "gSignIn") { if (await d.signIn()) toast(t("syncDone", "Synced with Google Drive"), "success"); }
-    if (id === "gSync") { if (await d.sync()) toast(t("syncDone", "Synced with Google Drive"), "success"); }
-    if (id === "gOut") { d.signOut(); toast(t("signedOut", "Signed out of Google Drive"), "info"); }
-  });
-}
-
-
 
 /**
  * Add songs from pasted Sonata links (one song per link, or a whole-setlist link). When the
@@ -660,6 +597,7 @@ export function openLinksImport(text = "") {
     "no-chords": ["webNoChords", "No chords were found on that page. Copy the chords from it and paste them here."],
     "not-found": ["webNotFound", "That page could not be found. Check the link."],
     "bad-url": ["webBadUrl", "That link can't be read. Copy the chords from the page and paste them here."],
+    "slow-down": ["webSlowDown", "That was a lot of links in a short time. Wait a minute and try again, or paste the chords here."],
     blocked: ["webBlocked", "That site does not let Sonata read its pages. Open it, copy the chords and paste them here."]
   });
   const summary = () => {

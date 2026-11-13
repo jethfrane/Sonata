@@ -152,11 +152,18 @@ export function normalizeSettings(raw) {
  */
 export function validateBackup(d) {
   if (!d || typeof d !== "object" || Array.isArray(d)) return { ok: false, error: "This file is not a Sonata backup." };
+  // A file that names another app is not ours, whatever else it holds.
+  if (d.app !== undefined && d.app !== "sonata") return { ok: false, error: "This file is not a Sonata backup." };
   if (d.songs === undefined && d.setlists === undefined) return { ok: false, error: "No songs or setlists found in this file." };
   if (d.songs !== undefined && !Array.isArray(d.songs)) return { ok: false, error: "Songs in this backup are damaged." };
   if (d.setlists !== undefined && !Array.isArray(d.setlists)) return { ok: false, error: "Setlists in this backup are damaged." };
+  // Far beyond any real library: refuse instead of filling the device's storage.
+  if ((d.songs || []).length > BACKUP_LIMITS.songs || (d.setlists || []).length > BACKUP_LIMITS.setlists) return { ok: false, error: "This backup is too large to restore." };
   return { ok: true };
 }
+
+/** Upper bounds for a backup file. */
+export const BACKUP_LIMITS = { bytes: 25 * 1024 * 1024, songs: 20000, setlists: 2000 };
 
 /**
  * Merge two libraries. Newest edit wins per item; deletions win over edits.
@@ -527,23 +534,35 @@ export class Store {
    * Restore from a backup file: brings back songs even if they were deleted
    * here later, and keeps anything newer on this device.
    * @param {{ songs?: any[], setlists?: any[] }} data
+   * @param {{ prefer?: boolean }} [o] prefer: the backup's version of a song wins even over a newer
+   *   edit here (going back to an earlier version). Songs added since are kept either way.
    */
-  importBackup(data) {
+  importBackup(data, o = {}) {
     // Anything deleted here since gets a new id, so a synced deletion mark can't remove it again.
     const gone = new Set(this.deletedIds);
     /** @type {Map<string, string>} */
     const remap = new Map();
     const t = now();
+    /** A time just after the copy on this device was last changed, so the backup's version wins the merge. */
+    const after = (/** @type {any} */ cur) => new Date(Math.max(Date.now(), (Date.parse(cur?.updatedAt || cur?.date || "") || 0) + 1)).toISOString();
+    /** Same content as what is here now? Then there is nothing to bring back. */
+    const same = (/** @type {any} */ a, /** @type {any} */ b) => Boolean(a && b) && JSON.stringify({ ...a, updatedAt: 0, lastOpenedAt: 0 }) === JSON.stringify({ ...b, updatedAt: 0, lastOpenedAt: 0 });
     const songs = (data.songs || []).map((raw) => {
-      if (!raw || !gone.has(raw.id)) return raw;
-      const id = uid();
-      remap.set(raw.id, id);
-      return { ...raw, id, updatedAt: t };
+      if (!raw || typeof raw !== "object") return raw;
+      if (gone.has(raw.id)) {
+        const id = uid();
+        remap.set(raw.id, id);
+        return { ...raw, id, updatedAt: t };
+      }
+      const cur = this.song(raw.id);
+      return o.prefer && cur && !same(normalizeSong(raw), cur) ? { ...raw, updatedAt: after(cur) } : raw;
     });
     const setlists = (data.setlists || []).map((raw) => {
       if (!raw || typeof raw !== "object") return raw;
       const items = Array.isArray(raw.items) ? raw.items.map((/** @type {any} */ i) => (i && remap.has(i.songId) ? { ...i, songId: remap.get(i.songId) } : i)) : raw.items;
-      return gone.has(raw.id) ? { ...raw, id: uid("set"), items, updatedAt: t } : { ...raw, items };
+      if (gone.has(raw.id)) return { ...raw, id: uid("set"), items, updatedAt: t };
+      const cur = this.setlists.find((x) => x.id === raw.id);
+      return o.prefer && cur && !same(normalizeSetlist({ ...raw, items }), cur) ? { ...raw, items, updatedAt: after(cur) } : { ...raw, items };
     });
     return this.mergeIn({ songs, setlists });
   }

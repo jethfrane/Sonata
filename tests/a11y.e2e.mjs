@@ -38,6 +38,25 @@ for (const theme of ["light", "dark"]) {
   }
 }
 
+// The new overlays: Help, Backup & restore and the guided tour, in both themes.
+for (const theme of ["light", "dark"]) {
+  await seed(theme);
+  const overlays = [
+    ["Help sheet", () => page.click("#helpBtn")],
+    ["Backup sheet", () => page.click("#accountBtn")],
+    ["guided tour", () => page.evaluate(() => /** @type {any} */ (window).__sonata.startTour())]
+  ];
+  for (const [name, openIt] of overlays) {
+    await page.goto(BASE + "/songs"); await page.waitForTimeout(400);
+    await /** @type {() => Promise<any>} */ (openIt)(); await page.waitForTimeout(800);
+    await page.evaluate(axeSrc);
+    const res = await page.evaluate(async () => /** @type {any} */ (window).axe.run(document, { runOnly: ["wcag2a", "wcag2aa", "wcag21aa"] }));
+    const bad = res.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    ok(bad.length === 0, `axe ${theme} ${name}${bad.length ? " → " + bad.map((v) => `${v.id}(${v.nodes.length}): ${v.nodes[0].target}`).join("; ") : ""}`);
+  }
+}
+ok(await page.evaluate(() => { const b = document.getElementById("helpBtn"); const r = b.getBoundingClientRect(); return b.getAttribute("aria-label") === "Help" && r.width >= 36 && r.height >= 36; }), "the Help button has a name and a comfortable tap size");
+
 // Arrow keys on instrument tabs
 await seed("light");
 await page.goto(BASE + "/play/piano"); await page.waitForTimeout(500);

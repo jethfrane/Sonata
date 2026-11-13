@@ -8,6 +8,24 @@ import { extractChart, publicUrl, privateAddress } from "../js/core/import.js";
 const MAX_PAGE = 1.5 * 1024 * 1024;
 const SITE = "sonata.jethrofrane.xyz";
 
+/**
+ * A light brake so this can't be driven as a bulk page reader: each address gets a short burst,
+ * then has to wait. Kept in memory per function instance (nothing is stored), so it slows abuse
+ * down rather than stopping a determined one; the platform firewall is the place for hard limits.
+ */
+const RATE = { max: 20, windowMs: 60_000 };
+/** @type {Map<string, number[]>} */
+const hits = new Map();
+/** True when this address has used up its requests for now. @param {string} who @param {number} [now] */
+export function tooMany(who, now = Date.now()) {
+  const recent = (hits.get(who) || []).filter((t) => now - t < RATE.windowMs);
+  recent.push(now);
+  hits.set(who, recent);
+  // Don't let the table itself grow without bound.
+  if (hits.size > 5000) for (const [k, v] of hits) { if (!v.some((t) => now - t < RATE.windowMs)) hits.delete(k); }
+  return recent.length > RATE.max;
+}
+
 /** Read at most MAX_PAGE bytes. @param {Response} r */
 async function capped(r) {
   const reader = r.body?.getReader();
@@ -79,7 +97,9 @@ export default async function handler(req, res) {
   const site = String(req.headers?.["sec-fetch-site"] || "");
   const origin = String(req.headers?.origin || "");
   const allowed = (!site || site === "same-origin") && (!origin || /^https:\/\/sonata\.jethrofrane\.xyz$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin));
-  const out = allowed ? await importPage(String(url.searchParams.get("url") || "")) : { status: 403, error: "forbidden" };
+  const who = String(req.headers?.["x-real-ip"] || String(req.headers?.["x-forwarded-for"] || "").split(",")[0] || "unknown").trim();
+  const out = !allowed ? { status: 403, error: "forbidden" } : tooMany(who) ? { status: 429, error: "slow-down" } : await importPage(String(url.searchParams.get("url") || ""));
+  if (out.status === 429) res.setHeader("Retry-After", "60");
   const { status, ...body } = out;
   res.status(status).send(JSON.stringify(body));
 }

@@ -2,7 +2,6 @@
 // Shared app context: the store, Drive, metronome, and key helpers every view uses.
 import { Store, memoryStorage } from "../core/store.js";
 import { detectKey, parseKey, keyFromTonic, keyShort, mod12 } from "../core/music.js";
-import { Metronome, DrumLooper } from "../audio.js";
 
 /**
  * @typedef {import("../core/store.js").Song} Song
@@ -25,19 +24,24 @@ const picked = pickStorage();
 /** True when songs can't be saved on this device (the app still works until the tab closes). */
 export const storageBlocked = picked.blocked;
 export const store = new Store(picked.storage);
-export const metronome = new Metronome();
-export const drumLooper = new DrumLooper();
 
 /** Late-bound references (avoid import cycles between views). */
 export const app = {
   /** @type {View} */ view: "editor",
-  /** @type {import("../drive.js").Drive|null} */ drive: null,
+  /** Google Drive, once loaded (only for people who use it). @type {import("../drive.js").Drive|null} */ drive: null,
+  /** Load Drive on demand. @type {() => Promise<import("../drive.js").Drive|null>} */ loadDrive: async () => null,
   /** @type {(view: View, opts?: { sub?: string, replace?: boolean }) => void} */ show: () => {},
   /** @type {() => void} */ openStage: () => {},
   /** @type {() => void} */ refresh: () => {},
   /** @type {Set<(beat: number, accent: string) => void>} */ beatListeners: new Set(),
   /** @type {((chord: string) => void)|null} */ onChordChange: null
 };
+
+/** The signed-in person's name for "arranged by", without loading Drive. */
+export function profileName() {
+  if (app.drive) return app.drive.profile.name || "";
+  try { return String(JSON.parse(localStorage.getItem("sonata_user_profile") || "{}")?.name || ""); } catch { return ""; }
+}
 
 /** @type {Map<string, ReturnType<typeof detectKey>>} */
 const detectCache = new Map();

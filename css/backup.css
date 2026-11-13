@@ -1,0 +1,29 @@
+/* Backup & restore sheet. Loaded with js/ui/backup.js, not on first paint. */
+.backup { display: grid; gap: 14px; }
+.bk-status { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--line); }
+.bk-status .icon { flex: none; width: 24px; height: 24px; margin-top: 1px; color: var(--muted); }
+.bk-status div { display: grid; gap: 2px; min-width: 0; }
+.bk-status b { font-size: var(--fs-md, 15px); font-weight: 700; }
+.bk-status span { color: var(--text-2); font-size: var(--fs-sm); line-height: 1.45; }
+.bk-status.ok { background: color-mix(in srgb, var(--success) 9%, var(--surface)); border-color: color-mix(in srgb, var(--success) 30%, var(--line)); }
+.bk-status.ok .icon { color: var(--success); }
+.bk-status.warn { background: color-mix(in srgb, var(--warning) 9%, var(--surface)); border-color: color-mix(in srgb, var(--warning) 32%, var(--line)); }
+.bk-status.warn .icon { color: var(--warning); }
+
+.bk-card { padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.bk-card h3 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md, 15px); font-weight: 700; }
+.bk-card h3 .icon { flex: none; width: 18px; height: 18px; color: var(--accent-strong); }
+.bk-card h3 span { flex: 1; min-width: 0; }
+.bk-tag { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: var(--fs-xs); font-style: normal; font-weight: 600; }
+.bk-card > p { margin-top: 8px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; }
+.bk-card .btn.wide { margin-top: 14px; }
+.bk-card .profile { margin-top: 12px; }
+.bk-card .status-line { margin-top: 12px; }
+
+.bk-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 0; border-top: 1px solid var(--line); }
+.bk-list li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.bk-list li > span { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.bk-list b { font-size: var(--fs-sm); font-weight: 650; }
+.bk-list small { color: var(--muted); font-size: var(--fs-xs); }
+.bk-list .btn { flex: none; }
+#bkMore { margin-top: 10px; }

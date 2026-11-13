@@ -24,8 +24,8 @@ const fileText = (set) => { const f = buildSetFile(set, store.setlistSongs(set))
  */
 export async function publishLiveSet(setId, o = {}) {
   const set = store.setlists.find((s) => s.id === setId);
-  const d = app.drive;
   if (!set) return false;
+  const d = o.quiet ? app.drive : await app.loadDrive();
   if (!d || !d.token) {
     if (!o.quiet) toast(t("liveNeedsDrive", "Sign in with Google first. A live link is shared from your own Drive."), "info", { ms: 6000, action: t("signIn", "Sign in"), onAction: () => d?.signIn() });
     return false;
