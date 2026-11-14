@@ -13,7 +13,8 @@ const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 
 http.createServer(async (req, res) => {
   let path; try { path = decodeURIComponent((req.url || "/").split("?")[0]); } catch { path = "/"; }
-  const file = extname(path) ? normalize(join(root, path)) : join(root, "index.html");
+  // Like Vercel's cleanUrls: /privacy is public/privacy.html. Every other extensionless path is the app.
+  const file = extname(path) ? normalize(join(root, path)) : path === "/privacy" ? join(root, "privacy.html") : join(root, "index.html");
   if (!file.startsWith(root)) { res.writeHead(403); res.end(); return; }
   try {
     const data = await readFile(file);

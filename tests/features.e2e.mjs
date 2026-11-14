@@ -186,15 +186,48 @@ const qrText = await p.evaluate(async () => {
   return Array.from(g.getImageData(0, 0, 600, 600).data);
 });
 const read = jsQR(Uint8ClampedArray.from(qrText), 600, 600)?.data || "";
-ok(/^HTTPS?:\/\/127\.0\.0\.1:5391\/Q\/[A-Z2-7]+$/.test(read), "on-screen QR scans and holds the compact upper-case link");
+ok(/^HTTPS?:\/\/[A-Z0-9.]+:\d+\/Q\/[A-Z2-7]+$/.test(read), "on-screen QR scans and holds the compact upper-case link");
+{
+  // Tap the code: it fills the screen on white, and a tap puts it away.
+  await p.click("#qrZoom"); await p.waitForTimeout(250);
+  const z = await p.evaluate(() => { const el = document.getElementById("qrZoomed"); if (!el) return null; const r = el.getBoundingClientRect(), s = el.querySelector("svg").getBoundingClientRect(); return { full: r.width >= innerWidth - 1 && r.height >= innerHeight - 1, side: Math.round(s.width), fits: s.bottom <= innerHeight && s.right <= innerWidth, top: document.elementFromPoint(innerWidth / 2, innerHeight / 2)?.closest("#qrZoomed") !== null }; });
+  ok(z && z.full && z.fits && z.top && z.side >= 500, `tapping the QR shows it large over everything (${z?.side}px)`);
+  await p.click("#qrZoomed"); await p.waitForTimeout(200);
+  ok(await p.locator("#qrZoomed").count() === 0 && await p.evaluate(() => document.getElementById("sheet").open), "tapping again closes the big code and leaves the share sheet open");
+}
 const p2 = await (await b.newContext()).newPage();
 await p2.goto(read.replace(/^HTTPS?:\/\//, "http://")); await p2.waitForTimeout(700);
 ok((await p2.inputValue("#songTitle")) === "Here I Am to Worship" && await p2.locator("#sharedBanner").isVisible(), "scanning the QR opens the song for a new person");
 await p2.close();
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 await p.click(".yt-chip"); await p.waitForTimeout(300);
-ok((await p.getAttribute("#ytPlayer iframe", "src") || "").startsWith("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"), "YouTube link plays inside Sonata (privacy-enhanced player)");
-await p.click("#ytClose"); ok(await p.locator("#ytPlayer").isHidden(), "player closes");
+ok((await p.getAttribute("#mediaPlayer iframe", "src") || "").startsWith("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"), "YouTube link plays inside Sonata (privacy-enhanced player)");
+{
+  const frameSrc = () => p.getAttribute("#mediaPlayer iframe", "src");
+  const src0 = await frameSrc();
+  ok(await p.locator(".yt-chip.on").count() === 1 && await p.evaluate(() => document.documentElement.classList.contains("mp-open")), "the link chip shows which video is loaded");
+  // It keeps playing (same frame, not reloaded) while moving around the app.
+  await p.evaluate(() => { document.querySelector("#mediaPlayer iframe").dataset.same = "1"; });
+  await p.click('.tab[data-view="chords"]'); await p.waitForTimeout(500);
+  await p.click('.tab[data-view="songs"]'); await p.waitForTimeout(400);
+  ok(await p.locator('#mediaPlayer iframe[data-same="1"]').isVisible() && await frameSrc() === src0, "the video stays loaded while moving to Chords and Songs");
+  await p.click("#mpSize"); await p.waitForTimeout(250);
+  const mini = await p.evaluate(() => { const b = document.getElementById("mediaPlayer"), v = b.querySelector(".mp-video").getBoundingClientRect(), r = b.getBoundingClientRect(); return { mode: b.dataset.mode, vw: v.width, h: r.height, in: r.right <= innerWidth && r.bottom <= innerHeight && r.left >= 0 }; });
+  ok(mini.mode === "mini" && mini.vw >= 150 && mini.h < 140 && mini.in && await p.locator('#mediaPlayer iframe[data-same="1"]').count() === 1, `mini player: small, on screen, same video (${Math.round(mini.vw)}px wide, ${Math.round(mini.h)}px tall)`);
+  ok(await p.locator("#mpPlay").isVisible() && await p.locator("#mpClose").isVisible() && await p.locator("#mpSeek").isHidden(), "mini player keeps play, expand and close");
+  ok(await p.locator("#mpBack").isVisible() && await p.locator("#mpFwd").isVisible() && /5 seconds/.test(await p.getAttribute("#mpBack", "aria-label") || ""), "mini player has back and forward 5 seconds");
+  ok(await p.evaluate(() => { const box = document.getElementById("mediaPlayer").getBoundingClientRect(); return [...document.querySelectorAll("#mediaPlayer .mp-ctrl > *")].filter((b) => b.getBoundingClientRect().width).every((b) => { const r = b.getBoundingClientRect(); return r.left >= box.left && r.right <= box.right + 0.5; }); }), "every mini player button sits inside the player");
+  await p.click('.tab[data-view="editor"]'); await p.waitForTimeout(400);
+  await p.locator("#songBody").click(); await p.keyboard.type(" "); await p.waitForTimeout(200);
+  ok(await p.locator('#mediaPlayer iframe[data-same="1"]').count() === 1, "typing in the chart leaves the video alone");
+  await p.reload(); await p.waitForTimeout(600); await p.click(".yt-chip"); await p.waitForTimeout(400);
+  ok(await p.getAttribute("#mediaPlayer", "data-mode") === "mini", "the chosen size is remembered");
+  await p.click("#mpSize"); await p.waitForTimeout(200);
+  ok(await p.locator("#mpSeek").isVisible() && await p.locator("#mpRate").isVisible() && await p.locator("#mpBack").isVisible(), "full player has position, speed and skip controls");
+  await p.click("#mpRate"); ok((await p.locator("#mpRate").innerText()).trim() === "0.75×", "speed steps to 0.75×");
+  await p.click("#mpClose"); await p.waitForTimeout(200);
+  ok(await p.locator("#mediaPlayer").count() === 0 && await p.locator(".yt-chip.on").count() === 0 && await p.evaluate(() => !document.documentElement.classList.contains("mp-open")), "player closes and the chip resets");
+}
 // Setlist → "Song links" message → paste into another browser → setlist rebuilt
 await p.goto(BASE + "/songs"); await p.waitForTimeout(300);
 await p.evaluate(() => { const s = window.__sonata.store; s.saveSetlist({ title: "Sunday Nov 9", items: s.songs.map((x) => ({ songId: x.id })) }); });

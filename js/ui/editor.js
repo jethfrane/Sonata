@@ -68,40 +68,35 @@ export function youtubeId(url) {
   } catch { return ""; }
 }
 
-/** Video playing under the chart ("" = none). */
-let playing = "";
-/** @param {string} id */
-function openPlayer(id) {
-  playing = id;
-  const box = $("ytPlayer");
-  box.hidden = false;
-  box.innerHTML = `<div class="yt-frame"><iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1" title="${esc(t("refVideo", "Reference video"))}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" loading="lazy"></iframe></div>
-    <div class="yt-bar"><a class="btn small ghost" href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener noreferrer">${icon("youtube")}${esc(t("openYoutube", "Open in YouTube"))}</a><button type="button" class="btn small ghost" id="ytClose">${icon("x")}${esc(t("close", "Close"))}</button></div>`;
-  paintIcons(box);
-  updateMeta();
-  box.scrollIntoView({ block: "nearest", behavior: "smooth" });
-}
-function closePlayer() {
-  if (!playing) return;
-  playing = "";
-  $("ytPlayer").hidden = true;
-  $("ytPlayer").innerHTML = "";
-  updateMeta();
-}
+/** The floating player loads the first time a video is opened, and outlives the song that started it. */
+const player = () => import("./player.js");
 
 export function initEditor() {
   // Show a fade on the right edge while a long line has more to scroll to.
-  const edge = () => { const ta = body(); ta.closest(".pane-edit")?.classList.toggle("more-right", ta.scrollWidth - ta.clientWidth - ta.scrollLeft > 4); };
+  // Layout reads are batched to one per frame, so typing and scrolling don't force a layout each time.
+  let edgeQueued = false;
+  const edgeNow = () => { edgeQueued = false; const ta = body(); ta.closest(".pane-edit")?.classList.toggle("more-right", ta.scrollWidth - ta.clientWidth - ta.scrollLeft > 4); };
+  const edge = () => { if (!edgeQueued) { edgeQueued = true; requestAnimationFrame(edgeNow); } };
   for (const ev of ["input", "scroll"]) body().addEventListener(ev, edge, { passive: true });
   window.addEventListener("resize", edge, { passive: true });
-  store.on("song-open", () => requestAnimationFrame(edge));
+  store.on("song-open", edge);
   requestAnimationFrame(edge);
-  $("songLinks").addEventListener("click", (e) => {
+  // Start fetching the player (and its video host connection) as soon as a finger or pointer reaches a video chip.
+  let warmed = false;
+  $("songLinks").addEventListener("pointerover", (e) => {
+    if (warmed || !/** @type {HTMLElement} */ (e.target).closest("[data-yt]")) return;
+    warmed = true;
+    player().catch(() => { warmed = false; });
+    const l = document.createElement("link"); l.rel = "preconnect"; l.href = "https://www.youtube-nocookie.com"; document.head.append(l);
+  }, { passive: true });
+  $("songLinks").addEventListener("click", async (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-yt]"));
     if (!b) return;
-    if (playing === b.dataset.yt) closePlayer(); else openPlayer(b.dataset.yt || "");
+    try { (await player()).playVideo(b.dataset.yt || "", b.dataset.name || ""); }
+    catch { toast(t("loadFailed", "Couldn't load this screen. Check your connection, or reload to get the latest version."), "error", { ms: 6000 }); }
   });
-  $("ytPlayer").addEventListener("click", (e) => { if (/** @type {HTMLElement} */ (e.target).closest("#ytClose")) closePlayer(); });
+  // The player says when its video starts, pauses or closes; the link chip follows.
+  document.addEventListener("sonata:media", () => paintLinkChips());
   // Tap a chord in the chart view to see its shapes and hear it.
   $("preview").addEventListener("click", (e) => {
     const c = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest(".ch"));
@@ -128,9 +123,10 @@ export function initEditor() {
     store.update(s, { body: body().value });
     autosize();
     followCaret();
-    queueRender();
+    queueRender(true);
   });
-  window.addEventListener("resize", autosize);
+  let sizeQueued = false;
+  window.addEventListener("resize", () => { if (!sizeQueued) { sizeQueued = true; requestAnimationFrame(() => { sizeQueued = false; autosize(); }); } }, { passive: true });
   body().addEventListener("keydown", (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
@@ -228,7 +224,8 @@ function followCaret() {
   if (!compact.matches || document.activeElement !== ta) return;
   const cs = getComputedStyle(ta);
   const lineH = parseFloat(cs.lineHeight) || 24;
-  const line = ta.value.slice(0, ta.selectionStart).split("\n").length - 1;
+  let line = 0;
+  for (let i = ta.value.indexOf("\n"); i !== -1 && i < ta.selectionStart; i = ta.value.indexOf("\n", i + 1)) line++;
   const top = ta.getBoundingClientRect().top + (parseFloat(cs.paddingTop) || 0) + line * lineH;
   const vv = window.visualViewport;
   const viewTop = vv ? vv.offsetTop : 0;
@@ -344,22 +341,29 @@ function addDemo() {
   app.show("editor");
 }
 
-function queueRender() {
+/** On a phone the chart and the box are separate panes; the hidden one is not drawn until it is shown. */
+const previewHidden = () => compact.matches && $("editorPanes").dataset.pane === "edit";
+/** What each box last showed, kept here (not in an attribute) so a long chart isn't copied into the page twice. */
+const shown = new WeakMap();
+/** Replace a box's markup only when it changed. @param {HTMLElement} el @param {string} html */
+function setHtml(el, html) { if (shown.get(el) !== html) { el.innerHTML = html; shown.set(el, html); } }
+
+/** Draw the preview, chips and chord bar once per frame. Typing waits a moment, so a burst of keys draws once. @param {boolean} [typing] */
+function queueRender(typing = false) {
   if (renderQueued) return;
   renderQueued = true;
-  requestAnimationFrame(() => { renderQueued = false; renderPreview(); updateMeta(); updateQuickstart(); renderChordBar(); });
+  const go = () => requestAnimationFrame(() => { renderQueued = false; if (!previewHidden()) renderPreview(); updateMeta(); updateQuickstart(); renderChordBar(); });
+  if (typing) setTimeout(go, 80); else go();
 }
 
 export function renderPreview() {
   const s = store.active();
   const out = $("preview");
-  if (!s) { out.innerHTML = ""; return; }
+  if (!s) { setHtml(out, ""); return; }
   const mode = /** @type {any} */ (store.settings.viewMode);
-  if (!s.body.trim()) {
-    out.innerHTML = `<div class="chart-empty">${esc(t("preview", "Preview"))}</div>`;
-  } else {
-    out.innerHTML = linesToHtml(buildLines(s.body, renderOptions(s, mode)));
-  }
+  const html = s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s, mode))) : `<div class="chart-empty">${esc(t("preview", "Preview"))}</div>`;
+  // Replacing identical markup would restart the page's layout and drop a tapped chord's highlight.
+  setHtml(out, html);
   const k = soundingKey(s);
   const labels = { chords: t("chordsMode", "Chords"), nashville: t("numbersMode", "Nashville numbers"), roman: t("romanMode", "Roman numerals"), lyrics: t("lyricsMode", "Lyrics only") };
   let label = `${labels[/** @type {"chords"} */ (mode)] || ""}`;
@@ -377,7 +381,7 @@ function updateQuickstart() {
 function updateMeta() {
   const s = store.active();
   const chips = $("metaChips");
-  if (!s) { chips.innerHTML = ""; return; }
+  if (!s) { setHtml(chips, ""); return; }
   const k = soundingKey(s);
   const parts = [];
   if (s.artist) parts.push(`<span class="chip static">${esc(s.artist)}</span>`);
@@ -385,17 +389,20 @@ function updateMeta() {
   if (s.capo) parts.push(`<span class="chip static">${esc(t("capoN", "Capo {n}", { n: s.capo }))}</span>`);
   if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);
   if (s.creator) parts.push(`<span class="chip static muted">arr. ${esc(s.creator)}</span>`);
-  chips.innerHTML = parts.join("");
+  const chipsHtml = parts.join("");
+  setHtml(chips, chipsHtml);
   const links = (s.links || []).map((l) => ({ name: l.name || l.url, href: safeHref(l.url) })).filter((l) => l.href);
   const box = $("songLinks");
   box.hidden = !links.length;
-  box.innerHTML = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => {
+  const linksHtml = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => {
     const yt = youtubeId(l.href);
-    // YouTube plays right here (loaded only when tapped); other links open in a new tab.
-    return yt ? `<button type="button" class="chip link-chip yt-chip" data-yt="${esc(yt)}" aria-expanded="${playing === yt}">${icon(playing === yt ? "pause" : "youtube")}${esc(l.name)}</button>`
+    // YouTube plays in the floating player (loaded only when tapped); other links open in a new tab.
+    return yt ? `<button type="button" class="chip link-chip yt-chip" data-yt="${esc(yt)}" data-name="${esc(l.name)}">${icon("youtube")}${esc(l.name)}</button>`
       : `<a class="chip link-chip" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer nofollow">${esc(l.name)}<span aria-hidden="true">↗</span></a>`;
   }).join("") : "";
-  if (playing && !links.some((l) => youtubeId(l.href) === playing)) closePlayer();
+  // Rebuilding unchanged links on every key would drop focus from a video chip and reset its play state.
+  setHtml(box, linksHtml);
+  paintLinkChips();
   $("editorHeading").textContent = s.title || t("untitled", "Untitled");
   $("keyPillValue").textContent = pretty(keyShort(k));
   $("keyPill").title = `${t("keyAndCapo", "Key & capo")}: ${pretty(k.name)}`;
@@ -437,6 +444,19 @@ function updateSetlistBar() {
   /** @type {HTMLButtonElement} */ ($("setNextBtn")).disabled = cur.index >= cur.songs.length - 1;
 }
 
+/** Show which video link is loaded in the player, and whether tapping it will pause or play. */
+function paintLinkChips() {
+  const m = app.media;
+  for (const b of $$("#songLinks [data-yt]")) {
+    const on = b.dataset.yt === m.id;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on && m.playing));
+    const want = on && m.playing ? "pause" : on ? "play" : "youtube";
+    if (b.dataset.ic !== want) { b.dataset.ic = want; b.querySelector("svg")?.replaceWith(document.createRange().createContextualFragment(icon(want))); }
+    b.title = on && m.playing ? t("pause", "Pause") : t("playHere", "Play here");
+  }
+}
+
 /** @param {number} d */
 export function stepSetlist(d) {
   const cur = store.currentSetlist();
@@ -446,7 +466,6 @@ export function stepSetlist(d) {
 
 /** Load the active song into the editor. */
 export function loadSong() {
-  closePlayer();
   const s = store.active();
   const ro = Boolean(s?.readonly);
   title().value = s ? (s.title === "Untitled" && !s.body ? "" : s.title) : "";

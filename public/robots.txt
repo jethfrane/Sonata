@@ -1,0 +1,6 @@
+# Sonata: the public pages may be indexed; personal and shared pages carry their own noindex.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://sonata.jethrofrane.xyz/sitemap.xml

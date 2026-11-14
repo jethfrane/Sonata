@@ -379,7 +379,7 @@ function route() {
 
 async function boot() {
   store.load();
-  setLang(store.settings.language);
+  await setLang(store.settings.language);
   applyI18n();
   paintIcons();
   applyTheme();
@@ -489,8 +489,32 @@ async function boot() {
   // Test hook for the local browser tests only; never on the published site.
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, renderPlay: () => lazy.play?.renderPlay(), loadPlay, loadTheory, loadStage, loadDrive, startTour };
   afterBoot();
+  document.documentElement.dataset.ready = "1";
+  watchErrors();
   // Caches from the hand-written service worker (v2 and older) are replaced by Workbox's.
   if ("caches" in window) caches.keys().then((keys) => keys.filter((k) => /^sonata-(cache-|v\d|fonts$)/.test(k)).forEach((k) => caches.delete(k))).catch(() => {});
+}
+
+/**
+ * A safety net for mistakes nobody planned for: one calm message with a way out, at most once a
+ * minute, instead of a screen that silently stops responding. Songs are saved as they are typed,
+ * so reloading loses nothing.
+ */
+function watchErrors() {
+  let last = 0;
+  /** @param {any} err @param {string} [file] */
+  const report = (err, file = "") => {
+    const text = String(err?.message || err || "");
+    // Not ours, or harmless: browser extensions, a cancelled request, autoplay or permission refusals, resize chatter.
+    if (file && !file.startsWith(location.origin)) return;
+    if (!text || text === "Script error." || /ResizeObserver|AbortError|NotAllowedError|The user aborted|Load failed|Failed to fetch|NetworkError|dynamically imported module/i.test(`${err?.name || ""} ${text}`)) return;
+    console.error(err);
+    if (Date.now() - last < 60_000) return;
+    last = Date.now();
+    toast(t("oops", "Something went wrong. If it happens again, reload Sonata. Your songs are safe."), "error", { ms: 8000, action: t("reload", "Reload"), onAction: () => { store.flush(); location.reload(); } });
+  };
+  window.addEventListener("error", (e) => { if (e.target === window) report(e.error || e.message, e.filename); });
+  window.addEventListener("unhandledrejection", (e) => report(e.reason));
 }
 
 boot().catch((e) => {

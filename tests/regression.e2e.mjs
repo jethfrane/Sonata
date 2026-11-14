@@ -284,6 +284,55 @@ for (const vp of [{ width: 390, height: 760, touch: true }, { width: 900, height
   await c.close();
 }
 
+// v6.1: public-readiness.
+{
+  const c = await b.newContext({ viewport: { width: 1280, height: 800 } });
+  const q = await c.newPage();
+  const errs = []; q.on("pageerror", (e) => errs.push(e.message));
+  const asked = []; q.on("request", (r) => asked.push(r.url()));
+  await q.goto(BASE + "/songs"); await q.waitForTimeout(700);
+  ok(!asked.some((u) => /i18n-fil/.test(u)), "English: the Filipino words are not downloaded");
+  ok(await q.evaluate(() => document.documentElement.dataset.ready === "1") && await q.locator(".boot-error").count() === 0, "the app marks itself ready and shows no start-up error");
+  // Filipino loads when chosen, and again at start for someone who chose it.
+  await q.click("#settingsBtn"); await q.waitForTimeout(500);
+  await q.selectOption('#sheet [data-set="language"]', "fil"); await q.waitForTimeout(700);
+  ok(asked.some((u) => /i18n-fil/.test(u)) && (await q.locator('.tab[data-view="songs"]').innerText()).trim() !== "Songs", "choosing Filipino downloads the words and repaints the menu");
+  await q.reload(); await q.waitForTimeout(800);
+  ok((await q.locator('.tab[data-view="songs"]').innerText()).trim() !== "Songs" && await q.evaluate(() => document.documentElement.lang === "fil"), "Filipino is applied at start after a reload");
+  await q.evaluate(() => { const s = JSON.parse(localStorage.getItem("sonata:v12:settings")); s.language = "en"; localStorage.setItem("sonata:v12:settings", JSON.stringify(s)); });
+  await q.reload(); await q.waitForTimeout(700);
+  // An unplanned error: one calm message with Reload, not a flood.
+  await q.evaluate(() => { for (let i = 0; i < 3; i++) setTimeout(() => { throw new Error("boom " + i); }, 0); Promise.reject(new Error("later")); });
+  await q.waitForTimeout(500);
+  ok(await q.locator(".toast").count() === 1 && /went wrong/i.test(await q.locator(".toast").first().innerText()), "an unexpected error shows one message, not one per error");
+  ok(await q.locator(".toast button").count() >= 1, "the message offers Reload");
+  await q.evaluate(() => { Promise.reject(new DOMException("stopped", "AbortError")); });
+  await q.waitForTimeout(300);
+  ok(await q.locator(".toast").count() === 1, "a cancelled request is not reported");
+  // About links to the privacy page; the page stands on its own.
+  await q.reload(); await q.waitForTimeout(600);
+  await q.click("#helpBtn"); await q.waitForTimeout(500); await q.click("#helpAbout"); await q.waitForTimeout(600);
+  ok(await q.locator('#sheet a[href="/privacy"]').count() === 1, "About links to Privacy & terms");
+  errs.length = 0;
+  await q.goto(BASE + "/privacy"); await q.waitForTimeout(300);
+  ok((await q.locator("h1").innerText()) === "Privacy & terms" && await q.locator("#app").count() === 0 && await q.locator('a[href="/"]').count() >= 1, "/privacy is its own page with a way back to the app");
+  ok(await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "/privacy does not scroll sideways");
+  const robots = await (await q.request.get(BASE + "/robots.txt")).text();
+  const map = await (await q.request.get(BASE + "/sitemap.xml")).text();
+  ok(/Sitemap: https:\/\/sonata\.jethrofrane\.xyz\/sitemap\.xml/.test(robots) && /<loc>https:\/\/sonata\.jethrofrane\.xyz\/privacy<\/loc>/.test(map), "robots.txt points at a sitemap that lists the public pages");
+  ok(errs.length === 0, "no page errors on the privacy page");
+  await c.close();
+}
+// A first visit that cannot fetch the app says so instead of a blank page.
+{
+  const c = await b.newContext({ viewport: { width: 390, height: 800 } });
+  const q = await c.newPage();
+  await q.route(/\/assets\/index-.*\.js$/, (r) => r.abort());
+  await q.goto(BASE + "/songs"); await q.waitForTimeout(600);
+  ok(await q.locator(".boot-error").count() === 1 && /couldn't load/i.test(await q.locator(".boot-error").innerText()), "if the app's script cannot be fetched, the page says so");
+  await c.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 await b.close();
 process.exit(fail ? 1 : 0);

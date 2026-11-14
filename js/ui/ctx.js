@@ -34,7 +34,8 @@ export const app = {
   /** @type {() => void} */ openStage: () => {},
   /** @type {() => void} */ refresh: () => {},
   /** @type {Set<(beat: number, accent: string) => void>} */ beatListeners: new Set(),
-  /** @type {((chord: string) => void)|null} */ onChordChange: null
+  /** @type {((chord: string) => void)|null} */ onChordChange: null,
+  /** The reference video in the floating player (js/ui/player.js): its id and whether it is playing. */ media: { id: "", playing: false }
 };
 
 /** The signed-in person's name for "arranged by", without loading Drive. */

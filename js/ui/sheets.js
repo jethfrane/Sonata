@@ -207,7 +207,7 @@ function wrapLines(g, text, width, max) {
 /** A sharp, scannable QR card as a PNG: whole-pixel modules, quiet zone, title and brand. @param {string} url @param {string} title */
 async function qrPng(url, title) {
   const { qrModules } = await loadQr();
-  const qr = qrModules(url, ["L", "M"]);
+  const qr = qrModules(url);
   if (!qr) throw new Error("qr too long");
   const W = 1080, H = 1350;
   const c = document.createElement("canvas");
@@ -286,12 +286,18 @@ export async function openShare(setId) {
       : `<p class="card-text">${esc(t("liveIntro", "One link for the band that always shows the latest version. Change the setlist or a chart and everyone gets it; each player keeps their own key. It is shared from your Google Drive."))}</p>
         <button class="btn" type="button" id="liveStart">${icon("link")}${esc(t("liveStart", "Make a live link"))}</button>`);
   };
+  /** @type {string|null|undefined} */
+  let svg;
   const draw = () => {
     // The QR holds the upper-case form of the link (QR alphanumeric mode: a smaller, easier-to-scan code).
-    const svg = qrSvg(qrLink, { ecc: "L", margin: 4 });
+    // Made once per sheet: the picture does not change while the sheet is open.
+    if (svg === undefined) svg = qrSvg(qrLink, { margin: 4 });
+    // A long song makes a code with many small squares, so it is drawn larger, and a tap fills the screen with it.
+    const n = Number(svg?.match(/data-n="(\d+)"/)?.[1] || 0);
     return `<div class="share">
       <div class="share-top">
-        <div class="qr-box">${svg || `<p>${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p>`}</div>
+        ${svg ? `<div class="qr-side"><button type="button" class="qr-box" id="qrZoom" style="--qr-n:${n}" aria-label="${esc(t("qrBigger", "Show the QR code bigger"))}" title="${esc(t("qrBigger", "Show the QR code bigger"))}">${svg}</button>${n > 100 ? `<p class="qr-hint">${esc(t("qrDense", "Long song: tap the code to make it bigger for scanning."))}</p>` : ""}</div>`
+          : `<div class="qr-box"><p>${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p></div>`}
         <div class="share-side">
           <p class="card-text">${esc(t("shareHow2", "Anyone can open the link or scan the code to see the chart and save it. No account needed."))}</p>
           <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(url)}" aria-label="Link"></div>
@@ -341,6 +347,17 @@ export async function openShare(setId) {
     if (kind === "print") { closeSheet(); printChart(opts, set?.id); }
     if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
+    if (b.id === "qrZoom" && svg) {
+      // Over everything in the sheet, white edge to edge: the easiest thing for a camera to read.
+      const big = document.createElement("button");
+      big.type = "button"; big.className = "qr-zoom"; big.id = "qrZoomed";
+      big.setAttribute("aria-label", t("qrSmaller", "Close the big QR code"));
+      big.innerHTML = `${svg}<span>${esc(t("qrTapClose", "Tap to close"))}</span>`;
+      big.addEventListener("click", () => { big.remove(); b.focus(); });
+      b.closest("dialog")?.append(big);
+      big.focus();
+      return;
+    }
     if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(qrLink, title)));
     if (set && (b.id === "liveStart" || b.id === "liveUpdate")) busy(b, async () => {
       if (!(await publishLiveSet(set.id))) return;
@@ -520,7 +537,8 @@ export function openSettings() {
     /** @type {any} */ (s)[k] = v;
     if (k === "previewFontSize") /** @type {HTMLElement} */ (body.querySelector("#fsOut")).textContent = `${v}px`;
     if (k === "editorLineHeight") /** @type {HTMLElement} */ (body.querySelector("#lhOut")).textContent = Number(v).toFixed(2);
-    if (k === "language") { setLang(String(v)); applyI18n(); }
+    // Filipino words load on first use; repaint once they are here.
+    if (k === "language") { setLang(String(v)).then(() => { applyI18n(); store.changed("settings"); }); return; }
     store.changed("settings");
   });
   body.addEventListener("click", async (e) => {
@@ -567,6 +585,7 @@ export async function openAbout() {
         <li>A Song Bank is shared only when you publish it: one file in your own Drive that anyone with its link can read. Sonata stores no copy.</li>
         <li>No ads. Anonymous page-view counts only (Vercel Web Analytics, no cookies).</li>
       </ul>
+      <p class="about-links"><a href="/privacy" target="_blank" rel="noopener">${esc(t("privacyTerms", "Privacy & terms"))}</a><a href="https://jethrofrane.xyz" target="_blank" rel="noopener">${esc(t("contact", "Contact"))}</a></p>
       <p class="verse">“So whether you eat or drink or whatever you do, do it all for the glory of God.” <span>1 Corinthians 10:31</span></p>
       <h3 class="group-title">${esc(t("whatsNew", "What's new"))}</h3>
       <div class="changelog" id="changelog"><p class="muted">…</p></div>

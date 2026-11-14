@@ -1,5 +1,19 @@
 [
   {
+    "version": "6.1.0",
+    "date": "2026-11-13",
+    "whatsNew": "Ready for everyone: a floating video player that follows you around the app, a plain-language Privacy & terms page, clearer messages when something goes wrong, and a lighter start.",
+    "changes": [
+      "New: a floating video player. A YouTube link on a song now plays in a small player that stays with you while you edit the chart, switch songs or open Chords, Theory and Play. Make it mini or bigger, go back or forward 5 seconds (in the mini player too), drag to any point, and slow it to 0.75× or 0.5× to work out a part.",
+      "QR codes are easier to scan: a long song's code is drawn larger, tapping the code fills the screen with it, and spare room in a code is used for stronger error correction.",
+      "New: Privacy & terms, in plain language, at sonata.jethrofrane.xyz/privacy and linked from About. It says what stays on your device, what Google Drive backup can and cannot see, and what you agree to when you share songs.",
+      "If Sonata can't load (no connection on a first visit, or a browser that is too old), it now says so instead of showing a blank page.",
+      "If something unexpected goes wrong while you work, one message offers to reload. Your songs are saved as you type, so nothing is lost.",
+      "Lighter start: the Filipino translation now downloads only when Filipino is chosen.",
+      "Search engines get a sitemap and are kept out of personal and shared pages."
+    ]
+  },
+  {
     "version": "6.0.0",
     "date": "2026-11-13",
     "whatsNew": "A guided tour and Help, one Backup & restore screen with earlier versions, and a lighter, faster start.",

@@ -50,7 +50,7 @@ export async function exportPng(o) {
   let qrNote = "";
   if (song && !song.readonly) {
     // Upper-case QR link: alphanumeric mode, a smaller code that scans more easily from paper.
-    qr = qrModules(await qrUrl(location.origin, packSong(song)), ["L", "M"]);
+    qr = qrModules(await qrUrl(location.origin, packSong(song)));
     if (qr) qrNote = "Opens this song in Sonata on any phone.";
   }
   if (!qr) { qr = qrModules(`${location.origin}/`); qrNote = "Opens Sonata on any phone."; }

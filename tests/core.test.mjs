@@ -258,6 +258,25 @@ function scan(text, ecc) {
   return { n, data: jsQR(px, W, W)?.data };
 }
 
+test("QR: the smallest code, with the strongest error correction that fits in it", async () => {
+  const { qrModules, QRCode } = await import("../js/lib/qr.js");
+  const rank = { L: 0, M: 1, Q: 2 };
+  let boosted = 0;
+  for (let len = 20; len <= 900; len += 37) {
+    const text = "HTTPS://SONATA.JETHROFRANE.XYZ/Q/" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".repeat(40).slice(0, len);
+    const q = qrModules(text);
+    assert.ok(q, "fits " + len);
+    assert.equal(q.n, QRCode.generate(text, "L").getModuleCount(), "never bigger than the lowest level, at " + len);
+    if (rank[q.ecc] > 0) { boosted++; assert.equal(QRCode.generate(text, q.ecc).getModuleCount(), q.n); }
+    // One level up must not fit in the same size, or the choice was not the strongest.
+    const up = { L: "M", M: "Q" }[q.ecc];
+    if (up) { let n = Infinity; try { n = QRCode.generate(text, up).getModuleCount(); } catch { /* too long */ } assert.ok(n > q.n, "strongest that fits, at " + len); }
+  }
+  // It only applies when a code has enough room left over, roughly one length in twelve.
+  assert.ok(boosted >= 1, "spare room is spent on error correction (" + boosted + " of 24 lengths)");
+  assert.equal(qrModules("x".repeat(5000)), null, "too long for a QR code");
+});
+
 test("v4: QR codes scan at every error-correction level, in byte and alphanumeric mode", async () => {
   for (const ecc of ["L", "M", "Q", "H"]) {
     assert.equal(scan("https://sonata.jethrofrane.xyz/share/x?s=abc_DEF-123", ecc).data, "https://sonata.jethrofrane.xyz/share/x?s=abc_DEF-123", "byte " + ecc);

@@ -545,14 +545,33 @@ export const QRCode = (() => {
 })();
 
 /**
- * Crisp SVG for on-screen display. Returns null when the text is too long
- * to fit in a QR code.
+ * The smallest code that holds the text, with the strongest error correction that does not make
+ * it any bigger. A code is sized in steps, so there is often room left over; spending it on error
+ * correction makes the same picture easier to scan off a screen or a creased printout.
  * @param {string} text
- * @param {{ ecc?: "L"|"M"|"Q"|"H", margin?: number, fg?: string, bg?: string }} [o]
+ * @returns {any|null} null when the text is too long for a QR code
+ */
+function best(text) {
+  let qr;
+  try { qr = QRCode.generate(text, "L"); } catch { return null; }
+  for (const ecc of ["Q", "M"]) {
+    try { const q = QRCode.generate(text, ecc); if (q.getModuleCount() === qr.getModuleCount()) { q.ecc = ecc; return q; } } catch { /* does not fit */ }
+  }
+  qr.ecc = "L";
+  return qr;
+}
+
+/**
+ * Crisp SVG for on-screen display. Returns null when the text is too long
+ * to fit in a QR code. The svg carries data-n (squares per side, with the margin) so the page
+ * can show a dense code larger.
+ * @param {string} text
+ * @param {{ ecc?: "L"|"M"|"Q"|"H", margin?: number, fg?: string, bg?: string }} [o] `ecc` forces a level; leave it out for the best fit
  */
 export function qrSvg(text, o = {}) {
   let qr;
-  try { qr = QRCode.generate(text, o.ecc || "L"); } catch { return null; }
+  if (o.ecc) { try { qr = QRCode.generate(text, o.ecc); } catch { return null; } } else qr = best(text);
+  if (!qr) return null;
   const n = qr.getModuleCount();
   const m = o.margin ?? 3;
   // One path segment per horizontal run of dark squares (a few KB instead of tens of KB).
@@ -567,22 +586,16 @@ export function qrSvg(text, o = {}) {
     }
   }
   const size = n + m * 2;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${size}" height="${size}" fill="${o.bg || "#fff"}"/><path d="${d}" fill="${o.fg || "#0b1220"}"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" data-n="${size}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${size}" height="${size}" fill="${o.bg || "#fff"}"/><path d="${d}" fill="${o.fg || "#0b1220"}"/></svg>`;
 }
 
 /**
- * Raw QR modules, for drawing at exact pixel sizes (sharp edges in PNGs).
- * Tries the stronger error correction first, then falls back so long links still fit.
+ * Raw QR modules, for drawing at exact pixel sizes (sharp edges in PNGs): the smallest code,
+ * with the strongest error correction that fits in it.
  * @param {string} text
- * @param {("L"|"M"|"Q"|"H")[]} [tryEcc]
- * @returns {{ n: number, dark: (r: number, c: number) => boolean }|null}
+ * @returns {{ n: number, ecc: string, dark: (r: number, c: number) => boolean }|null}
  */
-export function qrModules(text, tryEcc = ["M", "L"]) {
-  for (const ecc of tryEcc) {
-    try {
-      const qr = QRCode.generate(text, ecc);
-      return { n: qr.getModuleCount(), dark: (r, c) => qr.isDark(r, c) };
-    } catch { /* too long for this level */ }
-  }
-  return null;
+export function qrModules(text) {
+  const qr = best(text);
+  return qr ? { n: qr.getModuleCount(), ecc: qr.ecc, dark: (r, c) => qr.isDark(r, c) } : null;
 }

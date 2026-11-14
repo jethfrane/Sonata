@@ -38,7 +38,7 @@ export default defineConfig({
           }
         ],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//, /^\/_vercel\//, /\.[a-z0-9]+$/i],
+        navigateFallbackDenylist: [/^\/privacy$/, /^\/api\//, /^\/_vercel\//, /\.[a-z0-9]+$/i],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: false,

@@ -41,7 +41,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/:path((?!api/)(?!assets/)(?!.*\\.).*)", "destination": "/api/page?p=/:path*" }
+    { "source": "/:path((?!api/)(?!assets/)(?!privacy$)(?!.*\\.).*)", "destination": "/api/page?p=/:path*" }
   ],
   "functions": {
     "api/page.js": { "includeFiles": "dist/index.html", "maxDuration": 10 },
