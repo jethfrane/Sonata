@@ -6,6 +6,8 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "redirects": [
+    { "source": "/:path*", "has": [{ "type": "host", "value": "jethfrane-sonata.vercel.app" }], "destination": "https://sonata.jethrofrane.xyz/:path*", "permanent": true },
+    { "source": "/:path*", "has": [{ "type": "host", "value": "jethfrane.github.io" }], "destination": "https://sonata.jethrofrane.xyz/:path*", "permanent": true },
     { "source": "/manifest.json", "destination": "/manifest.webmanifest", "permanent": true },
     { "source": "/icon.png", "destination": "/icons/icon-512.png", "permanent": true },
     { "source": "/icon_dark.png", "destination": "/icons/icon-512.png", "permanent": true },

@@ -101,7 +101,7 @@ npm run dev            # http://localhost:5391 with hot reload
 npm test               # unit tests
 npm run typecheck      # TypeScript checks the JavaScript
 npm run build          # production build in dist/
-npm run serve:dist     # serve dist/ like Vercel does (routes fall back to index.html)
+npm run serve:dist     # serve dist/ the way production does (routes fall back to index.html)
 BASE=http://127.0.0.1:5391/ node tests/browser.e2e.mjs   # browser tests (Playwright)
 BASE=http://127.0.0.1:5391/ node tests/routes.e2e.mjs    # routes, layout and overflow checks
 npm run test:a11y && npm run test:regression             # axe checks; fixed-bug checks (fake Drive included)
@@ -109,7 +109,7 @@ OUT=/tmp/sonata-audit npm run test:audit                 # 25 screens × 6 sizes
 BASE=http://127.0.0.1:5391 node tests/screenshots.mjs    # refresh the screenshots above
 ```
 
-Release notes live in `public/update_log.json` and show in the app under Settings → About. Bump `package.json` and `public/version.json` with each release. Pushes to `main` deploy on Vercel.
+Release notes live in `public/update_log.json` and show in the app under Settings → About. Bump `package.json` and `public/version.json` with each release. Pushes to `main` deploy to Vercel, and the only public address is https://sonata.jethrofrane.xyz (no GitHub Pages, no `*.vercel.app` alias).
 
 Data formats are stable: songs and settings stay under the `sonata:v12:*` storage keys, and `?s=` share links keep the v1 format, so older libraries and links keep working.
 

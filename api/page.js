@@ -113,9 +113,8 @@ async function describe(route, query) {
  * the function, fetch the static copy from this same deployment instead. @param {any} req */
 async function readTemplate(req) {
   try { return fs.readFileSync(path.join(process.cwd(), "dist/index.html"), "utf8"); } catch { /* not bundled */ }
-  // Only this deployment's own address: a forged Host header must never choose where the page comes from.
-  const base = process.env.VERCEL_URL && /^[a-z0-9.-]+$/i.test(process.env.VERCEL_URL) ? `https://${process.env.VERCEL_URL}` : ORIGIN;
-  const r = await fetch(`${base}/index.html`, { headers: { "x-sonata-template": "1" } });
+  // Always the official address: a forged Host header or a deployment-specific URL must never choose the source.
+  const r = await fetch(`${ORIGIN}/index.html`, { headers: { "x-sonata-template": "1" } });
   if (!r.ok) throw new Error(`index.html ${r.status}`);
   return r.text();
 }
