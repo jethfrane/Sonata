@@ -253,7 +253,10 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 .theme-sw[data-preset="auto"] .theme-chip b { color: #8a8a93; }
 
 /* PNG export preview */
-.png-preview { display: grid; gap: 14px; }
-.png-page { margin: 0; display: grid; gap: 8px; }
-.png-page img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: contain; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
-.png-page figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: var(--fs-sm); }
+.png-preview { display: grid; gap: 14px; min-width: 0; }
+/* Pages are 9:16, like a phone screen: shown whole, side by side, swipe between them. */
+.png-pages { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; justify-content: safe center; padding-bottom: 6px; }
+.png-page { margin: 0; display: grid; gap: 8px; flex: 0 0 auto; scroll-snap-align: center; justify-items: center; }
+.png-page img { display: block; width: auto; height: auto; max-width: min(100%, 82vw); max-height: min(64vh, 640px); border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; box-shadow: var(--shadow-sm); -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
+.png-pages.many .png-page img { max-width: 72vw; }
+.png-page figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; color: var(--muted); font-size: var(--fs-sm); }

@@ -314,7 +314,7 @@ export async function openShare(setId) {
       <h3 class="group-title">${esc(t("exportFiles", "Export"))}${many > 1 ? ` <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: many }))}</span>` : ""}</h3>
       <div class="export-grid">
         <button class="btn" type="button" data-export="pdf">${icon("file")}PDF</button>
-        ${set ? "" : `<button class="btn" type="button" data-export="png">${icon("image")}PNG</button>`}
+        ${set ? "" : `<button class="btn" type="button" data-export="png" title="${esc(t("pngShape", "Phone-sized image"))}">${icon("image")}PNG <small class="fmt" id="pngShape">${opts.landscape ? "16:9" : "9:16"}</small></button>`}
         <button class="btn" type="button" data-export="txt">${icon("text")}TXT</button>
         <button class="btn" type="button" data-export="print">${icon("print")}${esc(t("print", "Print"))}</button>
       </div>
@@ -334,7 +334,11 @@ export async function openShare(setId) {
   body.addEventListener("change", (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
     if (el.id === "exportColumns") opts.columns = Number(el.value) || 1;
-    if (el.id === "exportOrientation") opts.landscape = el.value === "landscape";
+    if (el.id === "exportOrientation") {
+      opts.landscape = el.value === "landscape";
+      const shape = body.querySelector("#pngShape");
+      if (shape) shape.textContent = opts.landscape ? "16:9" : "9:16";
+    }
     try { localStorage.setItem(EXPORT_KEY, JSON.stringify(opts)); } catch { /* ignore */ }
   });
   body.addEventListener("click", async (e) => {

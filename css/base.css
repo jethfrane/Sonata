@@ -130,7 +130,7 @@ button.chip:hover, a.chip:hover { border-color: var(--accent); color: var(--acce
 .chip code { font-family: var(--mono); font-size: 12px; color: var(--chord); }
 .chip .icon { width: 16px; height: 16px; }
 .chip.accent { background: var(--accent-soft); border-color: transparent; color: var(--accent-strong); }
-.chip.static { min-height: 28px; padding: 0 10px; font-size: var(--fs-sm); }
+.chip.static { min-height: 28px; padding: 0 10px; font-size: var(--fs-sm); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; line-height: 28px; }
 .chip.key { color: var(--accent-strong); background: var(--accent-soft); border-color: transparent; font-weight: 700; }
 .chip.key small { font-weight: 700; opacity: .8; }
 .chip.muted { color: var(--muted); }

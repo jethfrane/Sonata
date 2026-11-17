@@ -77,6 +77,19 @@ ok((await p.locator("#diatonic .dia-name").allInnerTexts()).join(" ") === "G D/F
 await p.click("#diatonic .dia >> nth=1"); await p.click("#theoryShapes"); await p.waitForTimeout(400);
 ok((await p.textContent("#sheetTitle")) === "D/F♯", "See shapes opens the tapped chord");
 await p.close();
+p = await open("/theory");
+{
+  const w = p.locator('#circle [data-wedge][data-ring="major"][data-pc="9"]');
+  const box = await w.boundingBox();
+  await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await p.mouse.down(); await p.waitForTimeout(600);
+  const holding = await p.evaluate(() => document.getElementById("circle").classList.contains("holding"));
+  await p.mouse.up(); await p.waitForTimeout(100);
+  ok(holding && !(await p.evaluate(() => document.getElementById("circle").classList.contains("holding"))) && (await p.textContent(".hub-key")) === "A", "press and hold on a wedge keeps the chord sounding until release, and still picks the key");
+  await p.click('#circle [data-wedge][data-ring="major"][data-pc="2"]'); await p.waitForTimeout(150);
+  ok((await p.textContent(".hub-key")) === "D" && !(await p.evaluate(() => document.getElementById("circle").classList.contains("holding"))), "a quick tap plays a short chord and picks the key");
+}
+await p.close();
 
 console.log("Play: every song chord, keyboard shortcuts, sustain, vocal warm-up and chord builder");
 const many = ["C", "Cm", "C7", "D", "Dm", "D7", "E", "Em", "E7", "F", "Fm", "F7", "G", "Gm", "G7", "A", "Am", "A7", "B", "Bm", "B7", "Cmaj7", "Dmaj7", "Emaj7", "Fmaj7"];
@@ -247,18 +260,30 @@ await p.click("#addLinksBtn"); await p.fill("#lkText", msg); await p.waitForTime
 ok(await p.evaluate(() => window.__sonata.store.songs.length) === 2, "importing the same message again doesn't duplicate songs");
 await p.close();
 
+console.log("Toasts");
+p = await open("/songs");
+await p.evaluate(() => { const { toast } = window.__sonata; toast("Long message", "info", { ms: 20000, action: "Do it", onAction() {} }); toast("Short", "success"); });
+ok(await p.locator("#toasts .toast-close").count() === 1, "only a long message gets a close button");
+await p.click("#toasts .toast-close"); await p.waitForTimeout(100);
+ok(await p.locator('#toasts .toast:has-text("Long message")').count() === 0, "the close button removes the message");
+await p.close();
+
 console.log("Exports");
 p = await open("/editor");
 await p.click("#shareSongBtn"); await p.waitForTimeout(600);
 let [dl] = await Promise.all([p.waitForEvent("download"), p.click('[data-export="pdf"]')]);
 const pdf = require("node:fs").readFileSync(await dl.path(), "latin1");
 ok(pdf.startsWith("%PDF") && pdf.includes("/FlateDecode"), "PDF downloads, compressed");
+ok((await p.textContent("#pngShape")) === "9:16", "the PNG button shows the image shape (9:16)");
+await p.selectOption("#exportOrientation", "landscape");
+ok((await p.textContent("#pngShape")) === "16:9", "landscape switches the PNG shape to 16:9");
+await p.selectOption("#exportOrientation", "portrait");
 await p.click('[data-export="png"]'); await p.waitForTimeout(1500);
 ok(await p.locator(".png-page img").count() === 1 && (await p.textContent("#sheetTitle")) === "Image preview" && await p.locator('#sheetFoot .btn.primary:has-text("Copy image")').count() === 1, "PNG export opens a preview with Copy image, Download and Back");
 [dl] = await Promise.all([p.waitForEvent("download"), p.click('#sheetFoot .btn:has-text("Download")')]);
 const png = require("node:fs").readFileSync(await dl.path());
 ok(png.subarray(1, 4).toString() === "PNG" && png.length > 20000, "PNG downloads");
-ok(png.readUInt32BE(16) === 2160 && png.readUInt32BE(20) < 2880, "a short chart makes one image, cropped to the chart");
+ok(png.readUInt32BE(16) === 2160 && png.readUInt32BE(20) === 3840, "a short chart makes one 9:16 phone-sized image (2160x3840)");
 await p.close();
 p = await open("/editor", { songs: [{ id: "song-feat-long00", title: "Long Song", body: "Verse:\nG        D/F#      Em        C\nHere I am to worship, here I am to bow down\n\n".repeat(30) }] });
 await p.click("#shareSongBtn"); await p.waitForTimeout(600);
@@ -270,7 +295,7 @@ await p.click(".png-page [data-copy]"); await p.waitForTimeout(600);
 ok(await p.evaluate(async () => { const items = await navigator.clipboard.read(); return items.some((i) => i.types.includes("image/png")); }), "Copy image puts the PNG on the clipboard");
 await p.click('#sheetFoot .btn:has-text("Download all")'); await p.waitForTimeout(2500);
 const pngSizes = await Promise.all(pngPages.map(async (d) => { const f = require("node:fs").readFileSync(await d.path()); return `${f.readUInt32BE(16)}x${f.readUInt32BE(20)}`; }));
-ok(pngPages.length >= 2 && pngPages[0].suggestedFilename() === "long-song-page-1.png" && pngSizes.every((x) => x === "2160x2880"), `a long chart exports one image per page, all the same size (${pngPages.length} pages)`);
+ok(pngPages.length >= 2 && pngPages[0].suggestedFilename() === "long-song-page-1.png" && pngSizes.every((x) => x === "2160x3840"), `a long chart exports one 9:16 image per page, all the same size (${pngPages.length} pages)`);
 await p.close();
 
 console.log("Song bank: musician");
@@ -549,6 +574,17 @@ ok((await p.textContent("#stageTitle")) === "Buwan", "at the end of a song the n
 await p.keyboard.press("PageUp"); await p.waitForTimeout(200);
 ok((await p.textContent("#stageTitle")) === "Long one", "at the top, Page Up goes back to the previous song");
 await p.close();
+
+console.log("Charts fit a phone's width");
+{
+  const WIDE = "## Verse\nG                   D\nShould old acquaintance be forgotten\n    G               C\nAnd never brought to mind";
+  const broken = (sel) => p.evaluate((sel) => [...document.querySelectorAll(`${sel} .ln-pair`)].filter((l) => { const s = [...l.children]; return s.length > 1 && s.at(-1).offsetTop > s[0].offsetTop; }).length, sel);
+  p = await open("/editor", { songs: [{ id: "song-feat-wide00", title: "Wide", body: WIDE }], viewport: { width: 360, height: 740 }, touch: true });
+  ok(await p.locator("#preview .ln-pair").count() === 2 && await broken("#preview") === 0, "View on a phone: chord lines stay whole (the text fits the width)");
+  await p.click("#presentBtn"); await p.waitForTimeout(500);
+  ok(await broken("#stageChart") === 0 && Number.parseFloat(await p.evaluate(() => getComputedStyle(document.querySelector("#stageChart .seg-l")).fontSize)) >= 14, "Stage on a phone: chord lines stay whole, at 14px or more");
+  await p.close();
+}
 
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();

@@ -15,12 +15,14 @@ const AXE = readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
 const ONLY = process.env.ONLY ? process.env.ONLY.split(",") : null;
 
 const VIEWPORTS = [
+  { name: "320", width: 320, height: 640, touch: true },
   { name: "360", width: 360, height: 740, touch: true },
   { name: "390", width: 390, height: 844, touch: true },
   { name: "landscape", width: 844, height: 390, touch: true },
   { name: "768", width: 768, height: 1024, touch: true },
   { name: "1024", width: 1024, height: 768, touch: true },
-  { name: "1440", width: 1440, height: 900, touch: false }
+  { name: "1440", width: 1440, height: 900, touch: false },
+  { name: "1920", width: 1920, height: 1080, touch: false }
 ];
 
 const LONG = "## Verse 1\nG           G/B       C        G\nAmazing grace, how sweet the sound\nG                   Em      D\nThat saved a wretch like me\nG            G/B        C          G\nI once was lost, but now am found\nG         Em      D         G\nWas blind but now I see\n\n## Chorus\n> All in, full band\n[C]My chains are [G]gone, I've been set [D]free\nMy [Em]God, my [C]Savior has [G]ransomed [D]me\nAnd [C]like a flood His [G]mercy [Em]reigns\nUn[C]ending [G]love, a[D]mazing [G]grace\n\n## Bridge\nC///  G/B///  Am7///  G///\n// Drums build here\nC  D  Em  G/D  C  D  G\n";
@@ -47,7 +49,7 @@ const STATES = [
   { name: "setlists", n: 40, path: "/songs", run: async (p) => { await p.click('[data-filter="setlists"]'); } },
   { name: "setlists-empty", n: 3, path: "/songs", run: async (p) => { await p.evaluate(() => { const s = window.__sonata.store; s.setlists = []; s.changed("library"); }); await p.click('[data-filter="setlists"]'); } },
   { name: "chart-edit", n: 40, path: "/editor" },
-  { name: "chart-view", n: 40, path: "/editor", run: async (p) => { const b = p.locator('[data-pane="preview"]'); if (await b.isVisible()) await b.click(); } },
+  { name: "chart-view", n: 40, path: "/editor", run: async (p) => { const b = p.locator('button[data-pane="preview"]').first(); if (await b.isVisible()) await b.click(); } },
   { name: "chart-new", n: 40, path: "/songs", run: async (p) => { await p.click("#newSongBtn"); } },
   { name: "chart-setlist", n: 40, path: "/songs", run: async (p) => { await p.click('[data-filter="setlists"]'); await p.click('[data-act="set-open"]'); } },
   { name: "theory", n: 40, path: "/theory" },

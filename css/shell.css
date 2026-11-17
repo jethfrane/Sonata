@@ -35,7 +35,7 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
 .side-label { padding: 0 10px; }
 .recent-list { display: grid; gap: 1px; overflow-y: auto; scrollbar-width: thin; }
 .recent-item {
-  display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px;
+  display: flex; align-items: center; gap: 10px; min-height: 36px; min-width: 0; width: 100%; padding: 0 10px; overflow: hidden;
   border: 0; border-radius: 9px; background: none; color: var(--text-2); text-align: left; font-size: var(--fs-sm); font-weight: 500;
 }
 .recent-item:hover { background: var(--surface-3); color: var(--text); }

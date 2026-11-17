@@ -70,13 +70,13 @@ export function initTheory() {
     tick();
     renderTheory();
   });
-  $("circle").addEventListener("click", onWedge);
-  $("circle").addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onWedge(e); } });
-  $("diatonic").addEventListener("click", (e) => {
-    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
-    if (!b) return;
-    triggerDiatonicBtn(b);
+  // Tap: a short chord. Press and hold: it keeps sounding until you let go, then rings out.
+  pressToPlay($("circle"), "[data-wedge]", (el) => onWedge(el));
+  $("circle").addEventListener("keydown", (e) => {
+    const g = /** @type {Element} */ (e.target).closest("[data-wedge]");
+    if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); tap(onWedge(g)); }
   });
+  pressToPlay($("diatonic"), "[data-chord]", (el) => triggerDiatonicBtn(/** @type {HTMLElement} */ (el)));
   window.addEventListener("keydown", (e) => {
     if (app.view !== "theory") return;
     if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
@@ -89,7 +89,7 @@ export function initTheory() {
       const b = /** @type {HTMLElement|undefined} */ (btns[idx]);
       if (b) {
         e.preventDefault();
-        triggerDiatonicBtn(b);
+        tap(triggerDiatonicBtn(b));
       }
       return;
     }
@@ -156,12 +156,56 @@ function saveLock() {
   } catch { /* ignore */ }
 }
 
+/** A press shorter than this is a tap. */
+const TAP_MS = 380;
+/** Let a tapped chord sound briefly, then fade. @param {import("../audio.js").Voice} v @param {number} [held] ms already held */
+const tap = (v, held = 0) => setTimeout(() => v.stop(0.45), Math.max(0, TAP_MS - held));
+
+/**
+ * Tap to hear a short chord; press and hold to keep it sounding until release. The keyboard
+ * (Enter/Space on a focused control) gives the tap. Pointer capture keeps the release even when the
+ * pressed element is redrawn (the circle re-renders when a key is picked).
+ * @param {HTMLElement} host @param {string} sel @param {(el: Element) => import("../audio.js").Voice} play
+ */
+function pressToPlay(host, sel, play) {
+  /** @type {{ v: import("../audio.js").Voice, t0: number, id: number }|null} */
+  let held = null;
+  const release = () => {
+    if (!held) return;
+    const { v, t0 } = held;
+    held = null;
+    const d = performance.now() - t0;
+    host.classList.remove("holding");
+    if (d < TAP_MS) tap(v, d); else v.stop(1.4);
+  };
+  host.addEventListener("pointerdown", (e) => {
+    if (e.button > 0) return;
+    const el = /** @type {Element} */ (e.target).closest(sel);
+    if (!el) return;
+    release();
+    held = { v: play(el), t0: performance.now(), id: e.pointerId };
+    host.classList.add("holding");
+    try { host.setPointerCapture(e.pointerId); } catch { /* not capturable */ }
+  });
+  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) {
+    host.addEventListener(ev, (e) => { if (held && /** @type {PointerEvent} */ (e).pointerId === held.id) release(); });
+  }
+  // A click with no pointer behind it (keyboard on a button, assistive tech) plays a tap.
+  host.addEventListener("click", (e) => {
+    if (/** @type {MouseEvent} */ (e).detail !== 0) return;
+    const el = /** @type {Element} */ (e.target).closest(sel);
+    if (el) tap(play(el));
+  });
+  // A long press should not open the text-selection or image menu.
+  host.addEventListener("contextmenu", (e) => { if (/** @type {Element} */ (e.target).closest(sel)) e.preventDefault(); });
+}
+
 /** Play and highlight a diatonic chord button on the Circle of Fifths. @param {HTMLElement} b */
 function triggerDiatonicBtn(b) {
   tick();
   lastChord = b.dataset.chord || "";
   const info = chordInfo(lastChord);
-  if (info) playChord(info.pcs, "piano", info.bassPc); else playChord(chordTones(lastChord));
+  const voice = info ? playChord(info.pcs, "piano", info.bassPc) : playChord(chordTones(lastChord));
   $$("#diatonic .dia").forEach((x) => x.classList.toggle("on", x === b));
   $("theoryShapes").hidden = false;
   $("theoryShapesLabel").textContent = t("seeShapes", "See {c} shapes", { c: pretty(lastChord) });
@@ -172,21 +216,21 @@ function triggerDiatonicBtn(b) {
     const wedge = document.querySelector(`#circle .wedge[data-ring="${ring}"][data-pc="${info.rootPc}"]`);
     if (wedge) ping(wedge);
   }
+  return voice;
 }
 
-/** @param {Event} e */
-function onWedge(e) {
-  const g = /** @type {SVGElement|null} */ (/** @type {Element} */ (e.target).closest("[data-wedge]"));
-  if (!g) return;
+/** Play a wedge's chord and (unless locked) make it the key. @param {Element} g @returns {import("../audio.js").Voice} */
+function onWedge(g) {
   const pc = Number(g.getAttribute("data-pc"));
   const ring = g.getAttribute("data-ring");
   tick();
-  if (ring === "dim") { playChord([pc, mod12(pc + 3), mod12(pc + 6)]); ping(g); return; }
+  if (ring === "dim") { const v = playChord([pc, mod12(pc + 3), mod12(pc + 6)]); ping(g); return v; }
   const mode = ring === "minor" ? "minor" : "major";
-  playChord(mode === "minor" ? [pc, mod12(pc + 3), mod12(pc + 7)] : [pc, mod12(pc + 4), mod12(pc + 7)]);
-  if (locked) { ping(g); return; }
+  const v = playChord(mode === "minor" ? [pc, mod12(pc + 3), mod12(pc + 7)] : [pc, mod12(pc + 4), mod12(pc + 7)]);
+  if (locked) { ping(g); return v; }
   picked = keyFromTonic(pc, mode);
   renderTheory();
+  return v;
 }
 
 /** Brief flash on a wedge that was played but not selected. @param {Element} g */

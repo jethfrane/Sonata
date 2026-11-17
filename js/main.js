@@ -317,9 +317,11 @@ function afterBoot() {
       const day = 86400000;
       const last = Date.parse(localStorage.getItem("sonata_backup_at") || "") || 0;
       const nudged = Number(localStorage.getItem("sonata_backup_nudged") || 0);
-      if (real >= 3 && !app.drive?.signedIn && Date.now() - last > 14 * day && Date.now() - nudged > 7 * day) {
+      // Never over the stage or an open sheet: it would cover the chart or the form being filled in.
+      const busy = isStageOpen() || /** @type {HTMLDialogElement} */ ($("sheet")).open;
+      if (!busy && real >= 3 && !app.drive?.signedIn && Date.now() - last > 14 * day && Date.now() - nudged > 7 * day) {
         localStorage.setItem("sonata_backup_nudged", String(Date.now()));
-        toast(t("backupNudge", "Your {n} songs are saved on this device only. Back them up so you never lose them.", { n: real }), "info", { ms: 12000, action: t("backup", "Back up"), onAction: () => openBackup() });
+        toast(t("backupNudge", "Your {n} songs are only on this device. Back them up so you never lose them.", { n: real }), "info", { ms: 12000, action: t("backup", "Back up"), onAction: () => openBackup() });
       }
       // First visit: offer the one-minute tour (never during automated tests, and never twice).
       const first = !localStorage.getItem("sonata_tour_seen") && !store.songs.length;
@@ -487,7 +489,7 @@ async function boot() {
   fetch("/version.json", { cache: "no-cache" }).then((r) => r.json()).then((v) => { /** @type {any} */ (app).version = v.version; }).catch(() => {});
   registerServiceWorker();
   // Test hook for the local browser tests only; never on the published site.
-  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, renderPlay: () => lazy.play?.renderPlay(), loadPlay, loadTheory, loadStage, loadDrive, startTour };
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) /** @type {any} */ (window).__sonata = { store, app, toast, renderPlay: () => lazy.play?.renderPlay(), loadPlay, loadTheory, loadStage, loadDrive, startTour };
   afterBoot();
   document.documentElement.dataset.ready = "1";
   watchErrors();

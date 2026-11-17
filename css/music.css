@@ -14,6 +14,10 @@
 .circle[data-rotate="1"] .circle-svg { transform: rotate(var(--rot)); }
 .circle[data-rotate="1"] .wedge text, .circle[data-rotate="1"] .hub-key, .circle[data-rotate="1"] .hub-sub { transform-box: fill-box; transform-origin: center; transform: rotate(calc(var(--rot) * -1)); }
 .circle-svg { width: 100%; height: 100%; overflow: visible; user-select: none; }
+/* Press and hold sustains a chord: no text selection or callout menu on a long press. */
+.circle, .diatonic { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+.wedge:active path { fill: var(--accent-mid); }
+.dia:active { transform: scale(.97); border-color: var(--accent); }
 .wedge { cursor: pointer; outline: none; }
 .wedge path { fill: var(--surface-2); stroke: var(--surface); stroke-width: 2.5; transition: fill .2s; }
 .wedge.minor path { fill: var(--surface-3); }
@@ -214,7 +218,10 @@ html[data-theme="dark"] .pk.white { background: linear-gradient(#ecebef, #d6d5db
   .play-controls { width: 100%; }
   .play-controls .select { flex: 1; }
   #view-play[data-inst="tuner"] .play-controls, #view-play[data-inst="metronome"] .play-controls, #view-play[data-inst="drums"] .play-controls { display: none; }
-  .inst-tabs button { padding: 0 4px; gap: 4px; font-size: var(--fs-xs); }
+  /* Phone tab bar: icon over a short label, so all five fit without cutting a word. */
+  .segmented.full.inst-tabs button { flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; min-height: 52px; padding: 4px 2px; font-size: 11.5px; line-height: 1.1; }
+  .inst-tabs button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .inst-tabs .icon { width: 18px; height: 18px; }
   .instrument-card .card-head { flex-wrap: wrap; }
   .piano { min-width: 500px; height: 160px; }
   .pk.white { padding-bottom: 6px; font-size: 11px; }
@@ -237,5 +244,4 @@ html[data-theme="dark"] .pk.white { background: linear-gradient(#ecebef, #d6d5db
   .piano { min-width: 440px; height: 140px; }
   .fretboard { min-width: 500px; }
   .icon-btn.big { width: 46px; height: 46px; }
-  .inst-tabs .icon { display: none; }
 }

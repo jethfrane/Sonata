@@ -1,4 +1,5 @@
 // @ts-check
+import { t } from "./i18n.js";
 // Small DOM helpers: icons, escaping, toasts, the shared dialog sheet.
 
 /** @param {string} id */
@@ -110,6 +111,22 @@ export function setIcon(el, name) {
 }
 
 /**
+ * The largest text size (px) at which the widest line of a rendered chart fits its box without
+ * wrapping, measured as rendered (20px, one row per line). 0 when the box is hidden or empty.
+ * @param {HTMLElement} box @param {number} min smallest size worth reading
+ */
+export function fitChart(box, min) {
+  const cs = getComputedStyle(box);
+  const w = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if (w <= 0 || !box.querySelector(".ln")) return 0;
+  box.classList.add("measure");
+  let widest = 1;
+  for (const el of box.querySelectorAll(".ln-pair, .ln-chords, .ln-lyrics")) widest = Math.max(widest, /** @type {HTMLElement} */ (el).offsetWidth);
+  box.classList.remove("measure");
+  return Math.max(min, Math.floor((20 * (w - 2)) / widest));
+}
+
+/**
  * Brief, non-blocking message. Only for things the user needs to know.
  * @param {string} message @param {"info"|"success"|"error"} [kind] @param {{ action?: string, onAction?: () => void, ms?: number }} [o]
  */
@@ -126,6 +143,16 @@ export function toast(message, kind = "info", o = {}) {
     b.textContent = o.action;
     b.addEventListener("click", () => { o.onAction?.(); el.remove(); });
     el.appendChild(b);
+  }
+  // A long message can be closed right away instead of covering the screen until it times out.
+  if ((o.ms || 2600) > 4000) {
+    const x = document.createElement("button");
+    x.type = "button";
+    x.className = "toast-close";
+    x.setAttribute("aria-label", t("close", "Close"));
+    x.innerHTML = icon("x");
+    x.addEventListener("click", () => el.remove());
+    el.appendChild(x);
   }
   host.appendChild(el);
   while (host.children.length > 3) host.firstElementChild?.remove();

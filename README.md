@@ -28,7 +28,7 @@ Five places, one job each, plus a Song Bank:
   - **Views**: Chords, Nashville numbers, Roman numerals, or lyrics only.
   - **Present**: big stage text, auto-scroll that pauses when you touch, setlist navigation, page-turner pedals (Page Down/Up: one screen per press, then the next song), metronome, three stage colors, screen stays awake, optional full screen on a computer.
   - **Live setlist link**: publish a setlist once from your own Google Drive; the band's link always shows the latest version, and each player keeps their own key and capo. No accounts.
-  - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG (previewed first, with Copy image), TXT and print in the same sheet. Old Sonata links still open.
+  - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG (9:16, phone-sized, previewed first, with Copy image), TXT and print in the same sheet. Old Sonata links still open.
 - **Chords**: type or pick any chord (slash chords too: `Am7/G`, `D/F#`) and see it on guitar and ukulele (every playable shape, the chord-book one first), bass (where its notes are) and piano. Tap a chord in a chart for the same view. Links like `/chords/Am7` open straight to it.
 - **Song Bank**: the songs you know or offer, with genres, your name, a short note, your own colors and upcoming gigs. Publish, then share the link. The page is view-only: people search and read a chart in their key.
 - **Theory**: circle of fifths with the key family highlighted, numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.

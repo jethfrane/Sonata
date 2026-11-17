@@ -1,5 +1,5 @@
 // @ts-check
-import { $, esc, setIcon, paintIcons } from "./dom.js";
+import { $, esc, setIcon, paintIcons, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick } from "./ctx.js";
 import { metronome } from "./sound.js";
@@ -54,6 +54,8 @@ export function initStage() {
   scroller().addEventListener("wheel", () => { pausedUntil = performance.now() + 1500; }, { passive: true });
   stage().addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") wake(); });
   document.addEventListener("keydown", onKey);
+  // Turning the phone changes the width, so the fitted size is worked out again.
+  window.addEventListener("resize", () => { if (open) { measureChrome(); fitWidth(); } });
   // Full screen is a choice: a button (and the F key), never forced when the stage opens.
   $("stageFsBtn").addEventListener("click", toggleFullscreen);
   document.addEventListener("fullscreenchange", syncFullscreen);
@@ -227,9 +229,21 @@ function renderStage() {
     /** @type {HTMLButtonElement} */ ($("stageNext")).disabled = cur.index >= cur.songs.length - 1;
   }
   measureChrome();
-  $("stageChart").innerHTML = s.body.trim()
-    ? linesToHtml(buildLines(s.body, renderOptions(s, /** @type {any} */ (mode))))
+  const lines = s.body.trim() ? buildLines(s.body, renderOptions(s, /** @type {any} */ (mode))) : [];
+  $("stageChart").innerHTML = lines.length
+    ? linesToHtml(lines)
     : `<p class="chart-empty">${esc(t("stageEmpty", "This song has no chart yet."))}</p>`;
+  fitWidth();
+}
+
+/**
+ * With chords, the chart is as large as fits its widest line (never above the size picked with
+ * A−/A+), so a chord never parts from its word. Lyrics alone may wrap, so they keep the full size.
+ */
+function fitWidth() {
+  const px = mode === "lyrics" ? 0 : fitChart($("stageChart"), 14);
+  if (px) stage().style.setProperty("--stage-fit", `${px}px`);
+  else stage().style.removeProperty("--stage-fit");
 }
 
 /** The bars float over the chart; the chart is padded by their height so nothing starts under them. */

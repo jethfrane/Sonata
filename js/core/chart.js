@@ -171,6 +171,17 @@ export function pairSegments(chords, lyrics) {
   return segs;
 }
 
+/** Longest line of a chart, in characters. @param {ChartLine[]} lines */
+export function longestLine(lines) {
+  let n = 0;
+  for (const l of lines) {
+    if (l.type === "pair") n = Math.max(n, l.chords.length, l.lyrics.length);
+    else if (l.type === "chords") n = Math.max(n, l.chords.length);
+    else if (l.type === "lyrics" || l.type === "note") n = Math.max(n, l.text.length);
+  }
+  return n;
+}
+
 /**
  * @param {ChartLine[]} lines
  * @returns {string}

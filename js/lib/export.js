@@ -1,7 +1,7 @@
 // @ts-check
 // Dependency-free exports: PDF (built by hand), PNG (canvas) and plain text.
 // Exports always use a light, print-friendly look regardless of app theme.
-import { pairSegments, linesToText } from "../core/chart.js";
+import { pairSegments, linesToText, longestLine } from "../core/chart.js";
 
 /**
  * @typedef {import("../core/chart.js").ChartLine} ChartLine
@@ -71,17 +71,6 @@ export function chordRuns(text) {
   let m;
   while ((m = re.exec(text))) out.push({ i: m.index, text: m[0], mark: /^(?:[\/\-|.%:–—]+|\(?x\d+\)?)$/i.test(m[0]) });
   return out;
-}
-
-/** Longest line of a chart, in characters. @param {ChartLine[]} lines */
-function longestLine(lines) {
-  let n = 0;
-  for (const l of lines) {
-    if (l.type === "pair") n = Math.max(n, l.chords.length, l.lyrics.length);
-    else if (l.type === "chords") n = Math.max(n, l.chords.length);
-    else if (l.type === "lyrics" || l.type === "note") n = Math.max(n, l.text.length);
-  }
-  return n;
 }
 
 // Characters outside Latin-1 that WinAnsi still has.
@@ -372,45 +361,52 @@ export function flowRows(rows, o) {
 }
 
 /**
- * Render a song as one PNG per page. Short charts make one image cropped to the chart;
- * long charts continue on more pages of the same size instead of shrinking the type.
+ * Render a song as one PNG per page. Every page is 9:16 (1080×1920 at 2×), the shape of a phone
+ * screen and of a story, so it fills the screen when opened in a chat. Landscape makes 16:9 pages.
+ * The type is as large as the page allows; long charts continue on more pages instead of shrinking it.
  * @param {ExportDoc} doc @param {PngOptions} [o]
  * @returns {Promise<Blob[]>}
  */
 export async function renderPngPages(doc, o = {}) {
-  const columns = Math.min(3, Math.max(1, o.columns || 1));
+  const land = Boolean(o.landscape);
+  // Two columns at most on a tall page: three would make lines too short to read on a phone.
+  const columns = Math.min(land ? 3 : 2, Math.max(1, o.columns || 1));
   // The fonts Sonata ships (self-hosted), so the image matches the app on every device.
   const mono = o.fontFamily || "'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Menlo, monospace";
   const ui = o.uiFont || "'Inter Variable', Inter, system-ui, sans-serif";
   if (typeof document !== "undefined" && document.fonts) {
-    await Promise.all([document.fonts.load(`400 18px ${mono}`), document.fonts.load(`700 18px ${mono}`), document.fonts.load(`700 30px ${ui}`), document.fonts.load(`500 16px ${ui}`)]).catch(() => {});
+    await Promise.all([document.fonts.load(`400 18px ${mono}`), document.fonts.load(`700 18px ${mono}`), document.fonts.load(`750 48px ${ui}`), document.fonts.load(`500 20px ${ui}`)]).catch(() => {});
   }
   const ink = accentInk(o.accent);
   const accent = `rgb(${ink.join(",")})`;
   const tint = `rgba(${ink.join(",")},.1)`;
   const C = { text: "#0f172a", sub: "#334155", muted: "#64748b", line: "#e2e8f0", soft: "#f1f5f9" };
-  // A 3:4 page (4:3 in landscape) reads well full-screen on a phone and prints cleanly.
-  const W = o.landscape ? 1440 : 1080;
-  const maxH = o.landscape ? 1080 : 1440;
-  const pad = 64, gap = 40, scale = 2;
+  const W = land ? 1920 : 1080;
+  const H = land ? 1080 : 1920;
+  const pad = 72, gap = 44, scale = 2;
   const colW = (W - pad * 2 - gap * (columns - 1)) / columns;
   const hasBy = Boolean(doc.artist || doc.creator);
-  const headH = hasBy ? 214 : 184;
-  const headRest = 104;
-  const footQr = o.qr ? 196 : 64;
-  const footRest = 64;
+  // Header: title, credits and key pills. Later pages repeat a slim title bar.
+  const titleY = 118, byY = 160;
+  const pillY = hasBy ? 188 : 150, pillH = 42;
+  const headH = pillY + pillH + 46;
+  const headRest = 128;
+  const qrUnits = 160;
+  const footQr = o.qr ? qrUnits + 80 : 92;
+  const footRest = 92;
 
   const probe = /** @type {CanvasRenderingContext2D} */ (document.createElement("canvas").getContext("2d"));
   probe.font = `400 100px ${mono}`;
   const ratio = probe.measureText("M").width / 100 || 0.6;
 
-  // Type size: as large as the longest line allows (up to 30px), then stepped down only while that saves a page.
-  const minSize = columns === 1 ? 18 : 16;
+  // Type size: the largest that keeps the longest line whole and the chart on as few pages as possible.
+  const minSize = columns === 1 ? 22 : 18;
+  const maxSize = columns === 1 ? 40 : 30;
   const longest = Math.max(1, longestLine(doc.lines));
-  const startSize = Math.max(minSize, Math.min(30, Math.floor(colW / (longest * ratio))));
+  const startSize = Math.max(minSize, Math.min(maxSize, Math.floor(colW / (longest * ratio))));
   const plan = (/** @type {number} */ size) => {
     const rows = printRows(doc.lines, Math.max(14, Math.floor(colW / (size * ratio))));
-    return { size, rows, ...flowRows(rows, { size, columns, first: maxH - headH - footQr, rest: maxH - headRest - footRest }) };
+    return { size, rows, ...flowRows(rows, { size, columns, first: H - headH - footQr - 16, rest: H - headRest - footRest - 16 }) };
   };
   const fewest = plan(minSize).pages.length;
   let best = plan(startSize);
@@ -418,7 +414,6 @@ export async function renderPngPages(doc, o = {}) {
   const { size, rows, pages } = best;
   const charW = size * ratio;
   const total = pages.length;
-  const single = total === 1;
 
   /** @param {CanvasRenderingContext2D} ctx @param {string} text @param {number} max */
   const fit = (ctx, text, max) => {
@@ -435,50 +430,50 @@ export async function renderPngPages(doc, o = {}) {
   const out = [];
   pages.forEach((items, pi) => {
     const first = pi === 0;
-    const top = first ? headH : headRest;
     const foot = first ? footQr : footRest;
-    const height = single ? Math.max(Math.ceil(top + best.used + foot + 12), 560) : maxH;
+    const avail = H - (first ? headH : headRest) - foot;
+    // A one-page chart sits a little above the middle of the free space instead of leaving a blank lower half.
+    const top = (first ? headH : headRest) + (total === 1 ? Math.max(0, Math.round((avail - best.used) * 0.38)) : 0);
     const canvas = document.createElement("canvas");
     canvas.width = W * scale;
-    canvas.height = height * scale;
+    canvas.height = H * scale;
     const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
     ctx.scale(scale, scale);
     ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, height);
-    ctx.fillStyle = accent; ctx.fillRect(0, 0, W, 8);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = accent; ctx.fillRect(0, 0, W, 10);
 
     // ---- Header
     if (first) {
       let x0 = pad;
       if (o.logo && o.logo.complete && o.logo.naturalWidth) {
-        try { ctx.drawImage(o.logo, pad, 52, 52, 52); x0 = pad + 70; } catch { /* tainted */ }
+        try { ctx.drawImage(o.logo, pad, 66, 64, 64); x0 = pad + 84; } catch { /* tainted */ }
       }
-      let ts = 40;
+      let ts = 54;
       ctx.font = `750 ${ts}px ${ui}`;
-      while (ts > 28 && ctx.measureText(doc.title).width > W - x0 - pad) { ts -= 2; ctx.font = `750 ${ts}px ${ui}`; }
+      while (ts > 34 && ctx.measureText(doc.title).width > W - x0 - pad) { ts -= 2; ctx.font = `750 ${ts}px ${ui}`; }
       ctx.fillStyle = C.text;
-      ctx.fillText(fit(ctx, doc.title, W - x0 - pad), x0, hasBy ? 84 : 92);
+      ctx.fillText(fit(ctx, doc.title, W - x0 - pad), x0, titleY);
       const by = [doc.artist ? `by ${doc.artist}` : "", doc.creator ? `arr. ${doc.creator}` : ""].filter(Boolean).join("   ·   ");
-      if (by) { ctx.fillStyle = C.sub; ctx.font = `550 18px ${ui}`; ctx.fillText(fit(ctx, by, W - x0 - pad), x0, 112); }
+      if (by) { ctx.fillStyle = C.sub; ctx.font = `550 24px ${ui}`; ctx.fillText(fit(ctx, by, W - x0 - pad), x0, byY); }
       // Key, tempo and view as pills: the key is the one a player looks for first.
       let px = pad;
-      const py = hasBy ? 138 : 122;
-      ctx.font = `650 15px ${ui}`;
+      ctx.font = `650 20px ${ui}`;
       doc.meta.split("·").map((x) => x.trim()).filter(Boolean).forEach((label, i) => {
-        const w = Math.ceil(ctx.measureText(label).width) + 28;
+        const w = Math.ceil(ctx.measureText(label).width) + 36;
         if (px + w > W - pad) return;
-        ctx.fillStyle = i === 0 ? tint : C.soft; pill(ctx, px, py, w, 34, 17);
-        ctx.fillStyle = i === 0 ? accent : C.sub; ctx.fillText(label, px + 14, py + 22.5);
-        px += w + 8;
+        ctx.fillStyle = i === 0 ? tint : C.soft; pill(ctx, px, pillY, w, pillH, pillH / 2);
+        ctx.fillStyle = i === 0 ? accent : C.sub; ctx.fillText(label, px + 18, pillY + 28);
+        px += w + 10;
       });
-      ctx.fillStyle = C.line; ctx.fillRect(pad, headH - 22, W - pad * 2, 1);
+      ctx.fillStyle = C.line; ctx.fillRect(pad, headH - 24, W - pad * 2, 1);
     } else {
-      ctx.fillStyle = C.text; ctx.font = `700 22px ${ui}`;
-      ctx.fillText(fit(ctx, doc.title, W - pad * 2 - 220), pad, 62);
-      ctx.fillStyle = C.muted; ctx.font = `550 15px ${ui}`; ctx.textAlign = "right";
-      ctx.fillText(doc.meta.split("·")[0].trim(), W - pad, 62);
+      ctx.fillStyle = C.text; ctx.font = `700 30px ${ui}`;
+      ctx.fillText(fit(ctx, doc.title, W - pad * 2 - 260), pad, 78);
+      ctx.fillStyle = C.muted; ctx.font = `600 20px ${ui}`; ctx.textAlign = "right";
+      ctx.fillText(doc.meta.split("·")[0].trim(), W - pad, 78);
       ctx.textAlign = "left";
-      ctx.fillStyle = C.line; ctx.fillRect(pad, headRest - 22, W - pad * 2, 1);
+      ctx.fillStyle = C.line; ctx.fillRect(pad, headRest - 24, W - pad * 2, 1);
     }
 
     // ---- Chart
@@ -513,32 +508,31 @@ export async function renderPngPages(doc, o = {}) {
     // ---- Footer
     const credit = "Made with Sonata  ·  sonata.jethrofrane.xyz";
     const pageNote = total > 1 ? `Page ${pi + 1} of ${total}` : "";
-    ctx.fillStyle = C.line; ctx.fillRect(pad, height - foot + 8, W - pad * 2, 1);
+    ctx.fillStyle = C.line; ctx.fillRect(pad, H - foot + 10, W - pad * 2, 1);
     if (first && o.qr) {
       // QR drawn in whole device pixels so every module stays sharp and scannable.
-      const quiet = 4, target = 264;
-      const mod = Math.max(2, Math.floor(target / (o.qr.n + quiet * 2)));
+      const quiet = 4;
+      const mod = Math.max(2, Math.floor((qrUnits * scale) / (o.qr.n + quiet * 2)));
       const side = mod * (o.qr.n + quiet * 2);
-      const qx = pad * scale, qy = Math.round((height - foot + 30) * scale);
+      const qx = pad * scale, qy = Math.round((H - foot + 40) * scale);
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = "#ffffff"; ctx.fillRect(qx, qy, side, side);
       ctx.fillStyle = "#0b1220";
       for (let r = 0; r < o.qr.n; r++) for (let c = 0; c < o.qr.n; c++) if (o.qr.dark(r, c)) ctx.fillRect(qx + (c + quiet) * mod, qy + (r + quiet) * mod, mod, mod);
       ctx.restore();
-      const tx = pad + side / scale + 20;
-      const ty = height - foot + 30 + side / scale / 2;
-      ctx.fillStyle = C.text; ctx.font = `700 19px ${ui}`; ctx.fillText("Scan to open this chart", tx, ty - 14);
-      ctx.fillStyle = C.sub; ctx.font = `500 15px ${ui}`;
-      ctx.fillText(o.qrNote || "Opens in Sonata on any phone.", tx, ty + 10);
-      ctx.fillStyle = C.muted; ctx.fillText("Free, works offline, no account.", tx, ty + 32);
-      ctx.textAlign = "right"; ctx.font = `500 13px ${ui}`;
-      ctx.fillText(credit, W - pad, height - 30);
-      if (pageNote) { ctx.font = `650 13px ${ui}`; ctx.fillText(pageNote, W - pad, height - 52); }
-      ctx.textAlign = "left";
+      const tx = pad + side / scale + 24;
+      const ty = H - foot + 40 + side / scale / 2;
+      const tw = W - tx - pad;
+      ctx.fillStyle = C.text; ctx.font = `700 26px ${ui}`; ctx.fillText(fit(ctx, "Scan to open this chart", tw), tx, ty - 22);
+      ctx.fillStyle = C.sub; ctx.font = `500 20px ${ui}`;
+      ctx.fillText(fit(ctx, o.qrNote || "Opens in Sonata on any phone.", tw), tx, ty + 10);
+      ctx.fillStyle = C.muted; ctx.fillText(fit(ctx, "Free, works offline, no account.", tw), tx, ty + 40);
+      ctx.font = `500 17px ${ui}`;
+      ctx.fillText(fit(ctx, pageNote ? `${credit}  ·  ${pageNote}` : credit, tw), tx, ty + 72);
     } else {
-      ctx.fillStyle = C.muted; ctx.font = `500 13px ${ui}`; ctx.fillText(credit, pad, height - 26);
-      if (pageNote) { ctx.textAlign = "right"; ctx.font = `650 13px ${ui}`; ctx.fillText(pageNote, W - pad, height - 26); ctx.textAlign = "left"; }
+      ctx.fillStyle = C.muted; ctx.font = `500 18px ${ui}`; ctx.fillText(credit, pad, H - 36);
+      if (pageNote) { ctx.textAlign = "right"; ctx.font = `650 18px ${ui}`; ctx.fillText(pageNote, W - pad, H - 36); ctx.textAlign = "left"; }
     }
     out.push(new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG failed"))), "image/png")));
   });

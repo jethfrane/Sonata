@@ -23,7 +23,7 @@ const EN = {
     songs: ["Songs", ["Import brings in a chart from a link, pasted chords or a file.", "Tap a song to open it. The star keeps favorites together.", "Setlists group songs in playing order for a gig, a rehearsal or a service."]],
     editor: ["Chart", ["Type chords on the line above the words, or write [G] inside them.", "− and + change the key for the whole song. Tap the key for capo and more.", "Present shows the chart big for the stage. Share sends it as a link, QR code or PDF."]],
     chords: ["Chords", ["Type any chord (Am7, D/F#) to see it on guitar, ukulele, bass and piano.", "Tap a shape to hear it.", "Tap a chord inside a chart to open the same view."]],
-    theory: ["Theory", ["Tap a key on the circle to see its chord family and key signature.", "The seven chords of the key are below. Tap one to hear it.", "Lock a key to keep it while you move between songs."]],
+    theory: ["Theory", ["Tap a key on the circle to see its chord family and key signature.", "The seven chords of the key are below. Tap one for a short chord, or press and hold to let it ring.", "Lock a key to keep it while you move between songs."]],
     play: ["Play", ["Piano and fretboard show the scale and chords of your song's key.", "The tuner listens through the microphone. Allow it when the browser asks.", "The metronome can save its tempo to the open song."]],
     bank: ["Song Bank", ["A Song Bank is a public, view-only list of the songs someone plays.", "Search it, open a chart and read it in your own key."]]
   },
@@ -63,7 +63,7 @@ const FIL = {
     songs: ["Mga Kanta", ["Ang Import ay kumukuha ng chart mula sa link, naka-paste na chords o file.", "I-tap ang kanta para buksan. Ang star ay para sa mga paborito.", "Ang setlist ay pagkakasunod-sunod ng mga kanta para sa gig, rehearsal o service."]],
     editor: ["Chart", ["I-type ang chords sa linya sa itaas ng lyrics, o isulat ang [G] sa loob ng salita.", "Binabago ng − at + ang key ng buong kanta. I-tap ang key para sa capo at iba pa.", "Ang Present ay malaking chart para sa stage. Ang Share ay nagpapadala bilang link, QR code o PDF."]],
     chords: ["Chords", ["I-type ang kahit anong chord (Am7, D/F#) para makita sa gitara, ukulele, bass at piano.", "I-tap ang shape para marinig.", "I-tap ang chord sa loob ng chart para sa parehong view."]],
-    theory: ["Theory", ["I-tap ang key sa bilog para makita ang chord family at key signature nito.", "Nasa ibaba ang pitong chords ng key. I-tap para marinig.", "I-lock ang key para manatili kahit lumipat ka ng kanta."]],
+    theory: ["Theory", ["I-tap ang key sa bilog para makita ang chord family at key signature nito.", "Nasa ibaba ang pitong chords ng key. I-tap para sa maikling tunog, o pindutin nang matagal para tumunog nang mahaba.", "I-lock ang key para manatili kahit lumipat ka ng kanta."]],
     play: ["Play", ["Ipinapakita ng piano at fretboard ang scale at chords ng key ng kanta mo.", "Nakikinig ang tuner gamit ang mikropono. Payagan kapag nagtanong ang browser.", "Puwedeng i-save ng metronome ang tempo sa bukas na kanta."]],
     bank: ["Song Bank", ["Ang Song Bank ay pampublikong listahan ng mga kantang tinutugtog ng isang tao (view lang).", "Maghanap, buksan ang chart at basahin sa sarili mong key."]]
   },

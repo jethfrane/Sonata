@@ -44,7 +44,7 @@
   .mp[data-mode="mini"] .mp-video { width: 44%; max-width: 200px; }
 }
 /* Short, wide screens (a phone on its side): keep the full player from covering the chart. */
-@media (max-height: 520px) { .mp:not([data-mode="mini"]) { width: min(300px, calc(100vw - 16px)); } }
+@media (max-height: 520px) { .mp:not([data-mode="mini"]) { width: min(340px, calc(100vw - 16px)); } }
 
 /* Room for the player under the page, and toasts rise above it. */
 html.mp-open .main { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + var(--mp-h, 0px) + 20px); }

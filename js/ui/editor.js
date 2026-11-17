@@ -1,5 +1,5 @@
 // @ts-check
-import { $, $$, esc, icon, toast, copyText, paintIcons } from "./dom.js";
+import { $, $$, esc, icon, toast, copyText, paintIcons, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
@@ -128,7 +128,7 @@ export function initEditor() {
     queueRender(true);
   });
   let sizeQueued = false;
-  window.addEventListener("resize", () => { if (!sizeQueued) { sizeQueued = true; requestAnimationFrame(() => { sizeQueued = false; autosize(); }); } }, { passive: true });
+  window.addEventListener("resize", () => { if (!sizeQueued) { sizeQueued = true; requestAnimationFrame(() => { sizeQueued = false; autosize(); if (!previewHidden()) fitPreview(); }); } }, { passive: true });
   body().addEventListener("keydown", (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
@@ -358,6 +358,14 @@ function queueRender(typing = false) {
   if (typing) setTimeout(go, 80); else go();
 }
 
+/** Phones: work out the size at which the widest line fits, so chords stay over their words. */
+function fitPreview() {
+  const out = $("preview");
+  const px = matchMedia("(max-width: 640px)").matches && store.settings.viewMode !== "lyrics" ? fitChart(out, 13) : 0;
+  if (!px) { out.style.removeProperty("--chart-fit"); return; }
+  out.style.setProperty("--chart-fit", `${px}px`);
+}
+
 export function renderPreview() {
   const s = store.active();
   const out = $("preview");
@@ -366,6 +374,7 @@ export function renderPreview() {
   const html = s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s, mode))) : `<div class="chart-empty">${esc(t("preview", "Preview"))}</div>`;
   // Replacing identical markup would restart the page's layout and drop a tapped chord's highlight.
   setHtml(out, html);
+  fitPreview();
   const k = soundingKey(s);
   const labels = { chords: t("chordsMode", "Chords"), nashville: t("numbersMode", "Nashville numbers"), roman: t("romanMode", "Roman numerals"), lyrics: t("lyricsMode", "Lyrics only") };
   let label = `${labels[/** @type {"chords"} */ (mode)] || ""}`;
@@ -386,7 +395,7 @@ function updateMeta() {
   if (!s) { setHtml(chips, ""); return; }
   const k = soundingKey(s);
   const parts = [];
-  if (s.artist) parts.push(`<span class="chip static">${esc(s.artist)}</span>`);
+  if (s.artist) parts.push(`<span class="chip static" title="${esc(s.artist)}">${esc(s.artist)}</span>`);
   parts.push(`<span class="chip static key">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${s.transpose ? ` <small>${esc(signed(s.transpose))}</small>` : ""}</span>`);
   if (s.capo) parts.push(`<span class="chip static">${esc(t("capoN", "Capo {n}", { n: s.capo }))}</span>`);
   if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);

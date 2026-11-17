@@ -105,6 +105,10 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 
 /* ---------- Chart typography (preview, stage, print) ---------- */
 .chart { font: 450 var(--chart-size)/var(--chart-line) var(--mono); color: var(--text); }
+/* Measuring pass (fitChart in dom.js): every line at 20px on one row, at its natural width. */
+.chart.measure { font-size: 20px !important; }
+.chart.measure .ln { width: max-content; }
+.chart.measure .ln-pair { flex-wrap: nowrap; }
 .chart .ln { white-space: pre-wrap; min-height: calc(var(--chart-line) * 1em); }
 .chart .ln-empty { height: .7em; min-height: 0; }
 .chart .ln-header { font: 750 1.3em/1.25 var(--ui); margin: .4em 0 .3em; letter-spacing: -.02em; white-space: normal; }
@@ -147,6 +151,12 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 }
 @media (max-width: 640px) {
   :root { --chart-size: 15px; }
+  /* Song details on one line: the artist shortens first, so key and tempo always show. */
+  .meta-chips { flex-wrap: nowrap; overflow: hidden; }
+  .meta-chips .chip { flex: none; }
+  .meta-chips .chip:first-child:not(.key), .meta-chips .chip.muted { flex: 0 1 auto; min-width: 48px; }
+  /* View on a phone: as large as fits the widest line (editor.js), never above the chosen size. */
+  #preview { font-size: min(var(--chart-size), var(--chart-fit, 100px)); }
   #view-editor { padding: 12px var(--gutter) 16px; }
   .library-toolbar { grid-template-columns: 1fr auto; }
   .library-toolbar .search { grid-column: 1 / -1; }

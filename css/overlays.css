@@ -59,6 +59,7 @@ button.qr-box:focus-visible { outline: 3px solid var(--accent); outline-offset: 
 .share-actions .btn { flex: 1 1 auto; }
 .export-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .export-grid .btn { min-height: 44px; }
+.export-grid .fmt { margin-left: 2px; padding: 1px 6px; border-radius: 6px; background: var(--surface-3); color: var(--muted); font: 650 11px/1.4 var(--ui); font-variant-numeric: tabular-nums; }
 
 .set-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .set-item { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border: 1px solid var(--line); border-radius: 12px; }
@@ -104,6 +105,8 @@ button.qr-box:focus-visible { outline: 3px solid var(--accent); outline-offset: 
 
 /* ---------- Toasts ---------- */
 .toasts { position: fixed; left: 50%; bottom: calc(20px + var(--nav-h) + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; display: grid; gap: 8px; width: min(440px, calc(100vw - 24px)); pointer-events: none; }
+/* Desktop: messages are centred on the content, not under the sidebar. */
+@media (min-width: 1024px) { body:not(.stage-open) .toasts { left: calc(50% + var(--side-w) / 2); } }
 .toast { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #1c2027; color: #f3f4f6; box-shadow: var(--shadow-lg); font-weight: 550; font-size: var(--fs-sm); pointer-events: auto; animation: rise .2s ease-out; transition: opacity .25s, transform .25s; }
 html[data-theme="dark"] .toast { background: var(--surface-3); color: var(--text); box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-lg); }
 .toast .icon { width: 18px; height: 18px; flex: none; }
@@ -115,6 +118,11 @@ html[data-theme="dark"] .toast-error .icon { color: var(--danger); }
 .toast-action { border: 0; background: none; color: #a9b8ff; font-weight: 750; padding: 4px 6px; }
 html[data-theme="dark"] .toast-action { color: var(--accent-strong); }
 .toast.leaving { opacity: 0; transform: translateY(8px); }
+.toast-close { flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin: -6px -6px -6px -2px; border: 0; border-radius: 10px; background: none; color: inherit; opacity: .7; }
+.toast-close:hover { opacity: 1; background: rgba(255, 255, 255, .08); }
+.toast-close .icon { width: 16px; height: 16px; }
+/* Small phones: a tighter toast so it covers less of the chart. */
+@media (max-width: 400px) { .toast { padding: 10px 12px; gap: 8px; font-size: 13px; line-height: 1.35; } }
 
 /* ---------- Stage ---------- */
 .stage { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; background: #000; color: #f3f3f5; --stage-font: 40px; --chord: #a9b8ff; --muted: #8e8e98; --accent-soft: rgba(142, 162, 255, .16); --accent-strong: #b4c1ff; --line-strong: #34343c; --text: #f3f3f5; }
@@ -150,7 +158,7 @@ html[data-theme="dark"] .toast-action { color: var(--accent-strong); }
 #stageNext { margin-left: auto; }
 .stage-dock:has(.stage-step:not([hidden])) { justify-content: space-between; }
 .stage-count { margin-right: 8px; font-variant-numeric: tabular-nums; }
-.stage-chart { --chart-size: var(--stage-font); --chart-line: 1.4; max-width: 1400px; margin: 0 auto; }
+.stage-chart { --chart-size: min(var(--stage-font), var(--stage-fit, 999px)); --chart-line: 1.4; max-width: 1400px; margin: 0 auto; }
 .stage-chart .ln-section span { background: var(--accent-soft); }
 .stage-range { width: min(260px, 40vw); }
 .stage-divider { width: 1px; height: 28px; background: rgba(255,255,255,.16); }
@@ -191,11 +199,18 @@ body.stage-open { overflow: hidden; }
   .stage-dock { gap: 6px; padding-left: 8px; padding-right: 8px; }
   .stage-range { width: auto; flex: 1; min-width: 60px; }
   .stage-divider { display: none; }
-  .stage-chart { --chart-size: min(var(--stage-font), 7vw); }
+  /* Phones: as large as fits the longest line (worked out in stage.js), never above the chosen size. */
+  .stage-chart { --chart-size: min(var(--stage-font), var(--stage-fit, 7vw)); }
 }
 @media (max-width: 380px) {
   .stage-btn { padding: 0 6px; }
   .stage-beat { display: none; }
+}
+/* Smallest phones (320–359px): the dock keeps all seven controls on one row inside the screen. */
+@media (max-width: 359px) {
+  .stage-dock { gap: 4px; padding-left: 6px; padding-right: 6px; }
+  .stage-dock .stage-btn { min-width: 38px; padding: 0 4px; }
+  .stage-range { min-width: 36px; }
 }
 /* Phone landscape: one slim row on top, title only, so the chart keeps most of the height. */
 @media (max-height: 520px) {

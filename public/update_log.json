@@ -1,5 +1,22 @@
 [
   {
+    "version": "6.3.0",
+    "date": "2026-11-17",
+    "whatsNew": "Charts that fit your screen: chords stay over their words on any phone or tablet, PNG images are 9:16 for phones, and the app fits every screen from the smallest phone to a big monitor.",
+    "changes": [
+      "Chords never part from their words: on stage (any screen) and in View on a phone, the chart text is as large as fits the longest line, so a chord line no longer breaks in two. It never goes above the size you picked with A−/A+. Lyrics only can still wrap at full size.",
+      "Circle of fifths: a quick tap plays a short chord; press and hold to keep it sounding, and it rings out when you let go. The chords of the key under the circle work the same way.",
+      "PNG export is 9:16 (1080×1920, saved at double size for sharp text). It fills a phone screen when opened in a chat or posted as a story. The type is as large as the page allows, a short chart sits in the middle of the page, and a long chart continues on more pages of the same size. Landscape makes 16:9 images.",
+      "The image preview shows each page whole, side by side; swipe to see the next page. The PNG button shows the shape it will make (9:16 or 16:9).",
+      "Small phones (320 px wide): the stage controls stay on one row inside the screen, and the Play tabs (Piano, Guitar, Tuner, Metronome, Drums) show their icon over the full name.",
+      "Chart on a phone: the artist, key and tempo sit on one line under the title (a long artist name shortens), so the chart starts higher.",
+      "Long messages, like the backup reminder, have a close button, take less room on a small phone, and never appear over the stage or an open window.",
+      "A long artist name under the song title stays on one line instead of wrapping inside its label.",
+      "The floating video player's buttons are full touch size on phones and tablets; on a narrow phone the small player keeps play, size and close, and the 5-second skips are in the big player.",
+      "On a computer, the recent songs in the sidebar shorten with … instead of being cut off, and messages appear centred over the page instead of under the sidebar."
+    ]
+  },
+  {
     "version": "6.2.0",
     "date": "2026-11-17",
     "whatsNew": "Calmer light and dark themes, easier on a phone and on stage: songs open ready to read, add a song to a setlist in one step, and a page-turner pedal turns the chart.",

@@ -79,10 +79,10 @@ function openPngPreview(title, pages) {
     onClose: () => urls.forEach((u) => URL.revokeObjectURL(u)),
     body: `<div class="png-preview">
       <p class="card-hint">${esc(canCopy ? t("pngHint", "Copy the image to paste it into a chat, or share or download it.") : t("pngHintHold", "Press and hold the image to copy or save it, or use the buttons below."))}</p>
-      ${urls.map((u, i) => `<figure class="png-page">
+      <div class="png-pages${many ? " many" : ""}">${urls.map((u, i) => `<figure class="png-page">
         <img src="${esc(u)}" alt="${esc(many ? t("pngPageAlt", "{title}, page {n}", { title, n: i + 1 }) : title)}" loading="lazy" decoding="async">
         ${many ? `<figcaption><span>${esc(t("pageOf", "Page {n} of {m}", { n: i + 1, m: pages.length }))}</span>${canCopy ? `<button class="btn small" type="button" data-copy="${i}">${icon("copy")}${esc(t("copyImage", "Copy image"))}</button>` : ""}</figcaption>` : ""}
-      </figure>`).join("")}
+      </figure>`).join("")}</div>
     </div>`,
     actions: [
       { label: t("back", "Back"), kind: "ghost", onClick: () => { openShare(); return false; } },
