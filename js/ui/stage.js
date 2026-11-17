@@ -85,13 +85,37 @@ function onKey(e) {
   if ((tag === "BUTTON" || tag === "A") && (e.key === " " || e.key === "Enter")) return;
   if (e.key === "Escape") { e.preventDefault(); closeStage(); }
   else if (e.key === " ") { e.preventDefault(); toggleScroll(); }
-  else if (e.key === "ArrowRight" || e.key === "PageDown" && !scrolling) { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(1); } }
+  else if (e.key === "ArrowRight") { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(1); } }
   else if (e.key === "ArrowLeft") { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(-1); } }
   else if (e.key === "ArrowUp" && scrolling) { e.preventDefault(); speed(5); }
   else if (e.key === "ArrowDown" && scrolling) { e.preventDefault(); speed(-5); }
+  // Page-turner pedals send Page Down/Up or the down/up arrows: one screen at a time, then the next song.
+  else if (e.key === "PageDown" || e.key === "ArrowDown") { e.preventDefault(); page(1); }
+  else if (e.key === "PageUp" || e.key === "ArrowUp") { e.preventDefault(); page(-1); }
   else if (e.key === "f" || e.key === "F") { if (!e.metaKey && !e.ctrlKey && !e.altKey) toggleFullscreen(); }
   else if (e.key === "]" || e.key === "=") font(4);
   else if (e.key === "[" || e.key === "-") font(-4);
+}
+
+/**
+ * Move one screen of chart (a little overlap keeps your place). At the end of a song in a setlist the
+ * next press opens the next song; at the top, the previous one.
+ * @param {1|-1} dir
+ */
+function page(dir) {
+  const el = scroller();
+  const top = $("stageTop").offsetHeight, dock = $("stageDock").offsetHeight;
+  const chart = $("stageChart").getBoundingClientRect();
+  const view = el.getBoundingClientRect();
+  const cur = store.currentSetlist();
+  const atEnd = chart.bottom <= view.bottom - (stage().classList.contains("chrome-hidden") ? 0 : dock) + 2;
+  const atTop = el.scrollTop <= 1;
+  pausedUntil = performance.now() + 1500;
+  if (dir > 0 && atEnd) { if (cur && cur.index < cur.songs.length - 1) stepSetlist(1); return; }
+  if (dir < 0 && atTop) { if (cur && cur.index > 0) stepSetlist(-1); return; }
+  const step = Math.max(120, (el.clientHeight - top - dock) * 0.85);
+  const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollBy({ top: dir * step, behavior: smooth ? "smooth" : "auto" });
 }
 
 /** @param {number} d */

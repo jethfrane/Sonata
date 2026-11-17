@@ -106,6 +106,9 @@ ok(await page.locator("#fretboard .fc.bass").count() >= 1 && (await page.textCon
 
 // Editor chord bar follows the key
 await page.goto(BASE + slugPath); await page.waitForTimeout(500);
+// Phones open a song with a chart on View; editing starts with Edit.
+ok(await page.getAttribute("#editorPanes", "data-pane") === "preview", "on a phone a song with a chart opens on View");
+await page.click('button[data-pane="edit"]'); await page.waitForTimeout(150);
 const before = await page.locator("#chordBar .chord-chip").allTextContents();
 await page.click("#keyUpBtn"); await page.click("#keyUpBtn"); await page.waitForTimeout(300);
 const after = await page.locator("#chordBar .chord-chip").allTextContents();

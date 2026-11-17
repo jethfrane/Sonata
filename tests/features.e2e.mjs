@@ -411,6 +411,8 @@ ok((await p.textContent("#sheetTitle")).includes("Import") && await p.isVisible(
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 await p.close();
 p = await open("/editor", { touch: true, viewport: { width: 390, height: 844 }, songs: [{ id: "song-feat-wide00", title: "Wide", body: "G            D/F#          Em7            C              G/B           Am7          Dsus4     D\nA very long line of words that runs well past the right edge of a phone screen for sure" }] });
+// Phones open a song with a chart on View; editing starts with Edit.
+await p.click('button[data-pane="edit"]'); await p.waitForTimeout(200);
 ok(await p.locator(".pane-edit.more-right").count() === 1, "a long chord line shows the fade that says the editor scrolls sideways");
 await p.evaluate(() => { const ta = document.getElementById("songBody"); ta.scrollLeft = ta.scrollWidth; ta.dispatchEvent(new Event("scroll")); }); await p.waitForTimeout(150);
 ok(await p.locator(".pane-edit.more-right").count() === 0, "the fade goes away at the end of the line");
@@ -508,6 +510,44 @@ await p.click('.tabs [data-view="editor"]'); await p.waitForTimeout(300);
 await p.click("#presentBtn"); await p.waitForTimeout(700);
 ok(await p.locator("#stage:not([hidden])").count() === 1 && /\/stage$/.test(new URL(p.url()).pathname), "Present loads the stage and opens it");
 await p.keyboard.press("Escape"); await p.waitForTimeout(400);
+await p.close();
+
+console.log("Add to setlist");
+p = await open("/songs");
+await p.click('.row[data-id="song-feat-bbbbbb"] [aria-label="More actions"]'); await p.waitForTimeout(250);
+await p.click('[data-m="set"]'); await p.waitForTimeout(400);
+ok((await p.textContent("#sheetTitle")) === "New setlist" && (await p.locator("#slItems .set-item").allTextContents()).join().includes("Buwan"), "with no setlists, Add to setlist starts a new one with the song in it");
+await p.fill("#slTitle", "Gig"); await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(300);
+await p.click('.row[data-id="song-feat-aaaaaa"] [aria-label="More actions"]'); await p.waitForTimeout(250);
+await p.click('[data-m="set"]'); await p.waitForTimeout(400);
+await p.click(".set-pick"); await p.waitForTimeout(800);
+const sets = await p.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:setlists") || "[]").map((s) => s.items.map((i) => i.songId)));
+ok(sets.length === 1 && sets[0].join() === "song-feat-bbbbbb,song-feat-aaaaaa", "picking a setlist adds the song at the end");
+await p.click('.row[data-id="song-feat-aaaaaa"] [aria-label="More actions"]'); await p.waitForTimeout(250);
+await p.click('[data-m="set"]'); await p.waitForTimeout(400);
+ok(await p.locator(".set-pick:disabled").count() === 1, "a setlist that already has the song is marked and can't add it twice");
+await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+
+console.log("Page-turner keys on stage");
+await p.close();
+const LONG = Array.from({ length: 40 }, (_, i) => `G        D        Em       C\nLine ${i + 1} of a long song`).join("\n");
+p = await open("/songs", { songs: [{ id: "song-feat-long00", title: "Long one", body: LONG }, SONGS[1]] });
+await p.emulateMedia({ reducedMotion: "reduce" });
+await p.evaluate(() => { localStorage.setItem("sonata:v12:setlists", JSON.stringify([{ id: "set-feat-pedal0", title: "Pedal", items: [{ songId: "song-feat-long00" }, { songId: "song-feat-bbbbbb" }], date: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" }])); });
+await p.reload(); await p.waitForTimeout(600);
+await p.click('[data-filter="setlists"]'); await p.waitForTimeout(200);
+await p.click('[data-act="set-play"]'); await p.waitForTimeout(700);
+const scrollTop = () => p.evaluate(() => document.getElementById("stageScroll").scrollTop);
+const top0 = await scrollTop();
+await p.keyboard.press("PageDown"); await p.waitForTimeout(150);
+const top1 = await scrollTop();
+ok(top0 === 0 && top1 > 300 && (await p.textContent("#stageTitle")) === "Long one", `Page Down turns one screen (${top0} → ${top1})`);
+await p.keyboard.press("PageUp"); await p.waitForTimeout(150);
+ok(await scrollTop() === 0, "Page Up turns back");
+for (let i = 0; i < 30 && (await p.textContent("#stageTitle")) === "Long one"; i++) { await p.keyboard.press("ArrowDown"); await p.waitForTimeout(100); }
+ok((await p.textContent("#stageTitle")) === "Buwan", "at the end of a song the next press opens the next song in the setlist");
+await p.keyboard.press("PageUp"); await p.waitForTimeout(200);
+ok((await p.textContent("#stageTitle")) === "Long one", "at the top, Page Up goes back to the previous song");
 await p.close();
 
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);

@@ -80,6 +80,8 @@ export function initEditor() {
   for (const ev of ["input", "scroll"]) body().addEventListener(ev, edge, { passive: true });
   window.addEventListener("resize", edge, { passive: true });
   store.on("song-open", edge);
+  // Also when the box appears or changes size (on a phone it is hidden until you tap Edit).
+  if ("ResizeObserver" in window) new ResizeObserver(edge).observe(body());
   requestAnimationFrame(edge);
   // Start fetching the player (and its video host connection) as soon as a finger or pointer reaches a video chip.
   let warmed = false;
@@ -194,11 +196,12 @@ export function initEditor() {
   });
   store.on("saved", () => setSaveState("saved"));
   store.on("save-error", () => { setSaveState("error"); toast(t("saveFailed", "Couldn't save. This browser's storage is full."), "error", { ms: 6000 }); });
-  let savedPane = "edit";
-  try { savedPane = localStorage.getItem("sonata_mobile_editor_pane") === "preview" ? "preview" : "edit"; } catch { /* storage blocked */ }
-  setPane(savedPane);
   loadSong();
 }
+
+/** Last song loaded into the editor, so the phone pane is chosen only when a different song opens. */
+/** @type {string|null} */
+let loadedId = null;
 
 const compact = matchMedia("(max-width: 960px)");
 
@@ -244,7 +247,6 @@ function setPane(pane) {
   $("view-editor").dataset.pane = pane;
   // Only the Edit/View buttons; the section and pane box also carry data-pane for CSS.
   $$("button[data-pane]").forEach((b) => { const on = b.dataset.pane === pane; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
-  try { localStorage.setItem("sonata_mobile_editor_pane", pane); } catch { /* ignore */ }
   if (pane === "preview") renderPreview(); else requestAnimationFrame(autosize);
 }
 
@@ -468,6 +470,10 @@ export function stepSetlist(d) {
 export function loadSong() {
   const s = store.active();
   const ro = Boolean(s?.readonly);
+  // On a phone a song you open is usually read, not edited: a song with a chart opens on View,
+  // an empty one on Edit. Switching songs is the only time the pane changes by itself.
+  const id = s?.id || "";
+  if (id !== loadedId) { loadedId = id; setPane(!ro && !s?.body.trim() ? "edit" : "preview"); }
   title().value = s ? (s.title === "Untitled" && !s.body ? "" : s.title) : "";
   title().readOnly = ro;
   body().value = s?.body || "";

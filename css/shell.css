@@ -14,7 +14,7 @@
   border-right: 1px solid var(--line);
   background: var(--surface-2);
 }
-html[data-theme="dark"] .sidebar { background: #111113; }
+html[data-theme="dark"] .sidebar { background: color-mix(in srgb, var(--bg) 70%, #0b0c0f); }
 .brand { display: inline-flex; align-items: center; gap: 10px; padding: 2px 8px; color: var(--text); text-decoration: none; }
 .brand img { width: 30px; height: 30px; border-radius: 9px; }
 .wordmark { font-weight: 750; font-size: 19px; letter-spacing: -.03em; }

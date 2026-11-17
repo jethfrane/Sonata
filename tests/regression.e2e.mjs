@@ -244,6 +244,8 @@ for (const vp of [{ width: 390, height: 760, touch: true }, { width: 900, height
   await q.goto(BASE + "/songs");
   await q.evaluate((body) => { localStorage.clear(); localStorage.setItem("sonata:v12:songs", JSON.stringify([{ id: "song-long-aaaaaa", title: "Long", body }])); localStorage.setItem("sonata:v12:active", "song-long-aaaaaa"); }, LONG_BODY);
   await q.goto(BASE + "/editor"); await q.waitForTimeout(600);
+  // Phones open a song with a chart on View; editing starts with Edit.
+  if (await q.isVisible('button[data-pane="edit"]')) { await q.click('button[data-pane="edit"]'); await q.waitForTimeout(200); }
   await q.evaluate(() => { const ta = document.getElementById("songBody"); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollTop = ta.scrollHeight; window.scrollTo(0, document.documentElement.scrollHeight); });
   await q.waitForTimeout(150);
   const y0 = await q.evaluate(() => scrollY + document.getElementById("songBody").scrollTop);

@@ -381,10 +381,11 @@ export async function openShare(setId) {
 }
 
 /** Create or edit a setlist: title, notes, ordered songs. @param {string} [id] */
-export function openSetlistEditor(id) {
+/** @param {string} [id] @param {string[]} [songIds] songs a new setlist starts with */
+export function openSetlistEditor(id, songIds = []) {
   const existing = id ? store.setlists.find((s) => s.id === id) : null;
   /** @type {string[]} */
-  let items = existing ? existing.items.map((i) => i.songId).filter((x) => store.song(x)) : [];
+  let items = existing ? existing.items.map((i) => i.songId).filter((x) => store.song(x)) : songIds.filter((x) => store.song(x));
   let q = "";
   const chosen = () => items.length
     ? items.map((sid, i) => { const s = store.song(sid); return `<li class="set-item" data-sid="${esc(sid)}"><span class="set-num">${i + 1}</span><span class="set-name">${esc(s?.title || "")}</span><span class="key-badge small">${esc(pretty(keyShort(soundingKey(s || null))))}</span>
@@ -393,8 +394,9 @@ export function openSetlistEditor(id) {
         <button class="icon-btn small" type="button" data-drop aria-label="${esc(t("remove", "Remove"))}">${icon("x")}</button></li>`; }).join("")
     : `<li class="muted set-empty">${esc(t("noSongsInSet", "No songs yet. Pick some below."))}</li>`;
   const pool = () => {
-    const f = q.trim().toLowerCase();
-    return store.songs.filter((s) => !items.includes(s.id) && (!f || `${s.title} ${s.artist}`.toLowerCase().includes(f)))
+    const fold = (/** @type {string} */ x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const f = fold(q.trim());
+    return store.songs.filter((s) => !items.includes(s.id) && (!f || fold(`${s.title} ${s.artist}`).includes(f)))
       .map((s) => `<button type="button" class="pick" data-add="${esc(s.id)}">${icon("plus")}<span class="pick-text"><span class="pick-title">${esc(s.title)}</span>${s.artist ? `<span class="muted">${esc(s.artist)}</span>` : ""}</span><span class="key-badge small">${esc(pretty(keyShort(soundingKey(s))))}</span></button>`).join("")
       || `<p class="muted set-empty">${esc(q.trim() ? t("noMatches", "No matches for \"{q}\"", { q }) : t("allSongsAdded", "Every song is in this setlist."))}</p>`;
   };

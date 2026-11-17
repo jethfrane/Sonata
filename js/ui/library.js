@@ -142,6 +142,7 @@ function songMenu(id) {
       <button type="button" class="menu-item" data-m="open">${icon("edit")}<span>${esc(t("open", "Open"))}</span></button>
       <button type="button" class="menu-item" data-m="present">${icon("present")}<span>${esc(t("present", "Present"))}</span></button>
       <button type="button" class="menu-item" data-m="share">${icon("share")}<span>${esc(t("share", "Share"))}</span></button>
+      <button type="button" class="menu-item" data-m="set">${icon("list")}<span>${esc(t("addToSetlist", "Add to setlist"))}</span></button>
       <button type="button" class="menu-item" data-m="dup">${icon("duplicate")}<span>${esc(t("duplicate", "Duplicate"))}</span></button>
       <button type="button" class="menu-item" data-m="bank">${icon("bank")}<span>${esc(s.inBank ? t("removeFromBank", "Remove from Song Bank") : t("addToBank", "Add to Song Bank"))}</span></button>
       <button type="button" class="menu-item danger" data-m="del">${icon("trash")}<span>${esc(t("delete", "Delete"))}</span></button>
@@ -154,9 +155,41 @@ function songMenu(id) {
     if (m === "open") { store.exitSetlist(); store.open(id); app.show("editor"); }
     if (m === "present") { store.exitSetlist(); store.open(id); app.openStage(); }
     if (m === "share") { store.open(id); openShare(); }
+    if (m === "set") addToSetlist(id);
     if (m === "dup") { store.duplicate(s); app.show("editor"); }
     if (m === "bank") { store.update(s, { inBank: !s.inBank }); renderLibrary(); toast(s.inBank ? t("addedToBank", "Added to your Song Bank") : t("removedFromBank", "Removed from your Song Bank"), "success"); }
     if (m === "del") deleteWithUndo([id]);
+  });
+}
+
+/** Put one song at the end of a setlist, or start a new setlist with it. @param {string} id */
+export function addToSetlist(id) {
+  const s = store.song(id);
+  if (!s) return;
+  if (!store.setlists.length) { openSetlistEditor(undefined, [id]); return; }
+  const count = (/** @type {number} */ n) => t(n === 1 ? "songCount1" : "songsCount", n === 1 ? "1 song" : "{n} songs", { n });
+  const rows = store.setlists.map((set) => {
+    const has = set.items.some((i) => i.songId === id);
+    return `<button type="button" class="menu-item set-pick" data-set="${esc(set.id)}" ${has ? "disabled" : ""}>${icon(has ? "check" : "list")}<span class="set-pick-text"><span>${esc(set.title)}</span><span class="muted">${esc(has ? t("inSetAlready", "Already in this setlist") : count(store.setlistSongs(set).length))}</span></span></button>`;
+  }).join("");
+  const body = openSheet({
+    title: t("addToSetlist", "Add to setlist"),
+    className: "menu-sheet",
+    body: `<p class="muted set-pick-song">${esc(s.title)}</p><div class="menu-list">${rows}
+      <button type="button" class="menu-item" data-set="">${icon("plus")}<span>${esc(t("newSetlist", "New setlist"))}</span></button></div>`
+  });
+  body.addEventListener("click", (e) => {
+    const b = /** @type {HTMLButtonElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-set]"));
+    if (!b || b.disabled) return;
+    /** @type {HTMLDialogElement} */ ($("sheet")).close();
+    const set = store.setlists.find((x) => x.id === b.dataset.set);
+    if (!set) { openSetlistEditor(undefined, [id]); return; }
+    store.saveSetlist({ id: set.id, items: [...set.items, { songId: id }] });
+    renderLibrary();
+    toast(t("addedToSet", "Added to {title}", { title: set.title }), "success", {
+      action: t("open", "Open"),
+      onAction: () => { filter = "setlists"; renderLibrary(); }
+    });
   });
 }
 

@@ -95,7 +95,7 @@ function applyTheme() {
   root.style.setProperty("--chart-size", `${s.previewFontSize}px`);
   root.style.setProperty("--chart-line", String(s.editorLineHeight));
   setIcon(/** @type {HTMLElement} */ ($("themeBtn").firstElementChild), theme === "dark" ? "sun" : "moon");
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", theme === "dark" ? "#0b0f17" : "#f4f6fa"));
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", theme === "dark" ? "#131519" : "#f4f5f7"));
 }
 
 /** The song a link should point at (shared previews have no stable link). */

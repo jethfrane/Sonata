@@ -1,5 +1,19 @@
 [
   {
+    "version": "6.2.0",
+    "date": "2026-11-17",
+    "whatsNew": "Calmer light and dark themes, easier on a phone and on stage: songs open ready to read, add a song to a setlist in one step, and a page-turner pedal turns the chart.",
+    "changes": [
+      "Easier on the eyes: dark mode is now a soft charcoal with off-white text instead of pure black and bright white, and light mode is a clean neutral grey and white. Messages in dark mode no longer flash white. The browser bar matches the theme.",
+      "New: Add to setlist. In Songs, tap ⋮ on a song and pick a setlist; the song goes to the end. With no setlists yet, a new one starts with that song in it. A setlist that already has the song is marked.",
+      "New: page-turner pedals and Page Down/Up on stage. Each press turns the chart one screen; at the end of a song the next press opens the next song in the setlist, and at the top Page Up goes back.",
+      "On a phone, a song with a chart now opens on View, ready to read. Tap Edit to change it. A new or empty song still opens on Edit.",
+      "Stage view on a phone: the full screen button sits beside Exit, so the controls take one row and the chart gets more room.",
+      "Songs on a phone: the sort menu shows its whole label.",
+      "Searching for songs to add to a setlist ignores accents, like the main search."
+    ]
+  },
+  {
     "version": "6.1.0",
     "date": "2026-11-13",
     "whatsNew": "Ready for everyone: a floating video player that follows you around the app, a plain-language Privacy & terms page, clearer messages when something goes wrong, and a lighter start.",
