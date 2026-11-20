@@ -2,7 +2,7 @@
 // Backup & restore: one place for everything that keeps a library safe. Google Drive (automatic),
 // a backup file (one tap), and restore points kept on this device. Loaded when first opened.
 import "../../css/backup.css";
-import { esc, icon, toast, openSheet, download, relativeTime, confirmSheet } from "./dom.js";
+import { esc, icon, toast, openSheet, download, relativeTime, confirmSheet, copyText } from "./dom.js";
 import { t, getLang } from "./i18n.js";
 import { store, app } from "./ctx.js";
 import { listSnapshots, getSnapshot, saveSnapshot, fingerprint } from "../core/snapshots.js";
@@ -10,6 +10,7 @@ import { buildBackupFile, readBackupFile } from "../core/backupfile.js";
 
 const AT_KEY = "sonata_backup_at";
 const FP_KEY = "sonata_backup_fp";
+const MCP_ENDPOINT = "https://sonata.jethrofrane.xyz/api/mcp";
 const get = (/** @type {string} */ k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
 const set = (/** @type {string} */ k, /** @type {string} */ v) => { try { localStorage.setItem(k, v); } catch { /* storage blocked */ } };
 
@@ -140,14 +141,47 @@ function versionsCard(snaps, all) {
   return `<section class="bk-card">
     <h3>${icon("undo")}<span>${esc(t("bkVersions", "Earlier versions"))}</span><em class="bk-tag">${esc(t("bkOnDevice", "On this device"))}</em></h3>
     <p>${esc(t("bkVersionsText", "Sonata keeps a copy of your library when you open it after changes (the last 15). Go back if something goes wrong."))}</p>
-    ${snaps.length ? `<ul class="bk-list">${shown.map((s) => `<li><span><b>${esc(when(s.at))}</b><small>${esc(t("bkCounts", "{s} songs · {l} setlists", { s: s.songs, l: s.setlists }))} · ${esc(label[s.reason] || label.auto)}</small></span><button class="btn small" type="button" data-snap="${esc(s.id)}">${esc(t("restore", "Restore"))}</button></li>`).join("")}</ul>
+    ${snaps.length ? `<ul class="bk-list">${shown.map((s) => `<li><span><b>${esc(when(s.at))}</b><small>${esc(t(s.songs === 1 ? "songCount1" : "songsCount", s.songs === 1 ? "1 song" : "{n} songs", { n: s.songs }))} · ${esc(t(s.setlists === 1 ? "setlistCount1" : "setlistsCount", s.setlists === 1 ? "1 setlist" : "{n} setlists", { n: s.setlists }))} · ${esc(label[s.reason] || label.auto)}</small></span><button class="btn small" type="button" data-snap="${esc(s.id)}">${esc(t("restore", "Restore"))}</button></li>`).join("")}</ul>
       ${snaps.length > shown.length ? `<button class="btn ghost small wide" type="button" id="bkMore">${esc(t("bkShowAll", "Show all {n}", { n: snaps.length }))}</button>` : ""}`
     : `<p class="card-hint">${esc(t("bkNoVersions", "No earlier versions yet. The first one is kept the next time you open Sonata with songs in it."))}</p>`}
   </section>`;
 }
 
-/** Backup & restore sheet. */
-export async function openBackup() {
+function aiMcpCard() {
+  const hasWebMcp = Boolean(/** @type {any} */ (navigator).modelContext) || Boolean(/** @type {any} */ (window).sonataAgent?.webMcp);
+  const p1 = "Extract chords from this link and save it to Sonata in key of G";
+  const p2 = "Transpose my active chart up 2 semitones and list any Trash items";
+  return `<section class="bk-card" id="aiMcpCard">
+    <h3>${icon("sparkles")}<span>${esc(t("aiMcpTitle", "AI Agents & MCP"))}</span><em class="bk-tag">${esc(t("aiMcpTag", "WebMCP & MCP"))}</em></h3>
+    <p>${esc(t("aiMcpIntro", "Connect Claude, Gemini, ChatGPT, Antigravity, Codex, or browser AI agents to extract chords from links, transpose charts, manage setlists, and update your library."))}</p>
+    <div class="ai-status${hasWebMcp ? " ok" : ""}">
+      <span class="ai-dot" aria-hidden="true"></span>
+      <span>${esc(hasWebMcp ? t("aiWebMcpReady", "WebMCP active in this browser") : t("aiWebMcpBridge", "Browser bridge ready (window.sonataAgent)"))}</span>
+      <em class="ai-tools-pill">17 tools</em>
+    </div>
+    <label class="field ai-field"><span>${esc(t("aiEndpoint", "Remote MCP endpoint"))}</span>
+      <div class="ai-url-row">
+        <input class="input ai-url" id="aiMcpUrl" type="text" readonly value="${MCP_ENDPOINT}" aria-label="${esc(t("aiEndpoint", "Remote MCP endpoint"))}">
+        <button class="btn small" type="button" id="copyMcpUrl">${icon("copy")}${esc(t("aiCopyUrl", "Copy"))}</button>
+      </div>
+    </label>
+    <details class="ai-details">
+      <summary>${esc(t("aiGuideSummary", "Connection guide & example prompts"))}</summary>
+      <ul class="ai-hints">
+        <li><strong>Claude &amp; Gemini:</strong> Add the Remote MCP URL above and sign in with Google (OAuth 2.1 + PKCE).</li>
+        <li><strong>Antigravity, Codex &amp; Claude Code:</strong> Use the Remote MCP endpoint or the local <code>sonata-controller</code> skill.</li>
+        <li><strong>Drive sync &amp; Trash:</strong> ${esc(t("aiDriveNote", "Remote edits sync via sonata_library.json in your Google Drive. Deletions move items to Trash for 30 days."))}</li>
+      </ul>
+      <div class="ai-prompts">
+        <button type="button" class="chip ai-prompt-chip" data-ai-prompt="${esc(p1)}">${icon("copy")}<span>“${esc(p1)}”</span></button>
+        <button type="button" class="chip ai-prompt-chip" data-ai-prompt="${esc(p2)}">${icon("copy")}<span>“${esc(p2)}”</span></button>
+      </div>
+    </details>
+  </section>`;
+}
+
+/** Backup & restore sheet. @param {string} [section] */
+export async function openBackup(section = "") {
   let showAll = false;
   let snaps = await listSnapshots();
   const draw = async () => {
@@ -166,12 +200,18 @@ export async function openBackup() {
         </div>
       </section>
       ${versionsCard(snaps, showAll)}
+      ${aiMcpCard()}
     </div>`;
   };
   /** Stop redrawing once this sheet is gone (the dialog is shared with every other sheet). */
   let unsub = () => {};
   let closed = false;
   const body = openSheet({ title: t("backupTitle", "Backup & restore"), body: await draw(), onClose: () => { closed = true; unsub(); }, focus: false });
+  const scrollToAi = () => {
+    if (section !== "ai" || closed) return;
+    requestAnimationFrame(() => body.querySelector("#aiMcpCard")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  };
+  scrollToAi();
   const redraw = async () => {
     if (closed) return;
     const html = await draw();
@@ -180,12 +220,20 @@ export async function openBackup() {
   };
   unsub = store.on("drive-status", () => { redraw(); });
   // Drive is loaded here, so the sign-in popup can open straight from the tap.
-  if (!app.drive) app.loadDrive().then(() => redraw());
+  if (!app.drive) app.loadDrive().then(async () => { await redraw(); scrollToAi(); });
 
   body.addEventListener("click", async (e) => {
     const el = /** @type {HTMLElement} */ (e.target);
     const btn = /** @type {HTMLElement|null} */ (el.closest("button"));
     if (!btn) return;
+    if (btn.id === "copyMcpUrl") {
+      if (await copyText(MCP_ENDPOINT)) toast(t("aiCopied", "MCP URL copied"), "success", { ms: 2000 });
+      return;
+    }
+    if (btn.dataset.aiPrompt) {
+      if (await copyText(btn.dataset.aiPrompt)) toast(t("aiPromptCopied", "Prompt copied"), "success", { ms: 2000 });
+      return;
+    }
     const d = app.drive || (["gSignIn", "gSync", "gOut"].includes(btn.id) ? await app.loadDrive() : null);
     if (btn.id === "gSignIn" && d) { if (await d.signIn()) toast(t("syncDone", "Synced with Google Drive"), "success"); }
     if (btn.id === "gSync" && d) { if (await d.sync()) toast(t("syncDone", "Synced with Google Drive"), "success"); }

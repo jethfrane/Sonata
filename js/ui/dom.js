@@ -291,79 +291,208 @@ export function relativeTime(iso, lang = "en") {
 }
 
 /**
- * Progressive in-interface dropdowns: clicking any `.select` unfolds a clean inline
- * option drawer inside the interface instead of an OS-native overlapping popup,
- * while keeping the `<select>` itself in sync for keyboard & automated `selectOption`.
+ * Progressive floating dropdown menus: clicking or keyboard-opening any `.select` or `.stage-select`
+ * opens an anchored floating popover (`role="listbox"`) without shifting layout, while keeping
+ * the underlying `<select>` 100% synced for listeners and automated `selectOption`.
  */
 export function initSelectMenus() {
+  const SELECT_SEL = "select.select:not(:disabled), select.stage-select:not(:disabled)";
   /** @type {HTMLSelectElement|null} */
   let activeSelect = null;
   /** @type {HTMLElement|null} */
-  let activeDrawer = null;
+  let activeMenu = null;
+  /** @type {HTMLDialogElement|null} */
+  let activeDlg = null;
 
-  const closeDrawer = () => {
+  const onDlgClose = () => closeMenu(false);
+
+  /** @param {boolean} [restoreFocus] */
+  const closeMenu = (restoreFocus = false) => {
+    const prevSel = activeSelect;
+    if (activeDlg) {
+      activeDlg.removeEventListener("close", onDlgClose);
+      activeDlg = null;
+    }
     if (activeSelect) activeSelect.removeAttribute("data-open");
-    if (activeDrawer) activeDrawer.remove();
+    if (activeMenu) activeMenu.remove();
     activeSelect = null;
-    activeDrawer = null;
+    activeMenu = null;
+    if (restoreFocus && prevSel && prevSel.isConnected) prevSel.focus();
   };
 
-  document.addEventListener("mousedown", (e) => {
-    const t = /** @type {HTMLElement|null} */ (e.target);
-    const sel = /** @type {HTMLSelectElement|null} */ (t?.closest("select.select:not(:disabled)") || null);
-    if (!sel) {
-      if (activeDrawer && t && !activeDrawer.contains(t)) closeDrawer();
-      return;
-    }
-    e.preventDefault();
-    sel.focus();
-    if (activeSelect === sel) {
-      closeDrawer();
-      return;
-    }
-    closeDrawer();
-    const drawer = document.createElement("div");
-    drawer.className = "ui-select-drawer";
-    drawer.setAttribute("role", "group");
-    drawer.setAttribute("aria-label", sel.getAttribute("aria-label") || "Options");
+  /** @param {HTMLSelectElement} sel */
+  const openMenu = (sel) => {
+    closeMenu(false);
+    const menu = document.createElement("div");
+    menu.className = "ui-select-menu";
+    menu.setAttribute("role", "listbox");
+    const labelText = sel.getAttribute("aria-label")
+      || sel.closest("label")?.querySelector("span")?.textContent?.trim()
+      || "Options";
+    menu.setAttribute("aria-label", labelText);
+
+    const stageHost = sel.closest(".stage") || (sel.classList.contains("stage-select") ? $("stage") : null);
+    if (stageHost) menu.setAttribute("data-stage-theme", stageHost.getAttribute("data-theme") || "stage");
+
     const opts = [...sel.options];
-    // Options marked data-more stay behind a "More" chip unless one of them is the current choice.
-    let showAll = !opts.some((o) => o.dataset.more !== undefined) || opts.some((o) => o.dataset.more !== undefined && o.value === sel.value);
-    const paint = () => {
-      drawer.innerHTML = opts.filter((o) => showAll || o.dataset.more === undefined).map((o) => {
-        const on = o.value === sel.value;
-        return `<button type="button" class="chip ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-pressed="${on}">${esc(o.textContent || "")}</button>`;
-      }).join("") + (showAll ? "" : `<button type="button" class="chip ui-select-more" aria-expanded="false">${esc(document.documentElement.lang === "fil" ? "Iba pa…" : "More…")}</button>`);
+    // Options marked data-more stay behind a subtle "More…" button unless one of them is selected.
+    let showAll = !opts.some((o) => o.dataset.more !== undefined)
+      || opts.some((o) => o.dataset.more !== undefined && o.value === sel.value);
+
+    const position = () => {
+      const rect = sel.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const margin = 8;
+      const gap = 6;
+      const minW = Math.min(Math.max(rect.width, 168), vw - margin * 2);
+      menu.style.minWidth = `${Math.round(minW)}px`;
+      menu.style.maxWidth = `${Math.round(vw - margin * 2)}px`;
+      menu.style.maxHeight = "300px";
+
+      const spaceBelow = vh - rect.bottom - gap - margin;
+      const spaceAbove = rect.top - gap - margin;
+      const naturalH = Math.min(menu.scrollHeight + 2, 300);
+      const openAbove = spaceBelow < naturalH && spaceAbove > spaceBelow;
+      const avail = Math.max(100, openAbove ? spaceAbove : spaceBelow);
+      const maxH = Math.min(300, Math.floor(avail));
+      menu.style.maxHeight = `${maxH}px`;
+
+      const menuH = Math.min(menu.scrollHeight + 2, maxH);
+      const top = openAbove
+        ? Math.max(margin, rect.top - gap - menuH)
+        : Math.min(vh - margin - menuH, rect.bottom + gap);
+      menu.dataset.side = openAbove ? "top" : "bottom";
+
+      const menuW = Math.max(menu.offsetWidth, minW);
+      const left = Math.min(Math.max(margin, rect.left), Math.max(margin, vw - margin - menuW));
+      menu.style.top = `${Math.round(top)}px`;
+      menu.style.left = `${Math.round(left)}px`;
     };
-    paint();
-    drawer.addEventListener("click", (ev) => {
-      if (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-more")) { ev.stopPropagation(); showAll = true; paint(); /** @type {HTMLElement|null} */ (drawer.querySelector(".ui-select-opt[data-val]:not(.on)"))?.focus(); return; }
-      const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (ev.target).closest(".ui-select-opt"));
-      if (!btn) return;
-      const val = btn.dataset.val ?? "";
+
+    const paint = () => {
+      const visible = opts.filter((o) => showAll || o.dataset.more === undefined);
+      menu.innerHTML = visible.map((o) => {
+        const on = o.value === sel.value;
+        return `<button type="button" role="option" class="ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-selected="${on ? "true" : "false"}"${o.disabled ? " disabled" : ""}><span class="ui-select-label">${esc(o.textContent || "")}</span><span class="ui-select-check">${on ? icon("check") : ""}</span></button>`;
+      }).join("") + (showAll ? "" : `<button type="button" role="option" class="ui-select-more" aria-selected="false">${esc(document.documentElement.lang === "fil" ? "Iba pa…" : "More…")}</button>`);
+    };
+
+    /** @param {string} val */
+    const pick = (val) => {
       const targetSel = sel;
-      closeDrawer();
+      closeMenu(true);
       if (targetSel.value !== val) {
         targetSel.value = val;
         targetSel.dispatchEvent(new Event("input", { bubbles: true }));
         targetSel.dispatchEvent(new Event("change", { bubbles: true }));
       }
+    };
+
+    paint();
+    menu.addEventListener("click", (ev) => {
+      const target = /** @type {HTMLElement|null} */ (ev.target);
+      if (target?.closest(".ui-select-more")) {
+        ev.stopPropagation();
+        showAll = true;
+        paint();
+        position();
+        const nextOpt = /** @type {HTMLElement|null} */ (menu.querySelector(".ui-select-opt:not(.on):not(:disabled)") || menu.querySelector(".ui-select-opt:not(:disabled)"));
+        nextOpt?.focus({ preventScroll: true });
+        return;
+      }
+      const btn = /** @type {HTMLElement|null} */ (target?.closest(".ui-select-opt:not(:disabled)") || null);
+      if (!btn) return;
+      ev.stopPropagation();
+      pick(btn.dataset.val ?? "");
     });
-    const hostRow = sel.closest(".cp-bar, .card-head, .page-head, .dia-head, .library-toolbar, .chord-bar, .field") || sel.parentElement;
-    if (hostRow && hostRow.parentElement) {
-      hostRow.insertAdjacentElement("afterend", drawer);
-    } else {
-      sel.insertAdjacentElement("afterend", drawer);
+
+    const dlg = /** @type {HTMLDialogElement|null} */ (sel.closest("dialog"));
+    const mount = dlg || document.body;
+    mount.appendChild(menu);
+    if (dlg) {
+      activeDlg = dlg;
+      dlg.addEventListener("close", onDlgClose);
     }
+
     sel.setAttribute("data-open", "1");
     activeSelect = sel;
-    activeDrawer = drawer;
+    activeMenu = menu;
+    position();
+
+    const activeOpt = /** @type {HTMLElement|null} */ (menu.querySelector(".ui-select-opt.on:not(:disabled)") || menu.querySelector(".ui-select-opt:not(:disabled)"));
+    if (activeOpt) {
+      menu.scrollTop = Math.max(0, activeOpt.offsetTop - Math.floor((menu.clientHeight - activeOpt.offsetHeight) / 2));
+      activeOpt.focus({ preventScroll: true });
+    }
+  };
+
+  document.addEventListener("pointerdown", (e) => {
+    if (!activeMenu) return;
+    const t = /** @type {Node|null} */ (e.target);
+    if (t && (activeMenu.contains(t) || t === activeSelect)) return;
+    closeMenu(false);
+  });
+
+  document.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    const t = /** @type {HTMLElement|null} */ (e.target);
+    const sel = /** @type {HTMLSelectElement|null} */ (t?.closest(SELECT_SEL) || null);
+    if (!sel) return;
+    e.preventDefault();
+    if (activeSelect === sel) {
+      closeMenu(true);
+      return;
+    }
+    openMenu(sel);
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && activeDrawer) {
-      e.stopPropagation();
-      closeDrawer();
+    if (activeMenu) {
+      const items = /** @type {HTMLElement[]} */ ([...activeMenu.querySelectorAll("button:not(:disabled)")]);
+      const curIdx = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
+      const baseIdx = curIdx >= 0 ? curIdx : Math.max(0, items.findIndex((b) => b.classList.contains("on")));
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        items[(baseIdx + 1) % items.length]?.focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        items[(baseIdx - 1 + items.length) % items.length]?.focus();
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        e.stopPropagation();
+        items[0]?.focus();
+      } else if (e.key === "End") {
+        e.preventDefault();
+        e.stopPropagation();
+        items[items.length - 1]?.focus();
+      } else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        const focused = curIdx >= 0 ? items[curIdx] : items[baseIdx];
+        focused?.click();
+      } else if (e.key === "Escape" || e.key === "Tab") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMenu(true);
+      }
+      return;
     }
-  });
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key !== " " && e.key !== "Enter" && e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const t = /** @type {HTMLElement|null} */ (e.target);
+    if (!t || !t.matches(SELECT_SEL)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openMenu(/** @type {HTMLSelectElement} */ (t));
+  }, true);
+
+  window.addEventListener("resize", () => { if (activeMenu) closeMenu(false); });
+  window.addEventListener("scroll", (e) => {
+    if (!activeMenu) return;
+    if (e.target === activeMenu || (e.target instanceof Node && activeMenu.contains(e.target))) return;
+    closeMenu(false);
+  }, true);
 }

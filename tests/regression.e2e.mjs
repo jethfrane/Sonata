@@ -23,20 +23,20 @@ async function page(init) {
 }
 const sheetOpen = (p) => p.evaluate(() => document.getElementById("sheet").open);
 
-// 1. Deleting a setlist works (the confirm sheet used to close itself at once)
+// 1. Trashing a setlist and confirming permanent deletion from Trash (confirm sheet stays open)
 let p = await page();
 await p.goto(BASE + "/"); await seed(p); await p.goto(BASE + "/songs"); await p.waitForTimeout(600);
 await p.click('[data-filter="setlists"]'); await p.click('[data-act="set-more"]'); await p.waitForTimeout(200);
-await p.click('.menu-item[data-m="del"]'); await p.waitForTimeout(400);
-ok(await sheetOpen(p) && (await p.locator("#sheetTitle").innerText()) === "Delete setlist?", "setlist delete asks first");
+await p.click('.menu-item[data-m="del"]'); await p.waitForTimeout(700);
+ok(await p.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:setlists") || "[]").length === 0 && JSON.parse(localStorage.getItem("sonata:v12:trash") || "[]").some((e) => e.id === "set-1")), "setlist delete moves it to Trash");
+await p.click('[data-filter="trash"]'); await p.waitForTimeout(200);
+await p.click('#libraryList [data-id="set-1"] [data-act="trash-purge"]'); await p.waitForTimeout(400);
+ok(await sheetOpen(p), "permanent delete from Trash opens confirm sheet");
+await p.click("#sheetFoot .btn.ghost"); await p.waitForTimeout(400);
+ok(await p.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:trash") || "[]").some((e) => e.id === "set-1")), "Cancel keeps the item in Trash");
+await p.click('#libraryList [data-id="set-1"] [data-act="trash-purge"]'); await p.waitForTimeout(400);
 await p.click("#sheetFoot .btn.danger"); await p.waitForTimeout(900);
-ok(await p.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:setlists") || "[]").length === 0), "setlist is deleted after confirming");
-// Cancel keeps it
-await seed(p); await p.goto(BASE + "/songs"); await p.waitForTimeout(500);
-await p.click('[data-filter="setlists"]'); await p.click('[data-act="set-more"]'); await p.waitForTimeout(200);
-await p.click('.menu-item[data-m="del"]'); await p.waitForTimeout(300);
-await p.click("#sheetFoot .btn.ghost"); await p.waitForTimeout(800);
-ok(await p.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:setlists") || "[]").length === 1), "Cancel keeps the setlist");
+ok(await p.evaluate(() => !JSON.parse(localStorage.getItem("sonata:v12:trash") || "[]").some((e) => e.id === "set-1") && JSON.parse(localStorage.getItem("sonata:v12:deleted") || "[]").includes("set-1")), "Confirm permanently deletes from Trash and records tombstone");
 
 // 2. Account sheet no longer overwrites a different sheet on a Drive status event
 p = await page();

@@ -5,7 +5,8 @@
 .main { min-width: 0; }
 .view { display: none; }
 .app[data-view="songs"] #view-songs, .app[data-view="editor"] #view-editor,
-.app[data-view="theory"] #view-theory, .app[data-view="play"] #view-play { display: block; }
+.app[data-view="tools"] #view-tools, .app[data-view="theory"] #view-theory,
+.app[data-view="play"] #view-play { display: block; }
 
 .sidebar {
   position: sticky; top: 0; z-index: 20;
@@ -16,20 +17,22 @@
 }
 html[data-theme="dark"] .sidebar { background: color-mix(in srgb, var(--bg) 70%, #0b0c0f); }
 .brand { display: inline-flex; align-items: center; gap: 10px; padding: 2px 8px; color: var(--text); text-decoration: none; }
-.brand img { width: 30px; height: 30px; border-radius: 9px; }
+.brand img { width: 30px; height: 30px; border-radius: 9px; box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 28%, transparent); }
 .wordmark { font-weight: 750; font-size: 19px; letter-spacing: -.03em; }
 
 .tabs { display: grid; gap: 2px; }
 .tab {
-  display: flex; align-items: center; gap: 12px;
+  position: relative; display: flex; align-items: center; gap: 12px;
   min-height: 40px; padding: 0 10px; border: 0; border-radius: 10px;
   background: transparent; color: var(--text-2); font-weight: 550; font-size: var(--fs-md); text-align: left;
+  transition: background .16s var(--ease), color .16s var(--ease);
 }
 .tab .icon { width: 19px; height: 19px; color: var(--muted); }
 .tab:hover { background: var(--surface-3); color: var(--text); }
 .tab.active { background: var(--surface); color: var(--text); font-weight: 650; box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
+.tab.active::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 99px; background: var(--accent); }
 .tab.active .icon { color: var(--accent); }
-html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: none; }
+html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accent) 15%, var(--surface-2)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent); }
 
 .side-recent { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 16px; }
 .side-label { padding: 0 10px; }
@@ -37,11 +40,12 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
 .recent-item {
   display: flex; align-items: center; gap: 10px; min-height: 36px; min-width: 0; width: 100%; padding: 0 10px; overflow: hidden;
   border: 0; border-radius: 9px; background: none; color: var(--text-2); text-align: left; font-size: var(--fs-sm); font-weight: 500;
+  transition: background .14s var(--ease), color .14s var(--ease);
 }
 .recent-item:hover { background: var(--surface-3); color: var(--text); }
 .recent-item.active { color: var(--accent-strong); background: var(--accent-soft); font-weight: 600; }
-.recent-key { flex: none; min-width: 28px; font: 700 11.5px var(--mono); color: var(--muted); }
-.recent-item.active .recent-key { color: var(--accent-strong); }
+.recent-key { flex: none; min-width: 30px; padding: 2px 6px; border-radius: 6px; background: var(--surface-3); font: 700 11px var(--mono); color: var(--muted); text-align: center; }
+.recent-item.active .recent-key { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent-strong); }
 .recent-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent-empty { padding: 4px 10px; color: var(--muted); font-size: var(--fs-xs); }
 
@@ -73,6 +77,36 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
 .page-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .bottom-nav { display: none; }
 
+/* ---------- Tools Hub & back crumb ---------- */
+.tool-crumb { margin-bottom: 10px; }
+.tool-back { min-height: 34px; padding: 0 12px 0 8px; gap: 4px; border-radius: 999px; color: var(--muted); font-size: var(--fs-sm); font-weight: 600; }
+.tool-back:hover { color: var(--text); background: var(--surface-3); }
+.tool-back .icon { width: 16px; height: 16px; }
+.tools-hub { display: grid; gap: 28px; }
+.tools-group { display: grid; gap: 12px; }
+.tools-group-title { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.tool-card {
+  display: flex; align-items: flex-start; gap: 14px; width: 100%; min-width: 0;
+  padding: 16px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); color: var(--text); text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .16s var(--ease), box-shadow .16s var(--ease), transform .16s var(--ease), background .16s var(--ease);
+}
+.tool-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow); transform: translateY(-1px); }
+.tool-card:active { transform: translateY(0); }
+.tool-card-ico {
+  flex: none; display: grid; place-items: center; width: 40px; height: 40px;
+  border-radius: 11px; background: var(--accent-soft); color: var(--accent-strong);
+}
+.tool-card-ico .icon { width: 20px; height: 20px; }
+.tool-card-body { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.tool-card-title { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.01em; color: var(--text); line-height: 1.25; }
+.tool-card-desc { font-size: var(--fs-sm); color: var(--muted); line-height: 1.4; }
+.tool-card-go { flex: none; align-self: center; color: var(--muted); opacity: .65; transition: transform .16s var(--ease), opacity .16s var(--ease), color .16s var(--ease); }
+.tool-card-go .icon { width: 18px; height: 18px; }
+.tool-card:hover .tool-card-go { opacity: 1; color: var(--accent-strong); transform: translateX(2px); }
+
 /* Small laptops and tablets in landscape: a narrower sidebar leaves the chart room for two panes. */
 /* Desktop: Back up gets its own full-width row so its status is never cut short; Help, theme and Settings sit under it. */
 @media (min-width: 1024px) {
@@ -103,7 +137,7 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
   .sync-dot { left: 24px; border-color: var(--surface); }
   .bottom-nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(3, 1fr);
     height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
@@ -121,8 +155,12 @@ html[data-theme="dark"] .tab.active { background: var(--surface-3); box-shadow: 
   :root { --gutter: 14px; --fs-2xl: calc(23px * var(--ts)); --fs-3xl: calc(23px * var(--ts)); --fs-xl: calc(18px * var(--ts)); }
   .page { padding: 14px var(--gutter) 24px; }
   .page-head { margin-bottom: 14px; }
+  .tools-hub { gap: 22px; }
+  .tools-grid { grid-template-columns: 1fr; gap: 10px; }
+  .tool-card { padding: 14px; gap: 12px; }
   .account-label { display: none; }
   .account-btn { width: 38px; padding: 0; justify-content: center; }
+  .account-btn[data-unprotected] .account-avatar::after { top: 3px; right: 3px; width: 8px; height: 8px; }
   .sync-dot { left: 22px; top: 4px; }
   .wordmark { font-size: 17px; }
 }

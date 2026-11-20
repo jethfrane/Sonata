@@ -26,7 +26,7 @@ const seed = async (theme) => {
   await page.reload(); await page.waitForTimeout(600);
 };
 
-const routes = ["/songs", "/song/alpha-a", "/theory", "/play/piano", "/play/guitar", "/play/tuner", "/play/metronome", "/play/drums"];
+const routes = ["/songs", "/song/alpha-a", "/tools", "/tools/key-finder", "/chords", "/theory", "/play/piano", "/play/guitar", "/play/tuner", "/play/metronome", "/play/drums"];
 for (const theme of ["light", "dark"]) {
   await seed(theme);
   for (const r of routes) {

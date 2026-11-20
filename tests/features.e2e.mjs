@@ -107,9 +107,9 @@ ok((await p.textContent("#pianoReadout .ro-name")) === "B♭maj9", "typing Bbmaj
 ok(await p.locator('#pianoPlayer [data-role="beat"], #pianoPlayer [data-role="step-up"]').count() === 0, "the piano toolbar has no drum or half-step chips");
 // Chord types: six everyday ones first, the rest behind More
 await p.dispatchEvent('#pianoPlayer select[data-role="type"]', "mousedown"); await p.waitForTimeout(150);
-ok(await p.locator(".ui-select-drawer .ui-select-opt").count() === 8 && await p.locator(".ui-select-more").count() === 1, "the chord type menu shows song, all and six common types, with More");
+ok(await p.locator(".ui-select-menu .ui-select-opt").count() === 8 && await p.locator(".ui-select-more").count() === 1, "the chord type menu shows song, all and six common types, with More");
 await p.click(".ui-select-more"); await p.waitForTimeout(100);
-ok(await p.locator(".ui-select-drawer .ui-select-opt").count() === 17 && await p.locator(".ui-select-more").count() === 0, "More reveals every chord type");
+ok(await p.locator(".ui-select-menu .ui-select-opt").count() === 17 && await p.locator(".ui-select-more").count() === 0, "More reveals every chord type");
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 // Build chord mode on piano: tap D4, F4, A4, C5 -> auto-names Dm7
 await p.click('#pianoPlayer [data-role="build"]'); await p.waitForTimeout(80);
@@ -128,11 +128,11 @@ await p.click('#fretboard .fc[data-string="2"][data-fret="0"]');
 await p.click('#fretboard .fc[data-string="1"][data-fret="1"]');
 await p.waitForTimeout(120);
 ok((await p.textContent("#guitarReadout .ro-name")) === "C", "Build chord on guitar pins one note per string and names C");
-// In-interface dropdown opens inline inside the card
+// Floating popover dropdown opens anchored over the card
 await p.dispatchEvent("#tuningSelect", "mousedown"); await p.waitForTimeout(100);
-ok(await p.locator(".ui-select-drawer").isVisible(), "clicking a select opens an in-interface option drawer");
-await p.click('.ui-select-drawer .ui-select-opt[data-val="uke"]'); await p.waitForTimeout(120);
-ok((await p.inputValue("#tuningSelect")) === "uke", "choosing an option in the inline drawer updates the select and fretboard");
+ok(await p.locator(".ui-select-menu").isVisible(), "clicking a select opens an anchored floating option menu");
+await p.click('.ui-select-menu .ui-select-opt[data-val="uke"]'); await p.waitForTimeout(120);
+ok((await p.inputValue("#tuningSelect")) === "uke", "choosing an option in the floating menu updates the select and fretboard");
 // Drum beat loops (3/4, 4/4, 6/8) & pads in Play -> Drums
 await p.click('button[data-inst="drums"]'); await p.waitForTimeout(150);
 ok(p.url().endsWith("/play/drums") && await p.isVisible("#drumPads") && !(await p.isVisible("#metroBtn")), "drums have their own tab and link");
@@ -148,7 +148,8 @@ await p.click("#loopPlayBtn"); await p.waitForTimeout(120);
 ok((await p.getAttribute("#loopPlayBtn", "aria-pressed")) === "true", "Drum beat loop starts and stops cleanly");
 await p.click("#loopPlayBtn"); await p.waitForTimeout(80);
 // Key finder & 1-7 keyboard chord shortcuts in Theory
-await p.click('button.tab[data-view="theory"]'); await p.waitForTimeout(150);
+await p.click('button.tab[data-view="tools"]'); await p.waitForTimeout(150);
+await p.click('[data-open-tool="theory"]'); await p.waitForTimeout(150);
 await p.fill("#keyFinderInput", "G D/F# Em C"); await p.waitForTimeout(120);
 ok((await p.textContent("#keyFinderResult")).includes("G major") && (await p.textContent("#keyFinderResult")).includes("E minor"), "Key finder detects G major and relative E minor from typed chords");
 await p.click("#keyFinderResult [data-use-key]"); await p.waitForTimeout(120);
@@ -221,7 +222,8 @@ ok((await p.getAttribute("#mediaPlayer iframe", "src") || "").startsWith("https:
   ok(await p.locator(".yt-chip.on").count() === 1 && await p.evaluate(() => document.documentElement.classList.contains("mp-open")), "the link chip shows which video is loaded");
   // It keeps playing (same frame, not reloaded) while moving around the app.
   await p.evaluate(() => { document.querySelector("#mediaPlayer iframe").dataset.same = "1"; });
-  await p.click('.tab[data-view="chords"]'); await p.waitForTimeout(500);
+  await p.click('.tab[data-view="tools"]'); await p.waitForTimeout(150);
+  await p.click('[data-open-tool="chords"]'); await p.waitForTimeout(500);
   await p.click('.tab[data-view="songs"]'); await p.waitForTimeout(400);
   ok(await p.locator('#mediaPlayer iframe[data-same="1"]').isVisible() && await frameSrc() === src0, "the video stays loaded while moving to Chords and Songs");
   await p.click("#mpSize"); await p.waitForTimeout(250);
@@ -529,7 +531,8 @@ p = await open("/songs");
 const loaded = () => p.evaluate(() => performance.getEntriesByType("resource").map((r) => r.name.split("/").pop()).filter((n) => /\.js$/.test(n)));
 const atStart = await loaded();
 ok(!atStart.some((n) => /^(playview|audio|theory|stage|drive|help|backup)-/.test(n)), "Play, the audio engine, Theory, Stage, Drive, Help and Backup are not fetched on the first screen");
-await p.click('.tabs [data-view="play"]'); await p.waitForTimeout(700);
+await p.click('.tabs [data-view="tools"]'); await p.waitForTimeout(150);
+await p.click('[data-open-tool="play:piano"]'); await p.waitForTimeout(700);
 ok((await loaded()).some((n) => /^playview-/.test(n)) && await p.locator("#piano .pk").count() > 20, "opening Play loads it and draws the piano");
 await p.click('.tabs [data-view="editor"]'); await p.waitForTimeout(300);
 await p.click("#presentBtn"); await p.waitForTimeout(700);

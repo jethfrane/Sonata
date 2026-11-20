@@ -1,13 +1,13 @@
 // @ts-check
 // Pure URL helpers: every section, song, stage and instrument has its own path.
-//   /songs  /chords  /chords/<chord>  /theory  /play  /play/piano|guitar|tuner|metronome|drums   (old /tools links open the chart)
+//   /songs  /tools  /tools/key-finder  /chords  /chords/<chord>  /theory  /play  /play/piano|guitar|tuner|metronome|drums
 //   /bank/<drive file id>   a public Song Bank      /set/<drive file id>   a live setlist
 //       /q/<CODE>   a song or setlist from a QR code
 //   /song/<slug>  /song/<slug>/stage  /song/<slug>/play/piano
 // A song's slug is its title plus the tail of its id. The tail is what we look
 // up, so a link keeps working after the song is renamed.
 
-export const SECTIONS = ["songs", "editor", "chords", "theory", "play", "bank"];
+export const SECTIONS = ["songs", "editor", "tools", "chords", "theory", "play", "bank"];
 export const INSTRUMENTS = ["piano", "guitar", "tuner", "metronome", "drums"];
 
 /** @param {string} s */
@@ -47,7 +47,10 @@ export function parsePath(pathname) {
   let view = seg[0] || (slug ? "editor" : "");
   if (view === "library") view = "songs";
   if (view === "instruments") view = "play";
-  if (view === "tools" || view === "chart") view = "editor";
+  if (view === "chart") view = "editor";
+  if (view === "tools" && seg[1] === "key-finder") {
+    return { view: "theory", slug, sub: "key-finder", stage: false, raw: "" };
+  }
   if (view === "metronome") { view = "play"; seg[1] = "metronome"; }
   const stage = view === "stage";
   if (stage) view = "editor";
@@ -62,6 +65,8 @@ export function buildPath(r) {
   const song = r.song;
   if (r.stage) return song ? `/song/${songSlug(song)}/stage` : "/stage";
   if (r.view === "editor") return song ? `/song/${songSlug(song)}` : "/editor";
+  if (r.view === "tools") return "/tools";
+  if (r.view === "theory") return r.sub === "key-finder" ? "/tools/key-finder" : "/theory";
   if (r.view === "play") return `/play${r.sub ? `/${r.sub}` : ""}`;
   // Chord names keep their case; "/" in a slash chord is written "-over-" so the path stays one segment.
   if (r.view === "chords") return r.sub ? `/chords/${encodeURIComponent(r.sub.replace("/", "-over-"))}` : "/chords";
@@ -73,6 +78,7 @@ export function buildPath(r) {
 export const PAGE_META = {
   songs: ["Songs", "Your chord charts and setlists."],
   editor: ["Chart editor", "Write and transpose a chord chart."],
+  tools: ["Tools", "Chord finder, circle of fifths, key finder, piano, fretboard, tuner, metronome and drums."],
   theory: ["Circle of fifths", "Explore keys and the chords that belong to them."],
   chords: ["Chords", "Any chord on guitar, ukulele, bass and piano."],
   bank: ["Song Bank", "Find a song, pick a key and send a request."],

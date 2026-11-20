@@ -1,7 +1,6 @@
 /* v4 screens: Chords, chord diagrams, song bank, YouTube player, links import. */
 
 .app[data-view="chords"] #view-chords, .app[data-view="bank"] #view-bank { display: block; }
-@media (max-width: 1023px) { .bottom-nav { grid-template-columns: repeat(5, 1fr); } }
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ---------- Chords ---------- */
@@ -42,10 +41,10 @@
 .cr-note.bass { background: color-mix(in srgb, var(--bass) 16%, var(--surface)); border-color: transparent; color: color-mix(in srgb, var(--bass) 62%, var(--text)); }
 .cr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .cr-rel .mini-label { margin: 6px 0; }
-.dg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.dg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; align-items: start; }
 .dg-grid.compact { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 12px; }
 .dg-card { display: grid; gap: 8px; align-content: start; padding: 14px; }
-.dg-head { display: flex; align-items: center; justify-content: space-between; }
+.dg-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .dg-head h3 { font-size: var(--fs-md); font-weight: 700; }
 .dg-nav { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); text-align: center; }
 .dg-cap, .dg-none { font-size: var(--fs-xs); color: var(--muted); text-align: center; }
@@ -155,7 +154,6 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 @media (max-width: 380px) {
   .page-actions .btn .icon { display: none; }
   .page-actions #addLinksBtn .icon { display: block; }
-  .library-toolbar .segmented button { padding: 0 2px; font-size: var(--fs-xs); }
 }
 
 /* ---------- Sonata Card ---------- */
@@ -195,8 +193,6 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
   .bank-editor, .bank-top { grid-template-columns: minmax(0, 1fr); }
   .be-preview { position: static; }
 }
-@media (max-width: 640px) {
-}
 
 /* ---------- Songs: list + chart side by side (tablet landscape and up) ---------- */
 @media (min-width: 900px) {
@@ -206,8 +202,11 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
   #view-songs .page { max-width: 1320px; }
 }
 @media (max-width: 899px) { .song-peek { display: none !important; } }
-.peek-head { display: flex; gap: 12px; align-items: center; }
-.peek-head h2 { font-size: var(--fs-xl); letter-spacing: -.03em; overflow-wrap: anywhere; }
+.peek-head { display: flex; gap: 12px; align-items: flex-start; }
+.peek-title { min-width: 0; display: grid; gap: 6px; }
+.peek-head h2 { font-size: var(--fs-xl); letter-spacing: -.03em; overflow-wrap: anywhere; line-height: 1.15; }
+.peek-meta { display: flex; flex-wrap: wrap; gap: 5px; }
+.peek-meta .chip.static { min-height: 24px; line-height: 24px; font-size: var(--fs-xs); padding: 0 9px; background: var(--surface-2); }
 .peek-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .peek-chart { padding-top: 8px; border-top: 1px solid var(--line); }
 

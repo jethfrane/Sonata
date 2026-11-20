@@ -342,13 +342,12 @@ export const keyValue = (key) => `${key.root}:${key.mode}`;
 export const keyShort = (key) => key.root + (key.mode === "minor" ? "m" : "");
 
 /**
- * Guess the key from the chords. Weights the first and last chord, which
- * usually sit on the tonic. Returns confidence 0..100.
- * @param {Chord[]|string} input
+ * Score all 24 keys (12 major + 12 minor) against a list of chords.
+ * Weights the first and last chord, which usually sit on the tonic.
+ * @param {Chord[]} chords
+ * @returns {{ tonic: number, mode: "major"|"minor", score: number }[]}
  */
-export function detectKey(input) {
-  const chords = Array.isArray(input) ? input : extractChords(input);
-  if (!chords.length) return null;
+function scoreKeyCandidates(chords) {
   const MAJOR_W = { 0: 3, 2: 1.35, 4: 1.2, 5: 1.55, 7: 2.25, 9: 1.45, 11: 0.65, 3: 0.45, 8: 0.35, 10: 0.5 };
   const MINOR_W = { 0: 3, 2: 0.7, 3: 1.75, 5: 1.45, 7: 1.55, 8: 1.45, 10: 1.35, 11: 0.55 };
   /** @type {{tonic:number, mode:"major"|"minor", score:number}[]} */
@@ -376,6 +375,39 @@ export function detectKey(input) {
     }
   }
   cands.sort((a, b) => b.score - a.score);
+  return cands;
+}
+
+/**
+ * True when a chord fits diatonically into a key (including harmonic-minor V in minor keys).
+ * @param {Chord} c
+ * @param {Key} key
+ */
+function chordFitsKey(c, key) {
+  const d = mod12(c.rootPc - key.tonic);
+  const fam = chordFamily(c);
+  if (key.mode === "major") {
+    if ([0, 5, 7].includes(d) && ["major", "suspended", "power"].includes(fam)) return true;
+    if ([2, 4, 9].includes(d) && (fam === "minor" || fam === "suspended" || fam === "power")) return true;
+    if (d === 11 && (fam === "diminished" || fam === "half-diminished")) return true;
+    return false;
+  }
+  if ([0, 5].includes(d) && ["minor", "suspended", "power"].includes(fam)) return true;
+  if ([3, 8, 10].includes(d) && ["major", "suspended", "power"].includes(fam)) return true;
+  if (d === 7 && fam !== "diminished" && fam !== "half-diminished" && fam !== "augmented") return true;
+  if (d === 2 && (fam === "diminished" || fam === "half-diminished")) return true;
+  return false;
+}
+
+/**
+ * Guess the key from the chords. Weights the first and last chord, which
+ * usually sit on the tonic. Returns confidence 0..100.
+ * @param {Chord[]|string} input
+ */
+export function detectKey(input) {
+  const chords = Array.isArray(input) ? input : extractChords(input);
+  if (!chords.length) return null;
+  const cands = scoreKeyCandidates(chords);
   const best = cands[0];
   const confidence = Math.round(Math.min(99, Math.max(0, (best.score - cands[1].score + 1) * 12)));
   return { ...keyFromTonic(best.tonic, best.mode), confidence };
@@ -399,18 +431,36 @@ export function findKeysFromChords(input) {
     if (c) chords.push(c);
   }
   if (!chords.length) return null;
-  const det = detectKey(chords);
-  if (!det) return null;
-  const best = keyFromTonic(det.tonic, det.mode);
+  const scored = scoreKeyCandidates(chords);
+  const top = scored[0];
+  const confidence = Math.round(Math.min(99, Math.max(0, (top.score - scored[1].score + 1) * 12)));
+  const best = keyFromTonic(top.tonic, top.mode);
   const rel = relativeKey(best);
   const flats = prefersFlats(best);
   const scale = SCALES[best.mode].map((s) => noteName(mod12(best.tonic + s), flats));
-  const progression = chords.map((c) => ({
-    name: c.root + c.quality + (c.bass ? "/" + c.bass : ""),
-    roman: romanChord(c, best),
-    nashville: nashvilleChord(c, best)
+  const chordNames = chords.map((c) => c.root + c.quality + (c.bass ? "/" + c.bass : ""));
+  const progFor = (/** @type {Key} */ key) => chords.map((c, idx) => ({
+    name: chordNames[idx],
+    roman: romanChord(c, key),
+    nashville: nashvilleChord(c, key)
   }));
-  return { best, relative: rel, confidence: det.confidence, scale, progression };
+  const progression = progFor(best);
+  const total = chords.length;
+  const evaluated = scored.map((s) => {
+    const key = keyFromTonic(s.tonic, s.mode);
+    const matched = chords.reduce((n, c) => n + (chordFitsKey(c, key) ? 1 : 0), 0);
+    return { key, matched, total, rawScore: s.score, score: Math.round(s.score * 100) / 100 };
+  });
+  const bestEval = evaluated[0];
+  const rest = evaluated.slice(1).sort((a, b) => (b.matched - a.matched) || (b.rawScore - a.rawScore));
+  const candidates = [bestEval, ...rest.slice(0, 3)].map(({ key, matched, score }) => ({
+    key,
+    matched,
+    total,
+    score,
+    progression: key.tonic === best.tonic && key.mode === best.mode ? progression : progFor(key)
+  }));
+  return { best, relative: rel, confidence, scale, progression, chords: chordNames, candidates };
 }
 
 /**

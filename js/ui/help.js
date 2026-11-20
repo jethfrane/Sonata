@@ -22,6 +22,7 @@ const EN = {
   views: {
     songs: ["Songs", ["Import brings in a chart from a link, pasted chords or a file.", "Tap a song to open it. The star keeps favorites together.", "Setlists group songs in playing order for a gig, a rehearsal or a service."]],
     editor: ["Chart", ["Type chords on the line above the words, or write [G] inside them.", "− and + change the key for the whole song. Tap the key for capo and more.", "Present shows the chart big for the stage. Share sends it as a link, QR code or PDF."]],
+    tools: ["Tools", ["Open Chord Finder, Circle of Fifths, or Key Finder for harmony and reference.", "Use Piano, Fretboard, Tuner, Metronome, or Drum Beats & Pads for practice and stage.", "Tap All tools inside any tool to return to the Tools hub."]],
     chords: ["Chords", ["Type any chord (Am7, D/F#) to see it on guitar, ukulele, bass and piano.", "Tap a shape to hear it.", "Tap a chord inside a chart to open the same view."]],
     theory: ["Theory", ["Tap a key on the circle to see its chord family and key signature.", "The seven chords of the key are below. Tap one for a short chord, or press and hold to let it ring.", "Lock a key to keep it while you move between songs."]],
     play: ["Play", ["Piano and fretboard show the scale and chords of your song's key.", "The tuner listens through the microphone. Allow it when the browser asks.", "The metronome can save its tempo to the open song."]],
@@ -43,7 +44,7 @@ const EN = {
     ["Write the chart", "Type chords on the line above the words, or [G] inside them. The finished chart appears as you type. We opened a demo song so you can try."],
     ["Any key, instantly", "− and + move the whole song a half step. Tap the key for capo, sharps or flats. Switch between chords, numbers and lyrics only."],
     ["Play it and share it", "Present shows the chart big for the stage. Share sends it as a link, a QR code or a PDF. No account needed on either side."],
-    ["Tools for practice", "Chords shows any chord on guitar, ukulele, bass and piano. Theory has the circle of fifths. Play has a piano, fretboard, tuner and metronome."],
+    ["Tools for practice", "Open Tools for Chord Finder, Circle of Fifths, Key Finder, Piano, Fretboard, Tuner, Metronome and Drum Beats & Pads."],
     ["Keep your songs safe", "Songs are saved on this device. Back up to Google Drive or save a backup file here, so you never lose them."],
     ["Help is always here", "Tap ? any time for tips about the screen you are on, or to take this tour again."]
   ]
@@ -62,6 +63,7 @@ const FIL = {
   views: {
     songs: ["Mga Kanta", ["Ang Import ay kumukuha ng chart mula sa link, naka-paste na chords o file.", "I-tap ang kanta para buksan. Ang star ay para sa mga paborito.", "Ang setlist ay pagkakasunod-sunod ng mga kanta para sa gig, rehearsal o service."]],
     editor: ["Chart", ["I-type ang chords sa linya sa itaas ng lyrics, o isulat ang [G] sa loob ng salita.", "Binabago ng − at + ang key ng buong kanta. I-tap ang key para sa capo at iba pa.", "Ang Present ay malaking chart para sa stage. Ang Share ay nagpapadala bilang link, QR code o PDF."]],
+    tools: ["Mga Tool", ["Buksan ang Chord Finder, Circle of Fifths, o Key Finder para sa harmony at sanggunian.", "Gamitin ang Piano, Fretboard, Tuner, Metronome, o Drum Beats & Pads para sa practice at stage.", "I-tap ang Lahat ng tool sa loob ng anumang tool para bumalik sa Tools hub."]],
     chords: ["Chords", ["I-type ang kahit anong chord (Am7, D/F#) para makita sa gitara, ukulele, bass at piano.", "I-tap ang shape para marinig.", "I-tap ang chord sa loob ng chart para sa parehong view."]],
     theory: ["Theory", ["I-tap ang key sa bilog para makita ang chord family at key signature nito.", "Nasa ibaba ang pitong chords ng key. I-tap para sa maikling tunog, o pindutin nang matagal para tumunog nang mahaba.", "I-lock ang key para manatili kahit lumipat ka ng kanta."]],
     play: ["Play", ["Ipinapakita ng piano at fretboard ang scale at chords ng key ng kanta mo.", "Nakikinig ang tuner gamit ang mikropono. Payagan kapag nagtanong ang browser.", "Puwedeng i-save ng metronome ang tempo sa bukas na kanta."]],
@@ -83,7 +85,7 @@ const FIL = {
     ["Isulat ang chart", "I-type ang chords sa linya sa itaas ng lyrics, o [G] sa loob ng salita. Lumalabas agad ang tapos na chart. Nagbukas kami ng demo na kanta para masubukan mo."],
     ["Kahit anong key, agad-agad", "Ginagalaw ng − at + ang buong kanta nang kalahating step. I-tap ang key para sa capo, sharps o flats. Magpalit sa chords, numbers o lyrics lang."],
     ["Tugtugin at i-share", "Ang Present ay malaking chart para sa stage. Ang Share ay nagpapadala bilang link, QR code o PDF. Walang account na kailangan."],
-    ["Mga tool sa practice", "Ipinapakita ng Chords ang kahit anong chord sa gitara, ukulele, bass at piano. Nasa Theory ang circle of fifths. Nasa Play ang piano, fretboard, tuner at metronome."],
+    ["Mga tool sa practice", "Buksan ang Mga Tool para sa Chord Finder, Circle of Fifths, Key Finder, Piano, Fretboard, Tuner, Metronome at Drum Beats & Pads."],
     ["Ingatan ang mga kanta mo", "Naka-save ang mga kanta sa device na ito. Mag-back up sa Google Drive o mag-save ng backup file dito, para hindi mawala."],
     ["Laging nandito ang tulong", "I-tap ang ? kahit kailan para sa tips tungkol sa screen na bukas, o para ulitin ang tour na ito."]
   ]

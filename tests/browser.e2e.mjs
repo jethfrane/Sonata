@@ -65,15 +65,15 @@ await page.goto(BASE + "?s=" + v1); await page.waitForTimeout(600);
 ok(await page.inputValue("#songTitle") === "Legacy Link", "v1-format share link still opens");
 await page.click("#closeSharedBtn");
 
-// 5. Delete + undo, and deletion is tombstoned for Drive
+// 5. Soft-delete moves song to Trash + undo restores it
 await page.click('.tabs [data-view="songs"]'); await page.waitForTimeout(150);
 const before = await page.locator("#libraryList .row").count();
 await page.click('#libraryList [data-id="song-old2"] [data-act="more"]');
 await page.click('[data-m="del"]'); await page.waitForTimeout(700);
 ok(await page.locator("#libraryList .row").count() === before - 1, "delete removes row");
-ok(await page.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:deleted") || "[]").includes("song-old2")), "deleted id recorded (won't come back from Drive)");
+ok(await page.evaluate(() => JSON.parse(localStorage.getItem("sonata:v12:trash") || "[]").some((e) => e.id === "song-old2")), "trashed song recorded in Trash");
 await page.click(".toast-action"); await page.waitForTimeout(600);
-ok(await page.locator("#libraryList .row").count() === before, "undo restores song");
+ok(await page.locator("#libraryList .row").count() === before && await page.evaluate(() => !JSON.parse(localStorage.getItem("sonata:v12:trash") || "[]").some((e) => e.id === "song-old2")), "undo restores song from Trash");
 
 // 6. Setlist play + stage navigation
 await page.click('[data-filter="setlists"]');
@@ -98,13 +98,15 @@ await page.click('.tabs [data-view="editor"]'); await page.waitForTimeout(150);
 ok(await page.isVisible("#quickstart") === false || (await page.textContent("#quickstart")).includes("Simulan"), "quickstart translated, not replaced");
 
 // 9. Theory: pick key, numerals
-await page.click('.tabs [data-view="theory"]'); await page.waitForTimeout(200);
+await page.click('.tabs [data-view="tools"]'); await page.waitForTimeout(150);
+await page.click('[data-open-tool="theory"]'); await page.waitForTimeout(200);
 await page.click('[data-tonic="2"]'); await page.waitForTimeout(150);
 ok((await page.textContent("#keyTitle")).startsWith("D"), "theory picks D major");
 ok((await page.textContent("#diatonic")).includes("F♯m"), "D major diatonic has F♯m");
 // 10. Play: fretboard uses F# (not Gb) in G
 await page.evaluate(async () => { const { store } = /** @type {any} */ (window).__sonata; const s = store.createSong({ body: "G C D G", title: "G song" }); });
-await page.click('.tabs [data-view="play"]'); await page.waitForTimeout(250);
+await page.click('.tabs [data-view="tools"]'); await page.waitForTimeout(150);
+await page.click('[data-open-tool="play:guitar"]'); await page.waitForTimeout(250);
 const fb = await page.textContent("#fretboard");
 ok(fb.includes("F♯") && !fb.includes("G♭"), "fretboard spells F♯ in key of G");
 // 11. v3: key sheet writes the transpose into the chart; share sheet holds export; unsafe links never render

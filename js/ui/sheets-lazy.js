@@ -37,8 +37,8 @@ export const theoryModule = () => chunk(() => import("./theory.js"));
 export const stageModule = () => chunk(() => import("./stage.js"));
 /** Google Drive backup. */
 export const driveModule = () => chunk(() => import("../drive.js"));
-/** Backup and restore. */
-export const openBackup = async () => (await chunk(() => import("./backup.js")))?.openBackup();
+/** Backup and restore. @param {string} [section] */
+export const openBackup = async (section) => (await chunk(() => import("./backup.js")))?.openBackup(section);
 /** Help and the guided tour. */
 export const helpModule = () => chunk(() => import("./help.js"));
 export const openHelp = async () => (await helpModule())?.openHelp();

@@ -9,9 +9,13 @@ export const KEYS = {
   settings: "sonata:v12:settings",
   active: "sonata:v12:active",
   deleted: "sonata:v12:deleted",
+  trash: "sonata:v12:trash",
   lastSynced: "sonata:v12:last_synced",
   bank: "sonata:v12:bank"
 };
+
+/** How long soft-deleted items stay in Trash before permanent removal (30 days). */
+export const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
  * @typedef {{ name: string, url: string }} Link
@@ -22,6 +26,10 @@ export const KEYS = {
  *   `origin`: the share id of the song this copy was saved from (see shareId in share.js).
  * @typedef {{ id: string, title: string, description: string, links: Link[],
  *   items: { songId: string }[], date: string, updatedAt: string, liveId?: string, source?: string }} Setlist
+ * @typedef {{ setlistId: string, index: number }} SetlistRef
+ * @typedef {{ kind: "song", id: string, trashedAt: string, updatedAt: string, item: Song, setlistRefs?: SetlistRef[] }} SongTrashEntry
+ * @typedef {{ kind: "setlist", id: string, trashedAt: string, updatedAt: string, item: Setlist }} SetlistTrashEntry
+ * @typedef {SongTrashEntry | SetlistTrashEntry} TrashEntry
  * @typedef {typeof DEFAULT_SETTINGS} Settings
  */
 
@@ -166,45 +174,140 @@ export function validateBackup(d) {
 export const BACKUP_LIMITS = { bytes: 25 * 1024 * 1024, songs: 20000, setlists: 2000 };
 
 /**
+ * Clean one Trash entry. Returns null for invalid entries.
+ * @param {any} x
+ * @returns {TrashEntry|null}
+ */
+export function normalizeTrashEntry(x) {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return null;
+  if (x.kind !== "song" && x.kind !== "setlist") return null;
+  const id = str(x.id).trim();
+  if (!id) return null;
+  const t = now();
+  const iso = (/** @type {unknown} */ v, /** @type {string} */ fallback) => {
+    if (typeof v === "number" && Number.isFinite(v)) return new Date(v).toISOString();
+    if (typeof v === "string" && v.trim() && Number.isFinite(Date.parse(v))) return v.trim();
+    return fallback;
+  };
+  const trashedAt = iso(x.trashedAt, iso(x.updatedAt, t));
+  const updatedAt = iso(x.updatedAt, trashedAt);
+  if (x.kind === "song") {
+    const raw = x.item && typeof x.item === "object" && !Array.isArray(x.item) ? { ...x.item, id: str(x.item.id).trim() || id } : null;
+    const item = normalizeSong(raw);
+    if (!item) return null;
+    /** @type {SongTrashEntry} */
+    const entry = { kind: "song", id, trashedAt, updatedAt, item };
+    if (Array.isArray(x.setlistRefs)) {
+      const refs = x.setlistRefs
+        .filter((/** @type {any} */ r) => r && typeof r === "object" && !Array.isArray(r) && typeof r.setlistId === "string" && r.setlistId.trim())
+        .map((/** @type {any} */ r) => ({ setlistId: str(r.setlistId).trim(), index: Math.max(0, Math.round(Number(r.index) || 0)) }));
+      if (refs.length) entry.setlistRefs = refs;
+    }
+    return entry;
+  }
+  const raw = x.item && typeof x.item === "object" && !Array.isArray(x.item) ? { ...x.item, id: str(x.item.id).trim() || id } : null;
+  const item = normalizeSetlist(raw);
+  if (!item) return null;
+  return { kind: "setlist", id, trashedAt, updatedAt, item };
+}
+
+/**
  * Merge two libraries. Newest edit wins per item; deletions win over edits.
  * Used by Drive sync and by backup import (import merges instead of wiping).
- * @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} local
- * @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} remote
+ * @param {{ songs?: any[], setlists?: any[], trash?: any[], deletedIds?: string[] }} local
+ * @param {{ songs?: any[], setlists?: any[], trash?: any[], deletedIds?: string[] }} remote
+ * @param {number} [nowMs]
  */
-export function mergeLibraries(local, remote) {
-  const deleted = [...new Set([...(local.deletedIds || []), ...(remote.deletedIds || [])].filter((x) => typeof x === "string"))];
+export function mergeLibraries(local, remote, nowMs = Date.now()) {
+  /** @type {string[]} */
+  const expiredTrashIds = [];
+  /** @type {TrashEntry[]} */
+  const remoteTrash = [];
+  /** @type {TrashEntry[]} */
+  const localTrash = [];
+  const partitionTrash = (/** @type {any[]} */ rawList, /** @type {TrashEntry[]} */ out) => {
+    for (const raw of (rawList || [])) {
+      const e = normalizeTrashEntry(raw);
+      if (!e) continue;
+      const trashedMs = Date.parse(e.trashedAt);
+      if (Number.isFinite(trashedMs) && nowMs - trashedMs > TRASH_TTL_MS) expiredTrashIds.push(e.id);
+      else out.push(e);
+    }
+  };
+  partitionTrash(remote.trash || [], remoteTrash);
+  partitionTrash(local.trash || [], localTrash);
+
+  const deleted = [...new Set([
+    ...(local.deletedIds || []),
+    ...(remote.deletedIds || []),
+    ...expiredTrashIds
+  ].filter((x) => typeof x === "string"))];
   const gone = new Set(deleted);
+
+  const tsOf = (/** @type {any} */ x) => {
+    const parse = (/** @type {any} */ v) => (v ? Date.parse(v) || Number(v) || 0 : 0);
+    return Math.max(parse(x.updatedAt), parse(x.trashedAt), parse(x.date));
+  };
+
   /**
    * @template T
-   * @param {any[]} a @param {any[]} b @param {(x: any) => T|null} norm
-   * @returns {T[]}
+   * @param {any[]} localActive @param {any[]} remoteActive
+   * @param {TrashEntry[]} localT @param {TrashEntry[]} remoteT
+   * @param {"song"|"setlist"} kind @param {(x: any) => T|null} norm
+   * @returns {{ active: T[], trash: TrashEntry[] }}
    */
-  const merge = (a, b, norm) => {
-    /** @type {Map<string, any>} */
+  const mergeKind = (localActive, remoteActive, localT, remoteT, kind, norm) => {
+    /** @type {Map<string, { state: "active"|"trash", ts: number, val: any }>} */
     const map = new Map();
-    for (const raw of [...(b || []), ...(a || [])]) {
-      const item = norm(raw);
-      if (!item || gone.has(/** @type {any} */ (item).id)) continue;
-      const prev = map.get(/** @type {any} */ (item).id);
-      const ts = (/** @type {any} */ x) => { const v = x.updatedAt || x.date || 0; return Date.parse(v) || Number(v) || 0; };
-      if (!prev || ts(item) >= ts(prev)) map.set(/** @type {any} */ (item).id, item);
+    const put = (/** @type {"active"|"trash"} */ state, /** @type {any} */ item, /** @type {number} */ ts) => {
+      if (!item || gone.has(item.id)) return;
+      const prev = map.get(item.id);
+      if (!prev || ts >= prev.ts) map.set(item.id, { state, ts, val: item });
+    };
+    for (const raw of (remoteActive || [])) { const item = norm(raw); if (item) put("active", item, tsOf(item)); }
+    for (const e of remoteT) { if (e.kind === kind) put("trash", e, tsOf(e)); }
+    for (const raw of (localActive || [])) { const item = norm(raw); if (item) put("active", item, tsOf(item)); }
+    for (const e of localT) { if (e.kind === kind) put("trash", e, tsOf(e)); }
+    /** @type {T[]} */
+    const active = [];
+    /** @type {TrashEntry[]} */
+    const trash = [];
+    for (const entry of map.values()) {
+      if (entry.state === "active") active.push(entry.val);
+      else trash.push(entry.val);
     }
-    return [...map.values()];
+    return { active, trash };
   };
+
+  const songs = mergeKind(local.songs || [], remote.songs || [], localTrash, remoteTrash, "song", normalizeSong);
+  const setlists = mergeKind(local.setlists || [], remote.setlists || [], localTrash, remoteTrash, "setlist", normalizeSetlist);
   return {
-    songs: /** @type {Song[]} */ (merge(local.songs || [], remote.songs || [], normalizeSong)),
-    setlists: /** @type {Setlist[]} */ (merge(local.setlists || [], remote.setlists || [], normalizeSetlist)),
+    songs: songs.active,
+    setlists: setlists.active,
+    trash: [...songs.trash, ...setlists.trash],
     deletedIds: deleted.slice(-5000)
   };
 }
 
-/** Same library content? Used to skip a Drive upload when nothing changed. @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} d */
-export const libraryFingerprint = (d) => JSON.stringify([
-  // "last opened" changes on every tap on a song; it alone is not worth an upload.
-  // New fields (genre, song bank) left at their defaults compare equal to older files that lack them.
-  (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, inBank: s.inBank || undefined })),
-  d.setlists || [], [...(d.deletedIds || [])].sort()
-]);
+/** Same library content? Used to skip a Drive upload when nothing changed. @param {{ songs?: any[], setlists?: any[], trash?: any[], deletedIds?: string[] }} d */
+export const libraryFingerprint = (d) => {
+  /** @type {any[]} */
+  const parts = [
+    // "last opened" changes on every tap on a song; it alone is not worth an upload.
+    // New fields (genre, song bank) left at their defaults compare equal to older files that lack them.
+    (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, inBank: s.inBank || undefined })),
+    d.setlists || [],
+    [...(d.deletedIds || [])].sort()
+  ];
+  if (d.trash && d.trash.length) {
+    const trash = d.trash
+      .map(normalizeTrashEntry)
+      .filter(/** @returns {e is TrashEntry} */ (e) => Boolean(e))
+      .sort((a, b) => a.id.localeCompare(b.id));
+    if (trash.length) parts.push(trash);
+  }
+  return JSON.stringify(parts);
+};
 
 /** Storage that lives only as long as the page; used when the browser blocks localStorage. @returns {Storage} */
 export function memoryStorage() {
@@ -235,6 +338,7 @@ export class Store {
     this.storage = storage;
     /** @type {Song[]} */ this.songs = [];
     /** @type {Setlist[]} */ this.setlists = [];
+    /** @type {TrashEntry[]} */ this.trash = [];
     /** @type {string[]} */ this.deletedIds = [];
     /** @type {Settings} */ this.settings = normalizeSettings({});
     /** Song bank profile (this device; the public copy lives in the musician's Drive). */
@@ -260,6 +364,9 @@ export class Store {
     this.setlists = Array.isArray(sets) ? sets.map(normalizeSetlist).filter(/** @returns {s is Setlist} */ (s) => Boolean(s)) : [];
     const del = readJson(st, KEYS.deleted, []);
     this.deletedIds = Array.isArray(del) ? del.filter((x) => typeof x === "string") : [];
+    const trash = readJson(st, KEYS.trash, []);
+    this.trash = Array.isArray(trash) ? trash.map(normalizeTrashEntry).filter(/** @returns {e is TrashEntry} */ (e) => Boolean(e)) : [];
+    this.pruneExpiredTrash();
     this.settings = normalizeSettings(readJson(st, KEYS.settings, {}));
     this.bank = normalizeProfile(readJson(st, KEYS.bank, {}));
     let active = null;
@@ -271,7 +378,7 @@ export class Store {
 
   /** The saved library as one string (cheap to compare). */
   readStamp() {
-    try { return [KEYS.songs, KEYS.setlists, KEYS.deleted].map((k) => this.storage.getItem(k) || "").join("\u0001"); } catch { return ""; }
+    try { return [KEYS.songs, KEYS.setlists, KEYS.deleted, KEYS.trash].map((k) => this.storage.getItem(k) || "").join("\u0001"); } catch { return ""; }
   }
 
   /**
@@ -283,7 +390,7 @@ export class Store {
     if (!now || now === this.stamp) return;
     const st = this.storage;
     const merged = mergeLibraries(this.snapshot(), {
-      songs: readJson(st, KEYS.songs, []), setlists: readJson(st, KEYS.setlists, []), deletedIds: readJson(st, KEYS.deleted, [])
+      songs: readJson(st, KEYS.songs, []), setlists: readJson(st, KEYS.setlists, []), deletedIds: readJson(st, KEYS.deleted, []), trash: readJson(st, KEYS.trash, [])
     });
     const activeBody = this.song(this.activeId || "")?.body;
     this.applyMerged(merged);
@@ -301,6 +408,7 @@ export class Store {
     };
     this.songs = reuse(this.songs, m.songs);
     this.setlists = reuse(this.setlists, m.setlists);
+    this.trash = reuse(this.trash, m.trash);
     this.deletedIds = m.deletedIds;
     if (!this.songs.some((x) => x.id === this.activeId) && this.activeId !== "shared") this.activeId = this.songs[0]?.id || null;
   }
@@ -329,6 +437,7 @@ export class Store {
       st.setItem(KEYS.settings, JSON.stringify(this.settings));
       st.setItem(KEYS.bank, JSON.stringify(this.bank));
       st.setItem(KEYS.deleted, JSON.stringify(this.deletedIds));
+      st.setItem(KEYS.trash, JSON.stringify(this.trash));
       if (this.activeId && this.activeId !== "shared") st.setItem(KEYS.active, this.activeId);
       this.stamp = this.readStamp();
       this.savedAt = Date.now();
@@ -447,6 +556,54 @@ export class Store {
     this.emit("song-open", this.active());
   }
 
+  /**
+   * Soft-delete matching active songs into Trash (kept 30 days).
+   * @param {string[]} ids
+   * @returns {TrashEntry[]}
+   */
+  trashSongs(ids) {
+    const set = new Set(ids);
+    const matched = this.songs.filter((s) => set.has(s.id));
+    if (!matched.length) return [];
+    /** @type {SongTrashEntry[]} */
+    const entries = matched.map((song) => {
+      const prevTs = Math.max(
+        Date.parse(song.updatedAt) || 0,
+        ...this.trash.filter((e) => e.id === song.id).map((e) => Date.parse(e.updatedAt || e.trashedAt) || 0)
+      );
+      const ts = new Date(Math.max(Date.now(), prevTs + 1)).toISOString();
+      /** @type {SetlistRef[]} */
+      const setlistRefs = [];
+      for (const sl of this.setlists) {
+        sl.items.forEach((item, index) => {
+          if (item.songId === song.id) setlistRefs.push({ setlistId: sl.id, index });
+        });
+      }
+      return {
+        kind: "song",
+        id: song.id,
+        trashedAt: ts,
+        updatedAt: ts,
+        item: { ...song },
+        ...(setlistRefs.length ? { setlistRefs } : {})
+      };
+    });
+    this.songs = this.songs.filter((s) => !set.has(s.id));
+    this.trash = [...entries, ...this.trash.filter((e) => !set.has(e.id))];
+    for (const sl of this.setlists) {
+      const before = sl.items.length;
+      sl.items = sl.items.filter((i) => !set.has(i.songId));
+      if (sl.items.length !== before) {
+        const prevSl = Date.parse(sl.updatedAt || sl.date) || 0;
+        sl.updatedAt = new Date(Math.max(Date.now(), prevSl + 1)).toISOString();
+      }
+    }
+    if (this.activeId && set.has(this.activeId)) this.activeId = this.songs[0]?.id || null;
+    this.changed();
+    this.emit("song-open", this.active());
+    return entries;
+  }
+
   /** @param {Song} song */
   duplicate(song) {
     return this.createSong({ ...song, title: `${song.title} (copy)`, isFavorite: false });
@@ -473,6 +630,130 @@ export class Store {
     this.deletedIds = [...new Set([...this.deletedIds, id])];
     if (this.setlist.id === id) this.setlist = { id: null, index: 0 };
     this.changed();
+  }
+
+  /**
+   * Soft-delete a setlist into Trash (kept 30 days).
+   * @param {string} id
+   * @returns {TrashEntry|null}
+   */
+  trashSetlist(id) {
+    const set = this.setlists.find((s) => s.id === id);
+    if (!set) return null;
+    const prevTs = Math.max(
+      Date.parse(set.updatedAt || set.date) || 0,
+      ...this.trash.filter((e) => e.id === id).map((e) => Date.parse(e.updatedAt || e.trashedAt) || 0)
+    );
+    const ts = new Date(Math.max(Date.now(), prevTs + 1)).toISOString();
+    /** @type {SetlistTrashEntry} */
+    const entry = {
+      kind: "setlist",
+      id: set.id,
+      trashedAt: ts,
+      updatedAt: ts,
+      item: { ...set, items: set.items.map((i) => ({ ...i })) }
+    };
+    this.setlists = this.setlists.filter((s) => s.id !== id);
+    this.trash = [entry, ...this.trash.filter((e) => e.id !== id)];
+    if (this.setlist.id === id) this.setlist = { id: null, index: 0 };
+    this.changed();
+    return entry;
+  }
+
+  /**
+   * Restore trashed songs and/or setlists keeping their original IDs.
+   * @param {string[]} ids
+   * @returns {{ songs: Song[], setlists: Setlist[] }}
+   */
+  restoreFromTrash(ids) {
+    const set = new Set(ids);
+    const matched = this.trash.filter((e) => set.has(e.id));
+    if (!matched.length) return { songs: [], setlists: [] };
+    this.trash = this.trash.filter((e) => !set.has(e.id));
+    /** @type {Song[]} */
+    const restoredSongs = [];
+    /** @type {Setlist[]} */
+    const restoredSetlists = [];
+    /** @type {{ songId: string, ref: SetlistRef }[]} */
+    const pendingRefs = [];
+    const hadActive = Boolean(this.activeId && this.song(this.activeId));
+    for (const entry of matched) {
+      const prevTs = Math.max(
+        Date.parse(entry.updatedAt || entry.trashedAt) || 0,
+        Date.parse(entry.kind === "song" ? entry.item.updatedAt : (entry.item.updatedAt || entry.item.date)) || 0
+      );
+      const ts = new Date(Math.max(Date.now(), prevTs + 1)).toISOString();
+      if (entry.kind === "song") {
+        if (!this.songs.some((s) => s.id === entry.id)) {
+          const song = { ...entry.item, id: entry.id, updatedAt: ts };
+          this.songs.unshift(song);
+          restoredSongs.push(song);
+        }
+        for (const ref of entry.setlistRefs || []) pendingRefs.push({ songId: entry.id, ref });
+      } else {
+        if (!this.setlists.some((s) => s.id === entry.id)) {
+          const sl = { ...entry.item, id: entry.id, items: entry.item.items.map((i) => ({ ...i })), updatedAt: ts };
+          this.setlists.unshift(sl);
+          restoredSetlists.push(sl);
+        }
+      }
+    }
+    pendingRefs.sort((a, b) => a.ref.index - b.ref.index);
+    for (const { songId, ref } of pendingRefs) {
+      const sl = this.setlists.find((x) => x.id === ref.setlistId);
+      if (!sl || sl.items.some((i) => i.songId === songId)) continue;
+      const idx = Math.max(0, Math.min(sl.items.length, Math.round(Number(ref.index) || 0)));
+      sl.items.splice(idx, 0, { songId });
+      const prevSl = Date.parse(sl.updatedAt || sl.date) || 0;
+      sl.updatedAt = new Date(Math.max(Date.now(), prevSl + 1)).toISOString();
+    }
+    if (!hadActive && restoredSongs.length) {
+      this.activeId = restoredSongs[0].id;
+      this.emit("song-open", this.active());
+    }
+    this.changed();
+    return { songs: restoredSongs, setlists: restoredSetlists };
+  }
+
+  /**
+   * Permanently remove matching Trash entries and tombstone their IDs.
+   * @param {string[]} ids
+   * @returns {number}
+   */
+  purgeFromTrash(ids) {
+    const set = new Set(ids);
+    const matched = this.trash.filter((e) => set.has(e.id));
+    if (!matched.length) return 0;
+    this.trash = this.trash.filter((e) => !set.has(e.id));
+    this.deletedIds = [...new Set([...this.deletedIds, ...matched.map((e) => e.id)])];
+    this.changed();
+    return matched.length;
+  }
+
+  /** Permanently purge every item in Trash. @returns {number} */
+  emptyTrash() {
+    return this.purgeFromTrash(this.trash.map((e) => e.id));
+  }
+
+  /**
+   * Silently move Trash entries older than 30 days into deletedIds.
+   * @param {number} [nowMs]
+   * @returns {number}
+   */
+  pruneExpiredTrash(nowMs = Date.now()) {
+    /** @type {string[]} */
+    const expired = [];
+    /** @type {TrashEntry[]} */
+    const kept = [];
+    for (const entry of this.trash) {
+      const trashedMs = Date.parse(entry.trashedAt);
+      if (Number.isFinite(trashedMs) && nowMs - trashedMs > TRASH_TTL_MS) expired.push(entry.id);
+      else kept.push(entry);
+    }
+    if (!expired.length) return 0;
+    this.trash = kept;
+    this.deletedIds = [...new Set([...this.deletedIds, ...expired])];
+    return expired.length;
   }
 
   /** Songs of a setlist that still exist. @param {Setlist} set */
@@ -527,7 +808,7 @@ export class Store {
 
   /** Data written to Drive and to backup files. */
   snapshot() {
-    return { app: "sonata", version: 2, songs: this.songs, setlists: this.setlists, deletedIds: this.deletedIds, exportedAt: now() };
+    return { app: "sonata", version: 2, songs: this.songs, setlists: this.setlists, trash: this.trash, deletedIds: this.deletedIds, exportedAt: now() };
   }
 
   /**
@@ -544,7 +825,7 @@ export class Store {
     const remap = new Map();
     const t = now();
     /** A time just after the copy on this device was last changed, so the backup's version wins the merge. */
-    const after = (/** @type {any} */ cur) => new Date(Math.max(Date.now(), (Date.parse(cur?.updatedAt || cur?.date || "") || 0) + 1)).toISOString();
+    const after = (/** @type {any} */ cur) => new Date(Math.max(Date.now(), (Date.parse(cur?.updatedAt || cur?.trashedAt || cur?.date || "") || 0) + 1)).toISOString();
     /** Same content as what is here now? Then there is nothing to bring back. */
     const same = (/** @type {any} */ a, /** @type {any} */ b) => Boolean(a && b) && JSON.stringify({ ...a, updatedAt: 0, lastOpenedAt: 0 }) === JSON.stringify({ ...b, updatedAt: 0, lastOpenedAt: 0 });
     const songs = (data.songs || []).map((raw) => {
@@ -555,6 +836,8 @@ export class Store {
         return { ...raw, id, updatedAt: t };
       }
       const cur = this.song(raw.id);
+      const trashed = this.trash.find((e) => e.id === raw.id);
+      if (trashed) return { ...raw, updatedAt: after(trashed) };
       return o.prefer && cur && !same(normalizeSong(raw), cur) ? { ...raw, updatedAt: after(cur) } : raw;
     });
     const setlists = (data.setlists || []).map((raw) => {
@@ -562,6 +845,8 @@ export class Store {
       const items = Array.isArray(raw.items) ? raw.items.map((/** @type {any} */ i) => (i && remap.has(i.songId) ? { ...i, songId: remap.get(i.songId) } : i)) : raw.items;
       if (gone.has(raw.id)) return { ...raw, id: uid("set"), items, updatedAt: t };
       const cur = this.setlists.find((x) => x.id === raw.id);
+      const trashed = this.trash.find((e) => e.id === raw.id);
+      if (trashed) return { ...raw, items, updatedAt: after(trashed) };
       return o.prefer && cur && !same(normalizeSetlist({ ...raw, items }), cur) ? { ...raw, items, updatedAt: after(cur) } : { ...raw, items };
     });
     return this.mergeIn({ songs, setlists });
@@ -569,7 +854,7 @@ export class Store {
 
   /**
    * Merge another library into this one (backup import or Drive).
-   * @param {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} data
+   * @param {{ songs?: any[], setlists?: any[], trash?: any[], deletedIds?: string[] }} data
    */
   mergeIn(data) {
     const before = this.songs.length;

@@ -27,3 +27,23 @@
 .bk-list small { color: var(--muted); font-size: var(--fs-xs); }
 .bk-list .btn { flex: none; }
 #bkMore { margin-top: 10px; }
+
+.ai-status { display: flex; align-items: center; gap: 9px; margin-top: 12px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-size: var(--fs-sm); font-weight: 600; color: var(--text); }
+.ai-status > span:nth-child(2) { flex: 1; min-width: 0; }
+.ai-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ai-status.ok { background: color-mix(in srgb, var(--success) 8%, var(--surface)); border-color: color-mix(in srgb, var(--success) 25%, var(--line)); }
+.ai-status.ok .ai-dot { background: var(--success); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent); }
+.ai-tools-pill { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font-style: normal; font-size: var(--fs-xs); font-weight: 650; color: var(--muted); }
+.ai-field { margin-top: 12px; }
+.ai-url-row { display: flex; gap: 8px; align-items: center; }
+.input.ai-url { flex: 1; min-width: 0; min-height: 38px; padding: 0 10px; font-family: var(--mono); font-size: 12.5px; color: var(--text-2); }
+.ai-details { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); overflow: hidden; }
+.ai-details summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; cursor: pointer; list-style: none; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
+.ai-details summary::-webkit-details-marker { display: none; }
+.ai-details summary::after { content: "▾"; font-size: 12px; color: var(--muted); transition: transform .15s; }
+.ai-details[open] summary::after { transform: rotate(180deg); }
+.ai-hints { margin: 0; padding: 0 14px 10px 28px; display: grid; gap: 6px; color: var(--text-2); font-size: var(--fs-xs); line-height: 1.5; }
+.ai-hints code { font-family: var(--mono); font-size: 0.95em; }
+.ai-prompts { display: grid; gap: 6px; padding: 0 12px 12px; }
+.ai-prompt-chip { width: 100%; justify-content: flex-start; text-align: left; white-space: normal; height: auto; padding: 7px 10px; border-radius: 10px; font-size: var(--fs-xs); line-height: 1.35; }
+.ai-prompt-chip .icon { flex: none; width: 14px; height: 14px; color: var(--muted); }

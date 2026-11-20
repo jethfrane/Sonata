@@ -615,3 +615,354 @@ test("backup files: checksum, limits, and going back to an earlier version", asy
   assert.equal(fingerprint(lib), fingerprint({ ...lib, songs: lib.songs.map((x) => ({ ...x, lastOpenedAt: "2030-01-01T00:00:00.000Z" })) }), "opening a song is not a change worth a restore point");
   assert.notEqual(fingerprint(lib), fingerprint({ ...lib, songs: lib.songs.slice(1) }));
 });
+
+// ---- Trash & MCP Tools ----
+
+test("store trash API: trashSongs, setlistRefs restore, trashSetlist, purge, empty, and 30-day prune", async () => {
+  const { TRASH_TTL_MS, normalizeTrashEntry } = await import("../js/core/store.js");
+  const storage = memoryStorage();
+  const st = new Store(storage).load();
+
+  const s1 = st.createSong({ title: "Song One", body: "G C D" });
+  const s2 = st.createSong({ title: "Song Two", body: "Am F C G" });
+  const s3 = st.createSong({ title: "Song Three", body: "D A Bm G" });
+  const sl = st.saveSetlist({ title: "Sunday Set", items: [{ songId: s1.id }, { songId: s2.id }, { songId: s3.id }] });
+
+  let openedEvents = 0;
+  st.on("song-open", () => { openedEvents++; });
+  st.open(s2.id);
+  const beforeOpen = openedEvents;
+
+  // Trash s2 (active song, middle of setlist at index 1)
+  const trashed = st.trashSongs([s2.id]);
+  assert.equal(trashed.length, 1);
+  assert.equal(trashed[0].kind, "song");
+  assert.equal(trashed[0].id, s2.id);
+  assert.deepEqual(trashed[0].setlistRefs, [{ setlistId: sl.id, index: 1 }]);
+  assert.ok(!st.song(s2.id), "trashed song removed from active songs");
+  assert.ok(!st.deletedIds.includes(s2.id), "soft-delete does NOT add to deletedIds");
+  assert.deepEqual(st.setlists.find((x) => x.id === sl.id).items.map((i) => i.songId), [s1.id, s3.id], "removed from setlists");
+  assert.notEqual(st.activeId, s2.id, "activeId moved away from trashed song");
+  assert.ok(openedEvents > beforeOpen, "song-open emitted when active song trashed");
+
+  // Persist + reload preserves trash
+  st.persist();
+  const reloaded = new Store(storage).load();
+  assert.equal(reloaded.trash.length, 1);
+  assert.equal(reloaded.trash[0].id, s2.id);
+
+  // Restore preserves original id, monotonic timestamp, and setlist position
+  const trashedAtMs = Date.parse(reloaded.trash[0].trashedAt);
+  const restored = reloaded.restoreFromTrash([s2.id]);
+  assert.equal(restored.songs.length, 1);
+  assert.equal(restored.songs[0].id, s2.id, "original song ID preserved");
+  assert.ok(Date.parse(restored.songs[0].updatedAt) > trashedAtMs, "monotonic updatedAt after restore");
+  assert.equal(reloaded.trash.length, 0);
+  assert.deepEqual(
+    reloaded.setlists.find((x) => x.id === sl.id).items.map((i) => i.songId),
+    [s1.id, s2.id, s3.id],
+    "setlist membership and index restored"
+  );
+
+  // Trash setlist while playing it, then restore it
+  reloaded.playSetlist(sl.id, 0);
+  assert.equal(reloaded.setlist.id, sl.id);
+  const slEntry = reloaded.trashSetlist(sl.id);
+  assert.equal(slEntry.kind, "setlist");
+  assert.equal(slEntry.id, sl.id);
+  assert.equal(reloaded.setlists.length, 0);
+  assert.equal(reloaded.setlist.id, null, "active playing setlist cleared on trash");
+  const restoredSl = reloaded.restoreFromTrash([sl.id]);
+  assert.equal(restoredSl.setlists.length, 1);
+  assert.equal(restoredSl.setlists[0].id, sl.id);
+
+  // purgeFromTrash & emptyTrash
+  reloaded.trashSongs([s1.id, s3.id]);
+  assert.equal(reloaded.trash.length, 2);
+  assert.equal(reloaded.purgeFromTrash([s1.id]), 1);
+  assert.ok(reloaded.deletedIds.includes(s1.id));
+  assert.equal(reloaded.trash.length, 1);
+  assert.equal(reloaded.emptyTrash(), 1);
+  assert.equal(reloaded.trash.length, 0);
+  assert.ok(reloaded.deletedIds.includes(s3.id));
+
+  // 30-day pruneExpiredTrash + load() auto-prune
+  const oldTime = new Date(Date.now() - TRASH_TTL_MS - 60_000).toISOString();
+  const freshTime = new Date(Date.now() - 1000).toISOString();
+  const expSong = normalizeSong({ id: "song-exp-1", title: "Expired", body: "C" });
+  const keepSong = normalizeSong({ id: "song-keep-1", title: "Fresh", body: "G" });
+  storage.setItem(KEYS.trash, JSON.stringify([
+    { kind: "song", id: expSong.id, trashedAt: oldTime, updatedAt: oldTime, item: expSong },
+    { kind: "song", id: keepSong.id, trashedAt: freshTime, updatedAt: freshTime, item: keepSong }
+  ]));
+  const stPruned = new Store(storage).load();
+  assert.equal(stPruned.trash.length, 1);
+  assert.equal(stPruned.trash[0].id, keepSong.id);
+  assert.ok(stPruned.deletedIds.includes(expSong.id), "expired trash moved to deletedIds on load");
+  assert.equal(normalizeTrashEntry({ kind: "bad", id: "x" }), null);
+});
+
+test("mergeLibraries with trash and backward-compatible libraryFingerprint", async () => {
+  const { TRASH_TTL_MS, normalizeTrashEntry } = await import("../js/core/store.js");
+  const nowMs = Date.parse("2026-11-20T12:00:00.000Z");
+  const tOld = "2026-11-10T00:00:00.000Z";
+  const tMid = "2026-11-15T00:00:00.000Z";
+  const tNew = "2026-11-18T00:00:00.000Z";
+
+  const sNewerTrash = normalizeSong({ id: "song-1", title: "One", body: "G", updatedAt: tOld });
+  const sNewerActive = normalizeSong({ id: "song-2", title: "Two", body: "C", updatedAt: tNew });
+  const sPermDeleted = normalizeSong({ id: "song-3", title: "Three", body: "D", updatedAt: tNew });
+  const sExpired = normalizeSong({ id: "song-4", title: "Four", body: "E", updatedAt: tOld });
+  const expiredAt = new Date(nowMs - TRASH_TTL_MS - 5000).toISOString();
+
+  const merged = mergeLibraries(
+    {
+      songs: [sNewerActive, sPermDeleted],
+      trash: [
+        normalizeTrashEntry({ kind: "song", id: "song-1", trashedAt: tNew, updatedAt: tNew, item: sNewerTrash }),
+        normalizeTrashEntry({ kind: "song", id: "song-3", trashedAt: tMid, updatedAt: tMid, item: sPermDeleted })
+      ],
+      deletedIds: []
+    },
+    {
+      songs: [sNewerTrash],
+      trash: [
+        normalizeTrashEntry({ kind: "song", id: "song-2", trashedAt: tOld, updatedAt: tOld, item: sNewerActive }),
+        normalizeTrashEntry({ kind: "song", id: "song-4", trashedAt: expiredAt, updatedAt: expiredAt, item: sExpired })
+      ],
+      deletedIds: ["song-3"]
+    },
+    nowMs
+  );
+
+  // song-1: trashed (tNew) beats active (tOld)
+  assert.ok(!merged.songs.some((s) => s.id === "song-1"));
+  assert.ok(merged.trash.some((e) => e.id === "song-1"));
+  // song-2: active (tNew) beats trashed (tOld) (e.g. trashed -> restored -> sync)
+  assert.ok(merged.songs.some((s) => s.id === "song-2"));
+  assert.ok(!merged.trash.some((e) => e.id === "song-2"));
+  // song-3: deletedIds beats both active and trashed
+  assert.ok(!merged.songs.some((s) => s.id === "song-3"));
+  assert.ok(!merged.trash.some((e) => e.id === "song-3"));
+  assert.ok(merged.deletedIds.includes("song-3"));
+  // song-4: expired trash auto-purged to deletedIds
+  assert.ok(!merged.trash.some((e) => e.id === "song-4"));
+  assert.ok(merged.deletedIds.includes("song-4"));
+
+  // Trashed -> restored -> sync end-to-end with Store
+  const st = freshStore();
+  const s = st.createSong({ title: "Round", body: "G C" });
+  st.trashSongs([s.id]);
+  const remoteSnapshotWithTrash = JSON.parse(JSON.stringify(st.snapshot()));
+  st.restoreFromTrash([s.id]);
+  st.mergeIn(remoteSnapshotWithTrash);
+  assert.equal(st.songs.length, 1, "restored song stays active when syncing against older remote trash");
+  assert.equal(st.trash.length, 0);
+
+  // libraryFingerprint backward compat: absent vs [] identical, non-empty differs
+  const baseSnap = { songs: [{ id: "a", title: "A", body: "G", updatedAt: tOld }], setlists: [], deletedIds: [] };
+  assert.equal(libraryFingerprint(baseSnap), libraryFingerprint({ ...baseSnap, trash: [] }));
+  assert.notEqual(
+    libraryFingerprint(baseSnap),
+    libraryFingerprint({ ...baseSnap, trash: [{ kind: "song", id: "t1", trashedAt: tNew, updatedAt: tNew, item: sNewerTrash }] })
+  );
+});
+
+test("mcp-tools.js: public music tools, share round-trip, and library CRUD + Trash safety", async () => {
+  const MT = await import("../js/core/mcp-tools.js");
+  assert.equal(MT.PUBLIC_TOOL_DEFS.length, 6);
+  assert.equal(MT.ALL_TOOL_DEFS.length, 17);
+
+  // lookup_chord
+  const chord = await MT.executePublicTool("lookup_chord", { chord: "D/F#", instrument: "all" });
+  assert.equal(chord.name, "D/F#");
+  assert.equal(chord.bassNote, "F#");
+  assert.deepEqual(chord.notes, ["D", "F#", "A"]);
+  assert.ok(chord.guitar.length > 0 && chord.ukulele.length > 0 && chord.bass.length > 0 && chord.piano);
+
+  // transpose_chart (steps, fromKey->toKey, nashville, roman, lyrics)
+  const trKeys = await MT.executePublicTool("transpose_chart", { body: "G  C  Em   D\nSing", fromKey: "G", toKey: "A" });
+  assert.ok(trKeys.text.startsWith("A  D  F#m  E"));
+  const trNash = await MT.executePublicTool("transpose_chart", { body: "[G]Sing [C]praise [D]now", fromKey: "G", viewMode: "nashville" });
+  assert.ok(trNash.text.includes("1") && trNash.text.includes("4") && trNash.text.includes("5"));
+  const trRoman = await MT.executePublicTool("transpose_chart", { body: "G C Em D\nWords", fromKey: "G", viewMode: "roman" });
+  assert.ok(trRoman.text.includes("I") && trRoman.text.includes("vi"));
+  const trLyrics = await MT.executePublicTool("transpose_chart", { body: "[G]Amazing [C]grace", fromKey: "G", viewMode: "lyrics" });
+  assert.equal(trLyrics.text, "Amazing grace");
+
+  // get_key_info
+  const ki = await MT.executePublicTool("get_key_info", { key: "G:major" });
+  assert.equal(ki.signature, 1);
+  assert.equal(ki.relative.short, "Em");
+  assert.ok(Array.isArray(ki.diatonic) && ki.diatonic.length === 7);
+  assert.ok(ki.families.slash.some((c) => c.name === "D/F#"));
+
+  // analyze_chord_chart
+  const analyzed = await MT.executePublicTool("analyze_chord_chart", {
+    rawChart: "Title: Grace\n[Verse 1]\nG   C   D\nAmazing grace",
+    sourceUrl: "https://example.com/grace"
+  });
+  assert.equal(analyzed.title, "Grace");
+  assert.ok(analyzed.links.some((l) => l.url === "https://example.com/grace"));
+
+  // build_sonata_link round-trip via decodeShare (song + setlist)
+  const songLink = await MT.executePublicTool("build_sonata_link", {
+    title: "Shared Link Song",
+    body: "G C D",
+    key: "G:major",
+    capo: 2,
+    bpm: 80
+  });
+  const decSong = await decodeShare(new URL(songLink.url).searchParams.get("s"));
+  assert.equal(decSong.t, "Shared Link Song");
+  assert.equal(decSong.c, 2);
+  assert.equal(decSong.bpm, 80);
+
+  const setLink = await MT.executePublicTool("build_sonata_link", {
+    title: "Sunday Lineup",
+    songs: [{ title: "One", body: "G C" }, { title: "Two", body: "D A" }]
+  });
+  const decSet = await decodeShare(new URL(setLink.url).searchParams.get("s"));
+  assert.equal(decSet.type, "set");
+  assert.equal(decSet.s.length, 2);
+
+  // executeLibraryTool
+  const st = freshStore();
+  let mutatedCount = 0;
+  const ctx = {
+    store: st,
+    origin: "https://sonata.jethrofrane.xyz",
+    arranger: "Tester",
+    onMutate: () => { mutatedCount++; },
+    fetchUrl: async (u) => ({
+      status: 200,
+      source: u,
+      title: "Fetched Song",
+      artist: "Fetched Artist",
+      text: "Capo 2\n[Verse 1]\nG  C  D\nLine one\nEm  C  G\nLine two"
+    })
+  };
+
+  // create_song
+  const c1 = await MT.executeLibraryTool("create_song", {
+    rawChart: "Title: Created Song\nArtist: Author\n[Chorus]\nC  F  G\nPraise Him",
+    genre: "Worship",
+    isFavorite: true
+  }, ctx);
+  assert.equal(c1.song.title, "Created Song");
+  assert.equal(c1.song.genre, "Worship");
+  assert.ok(c1.shareUrl.includes("?s=") && c1.sonataUrl.includes("/song/"));
+
+  // import_song_from_url + duplicate guard
+  const imp1 = await MT.executeLibraryTool("import_song_from_url", { url: "https://site.com/fetched" }, ctx);
+  assert.equal(imp1.song.title, "Fetched Song");
+  assert.equal(imp1.song.capo, 2);
+  const impDup = await MT.executeLibraryTool("import_song_from_url", { url: "https://site.com/fetched" }, ctx);
+  assert.equal(impDup.duplicate, true);
+  assert.equal(impDup.existingSong.id, imp1.song.id);
+  const impForce = await MT.executeLibraryTool("import_song_from_url", { url: "https://site.com/fetched", allowDuplicate: true }, ctx);
+  assert.notEqual(impForce.song.id, imp1.song.id);
+
+  // update_song with transposeBy (transposes body & existing explicit manualKey; explicit key overrides)
+  const cKeyed = await MT.executeLibraryTool("create_song", {
+    title: "Keyed Song",
+    body: "C  F  G\nPraise Him",
+    key: "C:major"
+  }, ctx);
+  const upd = await MT.executeLibraryTool("update_song", {
+    id: cKeyed.song.id,
+    transposeBy: 2
+  }, ctx);
+  assert.equal(upd.song.manualKey, "D:major");
+  assert.ok(upd.song.body.includes("D  G  A"), "chords permanently transposed");
+  const updOverride = await MT.executeLibraryTool("update_song", {
+    id: c1.song.id,
+    key: "D:major",
+    transposeBy: 2
+  }, ctx);
+  assert.equal(updOverride.song.manualKey, "D:major");
+  assert.ok(updOverride.song.body.includes("D  G  A"), "explicit key override kept with transposeBy");
+
+  // manage_setlists (create, update, add_songs dedupe, list, trash)
+  const slCreate = await MT.executeLibraryTool("manage_setlists", {
+    action: "create",
+    title: "Youth Night",
+    songIds: [c1.song.id, c1.song.id, imp1.song.id]
+  }, ctx);
+  assert.equal(slCreate.setlist.items.length, 2, "dedupes songIds on create");
+  const slAdd = await MT.executeLibraryTool("manage_setlists", {
+    action: "add_songs",
+    id: slCreate.setlist.id,
+    songIds: [imp1.song.id, impForce.song.id]
+  }, ctx);
+  assert.equal(slAdd.addedCount, 1);
+  assert.equal(slAdd.setlist.items.length, 3);
+  const slList = await MT.executeLibraryTool("manage_setlists", { action: "list" }, ctx);
+  assert.equal(slList.total, 1);
+
+  // trash_song, list_trash, restore_from_trash
+  const tr = await MT.executeLibraryTool("trash_song", { ids: [c1.song.id] }, ctx);
+  assert.equal(tr.trashedCount, 1);
+  const lt = await MT.executeLibraryTool("list_trash", {}, ctx);
+  assert.equal(lt.count, 1);
+  assert.equal(lt.items[0].id, c1.song.id);
+  assert.ok(Date.parse(lt.items[0].expiresAt) > Date.parse(lt.items[0].trashedAt));
+
+  // empty_trash safe guard when confirm omitted
+  const preview = await MT.executeLibraryTool("empty_trash", {}, ctx);
+  assert.equal(preview.requiresConfirmation, true);
+  assert.equal(preview.count, 1);
+  assert.equal(st.trash.length, 1, "trash untouched without confirm: true");
+
+  // restore_from_trash restores song & setlist position
+  const rest = await MT.executeLibraryTool("restore_from_trash", { ids: [c1.song.id] }, ctx);
+  assert.equal(rest.restoredSongs, 1);
+  assert.ok(st.song(c1.song.id));
+
+  // empty_trash with confirm: true purges permanently
+  await MT.executeLibraryTool("trash_song", { ids: [c1.song.id] }, ctx);
+  await MT.executeLibraryTool("manage_setlists", { action: "trash", id: slCreate.setlist.id }, ctx);
+  assert.equal(st.trash.length, 2);
+  const emptied = await MT.executeLibraryTool("empty_trash", { confirm: true }, ctx);
+  assert.equal(emptied.confirmed, true);
+  assert.equal(emptied.purgedCount, 2);
+  assert.equal(st.trash.length, 0);
+  assert.ok(mutatedCount >= 6);
+});
+
+test("v7: router parsePath/buildPath for /tools and /tools/key-finder, and enhanced findKeysFromChords candidates", async () => {
+  const R = await import("../js/router.js");
+  const { extractChart } = await import("../js/core/import.js");
+  assert.deepEqual(R.parsePath("/tools"), { view: "tools", slug: "", sub: "", stage: false, raw: "" });
+  assert.deepEqual(R.parsePath("/tools/key-finder"), { view: "theory", slug: "", sub: "key-finder", stage: false, raw: "" });
+  assert.equal(R.buildPath({ view: "tools" }), "/tools");
+  assert.equal(R.buildPath({ view: "theory", sub: "key-finder" }), "/tools/key-finder");
+  assert.equal(R.buildPath({ view: "theory" }), "/theory");
+
+  const kf = M.findKeysFromChords("Am F C G");
+  assert.ok(kf);
+  assert.deepEqual(kf.chords, ["Am", "F", "C", "G"]);
+  assert.equal(kf.candidates.length, 4);
+  const candNames = kf.candidates.map((c) => c.key.name);
+  assert.ok(candNames.includes("C major") && candNames.includes("A minor"));
+  for (const c of kf.candidates) {
+    assert.equal(c.total, 4);
+    assert.ok(c.matched >= 2 && c.matched <= 4);
+    assert.equal(c.progression.length, 4);
+  }
+
+  // Multi-platform chord extraction: Ultimate-Guitar js-store, WorshipTogether chord-pro-line, Guitaretab js-tab-row, Chordie h1 fallback
+  const ugHtml = `<html><head><title>AMAZING GRACE CHORDS by John Newton @ Ultimate-Guitar.Com</title></head><body><div class="js-store" data-content="{&quot;store&quot;:{&quot;page&quot;:{&quot;data&quot;:{&quot;tab&quot;:{&quot;song_name&quot;:&quot;Amazing Grace&quot;,&quot;artist_name&quot;:&quot;John Newton&quot;,&quot;tonality_name&quot;:&quot;G&quot;},&quot;tab_view&quot;:{&quot;meta&quot;:{&quot;capo&quot;:2},&quot;wiki_tab&quot;:{&quot;content&quot;:&quot;[Verse 1]\\n[tab][ch]G[/ch]       [ch]C[/ch]       [ch]G[/ch]\\nAmazing grace how sweet\\n[ch]Em[/ch]      [ch]D[/ch]       [ch]G[/ch]\\nThat saved a wretch[/tab]&quot;}}}}}}"></div></body></html>`;
+  const ugChart = extractChart(ugHtml);
+  assert.ok(ugChart);
+  assert.equal(ugChart.title, "Amazing Grace");
+  assert.equal(ugChart.artist, "John Newton");
+  assert.ok(ugChart.text.includes("Capo 2") && ugChart.text.includes("Amazing grace"));
+
+  const wtHtml = `<html><head><title>Way Maker - Sinach - Cifra Club</title></head><body><div class="chord-pro-line"><div class="chord-pro-segment"><div class="chord-pro-note">F</div><div class="chord-pro-lyric">You are here, </div></div><div class="chord-pro-segment"><div class="chord-pro-note">C</div><div class="chord-pro-lyric">moving in our midst</div></div></div><div class="chord-pro-line"><div class="chord-pro-segment"><div class="chord-pro-note">G</div><div class="chord-pro-lyric">I worship </div></div><div class="chord-pro-segment"><div class="chord-pro-note">Am</div><div class="chord-pro-lyric">You</div></div></div></body></html>`;
+  const wtChart = extractChart(wtHtml);
+  assert.ok(wtChart);
+  assert.equal(wtChart.title, "Way Maker");
+  assert.equal(wtChart.artist, "Sinach");
+  assert.ok(wtChart.text.includes("F") && wtChart.text.includes("You are here"));
+});

@@ -1,10 +1,11 @@
 // @ts-check
 // Chords: look up any chord (or tap one in a chart) and see it on guitar, ukulele,
 // bass and piano, with every shape Sonata can find. Tap to hear it.
+import "../../css/music.css";
 import { $, esc, icon, openSheet, paintIcons, toast, copyText } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, tick, renderOptions } from "./ctx.js";
-import { pretty, noteName, NOTE_TO_PC, findKeysFromChords, keyShort } from "../core/music.js";
+import { pretty, noteName, NOTE_TO_PC } from "../core/music.js";
 import { uniqueChords } from "../core/chart.js";
 import { QUALITIES, QUALITY_GROUPS, describeChord, voicings, bassMap, pianoVoicing, inversions, TUNINGS, ROOTS } from "../core/chords.js";
 import { chordBox, neckMap, pianoKeys } from "./diagrams.js";
@@ -133,17 +134,6 @@ export function initChords() {
   };
   search.addEventListener("input", tryName);
   search.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); search.blur(); } });
-  const ckfInput = /** @type {HTMLInputElement|null} */ (document.getElementById("chordKeyFinder"));
-  const ckfRes = document.getElementById("chordKeyFinderResult");
-  if (ckfInput && ckfRes) {
-    ckfInput.addEventListener("input", () => {
-      const res = findKeysFromChords(ckfInput.value);
-      if (!res) { ckfRes.hidden = true; ckfRes.innerHTML = ""; return; }
-      ckfRes.hidden = false;
-      const chips = res.progression.map((p) => `<button type="button" class="chip chord-chip" data-pick="${esc(p.name)}">${esc(pretty(p.name))} <small class="muted">${esc(pretty(p.roman))}</small></button>`).join("");
-      ckfRes.innerHTML = `<div class="kf-row"><span class="kf-main">${esc(t("detectedKey", "Key"))}: <strong>${esc(pretty(res.best.name))}</strong> <span class="muted">(${esc(pretty(keyShort(res.relative)))})</span></span></div><div class="chip-row">${chips}</div>`;
-    });
-  }
 }
 
 /** @param {string} spec "guitar:1" */

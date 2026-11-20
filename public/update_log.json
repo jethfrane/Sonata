@@ -1,5 +1,18 @@
 [
   {
+    "version": "7.0.0",
+    "date": "2026-11-20",
+    "whatsNew": "A calmer 3-tab layout (Songs, Chart, Tools) with a dedicated Tools Hub, a rearranged Minor Circle of Fifths and interactive Key Finder, floating popover dropdowns, a 30-day Trash for deleted songs and setlists, and built-in AI Agents & MCP connectivity.",
+    "changes": [
+      "Songs · Chart · Tools: the top and bottom navigation now focus on your three main places, while Chord Finder, Circle of Fifths, Key Finder, Piano, Fretboard, Tuner, Metronome and Drum Beats & Pads live together in the new Tools Hub (/tools) with a quick ← All tools pill.",
+      "Minor Circle of Fifths: switching to Minor rearranges the circle itself so Minor keys sit on the primary outer ring (Am at 12 o'clock) and Relative Major keys move to the inner ring, with minor key labels across the picker and center hub.",
+      "Upgraded Key Finder (/tools/key-finder): tap or type chords, pull the active song's chords in one tap, compare the top matching Major and Minor key candidates with match counts, and see your song's chords highlighted directly on the Circle of Fifths.",
+      "Floating popover menus: every dropdown across Songs, Chart, Stage, Tools and Settings now opens as an anchored floating menu with checkmarks, smart viewport flip, and full keyboard navigation (Arrow keys, Home/End, Enter, Escape) without shifting the page.",
+      "30-day Trash (synced with Google Drive): deleting a song or setlist moves it to Trash for 30 days with an immediate Undo toast. Restoring a song brings it back to your library and its original setlists; Delete forever and Empty trash ask for confirmation first.",
+      "AI Agents & MCP: Sonata now registers 17 music and library tools with WebMCP (navigator.modelContext and window.sonataAgent) and provides a Remote MCP endpoint (/api/mcp) with Google Drive OAuth 2.1 so AI assistants can extract chords, transpose charts, manage setlists and sync your library safely."
+    ]
+  },
+  {
     "version": "6.3.0",
     "date": "2026-11-17",
     "whatsNew": "Charts that fit your screen: chords stay over their words on any phone or tablet, PNG images are 9:16 for phones, and the app fits every screen from the smallest phone to a big monitor.",

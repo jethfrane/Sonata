@@ -14,14 +14,16 @@ import { parsePath, buildPath, findSong, PAGE_META, SECTIONS } from "./router.js
 import { openSettings, openImportSet, chordsModule, bankModule, openLinksImport, playModule, theoryModule, stageModule, driveModule, openBackup, openHelp, startTour } from "./ui/sheets-lazy.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
-const VIEWS = /** @type {View[]} */ (["songs", "editor", "chords", "theory", "play", "bank"]);
+const VIEWS = /** @type {View[]} */ (["songs", "editor", "tools", "chords", "theory", "play", "bank"]);
 /**
- * Lazy screens: loaded the first time they open. Songs and Chart start with the app; Chords, Theory,
- * Play (with the audio engine), Stage, the Song Bank and Google Drive each arrive when first needed.
+ * Lazy screens: loaded the first time they open. Songs, Chart and the Tools hub start with the app;
+ * Chords, Theory, Play (with the audio engine), Stage, the Song Bank and Google Drive each arrive when first needed.
  */
 const lazy = { chords: /** @type {any} */ (null), bank: /** @type {any} */ (null), bankId: "", play: /** @type {any} */ (null), theory: /** @type {any} */ (null), stage: /** @type {any} */ (null) };
 /** The instrument tab to show on Play before that screen has loaded. */
 let playSub = "";
+/** Optional sub-route for Theory (e.g. "key-finder" for /tools/key-finder). */
+let theorySub = "";
 try { playSub = localStorage.getItem("sonata_play_inst") || ""; } catch { /* ignore */ }
 const currentInstrument = () => (lazy.play ? lazy.play.currentInstrument() : playSub || "piano");
 const isStageOpen = () => Boolean(lazy.stage?.isStageOpen());
@@ -106,7 +108,7 @@ function linkSong() {
 
 /** Path for the current screen. @param {boolean} [stage] */
 function currentPath(stage = isStageOpen()) {
-  const sub = app.view === "play" ? currentInstrument() : app.view === "chords" ? (lazy.chords?.currentChord() || "") : app.view === "bank" ? lazy.bankId : "";
+  const sub = app.view === "play" ? currentInstrument() : app.view === "chords" ? (lazy.chords?.currentChord() || "") : app.view === "bank" ? lazy.bankId : app.view === "theory" ? theorySub : "";
   return buildPath({ view: app.view, song: linkSong(), sub, stage });
 }
 
@@ -114,7 +116,7 @@ let titleTimer = /** @type {any} */ (0);
 function setTitle() {
   const song = linkSong();
   const meta = /** @type {any} */ (PAGE_META)[app.view] || PAGE_META.songs;
-  const base = app.view === "editor" && song ? song.title || "Untitled" : app.view === "chords" && lazy.chords ? `${lazy.chords.currentChord()} chord` : meta[0];
+  const base = app.view === "editor" && song ? song.title || "Untitled" : app.view === "chords" && lazy.chords ? `${lazy.chords.currentChord()} chord` : app.view === "theory" && theorySub === "key-finder" ? "Key finder" : meta[0];
   document.title = isStageOpen() && song ? `${song.title} · Stage · Sonata` : `${base} · Sonata`;
   const url = location.origin + location.pathname;
   document.querySelector('link[rel="canonical"]')?.setAttribute("href", url);
@@ -145,16 +147,19 @@ function show(view, opts = {}) {
   $("app").dataset.view = view;
   if (view === "songs" && changed && !first) afterFirstSong();
   $("app").dataset.ready = "1";
+  const navView = ["tools", "chords", "theory", "play"].includes(view) ? "tools" : view;
   document.querySelectorAll("button[data-view]").forEach((b) => {
     const el = /** @type {HTMLElement} */ (b);
-    const on = el.dataset.view === view;
+    const on = el.dataset.view === navView;
     el.classList.toggle("active", on);
     if (on) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
   });
   try { localStorage.setItem("sonata_active_view", view); } catch { /* ignore */ }
-  const subChanged = view === "play" && Boolean(opts.sub) && opts.sub !== currentInstrument();
+  const nextTheorySub = view === "theory" && opts.sub === "key-finder" ? "key-finder" : "";
+  const subChanged = (view === "play" && Boolean(opts.sub) && opts.sub !== currentInstrument()) || (view === "theory" && nextTheorySub !== theorySub);
+  theorySub = nextTheorySub;
   if (view === "play" && opts.sub) { playSub = opts.sub === "fretboard" ? "guitar" : opts.sub; lazy.play?.setInstrument(opts.sub); }
-  renderView(view);
+  renderView(view, { focusKeyFinder: view === "theory" && theorySub === "key-finder" });
   if (view === "chords") showChords(opts.sub);
   if (view === "bank" && opts.sub) showBank(opts.sub);
   syncUrl(opts.replace || first || (!changed && !subChanged) ? "replace" : "push");
@@ -162,11 +167,15 @@ function show(view, opts = {}) {
   if (changed) window.scrollTo({ top: 0 });
 }
 
-/** @param {View} view */
-function renderView(view) {
+/** @param {View} view @param {{ focusKeyFinder?: boolean }} [opts] */
+function renderView(view, opts = {}) {
   if (view === "songs") renderLibrary();
   if (view === "editor") refreshEditor();
-  if (view === "theory") loadTheory().then((m) => { if (m && app.view === "theory") m.renderTheory(); });
+  if (view === "theory") loadTheory().then((m) => {
+    if (!m || app.view !== "theory") return;
+    m.renderTheory();
+    if (opts.focusKeyFinder) m.focusKeyFinder?.();
+  });
   if (view === "play") loadPlay().then((m) => {
     if (!m || app.view !== "play") return;
     if (playSub && playSub !== m.currentInstrument()) m.setInstrument(playSub);
@@ -364,7 +373,6 @@ function route() {
     const fallback = store.songs.length ? "editor" : "songs";
     try { view = /** @type {View} */ (localStorage.getItem("sonata_active_view") || fallback); } catch { view = fallback; }
     if (/** @type {string} */ (view) === "library") view = "songs";
-    if (/** @type {string} */ (view) === "tools") view = "editor";
     if (!SECTIONS.includes(view)) view = fallback;
   }
   if (r.slug) {
@@ -390,7 +398,7 @@ async function boot() {
   app.show = show;
   app.openStage = openStage;
   app.loadDrive = loadDrive;
-  app.refresh = () => renderView(app.view);
+  app.refresh = () => { renderView(app.view); renderRecent(); };
   initEditor();
   initLibrary();
 
@@ -402,6 +410,26 @@ async function boot() {
     b.addEventListener("pointerenter", warm, { passive: true });
     b.addEventListener("touchstart", warm, { passive: true });
     b.addEventListener("focus", warm);
+  });
+  document.querySelectorAll("[data-open-tool]").forEach((b) => {
+    const spec = /** @type {HTMLElement} */ (b).dataset.openTool || "";
+    const warm = () => {
+      if (spec === "chords") { if (!lazy.chords) chordsModule(); }
+      else if (spec === "theory" || spec === "key-finder") loadTheory();
+      else if (spec.startsWith("play:")) loadPlay();
+    };
+    b.addEventListener("click", () => {
+      if (spec === "chords") show("chords");
+      else if (spec === "theory") show("theory");
+      else if (spec === "key-finder") show("theory", { sub: "key-finder" });
+      else if (spec.startsWith("play:")) show("play", { sub: spec.slice(5) });
+    });
+    b.addEventListener("pointerenter", warm, { passive: true });
+    b.addEventListener("touchstart", warm, { passive: true });
+    b.addEventListener("focus", warm);
+  });
+  document.querySelectorAll("[data-back-tools]").forEach((b) => {
+    b.addEventListener("click", () => show("tools"));
   });
   document.querySelector(".brand")?.addEventListener("click", (e) => { e.preventDefault(); show("songs"); });
   window.addEventListener("popstate", () => route());
@@ -495,6 +523,7 @@ async function boot() {
   watchErrors();
   // Caches from the hand-written service worker (v2 and older) are replaced by Workbox's.
   if ("caches" in window) caches.keys().then((keys) => keys.filter((k) => /^sonata-(cache-|v\d|fonts$)/.test(k)).forEach((k) => caches.delete(k))).catch(() => {});
+  import("./agent.js").then((m) => m.initAgent()).catch(() => {});
 }
 
 /**

@@ -11,8 +11,7 @@
     { "source": "/manifest.json", "destination": "/manifest.webmanifest", "permanent": true },
     { "source": "/icon.png", "destination": "/icons/icon-512.png", "permanent": true },
     { "source": "/icon_dark.png", "destination": "/icons/icon-512.png", "permanent": true },
-    { "source": "/icon_light.png", "destination": "/icons/icon-512.png", "permanent": true },
-    { "source": "/tools", "destination": "/editor", "permanent": false }
+    { "source": "/icon_light.png", "destination": "/icons/icon-512.png", "permanent": true }
   ],
   "headers": [
     {
@@ -43,12 +42,19 @@
     }
   ],
   "rewrites": [
+    { "source": "/.well-known/oauth-protected-resource", "destination": "/api/oauth?action=protected-resource" },
+    { "source": "/.well-known/oauth-protected-resource/(.*)", "destination": "/api/oauth?action=protected-resource" },
+    { "source": "/.well-known/oauth-authorization-server", "destination": "/api/oauth?action=auth-server" },
+    { "source": "/.well-known/oauth-authorization-server/(.*)", "destination": "/api/oauth?action=auth-server" },
+    { "source": "/api/oauth/:action", "destination": "/api/oauth?action=:action" },
     { "source": "/:path((?!api/)(?!assets/)(?!privacy$)(?!.*\\.).*)", "destination": "/api/page?p=/:path*" }
   ],
   "functions": {
     "api/page.js": { "includeFiles": "dist/index.html", "maxDuration": 10 },
     "api/bank.js": { "maxDuration": 10 },
     "api/import.js": { "maxDuration": 15 },
-    "api/set.js": { "maxDuration": 10 }
+    "api/set.js": { "maxDuration": 10 },
+    "api/mcp.js": { "maxDuration": 15 },
+    "api/oauth.js": { "maxDuration": 10 }
   }
 }

@@ -304,20 +304,25 @@ export function analyzeRawChart(raw) {
     if (metaTitle && !title) { title = metaTitle[1].trim(); continue; }
     const metaArtist = t.match(/^(?:artist|by|author)\s*:\s*(.+)$/i);
     if (metaArtist && !artist) { artist = metaArtist[1].trim(); continue; }
-    const metaKey = t.match(/^key\s*:\s*([A-G][#b♯♭]?\s*(?:m|min|minor|maj|major)?)$/i);
-    if (metaKey) { const pk = parseKey(metaKey[1]); if (pk) manualKey = keyValue(pk); continue; }
-    const metaCapo = t.match(/^capo\s*:?\s*(\d{1,2})(?:st|nd|rd|th)?(?:\s+fret)?$/i);
-    if (metaCapo) { capo = Math.max(0, Math.min(11, parseInt(metaCapo[1], 10) || 0)); continue; }
+    const metaKey = t.match(/^(?:key|tom|tonalidad)\s*:\s*([A-G][#b♯♭]?\s*(?:m|min|minor|maj|major|menor|maior)?)$/i);
+    if (metaKey) {
+      const kStr = metaKey[1].replace(/\bmenor\b/i, "m").replace(/\bmaior\b/i, "");
+      const pk = parseKey(kStr);
+      if (pk) manualKey = keyValue(pk);
+      continue;
+    }
+    const metaCapo = t.match(/^(?:capo|capotraste)\s*:?\s*(?:(\d{1,2})(?:st|nd|rd|th|ª|º)?(?:\s+(?:fret|casa|traste))?|(?:fret|casa|traste)\s*(\d{1,2}))$/i);
+    if (metaCapo) { capo = Math.max(0, Math.min(11, parseInt(metaCapo[1] || metaCapo[2], 10) || 0)); continue; }
     const metaBpm = t.match(/^(?:tempo|bpm)\s*:?\s*(\d{2,3})(?:\s*bpm)?$/i) || t.match(/^(\d{2,3})\s*bpm$/i);
     if (metaBpm) { bpm = Math.max(30, Math.min(300, parseInt(metaBpm[1], 10) || 0)); continue; }
 
-    // Section headers like "[Verse 1]", "[Chorus]", "Verse 1:", "CHORUS"
-    const secBracket = t.match(/^\[((?:intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|tag|ending|refrain|hook|vamp)[^\]]*)\]$/i);
+    // Section headers like "[Verse 1]", "[Chorus]", "Verse 1:", "Verso 1:", "[Primeira Parte]", "[Refrão]", "Koro:"
+    const secBracket = t.match(/^\[((?:intro|introd(?:u[cç][aã]o|ucción)?|verse|verso|estrofe|estrofa|stanza|primeira\s+parte|segunda\s+parte|terceira\s+parte|pre-?chorus|pr[eé]-?(?:refr[aã]o|coro)|chorus|refr[aã]o|coro|koro|bridge|ponte|puente|tulalay|interlude|interl[uú]dio|instrumental|solo|outro|final|tag|ending|refrain|hook|vamp|coda)[^\]]*)\]$/i);
     if (secBracket && !parseChord(secBracket[1])) {
       bodyLines.push(`## ${secBracket[1].trim()}`);
       continue;
     }
-    const secPlain = t.match(/^((?:intro|verse|pre-?chorus|chorus|bridge|interlude|instrumental|solo|outro|tag|ending|refrain)(?:\s+\d+)?)\s*:?$/i);
+    const secPlain = t.match(/^((?:intro|introd(?:u[cç][aã]o|ucción)?|verse|verso|estrofe|estrofa|stanza|pre-?chorus|pr[eé]-?(?:refr[aã]o|coro)|chorus|refr[aã]o|coro|koro|bridge|ponte|puente|tulalay|interlude|interl[uú]dio|instrumental|solo|outro|final|tag|ending|refrain|coda)(?:\s+\d+)?)\s*:?$/i);
     if (secPlain && !parseChord(secPlain[1])) {
       const label = secPlain[1].trim();
       bodyLines.push(`## ${label.charAt(0).toUpperCase() + label.slice(1).toLowerCase()}`);

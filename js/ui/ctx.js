@@ -6,7 +6,7 @@ import { detectKey, parseKey, keyFromTonic, keyShort, mod12 } from "../core/musi
 /**
  * @typedef {import("../core/store.js").Song} Song
  * @typedef {import("../core/music.js").Key} Key
- * @typedef {"songs"|"editor"|"chords"|"theory"|"play"|"bank"} View
+ * @typedef {"songs"|"editor"|"tools"|"chords"|"theory"|"play"|"bank"} View
  */
 
 /** The browser's storage, or memory-only storage when the browser blocks it (private or strict modes). */

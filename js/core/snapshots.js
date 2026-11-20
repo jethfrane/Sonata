@@ -10,7 +10,7 @@ export const KEEP = 15;
 const AUTO_GAP = 60 * 60 * 1000;
 
 /**
- * @typedef {{ songs?: any[], setlists?: any[], deletedIds?: string[] }} Library
+ * @typedef {{ songs?: any[], setlists?: any[], trash?: any[], deletedIds?: string[] }} Library
  * @typedef {"auto"|"before-restore"|"manual"} Reason
  * @typedef {{ id: string, at: string, reason: Reason, songs: number, setlists: number, fp: string }} SnapshotInfo
  */
@@ -50,10 +50,13 @@ async function run(mode, fn) {
  * @param {Library} d
  */
 export function fingerprint(d) {
-  const text = JSON.stringify([
+  /** @type {any[]} */
+  const parts = [
     (d.songs || []).map((s) => ({ ...s, lastOpenedAt: undefined })),
     d.setlists || []
-  ]);
+  ];
+  if (d.trash && d.trash.length) parts.push(d.trash);
+  const text = JSON.stringify(parts);
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193); }
   return `${(h >>> 0).toString(36)}-${text.length.toString(36)}`;
@@ -82,7 +85,9 @@ export async function getSnapshot(id) {
 export async function saveSnapshot(data, reason = "manual") {
   try {
     const at = new Date().toISOString();
+    /** @type {{ songs: any[], setlists: any[], trash?: any[] }} */
     const lib = { songs: data.songs || [], setlists: data.setlists || [] };
+    if (data.trash && data.trash.length) lib.trash = data.trash;
     const info = { id: `${at}-${Math.random().toString(36).slice(2, 6)}`, at, reason, songs: lib.songs.length, setlists: lib.setlists.length, fp: fingerprint(lib) };
     await run("readwrite", (s) => s.put({ ...info, json: JSON.stringify(lib) }));
     const all = await listSnapshots();

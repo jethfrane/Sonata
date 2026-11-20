@@ -37,7 +37,7 @@
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
-  <noscript><div style="max-width:640px;margin:0 auto;padding:16px;font:16px/1.5 system-ui,sans-serif"><h1>Sonata</h1><p>Sonata needs JavaScript to run. Turn it on in your browser settings, then reload this page.</p><nav aria-label="Pages"><ul><li><a href="/songs">Songs</a></li><li><a href="/chords">Chord finder</a></li><li><a href="/theory">Circle of fifths</a></li><li><a href="/play">Piano, fretboard, tuner and metronome</a></li><li><a href="/privacy">Privacy &amp; terms</a></li></ul></nav></div></noscript>
+  <noscript><div style="max-width:640px;margin:0 auto;padding:16px;font:16px/1.5 system-ui,sans-serif"><h1>Sonata</h1><p>Sonata needs JavaScript to run. Turn it on in your browser settings, then reload this page.</p><nav aria-label="Pages"><ul><li><a href="/songs">Songs</a></li><li><a href="/tools">Tools</a></li><li><a href="/chords">Chord finder</a></li><li><a href="/theory">Circle of fifths</a></li><li><a href="/play">Piano, fretboard, tuner and metronome</a></li><li><a href="/privacy">Privacy &amp; terms</a></li></ul></nav></div></noscript>
   <a class="skip-link" href="#main" data-i18n="skipToContent">Skip to content</a>
 
   <div class="app" id="app" data-view="songs">
@@ -50,9 +50,7 @@
       <nav class="tabs" aria-label="Main" data-i18n-attr="aria-label:navMain">
         <button class="tab" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
         <button class="tab" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navChart">Chart</span></button>
-        <button class="tab" data-view="chords" type="button"><span data-icon="chord"></span><span data-i18n="navChords">Chords</span></button>
-        <button class="tab" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
-        <button class="tab" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
+        <button class="tab" data-view="tools" type="button"><span data-icon="sliders"></span><span data-i18n="navTools">Tools</span></button>
       </nav>
 
       <section class="side-recent" aria-labelledby="recentTitle">
@@ -90,13 +88,14 @@
           <div class="library-toolbar">
             <label class="search">
               <span data-icon="search"></span>
-              <input id="librarySearch" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search titles, artists, lyrics" data-i18n-attr="placeholder:searchPlaceholder,aria-label:search" aria-label="Search">
+              <input id="librarySearch" type="search" autocomplete="off" enterkeyhint="search" placeholder="Search songs, artists, lyrics" data-i18n-attr="placeholder:searchPlaceholder,aria-label:search" aria-label="Search">
             </label>
             <div class="segmented" role="group" aria-label="Filter">
               <button type="button" data-filter="all" class="active" data-i18n="filterAll">All</button>
               <button type="button" data-filter="favorites" data-i18n="filterFavorites">Favorites</button>
               <button type="button" data-filter="setlists" data-i18n="filterSetlists">Setlists</button>
               <button type="button" data-filter="bank" data-i18n="filterBank">Song Bank</button>
+              <button type="button" data-filter="trash"><span data-i18n="filterTrash">Trash</span><span class="filter-badge" id="trashCount" hidden></span></button>
             </div>
             <select class="select" id="librarySort" aria-label="Sort" data-i18n-attr="aria-label:sort">
               <option value="recent" data-i18n="sortRecent">Recent</option>
@@ -169,13 +168,18 @@
 
         <div class="editor-panes" id="editorPanes" data-pane="edit">
           <div class="pane pane-edit">
+            <div class="pane-head edit-head">
+              <span class="preview-label" data-i18n="paneEdit">Edit</span>
+              <span class="edit-stats" id="editStats" aria-live="off"></span>
+            </div>
             <div class="quickstart" id="quickstart">
               <p class="quickstart-text" data-i18n="quickText2">Chords above the words, or [G] inside them. Tap to add:</p>
               <div class="quickstart-chips">
+                <button type="button" class="chip accent" id="quickImportBtn"><span data-icon="link"></span><span data-i18n="importLinkBtn">Import from link</span></button>
                 <button type="button" class="chip" data-insert="## Verse 1&#10;"><code>##</code> <span data-i18n="snipSection">Section</span></button>
                 <button type="button" class="chip" data-insert="G         C          G&#10;"><code>G  C</code> <span data-i18n="snipChordLine">Chord line</span></button>
                 <button type="button" class="chip" data-insert="[G]"><code>[G]</code> <span data-i18n="snipInline">Inline chord</span></button>
-                <button type="button" class="chip accent" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
+                <button type="button" class="chip" id="demoBtn"><span data-icon="sparkles"></span><span data-i18n="tryDemo">Try the demo song</span></button>
               </div>
             </div>
             <textarea class="chart-input" id="songBody" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Chords and lyrics" placeholder="G        C&#10;Amazing grace, how sweet…" data-i18n-attr="aria-label:chartInput"></textarea>
@@ -191,9 +195,98 @@
         <div class="song-links" id="songLinks" hidden></div>
       </section>
 
+      <!-- TOOLS HUB -->
+      <section class="view" id="view-tools" data-view-panel="tools" aria-labelledby="toolsHeading">
+        <div class="page">
+          <header class="page-head">
+            <div>
+              <h1 id="toolsHeading" data-i18n="toolsTitle">Tools</h1>
+              <p class="page-sub" data-i18n="toolsSub">Pick the music tool you need.</p>
+            </div>
+          </header>
+          <div class="tools-hub">
+            <section class="tools-group" aria-labelledby="toolsHarmonyHeading">
+              <h2 class="tools-group-title" id="toolsHarmonyHeading" data-i18n="toolsHarmony">Harmony &amp; Reference</h2>
+              <div class="tools-grid">
+                <button type="button" class="tool-card" data-open-tool="chords">
+                  <span class="tool-card-ico" data-icon="chord"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title">Chord Finder</strong>
+                    <span class="tool-card-desc" data-i18n="toolChordsDesc">Guitar, ukulele, bass &amp; piano shapes, slash chords included.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+                <button type="button" class="tool-card" data-open-tool="theory">
+                  <span class="tool-card-ico" data-icon="circle"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="theoryTitle">Circle of Fifths</strong>
+                    <span class="tool-card-desc" data-i18n="toolTheoryDesc">Major &amp; minor keys, signatures, relative keys &amp; diatonic chords.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+                <button type="button" class="tool-card" data-open-tool="key-finder">
+                  <span class="tool-card-ico" data-icon="key"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="toolKeyFinder">Key Finder</strong>
+                    <span class="tool-card-desc" data-i18n="toolKeyFinderDesc">Type or tap chords from a song to find its key &amp; numerals.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+              </div>
+            </section>
+            <section class="tools-group" aria-labelledby="toolsPracticeHeading">
+              <h2 class="tools-group-title" id="toolsPracticeHeading" data-i18n="toolsPractice">Practice &amp; Stage</h2>
+              <div class="tools-grid">
+                <button type="button" class="tool-card" data-open-tool="play:piano">
+                  <span class="tool-card-ico" data-icon="piano"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="piano">Piano</strong>
+                    <span class="tool-card-desc" data-i18n="toolPianoDesc">Interactive keyboard, scales &amp; chord builder.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+                <button type="button" class="tool-card" data-open-tool="play:guitar">
+                  <span class="tool-card-ico" data-icon="guitar"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="fretboard">Fretboard</strong>
+                    <span class="tool-card-desc" data-i18n="toolGuitarDesc">Guitar, Drop D, bass &amp; ukulele fretboard.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+                <button type="button" class="tool-card" data-open-tool="play:tuner">
+                  <span class="tool-card-ico" data-icon="tuner"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="tuner">Tuner</strong>
+                    <span class="tool-card-desc" data-i18n="toolTunerDesc">Chromatic microphone tuner &amp; reference tones.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+                <button type="button" class="tool-card" data-open-tool="play:metronome">
+                  <span class="tool-card-ico" data-icon="metronome"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="metronome">Metronome</strong>
+                    <span class="tool-card-desc" data-i18n="toolMetronomeDesc">Audio-clock click, time signatures &amp; tap tempo.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+                <button type="button" class="tool-card" data-open-tool="play:drums">
+                  <span class="tool-card-ico" data-icon="drum"></span>
+                  <span class="tool-card-body">
+                    <strong class="tool-card-title" data-i18n="drumsAndLooper">Drum Beats &amp; Pads</strong>
+                    <span class="tool-card-desc" data-i18n="toolDrumsDesc">Practice grooves and playable drum pads.</span>
+                  </span>
+                  <span class="tool-card-go" data-icon="chevron-right"></span>
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
       <!-- THEORY -->
       <section class="view" id="view-theory" data-view-panel="theory" aria-labelledby="theoryHeading">
         <div class="page">
+          <div class="tool-crumb"><button type="button" class="btn small ghost tool-back" data-back-tools><span data-icon="chevron-left"></span><span data-i18n="allTools">All tools</span></button></div>
           <div class="page-head">
             <div>
               <h1 id="theoryHeading" data-i18n="theoryTitle">Circle of fifths</h1>
@@ -249,6 +342,7 @@
       <!-- CHORDS -->
       <section class="view" id="view-chords" data-view-panel="chords" aria-labelledby="chordsHeading">
         <div class="page">
+          <div class="tool-crumb"><button type="button" class="btn small ghost tool-back" data-back-tools><span data-icon="chevron-left"></span><span data-i18n="allTools">All tools</span></button></div>
           <div class="page-head">
             <div>
               <h1 id="chordsHeading" data-i18n="chordsTitle">Chords</h1>
@@ -267,13 +361,6 @@
             <div class="key-picker cf-roots" id="chordRoots" role="group" aria-label="Root" data-i18n-attr="aria-label:rootNote"></div>
             <div class="cf-quals" id="chordQuals" role="group" aria-label="Chord type" data-i18n-attr="aria-label:chordType"></div>
             <label class="field inline cf-bass"><span data-i18n="bassNoteSlash">Bass note (slash chord)</span><select class="select" id="chordBass"></select></label>
-            <div class="key-finder cf-key-finder">
-              <label class="field">
-                <span data-i18n="keyFinderLabel">Key finder · type chords from a song</span>
-                <input class="input" id="chordKeyFinder" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. Am  F  C  G" aria-label="Find key from chords" data-i18n-attr="placeholder:keyFinderPh,aria-label:keyFinderLabel">
-              </label>
-              <div class="key-finder-res" id="chordKeyFinderResult" aria-live="polite" hidden></div>
-            </div>
           </div>
           <div id="chordResult" aria-live="polite"></div>
           </div>
@@ -293,6 +380,7 @@
       <!-- PLAY -->
       <section class="view" id="view-play" data-view-panel="play" aria-labelledby="playHeading">
         <div class="page">
+          <div class="tool-crumb"><button type="button" class="btn small ghost tool-back" data-back-tools><span data-icon="chevron-left"></span><span data-i18n="allTools">All tools</span></button></div>
           <div class="page-head">
             <div>
               <h1 id="playHeading" data-i18n="playTitle">Play</h1>
@@ -399,9 +487,7 @@
     <nav class="bottom-nav" aria-label="Main" data-i18n-attr="aria-label:navMain">
       <button class="bn" data-view="songs" type="button"><span data-icon="library"></span><span data-i18n="navSongs">Songs</span></button>
       <button class="bn" data-view="editor" type="button"><span data-icon="edit"></span><span data-i18n="navChart">Chart</span></button>
-      <button class="bn" data-view="chords" type="button"><span data-icon="chord"></span><span data-i18n="navChords">Chords</span></button>
-      <button class="bn" data-view="theory" type="button"><span data-icon="circle"></span><span data-i18n="navTheory">Theory</span></button>
-      <button class="bn" data-view="play" type="button"><span data-icon="piano"></span><span data-i18n="navPlay">Play</span></button>
+      <button class="bn" data-view="tools" type="button"><span data-icon="sliders"></span><span data-i18n="navTools">Tools</span></button>
     </nav>
   </div>
 

@@ -4,8 +4,9 @@ import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
-import { openKeySheet, openDetails, openShare, openChordSheet } from "./sheets-lazy.js";
+import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
+import { loneLink } from "../core/import.js";
 
 export const DEMO_SONG = {
   title: "Auld Lang Syne",
@@ -134,6 +135,15 @@ export function initEditor() {
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
     else if (mod && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
   });
+  body().addEventListener("paste", (e) => {
+    const s = store.active();
+    if (!s || s.readonly || body().value.trim()) return;
+    const pasted = e.clipboardData?.getData("text/plain")?.trim() || "";
+    const url = loneLink(pasted);
+    if (!url) return;
+    e.preventDefault();
+    openLinksImport(url);
+  });
   $("undoBtn").addEventListener("click", undo);
   $("redoBtn").addEventListener("click", redo);
   $("keyDownBtn").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), -1); });
@@ -148,6 +158,7 @@ export function initEditor() {
   }));
   $$("button[data-pane]").forEach((b) => b.addEventListener("click", () => setPane(/** @type {string} */ (b.dataset.pane))));
   $$("#quickstart [data-insert]").forEach((b) => b.addEventListener("click", () => insertAtCursor(b.dataset.insert || "", true)));
+  $("quickImportBtn")?.addEventListener("click", () => openLinksImport());
   $("demoBtn").addEventListener("click", addDemo);
   $("copyChartBtn").addEventListener("click", async () => {
     const s = store.active();
@@ -417,6 +428,18 @@ function updateMeta() {
   $("editorHeading").textContent = s.title || t("untitled", "Untitled");
   $("keyPillValue").textContent = pretty(keyShort(k));
   $("keyPill").title = `${t("keyAndCapo", "Key & capo")}: ${pretty(k.name)}`;
+  const stats = $("editStats");
+  if (stats) {
+    if (!s.body.trim()) { stats.textContent = ""; }
+    else {
+      const uc = uniqueChords(s.body, renderOptions(s)).length;
+      const sec = (s.body.match(/^##\s+\S/gm) || []).length;
+      stats.textContent = [
+        sec ? t(sec === 1 ? "sectionCount1" : "sectionsCount", sec === 1 ? "1 section" : "{n} sections", { n: sec }) : "",
+        uc ? t(uc === 1 ? "chordCount1" : "chordsCount", uc === 1 ? "1 chord" : "{n} chords", { n: uc }) : ""
+      ].filter(Boolean).join(" · ");
+    }
+  }
 }
 
 function renderChordBar() {

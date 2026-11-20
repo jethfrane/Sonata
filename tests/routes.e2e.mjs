@@ -20,10 +20,13 @@ await page.goto(BASE + "/"); await page.waitForTimeout(600);
 ok(/^\/song\/route-test-[a-z0-9]{6}$/.test(path()), "editor URL is /song/<slug>: " + path());
 const slugPath = path();
 
-// Nav pushes real URLs
-await page.click('.bn[data-view="theory"]'); await page.waitForTimeout(150);
+// Nav pushes real URLs via Tools Hub
+await page.click('.bn[data-view="tools"]'); await page.waitForTimeout(150);
+ok(path() === "/tools" && await page.getAttribute("#app", "data-view") === "tools", "Tools tab opens Tools Hub at /tools");
+await page.click('[data-open-tool="theory"]'); await page.waitForTimeout(200);
 ok(path() === "/theory", "theory has /theory");
-await page.click('.bn[data-view="play"]'); await page.waitForTimeout(150);
+await page.click('#view-theory [data-back-tools]'); await page.waitForTimeout(150);
+await page.click('[data-open-tool="play:piano"]'); await page.waitForTimeout(200);
 ok(path() === "/play/piano", "play has /play/piano");
 await page.click('[data-inst="guitar"]'); await page.waitForTimeout(150);
 ok(path() === "/play/guitar" && await page.isVisible('[data-inst-panel="guitar"]') && !(await page.isVisible('[data-inst-panel="piano"]')), "guitar tab has its own link and shows only guitar");
@@ -32,12 +35,12 @@ ok(path() === "/play/tuner", "tuner has /play/tuner");
 await page.goBack(); await page.waitForTimeout(200);
 ok(path() === "/play/guitar", "back button goes to the previous instrument");
 
-// Metronome lives in Play; old /tools links open the chart
-await page.click('.bn[data-view="play"]'); await page.waitForTimeout(150);
-await page.click('[data-inst="metronome"]'); await page.waitForTimeout(150);
+// Metronome lives in Play; /tools opens the Tools Hub
+await page.click('.bn[data-view="tools"]'); await page.waitForTimeout(150);
+await page.click('[data-open-tool="play:metronome"]'); await page.waitForTimeout(200);
 ok(path() === "/play/metronome" && await page.isVisible("#metroBtn"), "metronome has /play/metronome");
 await page.goto(BASE + "/tools"); await page.waitForTimeout(500);
-ok(await page.getAttribute("#app", "data-view") === "editor", "old /tools link opens the chart");
+ok(await page.getAttribute("#app", "data-view") === "tools" && await page.isVisible("#view-tools"), "/tools link opens the Tools Hub");
 
 // Direct links
 await page.goto(BASE + "/play/piano"); await page.waitForTimeout(500);

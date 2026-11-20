@@ -49,8 +49,12 @@ await shot(page, "desktop-chart.png"); await ctx.close();
 ({ ctx, page } = await open(desk, "dark", "/songs"));
 await shot(page, "desktop-songs-dark.png"); await ctx.close();
 
+({ ctx, page } = await open(desk, "light", "/tools"));
+await shot(page, "desktop-tools.png"); await ctx.close();
+
 ({ ctx, page } = await open(desk, "light", "/theory"));
-await page.click('#keyPicker [data-tonic="7"]'); await page.waitForTimeout(300);
+await page.click('[data-key-mode="minor"]'); await page.waitForTimeout(200);
+await page.click("#kfUseSong"); await page.waitForTimeout(300);
 await shot(page, "desktop-theory.png"); await ctx.close();
 
 ({ ctx, page } = await open(desk, "light", "/play/piano"));
@@ -71,6 +75,9 @@ await shot(page, "phone-chart.png"); await ctx.close();
 
 ({ ctx, page } = await open(phone, "dark", "/songs"));
 await shot(page, "phone-songs-dark.png"); await ctx.close();
+
+({ ctx, page } = await open(phone, "light", "/tools"));
+await shot(page, "phone-tools.png"); await ctx.close();
 
 ({ ctx, page } = await open(phone, "light", "/play/piano"));
 await shot(page, "phone-play.png"); await ctx.close();

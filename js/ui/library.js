@@ -3,11 +3,12 @@ import { $, $$, esc, icon, toast, openSheet, confirmSheet, relativeTime, paintIc
 import { t, getLang } from "./i18n.js";
 import { store, app, soundingKey, tick, renderOptions, profileName } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
+import { TRASH_TTL_MS } from "../core/store.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { openShare, openSetlistEditor, printSetlist, openBankManager, openLinksImport } from "./sheets-lazy.js";
 import { addDemoSong } from "./editor.js";
 
-/** @type {"all"|"favorites"|"setlists"|"bank"} */
+/** @type {"all"|"favorites"|"setlists"|"bank"|"trash"} */
 let filter = "all";
 let query = "";
 /** Wide screens show the tapped song's chart beside the list (phones open it). */
@@ -60,7 +61,10 @@ export function initLibrary() {
     if (b.id === "peekShare") { store.open(id); openShare(); }
   });
   wide.addEventListener("change", () => { if (app.view === "songs") renderLibrary(); });
-  store.on("change", (/** @type {string} */ kind) => { if (kind === "library") { recentSoon(); if (app.view === "songs") renderSoon(); } });
+  store.on("change", (/** @type {string} */ kind) => {
+    if (kind === "library") { recentSoon(); if (app.view === "songs") renderSoon(); }
+    else if (kind === "settings" && app.view === "songs") renderSoon();
+  });
   store.on("song-open", () => { recentSoon(); if (app.view === "songs") renderSoon(); });
   $("recentList").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-recent]"));
@@ -97,7 +101,7 @@ export function newSong() {
 }
 
 /** @param {Event} e */
-function onListClick(e) {
+async function onListClick(e) {
   const target = /** @type {HTMLElement} */ (e.target);
   const btn = /** @type {HTMLElement|null} */ (target.closest("[data-act]"));
   if (!btn) return;
@@ -112,6 +116,34 @@ function onListClick(e) {
   else if (act === "set-open") { if (store.playSetlist(id)) app.show("editor"); else openSetlistEditor(id); }
   else if (act === "set-play") { if (store.playSetlist(id)) app.openStage(); else openSetlistEditor(id); }
   else if (act === "set-more") setlistMenu(id);
+  else if (act === "trash-restore") {
+    const res = store.restoreFromTrash([id]);
+    renderLibrary();
+    if (res.songs.length || res.setlists.length) toast(t("restoredFromTrash", "Restored from Trash"), "success");
+  }
+  else if (act === "trash-purge") {
+    const entry = store.trash.find((x) => x.id === id);
+    if (!entry) return;
+    const ok = await confirmSheet({
+      title: t("deleteForeverTitle", "Delete forever?"),
+      message: t("deleteForeverText", "\"{title}\" will be permanently deleted and cannot be recovered.", { title: entry.item.title || t("untitled", "Untitled") }),
+      confirm: t("deleteForever", "Delete forever"),
+      cancel: t("cancel", "Cancel"),
+      danger: true
+    });
+    if (ok) { store.purgeFromTrash([id]); renderLibrary(); }
+  }
+  else if (act === "trash-empty") {
+    if (!store.trash.length) return;
+    const ok = await confirmSheet({
+      title: t("emptyTrashTitle", "Empty trash?"),
+      message: t("emptyTrashText", "All {n} items in Trash will be permanently deleted. This cannot be undone.", { n: store.trash.length }),
+      confirm: t("emptyTrash", "Empty trash"),
+      cancel: t("cancel", "Cancel"),
+      danger: true
+    });
+    if (ok) { store.emptyTrash(); renderLibrary(); toast(t("trashEmptied", "Trash emptied"), "info"); }
+  }
   else if (act === "create") newSong();
   else if (act === "demo") { addDemoSong(); app.show("editor"); }
   else if (act === "import") openLinksImport();
@@ -195,15 +227,15 @@ export function addToSetlist(id) {
 
 /** @param {string[]} ids */
 export function deleteWithUndo(ids) {
-  const removed = store.songs.filter((s) => ids.includes(s.id)).map((s) => ({ ...s }));
-  const setsBefore = store.setlists.map((s) => ({ ...s, items: [...s.items] }));
-  store.deleteSongs(ids);
+  const trashed = store.trashSongs(ids);
   renderLibrary();
-  toast(t("deleted", "Deleted"), "info", {
+  if (!trashed.length) return;
+  const trashedIds = trashed.map((e) => e.id);
+  toast(t("movedToTrash", "Moved to Trash"), "info", {
     ms: 7000,
     action: t("undoDelete", "Undo"),
     onAction: () => {
-      store.restoreSongs(removed, setsBefore);
+      store.restoreFromTrash(trashedIds);
       renderLibrary();
     }
   });
@@ -224,7 +256,7 @@ function setlistMenu(id) {
       <button type="button" class="menu-item danger" data-m="del">${icon("trash")}<span>${esc(t("delete", "Delete"))}</span></button>
     </div>`
   });
-  body.addEventListener("click", async (e) => {
+  body.addEventListener("click", (e) => {
     const m = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-m]"))?.dataset.m;
     if (!m) return;
     /** @type {HTMLDialogElement} */ ($("sheet")).close();
@@ -233,8 +265,15 @@ function setlistMenu(id) {
     if (m === "edit") openSetlistEditor(id);
     if (m === "share") openShare(id);
     if (m === "del") {
-      const ok = await confirmSheet({ title: t("deleteSetTitle", "Delete setlist?"), message: t("deleteSetText", "\"{title}\" will be deleted. The songs stay in your library.", { title: set.title }), confirm: t("delete", "Delete"), cancel: t("cancel", "Cancel"), danger: true });
-      if (ok) { store.deleteSetlist(id); renderLibrary(); }
+      const entry = store.trashSetlist(id);
+      renderLibrary();
+      if (entry) {
+        toast(t("movedToTrash", "Moved to Trash"), "info", {
+          ms: 7000,
+          action: t("undoDelete", "Undo"),
+          onAction: () => { store.restoreFromTrash([id]); renderLibrary(); }
+        });
+      }
     }
   });
 }
@@ -250,23 +289,80 @@ function sortSongs(sort) {
   return list;
 }
 
-/** @param {string} title @param {string} text @param {string} actions */
-const empty = (title, text, actions) => `<div class="empty"><div class="empty-art">${icon("music")}</div><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="empty-actions">${actions}</div></div>`;
+/** @param {string} title @param {string} text @param {string} actions @param {string} [ic] */
+const empty = (title, text, actions, ic = "music") => `<div class="empty"><div class="empty-art">${icon(ic)}</div><h2>${esc(title)}</h2><p>${esc(text)}</p><div class="empty-actions">${actions}</div></div>`;
 
 export function renderLibrary() {
   const list = $("libraryList");
   const lang = getLang();
-  $$("button[data-filter]").forEach((b) => { const on = b.dataset.filter === filter; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
+  const nt = store.trash.length;
+  $$("button[data-filter]").forEach((b) => {
+    const on = b.dataset.filter === filter;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  const trashCount = $("trashCount");
+  trashCount.textContent = nt ? String(nt) : "";
+  trashCount.hidden = !nt;
   const ns = store.songs.length, nl = store.setlists.length;
   $("libraryCount").textContent = `${t(ns === 1 ? "songCount1" : "songsCount", ns === 1 ? "1 song" : "{n} songs", { n: ns })} · ${t(nl === 1 ? "setlistCount1" : "setlistsCount", nl === 1 ? "1 setlist" : "{n} setlists", { n: nl })}`;
-  /** @type {HTMLElement} */ (document.querySelector(".library-toolbar")).hidden = !ns && !nl;
+  /** @type {HTMLElement} */ (document.querySelector(".library-toolbar")).hidden = !ns && !nl && !nt && filter !== "trash";
   // Sorting applies to songs only.
-  $("librarySort").hidden = filter === "setlists";
+  $("librarySort").hidden = filter === "setlists" || filter === "trash";
   const q = fold(query.trim());
 
   // The side preview shows only when a song list is drawn (renderPeek below).
   $("songPeek").hidden = true;
   $("libraryList").closest(".songs-split")?.classList.remove("with-peek");
+  if (filter === "trash") {
+    if (!nt) {
+      list.innerHTML = empty(
+        t("trashEmptyTitle", "Trash is empty"),
+        t("trashEmptyText", "Deleted songs and setlists stay in Trash for 30 days before permanent removal."),
+        !ns && !nl ? `<button class="btn" type="button" data-act="all">${esc(t("showAllSongs", "Show all songs"))}</button>` : "",
+        "trash"
+      );
+      return;
+    }
+    const trashCard = `<div class="trash-card">
+      <div class="trash-card-copy">
+        <div class="trash-card-head">${icon("trash")}<b>${esc(t("filterTrash", "Trash"))}</b><span class="filter-badge">${nt}</span></div>
+        <p class="muted">${esc(t("trashNotice", "Deleted songs and setlists stay in Trash for 30 days before permanent removal."))}</p>
+      </div>
+      <button class="btn danger-outline small" type="button" data-act="trash-empty">${icon("trash")}${esc(t("emptyTrash", "Empty trash"))}</button>
+    </div>`;
+    const entries = store.trash
+      .slice()
+      .sort((a, b) => (Date.parse(b.trashedAt) || 0) - (Date.parse(a.trashedAt) || 0))
+      .filter((e) => !q || fold(e.kind === "song" ? `${e.item.title} ${e.item.artist} ${e.item.creator} ${e.item.body}` : `${e.item.title} ${e.item.description}`).includes(q));
+    if (!entries.length) {
+      list.innerHTML = trashCard + empty(t("noMatches", "No matches for \"{q}\"", { q: query }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`, "trash");
+      return;
+    }
+    const nowMs = Date.now();
+    list.innerHTML = trashCard + entries.map((e) => {
+      const trashedMs = Date.parse(e.trashedAt) || nowMs;
+      const left = Math.max(0, Math.ceil((TRASH_TTL_MS - (nowMs - trashedMs)) / 86400000));
+      const badge = e.kind === "song"
+        ? `<span class="key-badge" title="${esc(t("key", "Key"))}">${esc(!e.item.body.trim() && e.item.manualKey === "auto" ? "–" : pretty(keyShort(soundingKey(e.item))))}</span>`
+        : `<span class="row-icon">${icon("list")}</span>`;
+      const meta = e.kind === "setlist"
+        ? t(e.item.items.length === 1 ? "songCount1" : "songsInSet", e.item.items.length === 1 ? "1 song" : "{n} songs", { n: e.item.items.length })
+        : e.item.artist;
+      const sub = [meta, relativeTime(e.trashedAt, lang), t("daysLeft", "{n}d left", { n: left })].filter(Boolean).map(esc).join(" · ");
+      return `<div class="row trash-row" data-id="${esc(e.id)}">
+        <div class="row-main">
+          ${badge}
+          <span class="row-text"><span class="row-title">${esc(e.item.title || t("untitled", "Untitled"))}</span><span class="row-sub">${sub}</span></span>
+        </div>
+        <div class="trash-acts">
+          <button type="button" class="btn small trash-restore-btn" data-act="trash-restore">${icon("undo")}${esc(t("restore", "Restore"))}</button>
+          <button type="button" class="btn small ghost danger-text" data-act="trash-purge" aria-label="${esc(t("deleteForever", "Delete forever"))}">${icon("trash")}<span>${esc(t("deleteForever", "Delete forever"))}</span></button>
+        </div>
+      </div>`;
+    }).join("");
+    return;
+  }
   if (filter === "setlists") {
     const sets = store.setlists.filter((s) => !q || fold(s.title).includes(q));
     if (!store.setlists.length) {
@@ -351,7 +447,7 @@ function renderPeek(shown) {
   document.querySelectorAll("#libraryList .row[data-id]").forEach((r) => r.classList.toggle("peeked", r.getAttribute("data-id") === s.id));
   const k = pretty(keyShort(soundingKey(s)));
   const meta = [s.artist, s.genre, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean);
-  host.innerHTML = `<header class="peek-head"><span class="key-badge">${esc(k)}</span><div><h2>${esc(s.title)}</h2>${meta.length ? `<p class="muted">${esc(meta.join(" · "))}</p>` : ""}</div></header>
+  host.innerHTML = `<header class="peek-head"><span class="key-badge">${esc(k)}</span><div class="peek-title"><h2>${esc(s.title)}</h2>${meta.length ? `<div class="peek-meta">${meta.map((m) => `<span class="chip static muted">${esc(m)}</span>`).join("")}</div>` : ""}</div></header>
     <div class="peek-actions"><button class="btn primary" type="button" id="peekEdit">${icon("edit")}${esc(t("editChart", "Edit chart"))}</button><button class="btn" type="button" id="peekPresent">${icon("present")}${esc(t("present", "Present"))}</button><button class="btn" type="button" id="peekShare">${icon("share")}${esc(t("share", "Share"))}</button></div>
     <div class="chart peek-chart">${s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s))) : `<p class="chart-empty">${esc(t("stageEmpty", "This song has no chart yet."))}</p>`}</div>`;
 }

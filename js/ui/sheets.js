@@ -495,6 +495,7 @@ export function openSettings() {
       <h3 class="group-title">${esc(t("data", "Data & backup"))}</h3>
       <p class="card-hint" id="storageNote">${esc(t("storageLocal", "Your songs are saved on this device."))}</p>
       <button class="btn wide" type="button" id="openBackupBtn">${icon("cloud")}${esc(t("backupTitle", "Backup & restore"))}</button>
+      <button class="btn wide" type="button" id="openAiMcpBtn">${icon("sparkles")}${esc(t("aiMcpTitle", "AI Agents & MCP"))}</button>
       <div id="soundsRow"><button class="btn wide" type="button" id="soundsBtn">${icon("download")}${esc(t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)"))}</button></div>
       ${standalone ? "" : `<button class="btn wide" type="button" id="installBtn">${icon("download")}${esc(t("install", "Install Sonata"))}</button>`}
       <div class="btn-row">
@@ -557,6 +558,7 @@ export function openSettings() {
     }
     const id = /** @type {HTMLElement|null} */ (el.closest("button"))?.id;
     if (id === "openBackupBtn") openBackup();
+    if (id === "openAiMcpBtn") openBackup("ai");
     if (id === "installBtn") showInstall();
     if (id === "aboutBtn") openAbout();
     if (id === "resetSettings") {

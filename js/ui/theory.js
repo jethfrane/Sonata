@@ -1,11 +1,13 @@
 // @ts-check
+import "../../css/music.css";
 import { $, $$, esc, toast, setIcon } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, soundingKey, tick } from "./ctx.js";
+import { store, app, soundingKey, renderOptions, tick } from "./ctx.js";
 import {
   CIRCLE, keyFromTonic, prefersFlats, noteName, diatonicChords, keySignature, relativeKey,
-  pretty, keyShort, keyValue, mod12, chordTones, parseChord, SHARP_NOTES, chordsForKey, CHORD_TYPES, chordInfo, findKeysFromChords
+  pretty, keyShort, keyValue, mod12, chordTones, parseChord, chordFamily, SHARP_NOTES, chordsForKey, CHORD_TYPES, chordInfo, findKeysFromChords
 } from "../core/music.js";
+import { uniqueChords } from "../core/chart.js";
 import { openChordSheet } from "./sheets-lazy.js";
 import { playChord } from "../audio.js";
 
@@ -21,12 +23,66 @@ let rotDeg = 0;
 let chordType = "triad";
 /** Last chord tapped in the list (for "See shapes"). */
 let lastChord = "";
+/** Wedges highlighted by Key Finder input (`"<ring>:<pc>"`). @type {Set<string>} */
+const foundWedges = new Set();
+/** Refreshes Key Finder controls/output when song, key or format changes. @type {(() => void)|null} */
+let refreshKeyFinder = null;
+let spotlightTimer = 0;
 
+const QUICK_CHORDS = ["C", "G", "Am", "F", "D", "Em", "Bm", "Dm"];
 const ORDER_SHARPS = ["F", "C", "G", "D", "A", "E", "B"];
 const ORDER_FLATS = ["B", "E", "A", "D", "G", "C", "F"];
 
 export function theoryKey() {
   return picked || soundingKey(store.active());
+}
+
+/** Unique chords in the active song (empty when no song or no chords). */
+function activeSongChords() {
+  const s = store.active();
+  if (!s || !s.body.trim()) return [];
+  return uniqueChords(s.body, renderOptions(s, "chords"));
+}
+
+/** Scroll to Key Finder, highlight it briefly, and focus the input (used by Tools -> Key Finder). */
+export function focusKeyFinder() {
+  const box = document.getElementById("keyFinder");
+  const input = /** @type {HTMLInputElement|null} */ (document.getElementById("keyFinderInput"));
+  if (box) {
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+    box.classList.remove("spotlight");
+    void box.offsetWidth;
+    box.classList.add("spotlight");
+    clearTimeout(spotlightTimer);
+    spotlightTimer = window.setTimeout(() => box.classList.remove("spotlight"), 1800);
+  }
+  if (input) {
+    try { input.focus({ preventScroll: true }); } catch { input.focus(); }
+    input.select();
+  }
+}
+
+/** Mark wedges on #circle that match chords typed in Key Finder. */
+function paintFoundOnCircle() {
+  $$("#circle .wedge").forEach((g) => {
+    const on = foundWedges.has(`${g.getAttribute("data-ring")}:${g.getAttribute("data-pc")}`);
+    g.classList.toggle("found", on);
+    if (on) g.setAttribute("data-found", "1");
+    else g.removeAttribute("data-found");
+  });
+}
+
+/** @param {string[]} chordNames */
+function syncFoundWedges(chordNames) {
+  foundWedges.clear();
+  for (const name of chordNames) {
+    const c = parseChord(name);
+    if (!c) continue;
+    const fam = chordFamily(c);
+    const ring = (fam === "diminished" || fam === "half-diminished") ? "dim" : fam === "minor" ? "minor" : "major";
+    foundWedges.add(`${ring}:${c.rootPc}`);
+  }
+  paintFoundOnCircle();
 }
 
 export function initTheory() {
@@ -110,17 +166,88 @@ export function initTheory() {
   typeSel.addEventListener("change", () => { chordType = typeSel.value; try { localStorage.setItem("sonata_theory_type", chordType); } catch { /* ignore */ } lastChord = ""; $("theoryShapes").hidden = true; renderTheory(); });
   $("theoryShapes").addEventListener("click", () => { if (lastChord) openChordSheet(lastChord); });
   $("theoryFromSongBtn").addEventListener("click", () => { picked = null; locked = false; saveLock(); renderTheory(); });
+  const kfBox = document.getElementById("keyFinder");
   const kfInput = /** @type {HTMLInputElement|null} */ (document.getElementById("keyFinderInput"));
   const kfRes = document.getElementById("keyFinderResult");
-  if (kfInput && kfRes) {
+  if (kfBox && kfInput && kfRes) {
+    let actionsRow = kfBox.querySelector(".kf-actions");
+    if (!actionsRow) {
+      actionsRow = document.createElement("div");
+      actionsRow.className = "kf-actions";
+      actionsRow.innerHTML = `<button type="button" class="chip kf-song-btn" id="kfUseSong">${esc(t("useSongChords", "Use song chords"))}</button><button type="button" class="chip kf-clear-btn" id="kfClear" hidden>${esc(t("clear", "Clear"))}</button>`;
+      kfBox.insertBefore(actionsRow, kfRes);
+    }
+    let quickRow = kfBox.querySelector(".kf-quick");
+    if (!quickRow) {
+      quickRow = document.createElement("div");
+      quickRow.className = "kf-quick";
+      quickRow.setAttribute("role", "group");
+      quickRow.setAttribute("aria-label", t("quickChords", "Quick chords"));
+      quickRow.innerHTML = QUICK_CHORDS.map((ch) => `<button type="button" class="chip kf-chip" data-kf-add="${ch}">${esc(ch)}</button>`).join("");
+      kfBox.insertBefore(quickRow, kfRes);
+    }
+    const kfSongBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById("kfUseSong"));
+    const kfClearBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById("kfClear"));
+
     const updateKf = () => {
+      const songCh = activeSongChords();
+      if (kfSongBtn) {
+        const empty = songCh.length === 0;
+        kfSongBtn.hidden = empty;
+        kfSongBtn.disabled = empty;
+      }
+      if (kfClearBtn) kfClearBtn.hidden = !kfInput.value.trim();
       const res = findKeysFromChords(kfInput.value);
-      if (!res) { kfRes.hidden = true; kfRes.innerHTML = ""; return; }
+      if (!res) {
+        syncFoundWedges([]);
+        kfRes.hidden = true;
+        kfRes.innerHTML = "";
+        return;
+      }
+      syncFoundWedges(res.chords);
       kfRes.hidden = false;
-      const prog = res.progression.map((p) => `${pretty(p.name)} (${format === "nashville" ? p.nashville : p.roman})`).join(" · ");
-      kfRes.innerHTML = `<div class="kf-row"><span class="kf-main">${esc(t("detectedKey", "Key"))}: <strong>${esc(pretty(res.best.name))}</strong> <span class="muted">(${esc(t("relative", "Relative"))}: ${esc(pretty(res.relative.name))})</span></span><button type="button" class="chip accent" data-use-key="${res.best.tonic}:${res.best.mode}">${esc(t("selectKey", "Select {k}", { k: pretty(keyShort(res.best)) }))}</button></div><div class="kf-prog muted">${esc(prog)}</div>`;
+      const cur = theoryKey();
+      const bestCand = res.candidates[0];
+      const activeCand = res.candidates.find((c) => c.key.tonic === cur.tonic && c.key.mode === cur.mode) || bestCand;
+      const prog = activeCand.progression.map((p) => `${pretty(p.name)} (${format === "nashville" ? p.nashville : p.roman})`).join(" · ");
+      const modeText = res.best.mode === "minor" ? t("minor", "Minor") : t("major", "Major");
+      const candsHtml = res.candidates.map((cand) => {
+        const isOn = cand.key.tonic === cur.tonic && cand.key.mode === cur.mode;
+        return `<button type="button" class="kf-cand${isOn ? " on" : ""}" data-use-key="${cand.key.tonic}:${cand.key.mode}" aria-pressed="${isOn}"><span>${esc(pretty(cand.key.name))}</span><span class="kf-ratio">${cand.matched}/${cand.total}</span></button>`;
+      }).join("");
+      kfRes.innerHTML = `<div class="kf-row"><span class="kf-main"><strong>${esc(pretty(res.best.name))}</strong><span class="kf-badge">${esc(modeText)}</span><span class="kf-match">${bestCand.matched}/${bestCand.total} ${esc(t("match", "match"))}</span></span><button type="button" class="chip accent" data-use-key="${res.best.tonic}:${res.best.mode}">${esc(t("selectKey", "Select {k}", { k: pretty(keyShort(res.best)) }))}</button></div><div class="kf-candidates" role="group" aria-label="${esc(t("matchingKeys", "Matching keys"))}">${candsHtml}</div><div class="kf-prog muted">${esc(prog)}</div>`;
     };
+    refreshKeyFinder = updateKf;
     kfInput.addEventListener("input", updateKf);
+    if (kfSongBtn) {
+      kfSongBtn.addEventListener("click", () => {
+        const chords = activeSongChords();
+        if (!chords.length) return;
+        kfInput.value = chords.join(" ");
+        tick();
+        updateKf();
+        kfInput.focus();
+      });
+    }
+    if (kfClearBtn) {
+      kfClearBtn.addEventListener("click", () => {
+        kfInput.value = "";
+        tick();
+        updateKf();
+        kfInput.focus();
+      });
+    }
+    quickRow.addEventListener("click", (e) => {
+      const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-kf-add]"));
+      const ch = btn?.dataset.kfAdd;
+      if (!ch) return;
+      const curVal = kfInput.value.trim();
+      kfInput.value = curVal ? `${curVal} ${ch}` : ch;
+      tick();
+      const info = chordInfo(ch);
+      if (info) tap(playChord(info.pcs, "piano", info.bassPc));
+      updateKf();
+    });
     kfRes.addEventListener("click", (e) => {
       const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-use-key]"));
       if (!btn || !btn.dataset.useKey) return;
@@ -262,15 +389,20 @@ function numeral(pc, q, key) {
 
 function renderCircle() {
   const key = theoryKey();
+  const isMinor = key.mode === "minor";
   const flats = prefersFlats(key);
+  const sig = keySignature(key);
+  const host = $("circle");
+  host.dataset.mode = key.mode;
   // Index of the relative major on the circle; the key family sits on its wedge and both neighbours.
-  const majorPc = key.mode === "minor" ? mod12(key.tonic + 3) : key.tonic;
+  const majorPc = isMinor ? mod12(key.tonic + 3) : key.tonic;
   const home = CIRCLE.indexOf(majorPc);
   const near = (/** @type {number} */ i) => { const d = mod12(i - home); return d === 0 || d === 1 || d === 11; };
   /** @param {number} pc @param {number} i position on the circle */
   const nm = (pc, i) => {
     // Use key context for the enharmonic wedges at the bottom of the circle.
-    if (i >= 5 && i <= 7) return noteName(pc, flats);
+    if (i === 6) return noteName(pc, flats);
+    if ((i === 5 || i === 7) && sig !== 0) return noteName(pc, flats);
     return noteName(pc, i > 6);
   };
   let svg = `<svg viewBox="0 0 400 400" class="circle-svg" role="presentation">`;
@@ -278,30 +410,40 @@ function renderCircle() {
     const a1 = i * 30 - 15, a2 = i * 30 + 15;
     const minorPc = mod12(pc + 9), dimPc = mod12(pc + 11);
     const fam = near(i);
-    const rings = [
-      { ring: "major", pc, r1: 194, r2: 138, label: nm(pc, i), q: "", size: 19, rText: 166, active: key.mode === "major" && key.tonic === pc },
-      { ring: "minor", pc: minorPc, r1: 136, r2: 94, label: nm(minorPc, i) + "m", q: "m", size: 14.5, rText: 115, active: key.mode === "minor" && key.tonic === minorPc },
-      { ring: "dim", pc: dimPc, r1: 92, r2: 64, label: nm(dimPc, i) + "°", q: "dim", size: 11, rText: 78, active: false }
-    ];
+    const rings = isMinor
+      ? [
+          { pos: "outer", ring: "minor", pc: minorPc, r1: 194, r2: 138, label: nm(minorPc, i) + "m", q: "m", size: 19, rText: 166, active: key.tonic === minorPc },
+          { pos: "middle", ring: "major", pc, r1: 136, r2: 94, label: nm(pc, i), q: "", size: 14.5, rText: 115, active: false },
+          { pos: "inner", ring: "dim", pc: dimPc, r1: 92, r2: 64, label: nm(dimPc, i) + "°", q: "dim", size: 11, rText: 78, active: false }
+        ]
+      : [
+          { pos: "outer", ring: "major", pc, r1: 194, r2: 138, label: nm(pc, i), q: "", size: 19, rText: 166, active: key.tonic === pc },
+          { pos: "middle", ring: "minor", pc: minorPc, r1: 136, r2: 94, label: nm(minorPc, i) + "m", q: "m", size: 14.5, rText: 115, active: false },
+          { pos: "inner", ring: "dim", pc: dimPc, r1: 92, r2: 64, label: nm(dimPc, i) + "°", q: "dim", size: 11, rText: 78, active: false }
+        ];
     for (const w of rings) {
       const inKey = w.ring === "dim" ? mod12(i - home) === 0 : fam;
       const num = inKey ? numeral(w.pc, w.q, key) : "";
+      const isFound = foundWedges.has(`${w.ring}:${w.pc}`);
       const [tx, ty] = pt(200, 200, w.rText, i * 30);
-      const cls = `wedge ${w.ring}${inKey ? " family" : ""}${w.active ? " tonic" : ""}`;
+      const cls = `wedge ${w.ring} ${w.pos}${inKey ? " family" : ""}${w.active ? " tonic" : ""}${isFound ? " found" : ""}`;
       const label = `${pretty(w.label)}${num ? `, ${num}` : ""}`;
-      svg += `<g class="${cls}" data-wedge data-ring="${w.ring}" data-pc="${w.pc}" tabindex="0" role="button" aria-label="${esc(label)}">
+      svg += `<g class="${cls}" data-wedge data-ring="${w.ring}" data-pos="${w.pos}" data-pc="${w.pc}"${isFound ? ' data-found="1"' : ""} tabindex="0" role="button" aria-label="${esc(label)}">
         <path d="${arc(w.r1, w.r2, a1, a2)}"/>
         <text x="${tx.toFixed(1)}" y="${(ty + (num ? -3 : 1)).toFixed(1)}" font-size="${w.size}">${esc(pretty(w.label))}</text>
         ${num ? `<text class="num" x="${tx.toFixed(1)}" y="${(ty + w.size * 0.72).toFixed(1)}" font-size="${Math.max(8, w.size * 0.58)}">${esc(pretty(num))}</text>` : ""}
       </g>`;
     }
   });
-  const sig = keySignature(key);
-  const sigText = sig === 0 ? "♮" : `${Math.abs(sig)}${sig > 0 ? "♯" : "♭"}`;
+  const sigText = sig === 0 ? "0♯/♭" : `${Math.abs(sig)}${sig > 0 ? "♯" : "♭"}`;
+  const modeLabel = isMinor ? t("minor", "Minor").toUpperCase() : t("major", "Major").toUpperCase();
   svg += `<circle cx="200" cy="200" r="61" class="hub"/>
-    <text x="200" y="196" class="hub-key">${esc(pretty(keyShort(key)))}</text>
-    <text x="200" y="222" class="hub-sub">${esc(sigText)}</text></svg>`;
-  $("circle").innerHTML = svg;
+    <g class="hub-labels">
+      <text x="200" y="175" class="hub-mode">${esc(modeLabel)}</text>
+      <text x="200" y="207" class="hub-key">${esc(pretty(keyShort(key)))}</text>
+      <text x="200" y="228" class="hub-sub">${esc(sigText)}</text>
+    </g></svg>`;
+  host.innerHTML = svg;
 }
 
 export function renderTheory() {
@@ -311,7 +453,8 @@ export function renderTheory() {
   $("keyPicker").innerHTML = Array.from({ length: 12 }, (_, pc) => {
     const k = keyFromTonic(pc, key.mode);
     const on = pc === key.tonic;
-    return `<button type="button" class="key-btn${on ? " on" : ""}" data-tonic="${pc}" aria-pressed="${on}">${esc(pretty(k.root))}</button>`;
+    const label = pretty(k.root) + (key.mode === "minor" ? "m" : "");
+    return `<button type="button" class="key-btn${on ? " on" : ""}" data-tonic="${pc}" aria-pressed="${on}">${esc(label)}</button>`;
   }).join("");
   $("keyTitle").textContent = pretty(key.name);
   const sig = keySignature(key);
@@ -340,6 +483,7 @@ export function renderTheory() {
   /** @type {HTMLButtonElement} */ ($("theoryToSongBtn")).hidden = !s || Boolean(s.readonly) || !picked;
   renderCircle();
   applyRotation();
+  if (refreshKeyFinder) refreshKeyFinder();
 }
 
 /** Turn the whole circle (labels stay upright) so the key's wedge is at 12 o'clock. */

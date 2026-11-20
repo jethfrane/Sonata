@@ -62,7 +62,11 @@ export async function importPage(raw, io = {}) {
       if (addresses.some(privateAddress)) return { status: 400, error: "bad-url" };
       const r = await get(url.href, {
         redirect: "manual", signal: AbortSignal.timeout(6000), credentials: "omit",
-        headers: { "User-Agent": `SonataImport/1.0 (+https://${SITE})`, Accept: "text/html,text/plain;q=0.9", "Accept-Language": "en,fil;q=0.8" }
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9,fil;q=0.8"
+        }
       });
       if (r.status >= 300 && r.status < 400) {
         const next = publicUrl(new URL(r.headers.get("location") || "", url).href);

@@ -10,6 +10,7 @@ const ORIGIN = "https://sonata.jethrofrane.xyz";
 /** One preview image per kind of page (public/og/*.png, made by tests/og.mjs). */
 const og = (name) => `${ORIGIN}/og/${name}.png`;
 const PAGES = {
+  tools: ["Music tools", "Chord finder, circle of fifths, key finder, piano, fretboard, tuner, metronome and drums."],
   chords: ["Chord finder", "Any chord with guitar, ukulele, bass and piano diagrams. Slash chords included."],
   songs: ["Songs", "Your chord charts and setlists in Sonata."],
   editor: ["Chart editor", "Write chords above lyrics, transpose and present."],
@@ -100,7 +101,12 @@ async function describe(route, query) {
   // Personal song pages hold nothing to index; keep search engines out of them.
   const personal = seg[0] === "song" || seg[0] === "s";
   let [a, b] = seg[0] === "song" ? [seg[2] || "editor", seg[3]] : [seg[0], seg[1]];
-  if (a === "tools") a = "editor";
+  if (a === "tools" && b === "key-finder") {
+    return { title: "Key finder", desc: "Type or tap chords from a song to find its major or minor key, relative key and chord numerals.", robots: personal, image: og("theory") };
+  }
+  if (a === "tools") {
+    return { title: PAGES.tools[0], desc: PAGES.tools[1], robots: personal, image: og("play") };
+  }
   if (a === "play" && PAGES[b]) return { title: PAGES[b][0], desc: PAGES[b][1], robots: personal, image: og(b) };
   if (PAGES[a === "stage" ? "editor" : a]) {
     const p = PAGES[a === "stage" ? "editor" : a];
