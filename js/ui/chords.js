@@ -2,7 +2,7 @@
 // Chords: look up any chord (or tap one in a chart) and see it on guitar, ukulele,
 // bass and piano, with every shape Sonata can find. Tap to hear it.
 import "../../css/music.css";
-import { $, esc, icon, openSheet, paintIcons, toast, copyText } from "./dom.js";
+import { $, esc, icon, openSheet, paintIcons, toast, copyText, download, slug } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, tick, renderOptions } from "./ctx.js";
 import { pretty, noteName, NOTE_TO_PC } from "../core/music.js";
@@ -121,6 +121,7 @@ export function initChords() {
     else if (b.dataset.hear) hear(current, /** @type {any} */ (b.dataset.hear));
     else if (b.dataset.shape) step(b.dataset.shape);
     else if (b.id === "chordCopy") copyText(current).then((ok) => ok && toast(t("copied", "Copied"), "success"));
+    else if (b.hasAttribute("data-copy-img")) copyChordImage(current, $("chordResult"));
   });
   bassSel.addEventListener("change", () => { const d = describeChord(current); if (d) select(d.root + d.quality + (bassSel.value && NOTE_TO_PC[bassSel.value] !== d.rootPc ? "/" + bassSel.value : "")); });
   const search = /** @type {HTMLInputElement} */ ($("chordSearch"));
@@ -173,7 +174,7 @@ export function renderChords() {
   $("songChordsRow").hidden = !sc.length;
   $("songChordsList").innerHTML = sc.map((c) => `<button type="button" class="chip chord-chip${c === d.name ? " on" : ""}" data-pick="${esc(c)}">${esc(pretty(c))}</button>`).join("");
   $("chordResult").innerHTML = `<section class="card cr-card">${headHtml(current)}
-      <div class="cr-actions"><button type="button" class="btn primary" data-hear="piano">${icon("play")}${esc(t("playIt", "Play"))}</button><button type="button" class="btn" data-hear="guitar">${icon("guitar")}${esc(t("strum", "Strum"))}</button><button type="button" class="btn ghost" id="chordCopy">${icon("copy")}${esc(t("copyName", "Copy"))}</button></div>
+      <div class="cr-actions"><button type="button" class="btn primary" data-hear="piano">${icon("play")}${esc(t("playIt", "Play"))}</button><button type="button" class="btn" data-hear="guitar">${icon("guitar")}${esc(t("strum", "Strum"))}</button><button type="button" class="btn" data-copy-img>${icon("image")}${esc(t("copyImage", "Copy image"))}</button><button type="button" class="btn ghost" id="chordCopy">${icon("copy")}${esc(t("copyName", "Copy"))}</button></div>
       ${relatedHtml(current)}</section>${diagramsHtml(current)}`;
   paintIcons($("view-chords"));
 }
@@ -186,7 +187,7 @@ export function openChordSheet(name) {
   const d = describeChord(name);
   if (!d) return;
   shape.guitar = 0; shape.ukulele = 0;
-  const draw = () => `${headHtml(d.name)}<div class="cr-actions"><button type="button" class="btn primary" data-hear="piano">${icon("play")}${esc(t("playIt", "Play"))}</button><button type="button" class="btn" data-hear="guitar">${icon("guitar")}${esc(t("strum", "Strum"))}</button></div>${diagramsHtml(d.name, { compact: true })}`;
+  const draw = () => `${headHtml(d.name)}<div class="cr-actions"><button type="button" class="btn primary" data-hear="piano">${icon("play")}${esc(t("playIt", "Play"))}</button><button type="button" class="btn" data-hear="guitar">${icon("guitar")}${esc(t("strum", "Strum"))}</button><button type="button" class="btn" data-copy-img>${icon("image")}${esc(t("copyImage", "Copy image"))}</button></div>${diagramsHtml(d.name, { compact: true })}`;
   const body = openSheet({
     title: pretty(d.name), wide: true, className: "chord-sheet", focus: false, body: draw(),
     actions: [{ label: t("openInChords", "Open in Chords"), kind: "ghost", onClick: () => { app.show("chords", { sub: d.name }); } }, { label: t("done", "Done"), kind: "primary" }]
@@ -196,6 +197,7 @@ export function openChordSheet(name) {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
     if (!b) return;
     if (b.dataset.hear) hear(d.name, /** @type {any} */ (b.dataset.hear));
+    if (b.hasAttribute("data-copy-img")) copyChordImage(d.name, body);
     if (b.dataset.shape) {
       const [inst, n] = b.dataset.shape.split(":");
       if (inst === "guitar" || inst === "ukulele") { shape[inst] = Math.max(0, shape[inst] + Number(n)); body.innerHTML = draw(); paintIcons(body); hear(d.name, inst); }
@@ -206,3 +208,135 @@ export function openChordSheet(name) {
 
 /** For tests and the router: make sure the root of a chord exists. @param {string} name */
 export const isChord = (name) => Boolean(describeChord(name));
+
+/**
+ * Render the chord header + all visible instrument diagrams onto a crisp PNG and copy to clipboard.
+ * @param {string} name
+ * @param {HTMLElement} rootEl
+ */
+async function copyChordImage(name, rootEl) {
+  const d = describeChord(name);
+  if (!d) return;
+  const cards = [...rootEl.querySelectorAll(".dg-card")];
+  const W = 1200;
+  const pad = 48;
+  const colW = (W - pad * 2 - 24) / 2;
+  const cardH = 340;
+  const headH = 160;
+  const footH = 52;
+  const rows = Math.max(1, Math.ceil(cards.length / 2));
+  const H = headH + rows * cardH + Math.max(0, rows - 1) * 20 + footH;
+  const scale = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = W * scale;
+  canvas.height = H * scale;
+  const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext("2d"));
+  ctx.scale(scale, scale);
+
+  // Light-mode background
+  ctx.fillStyle = "#f4f5f7";
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#2f49b3";
+  ctx.fillRect(0, 0, W, 8);
+
+  // Header
+  const ui = "'Inter Variable', Inter, system-ui, sans-serif";
+  const mono = "'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Menlo, monospace";
+  ctx.fillStyle = "#2f49b3";
+  ctx.font = `800 54px ${ui}`;
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(pretty(d.name), pad, 76);
+
+  const full = `${pretty(d.root)} ${d.label === "Major" ? t("major", "major") : d.label === "Minor" ? t("minor", "minor") : pretty(d.label)}${d.bass ? ` ${t("over", "over")} ${pretty(d.bassNote)}` : ""}`;
+  ctx.fillStyle = "#5a6170";
+  ctx.font = `600 22px ${ui}`;
+  ctx.fillText(full, pad, 112);
+
+  // Notes & formula pills on the right of the header
+  const notesText = d.notes.map((n, i) => `${pretty(n)} (${d.formula[i]})`).join("  ·  ");
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#1c2027";
+  ctx.font = `700 22px ${mono}`;
+  ctx.fillText(notesText, W - pad, 76);
+  ctx.textAlign = "left";
+
+  const svgStyle = `<style>
+    .cb-nut{fill:#1c2027}.cb-nut-line{stroke:#1c2027;stroke-width:4}.cb-fret{stroke:#cdd2db;stroke-width:1.5}
+    .cb-string{stroke:#5a6170;stroke-width:1.3}.cb-fr{font:700 12px sans-serif;fill:#5a6170}
+    .cb-mute{font:700 15px sans-serif;fill:#5a6170}.cb-open{fill:none;stroke:#3a404c;stroke-width:2}
+    .cb-open.root{stroke:#3b5bdb;stroke-width:2.6}.cb-dot{fill:#3a404c}.cb-dot.root{fill:#3b5bdb}
+    .cb-dot.bass{fill:#b86308}.cb-dot.tone{fill:#e6e9ee;stroke:#cdd2db}.cb-barre{fill:#3a404c}
+    .cb-note{font:700 11.5px monospace;fill:#3a404c}.cb-tune{font:600 10.5px sans-serif;fill:#5a6170}
+    .cb-in{font:700 8.5px sans-serif;fill:#fff}.cb-dot.tone+.cb-in{fill:#1c2027}
+    .pk-w{fill:#fff;stroke:#cdd2db}.pk-b{fill:#222228}.pk-w.on{fill:#9bb0f0}.pk-b.on{fill:#3b5bdb}
+    .pk-w.bass,.pk-b.bass{fill:#b86308}.pk-l{font:700 10px sans-serif;fill:#1b1b1f}.pk-l.bass,.pk-l.on-b{fill:#fff}
+  </style>`;
+
+  for (let idx = 0; idx < cards.length; idx++) {
+    const card = cards[idx];
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const x = pad + col * (colW + 24);
+    const y = headH + row * (cardH + 20);
+
+    // Card background
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.roundRect(x, y, colW, cardH, 16);
+    ctx.fill();
+    ctx.strokeStyle = "#e1e4ea";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const title = card.querySelector(".dg-head h3")?.textContent?.trim() || "";
+    ctx.fillStyle = "#1c2027";
+    ctx.font = `700 20px ${ui}`;
+    ctx.fillText(title, x + 22, y + 36);
+
+    const svgEl = card.querySelector("svg");
+    if (svgEl) {
+      const vb = (svgEl.getAttribute("viewBox") || "0 0 200 200").split(/\s+/).map(Number);
+      const sw = vb[2] || 200;
+      const sh = vb[3] || 200;
+      const maxW = colW - 44;
+      const maxH = cardH - 86;
+      const ratio = Math.min(maxW / sw, maxH / sh);
+      const dw = sw * ratio;
+      const dh = sh * ratio;
+      const dx = x + (colW - dw) / 2;
+      const dy = y + 52 + (maxH - dh) / 2;
+      const clone = /** @type {SVGSVGElement} */ (svgEl.cloneNode(true));
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clone.insertAdjacentHTML("afterbegin", svgStyle);
+      const svgStr = new XMLSerializer().serializeToString(clone);
+      const img = new Image();
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
+      await new Promise((res) => { img.onload = res; img.onerror = res; });
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
+    const cap = card.querySelector(".dg-cap, .dg-nav span")?.textContent?.trim() || "";
+    if (cap) {
+      ctx.fillStyle = "#5a6170";
+      ctx.font = `550 14px ${ui}`;
+      ctx.textAlign = "center";
+      ctx.fillText(cap, x + colW / 2, y + cardH - 16, colW - 32);
+      ctx.textAlign = "left";
+    }
+  }
+
+  ctx.fillStyle = "#5a6170";
+  ctx.font = `600 15px ${ui}`;
+  ctx.fillText("Sonata  ·  sonata.jethrofrane.xyz", pad, H - 18);
+
+  const blob = await new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("png"))), "image/png"));
+  try {
+    if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast(t("imageCopied", "Image copied. Paste it anywhere."), "success", { ms: 3000 });
+      return;
+    }
+  } catch { /* fall back to download */ }
+  download(`${slug(d.name)}-chord.png`, blob);
+  toast(t("downloaded", "Downloaded"), "success");
+}

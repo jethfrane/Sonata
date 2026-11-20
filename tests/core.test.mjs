@@ -15,6 +15,15 @@ test("chord parsing and families", () => {
   assert.equal(M.chordFamily(M.parseChord("F#m7b5")), "half-diminished");
   assert.deepEqual(M.chordTones("Cmaj7"), [0, 4, 7, 11]);
   assert.deepEqual(M.chordTones("D/F#"), [2, 6, 9]);
+  assert.deepEqual(M.chordTones("C7"), [0, 4, 7, 10]);
+  assert.deepEqual(M.chordTones("A7"), [9, 1, 4, 7]);
+  assert.deepEqual(M.chordTones("D7"), [2, 6, 9, 0]);
+  for (const sym of ["C7", "Cdom7", "C7alt", "C7b9", "C7#9", "C7#5", "C7b5", "Cmaj7#11", "Cm(maj7)", "Cmmaj7", "Cadd2", "Cadd4", "Cadd11", "Cmadd2", "C9sus4", "C6/9", "Cø7", "C°7", "C+7", "CΔ7"]) {
+    assert.ok(M.parseChord(sym), `parses ${sym}`);
+    assert.ok(CH.describeChord(sym), `describes ${sym}`);
+  }
+  assert.equal(M.identifyChord([60, 64, 67, 70]), "C7");
+  assert.equal(M.identifyChord([60, 64, 70]), "C7");
   assert.equal(M.parseChord("Hello"), null);
   assert.equal(M.parseChord("G/B///").slashes, "///");
   assert.ok(M.isChordLine("G  -  C/G  -  G  -  D/F#"));
