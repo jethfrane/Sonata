@@ -24,7 +24,9 @@
   .changelog summary, .cq-summary { min-height: 44px; min-width: 44px; align-items: center; }
   .cp-add { min-height: 44px; }
   .drum-pad, .ui-select-opt { min-height: 44px; min-width: 44px; }
-  .stage-btn, .stage-select { min-width: 44px; height: 44px; min-height: 44px; }
+  .stage-btn, .stage-select, .stage-title, .setlist-bar-title, .setlist-pill, .sw-opt { min-width: 44px; min-height: 44px; }
+  .stage-title { align-content: center; }
+  .stage-btn, .stage-select { height: 44px; }
   .key-picker { gap: 6px; }
 }
 @media (max-width: 640px) {

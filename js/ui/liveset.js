@@ -26,27 +26,37 @@ export async function publishLiveSet(setId, o = {}) {
   const set = store.setlists.find((s) => s.id === setId);
   if (!set) return false;
   const d = o.quiet ? app.drive : await app.loadDrive();
-  if (!d || !d.token) {
-    if (!o.quiet) toast(t("liveNeedsDrive", "Sign in with Google first. A live link is shared from your own Drive."), "info", { ms: 6000, action: t("signIn", "Sign in"), onAction: () => d?.signIn() });
+  if (d && (!d.token || !d.tokenValid()) && !o.quiet) await d.signIn();
+  const curSet = store.setlists.find((s) => s.id === setId);
+  if (!curSet) return false;
+  if (!d || !d.token || !d.tokenValid()) {
+    if (!o.quiet) {
+      const msg = d?.error || t("liveNeedsDrive", "Sign in with Google first. A live link is shared from your own Drive.");
+      toast(msg, d?.error ? "error" : "info", d?.error ? { ms: 6000 } : { ms: 6000, action: t("signIn", "Sign in"), onAction: () => d?.signIn() });
+    }
     return false;
   }
-  if (!store.setlistSongs(set).length) { if (!o.quiet) toast(t("liveEmpty", "Add a song to this setlist first."), "error"); return false; }
-  const text = fileText(set);
-  const r = await d.publishBank(buildSetFile(set, store.setlistSongs(set)), set.liveId || "", `sonata_setlist_${bankSlug(set.title) || "live"}.json`);
+  if (!store.setlistSongs(curSet).length) { if (!o.quiet) toast(t("liveEmpty", "Add a song to this setlist first."), "error"); return false; }
+  const text = fileText(curSet);
+  const r = await d.publishBank(buildSetFile(curSet, store.setlistSongs(curSet)), curSet.liveId || "", `sonata_setlist_${bankSlug(curSet.title) || "live"}.json`);
   if (!r.ok) {
     if (!o.quiet) toast(r.reason === "signin" ? t("reconnectText", "Your Google session expired. Reconnect to keep syncing.") : r.reason === "offline" ? t("offlineNote", "You're offline. Songs still save on this device.") : t("livePublishFailed", "Couldn't publish the live link. Please try again."), "error", { ms: 5000 });
     return false;
   }
-  published.set(set.id, text);
-  if (set.liveId !== r.id) store.saveSetlist({ id: set.id, liveId: r.id });
+  published.set(curSet.id, text);
+  if (curSet.liveId !== r.id) store.saveSetlist({ id: curSet.id, liveId: r.id });
   return true;
 }
 
 /** Stop sharing (the file stays in the leader's Drive, private again). @param {string} setId */
 export async function stopLiveSet(setId) {
-  const set = store.setlists.find((s) => s.id === setId);
+  let set = store.setlists.find((s) => s.id === setId);
   if (!set?.liveId) return false;
-  if (!(await app.drive?.unpublishBank(set.liveId))) return false;
+  const d = await app.loadDrive();
+  if (d && (!d.token || !d.tokenValid())) await d.signIn();
+  set = store.setlists.find((s) => s.id === setId);
+  if (!set?.liveId || !d || !d.token || !d.tokenValid()) return false;
+  if (!(await d.unpublishBank(set.liveId))) return false;
   const { liveId, ...rest } = set;
   Object.assign(set, rest); delete set.liveId;
   published.delete(set.id);
@@ -63,9 +73,9 @@ export function watchLiveSets() {
   store.on("library-change", () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      if (!app.drive?.token || !navigator.onLine) return;
+      if (!app.drive?.token || !app.drive.tokenValid() || !navigator.onLine) return;
       for (const set of store.setlists) if (set.liveId && published.get(set.id) !== fileText(set)) publishLiveSet(set.id, { quiet: true });
-    }, 15000);
+    }, 4000);
   });
   // What is in Drive now counts as published, so opening the app does not upload again.
   for (const set of store.setlists) if (set.liveId && !published.has(set.id)) published.set(set.id, fileText(set));
@@ -115,6 +125,28 @@ export async function openLiveSet(id) {
   const changed = applySet(following, data);
   store.playSetlist(following.id); app.show("editor");
   toast(changed ? t("liveUpdated", "“{t}” is up to date. Your keys and capos were kept.", { t: data.t }) : t("liveSame", "“{t}” is already up to date.", { t: data.t }), "success", { ms: 4500 });
+}
+
+/** Sync a published (leader) or followed (band member) setlist with Google Drive immediately. @param {string} setId */
+export async function syncLiveSetNow(setId) {
+  const set = store.setlists.find((s) => s.id === setId);
+  if (!set) return false;
+  if (set.liveId) {
+    const ok = await publishLiveSet(set.id);
+    if (ok) toast(t("livePublished", "The live link is up to date."), "success");
+    return ok;
+  }
+  if (set.source) {
+    const { data, gone } = await fetchSet(set.source);
+    if (!data) {
+      toast(gone ? t("liveGone", "This setlist isn't shared any more. Ask its owner for a new link.") : t("liveOffline", "You're offline, and this setlist hasn't been opened on this device before."), "error", { ms: 5000 });
+      return false;
+    }
+    const changed = applySet(set, data);
+    toast(changed ? t("liveUpdated", "“{t}” is up to date. Your keys and capos were kept.", { t: data.t }) : t("liveSame", "“{t}” is already up to date.", { t: data.t }), "success", { ms: 3500 });
+    return true;
+  }
+  return false;
 }
 
 /** Check the setlists this device follows (at most every ten minutes each). */

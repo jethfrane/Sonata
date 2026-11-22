@@ -1,11 +1,11 @@
 // @ts-check
 // Dialog sheets: key & capo, song details, share, setlist editor, settings,
 // Drive account, about, and shared-setlist import.
-import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug } from "./dom.js";
+import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, paintIcons } from "./dom.js";
 import { t, setLang, applyI18n } from "./i18n.js";
 import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick, adoptShared } from "./ctx.js";
-import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue } from "../core/music.js";
-import { analyzeRawChart } from "../core/chart.js";
+import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue, detectKey } from "../core/music.js";
+import { analyzeRawChart, stripLyricsToChordsOnly } from "../core/chart.js";
 import { loneLink } from "../core/import.js";
 import { sampleUrls } from "../audio.js";
 import { liveSetUrl, publishLiveSet, stopLiveSet, watchLiveSets } from "./liveset.js";
@@ -263,21 +263,26 @@ function readExportOpts() {
  * @param {string} [setId]
  */
 export async function openShare(setId) {
-  const set = setId ? store.setlists.find((s) => s.id === setId) : null;
-  const song = set ? null : store.active();
-  if (!set && !song) { toast(t("noSong", "No song open"), "error"); return; }
-  const data = set ? packSet(set, store.setlistSongs(set)) : packSong(/** @type {any} */ (song));
-  const title = set ? set.title : /** @type {any} */ (song).title;
-  const [{ qrSvg }, link, qrLink] = await Promise.all([loadQr(), shareUrl(BASE(), data), qrUrl(location.origin, data)]);
+  const getSet = () => (setId ? store.setlists.find((s) => s.id === setId) || null : null);
+  const initSet = getSet();
+  const song = initSet ? null : store.active();
+  if (!initSet && !song) { toast(t("noSong", "No song open"), "error"); return; }
+  if (initSet && !app.drive && navigator.onLine) app.loadDrive().catch(() => {});
+  const data = initSet ? packSet(initSet, store.setlistSongs(initSet)) : packSong(/** @type {any} */ (song));
+  const title = initSet ? initSet.title : /** @type {any} */ (song).title;
+  const [{ qrSvg }, link, packedQrLink] = await Promise.all([loadQr(), shareUrl(BASE(), data), qrUrl(location.origin, data)]);
+  const currentQrLink = () => { const s = getSet(); return s?.liveId ? liveSetUrl(s.liveId, s.title) : packedQrLink; };
+  const currentShareLink = () => { const s = getSet(); return s?.liveId ? liveSetUrl(s.liveId, s.title) : url; };
   let url = link;
   const opts = readExportOpts();
-  const many = set ? store.setlistSongs(set).length : (store.currentSetlist()?.songs.length || 1);
+  const many = initSet ? store.setlistSongs(initSet).length : (store.currentSetlist()?.songs.length || 1);
   // A live link: one address that always shows the latest version of this setlist.
   const liveBlock = () => {
-    const id = set?.liveId || "";
+    const s = getSet();
+    const id = s?.liveId || "";
     return `<h3 class="group-title">${esc(t("liveLink", "Live link"))}</h3>` + (id
       ? `<p class="status-line synced">${esc(t("liveOn", "Live: this link always shows the latest version."))}</p>
-        <div class="share-link"><input class="input" id="liveUrl" readonly value="${esc(liveSetUrl(id, set?.title))}" aria-label="${esc(t("liveLink", "Live link"))}"></div>
+        <div class="share-link"><input class="input" id="liveUrl" readonly value="${esc(liveSetUrl(id, s?.title))}" aria-label="${esc(t("liveLink", "Live link"))}"></div>
         <div class="share-actions">
           <button class="btn primary" type="button" id="liveCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
           <button class="btn" type="button" id="liveUpdate">${icon("refresh")}${esc(t("bankUpdate", "Update now"))}</button>
@@ -288,10 +293,15 @@ export async function openShare(setId) {
   };
   /** @type {string|null|undefined} */
   let svg;
+  let svgFor = "";
   const draw = () => {
-    // The QR holds the upper-case form of the link (QR alphanumeric mode: a smaller, easier-to-scan code).
-    // Made once per sheet: the picture does not change while the sheet is open.
-    if (svg === undefined) svg = qrSvg(qrLink, { margin: 4 });
+    const s = getSet();
+    // The QR holds the upper-case form of the link (or the short Drive live link when live).
+    const qrTarget = currentQrLink();
+    if (svg === undefined || svgFor !== qrTarget) {
+      svg = qrSvg(qrTarget, { margin: 4 });
+      svgFor = qrTarget;
+    }
     // A long song makes a code with many small squares, so it is drawn larger, and a tap fills the screen with it.
     const n = Number(svg?.match(/data-n="(\d+)"/)?.[1] || 0);
     return `<div class="share">
@@ -300,21 +310,21 @@ export async function openShare(setId) {
           : `<div class="qr-box"><p>${esc(t("qrTooLong", "This song is too long for a QR code. The link still works."))}</p></div>`}
         <div class="share-side">
           <p class="card-text">${esc(t("shareHow2", "Anyone can open the link or scan the code to see the chart and save it. No account needed."))}</p>
-          <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(url)}" aria-label="Link"></div>
+          <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(currentShareLink())}" aria-label="Link"></div>
           <div class="share-actions">
             <button class="btn primary" type="button" id="shareCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
             ${"share" in navigator ? `<button class="btn" type="button" id="shareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
             ${svg ? `<button class="btn" type="button" id="shareQr">${icon("qr")}${esc(t("downloadQr", "QR image"))}</button>` : ""}
-            ${set ? `<button class="btn" type="button" id="shareSongLinks">${icon("link")}${esc(t("songLinks", "Song links"))}</button>` : ""}
+            ${s ? `<button class="btn" type="button" id="shareSongLinks">${icon("link")}${esc(t("songLinks", "Song links"))}</button>` : ""}
           </div>
-          ${set ? `<p class="card-hint">${esc(t("songLinksHint", "Song links: one short link per song in a message. Anyone can paste the whole message into Sonata (Songs → Import) to get the setlist."))}</p>` : ""}
+          ${s ? `<p class="card-hint">${esc(t("songLinksHint", "Song links: one short link per song in a message. Anyone can paste the whole message into Sonata (Songs → Import) to get the setlist."))}</p>` : ""}
         </div>
       </div>
-      ${set ? liveBlock() : ""}
+      ${s ? liveBlock() : ""}
       <h3 class="group-title">${esc(t("exportFiles", "Export"))}${many > 1 ? ` <span class="muted">· ${esc(t("songsInSet", "{n} songs", { n: many }))}</span>` : ""}</h3>
       <div class="export-grid">
         <button class="btn" type="button" data-export="pdf">${icon("file")}PDF</button>
-        ${set ? "" : `<button class="btn" type="button" data-export="png" title="${esc(t("pngShape", "Phone-sized image"))}">${icon("image")}PNG <small class="fmt" id="pngShape">${opts.landscape ? "16:9" : "9:16"}</small></button>`}
+        <button class="btn" type="button" data-export="png" title="${esc(t("pngShape", "Phone-sized image"))}">${icon("image")}PNG <small class="fmt" id="pngShape">${opts.landscape ? "16:9" : "9:16"}</small></button>
         <button class="btn" type="button" data-export="txt">${icon("text")}TXT</button>
         <button class="btn" type="button" data-export="print">${icon("print")}${esc(t("print", "Print"))}</button>
       </div>
@@ -326,7 +336,7 @@ export async function openShare(setId) {
       </div>
     </div>`;
   };
-  const body = openSheet({ title: set ? t("shareSetTitle", "Share setlist") : t("shareTitle", "Share \"{title}\"", { title }), body: draw(), wide: true, className: "share-sheet", focus: false });
+  const body = openSheet({ title: initSet ? t("shareSetTitle", "Share setlist") : t("shareTitle", "Share \"{title}\"", { title }), body: draw(), wide: true, className: "share-sheet", focus: false });
   const busy = async (/** @type {HTMLElement} */ b, /** @type {() => Promise<void>|void} */ fn) => {
     b.setAttribute("aria-busy", "true");
     try { await fn(); } catch { toast(t("exportFailed", "Couldn't make that file. Please try again."), "error"); } finally { b.removeAttribute("aria-busy"); }
@@ -344,13 +354,15 @@ export async function openShare(setId) {
   body.addEventListener("click", async (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
     if (!b) return;
+    const curSet = getSet();
+    const curTitle = curSet?.title || title;
     const kind = b.dataset.export;
-    if (kind === "pdf") busy(b, () => exportPdf(title, opts, set?.id));
-    if (kind === "png") busy(b, () => exportPng(opts));
-    if (kind === "txt") busy(b, () => exportTxt(set?.id));
-    if (kind === "print") { closeSheet(); printChart(opts, set?.id); }
-    if (b.id === "shareCopy") { if (await copyText(url)) toast(t("linkCopied", "Link copied"), "success"); }
-    if (b.id === "shareNative") { try { await navigator.share({ title: `${title} · Sonata`, url }); } catch { /* cancelled */ } }
+    if (kind === "pdf") busy(b, () => exportPdf(curTitle, opts, curSet?.id));
+    if (kind === "png") busy(b, () => exportPng(opts, curSet?.id));
+    if (kind === "txt") busy(b, () => exportTxt(curSet?.id));
+    if (kind === "print") { closeSheet(); printChart(opts, curSet?.id); }
+    if (b.id === "shareCopy") { if (await copyText(currentShareLink())) toast(t("linkCopied", "Link copied"), "success"); }
+    if (b.id === "shareNative") { try { await navigator.share({ title: `${curTitle} · Sonata`, url: currentShareLink() }); } catch { /* cancelled */ } }
     if (b.id === "qrZoom" && svg) {
       // Over everything in the sheet, white edge to edge: the easiest thing for a camera to read.
       const big = document.createElement("button");
@@ -362,26 +374,30 @@ export async function openShare(setId) {
       big.focus();
       return;
     }
-    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(title)}-qr.png`, await qrPng(qrLink, title)));
-    if (set && (b.id === "liveStart" || b.id === "liveUpdate")) busy(b, async () => {
-      if (!(await publishLiveSet(set.id))) return;
+    if (b.id === "shareQr") busy(b, async () => download(`sonata-${slug(curTitle)}-qr.png`, await qrPng(currentQrLink(), curTitle)));
+    if (curSet && (b.id === "liveStart" || b.id === "liveUpdate")) busy(b, async () => {
+      if (!(await publishLiveSet(curSet.id))) return;
       watchLiveSets();
       body.innerHTML = draw();
-      if (b.id === "liveStart" && await copyText(liveSetUrl(set.liveId || "", set.title))) toast(t("liveCopied", "Live link copied. Send it to the band."), "success", { ms: 4500 });
+      const updated = getSet();
+      if (b.id === "liveStart" && await copyText(liveSetUrl(updated?.liveId || "", updated?.title || curTitle))) toast(t("liveCopied", "Live link copied. Send it to the band."), "success", { ms: 4500 });
       else toast(t("livePublished", "The live link is up to date."), "success");
     });
-    if (set && b.id === "liveCopy") { if (await copyText(liveSetUrl(set.liveId || "", set.title))) toast(t("linkCopied", "Link copied"), "success"); }
-    if (set && b.id === "liveStop") busy(b, async () => {
-      if (await stopLiveSet(set.id)) { body.innerHTML = draw(); toast(t("liveStopped", "The live link is off. The setlist is private again."), "info"); }
+    if (curSet && b.id === "liveCopy") { if (await copyText(liveSetUrl(curSet.liveId || "", curSet.title))) toast(t("linkCopied", "Link copied"), "success"); }
+    if (curSet && b.id === "liveStop") busy(b, async () => {
+      if (await stopLiveSet(curSet.id)) { body.innerHTML = draw(); toast(t("liveStopped", "The live link is off. The setlist is private again."), "info"); }
       else toast(t("bankStopFailed", "Couldn't stop sharing. Check your connection and sign-in."), "error");
     });
-    if (b.id === "shareSongLinks" && set) busy(b, async () => {
-      const msg = await setlistMessage(BASE(), set, store.setlistSongs(set));
-      if ("share" in navigator && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ title: `${set.title} · Sonata`, text: msg }); return; } catch { /* cancelled: copy instead */ } }
+    if (b.id === "shareSongLinks" && curSet) busy(b, async () => {
+      const msg = await setlistMessage(BASE(), curSet, store.setlistSongs(curSet));
+      if ("share" in navigator && matchMedia("(pointer: coarse)").matches) { try { await navigator.share({ title: `${curSet.title} · Sonata`, text: msg }); return; } catch { /* cancelled: copy instead */ } }
       if (await copyText(msg)) toast(t("songLinksCopied", "Setlist message copied. Paste it in your group chat."), "success", { ms: 4000 });
     });
   });
-  body.querySelector("#shareUrl")?.addEventListener("focus", (e) => /** @type {HTMLInputElement} */ (e.target).select());
+  body.addEventListener("focusin", (e) => {
+    const el = /** @type {HTMLInputElement} */ (e.target);
+    if (el.id === "shareUrl" || el.id === "liveUrl") el.select();
+  });
 }
 
 /** Create or edit a setlist: title, notes, ordered songs. @param {string} [id] */
@@ -455,20 +471,153 @@ export function openSetlistEditor(id, songIds = []) {
  */
 export function openImportSet(data, source = "") {
   const songs = Array.isArray(data?.s) ? data.s : [];
+  const songRow = (/** @type {any} */ s) => {
+    const k = parseKey(s?.k) || (s?.b ? detectKey(s.b) : null);
+    const meta = [
+      s?.a || "",
+      s?.bpm ? `${s.bpm} BPM` : "",
+      s?.c ? t("capoN", "Capo {n}", { n: s.c }) : ""
+    ].filter(Boolean).join(" · ");
+    return `<li><div class="import-set-row"><span class="import-set-info"><strong>${esc(s?.t || "Untitled")}</strong>${meta ? `<small class="muted">${esc(meta)}</small>` : ""}</span>${k ? `<span class="key-badge small">${esc(pretty(keyShort(k)))}</span>` : ""}</div></li>`;
+  };
+  const save = (/** @type {boolean} */ present) => {
+    const ids = songs.map((/** @type {any} */ sd) => adoptShared(unpackSong(sd)).song.id);
+    const set = store.saveSetlist({ title: data.t || "Setlist", description: data.d || "", links: Array.isArray(data.l) ? data.l : [], items: ids.map((/** @type {string} */ songId) => ({ songId })), ...(source ? { source } : {}) });
+    store.playSetlist(set.id);
+    app.drive?.schedule();
+    if (present) app.openStage(); else app.show("editor");
+    toast(t("setlistSaved", "Setlist saved"), "success");
+  };
   openSheet({
     title: t("importSetTitle", "Open shared setlist"),
-    body: `<h3 class="sheet-sub">${esc(data.t || "Setlist")}</h3><p class="sheet-text">${esc(t("importSetText", "{n} songs. The setlist and its songs will be saved to your library.", { n: songs.length }))}</p>${source ? `<p class="card-hint">${esc(t("liveFollow", "This is a live setlist. When its owner changes it, your copy is brought up to date and your own keys are kept."))}</p>` : ""}
-      <ol class="import-list">${songs.map((s) => `<li>${esc(s?.t || "")}${s?.a ? ` <span class="muted">· ${esc(s.a)}</span>` : ""}</li>`).join("")}</ol>`,
+    body: `<h3 class="sheet-sub">${esc(data.t || "Setlist")}</h3>${data.d ? `<p class="card-hint">${esc(data.d)}</p>` : ""}<p class="sheet-text">${esc(t("importSetText", "{n} songs. The setlist and its songs will be saved to your library.", { n: songs.length }))}</p>${source ? `<p class="card-hint">${esc(t("liveFollow", "This is a live setlist. When its owner changes it, your copy is brought up to date and your own keys are kept."))}</p>` : ""}
+      <ol class="import-list import-set-list">${songs.map(songRow).join("")}</ol>`,
     actions: [
       { label: t("cancel", "Cancel"), kind: "ghost" },
-      { label: t("importSet", "Save setlist"), kind: "primary", onClick: () => {
-        const ids = songs.map((/** @type {any} */ sd) => adoptShared(unpackSong(sd)).song.id);
-        const set = store.saveSetlist({ title: data.t || "Setlist", description: data.d || "", items: ids.map((/** @type {string} */ songId) => ({ songId })), ...(source ? { source } : {}) });
-        store.playSetlist(set.id);
-        app.show("editor");
-        toast(t("setlistSaved", "Setlist saved"), "success");
-      } }
+      { label: t("saveAndPresent", "Save & stage"), onClick: () => save(true) },
+      { label: t("importSet", "Save setlist"), kind: "primary", onClick: () => save(false) }
     ]
+  });
+}
+
+/** Quick song switcher (⌘K / Ctrl+K, Chart header, Setlist title, Stage title). */
+export function openSongSwitcher() {
+  const cur = store.currentSetlist();
+  const fold = (/** @type {string} */ s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  let q = "";
+  let cursor = 0;
+
+  const matchingEntries = () => {
+    const f = fold(q.trim());
+    const match = (/** @type {import("../core/store.js").Song} */ s) => !f || fold(`${s.title} ${s.artist} ${s.genre}`).includes(f);
+    /** @type {{ kind: "set"|"song", id: string, idx?: number, song: import("../core/store.js").Song }[]} */
+    const entries = [];
+    const seenInSet = new Set();
+    if (cur) {
+      cur.songs.forEach((song, idx) => {
+        if (!match(song)) return;
+        entries.push({ kind: "set", id: song.id, idx, song });
+        seenInSet.add(song.id);
+      });
+    }
+    const sorted = store.songs.slice().sort((a, b) => (Date.parse(b.lastOpenedAt || b.updatedAt) || 0) - (Date.parse(a.lastOpenedAt || a.updatedAt) || 0));
+    for (const song of sorted) {
+      if (cur && !f && seenInSet.has(song.id)) continue;
+      if (cur && f && seenInSet.has(song.id)) continue;
+      if (match(song)) entries.push({ kind: "song", id: song.id, song });
+    }
+    return entries;
+  };
+
+  const renderList = () => {
+    const entries = matchingEntries();
+    if (!entries.length) return `<p class="muted set-empty">${esc(q.trim() ? t("noMatches", "No matches for \"{q}\"", { q }) : t("noSong", "No song open"))}</p>`;
+    cursor = Math.max(0, Math.min(entries.length - 1, cursor));
+    const setEntries = entries.filter((e) => e.kind === "set");
+    const libEntries = entries.filter((e) => e.kind === "song");
+    let flatIdx = 0;
+    const renderRow = (/** @type {typeof entries[number]} */ e) => {
+      const i = flatIdx++;
+      const s = e.song;
+      const on = e.kind === "set" ? (cur && e.idx === cur.index) : (!cur && s.id === store.activeId);
+      const sel = i === cursor;
+      const k = !s.body.trim() && s.manualKey === "auto" ? "–" : pretty(keyShort(soundingKey(s)));
+      const sub = [s.artist, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean).join(" · ");
+      return `<button type="button" class="sw-opt${on ? " on" : ""}${sel ? " sel" : ""}" data-sw-kind="${e.kind}" data-sw-id="${esc(s.id)}"${e.idx !== undefined ? ` data-sw-idx="${e.idx}"` : ""}${on ? ' aria-current="true"' : ""}>
+        ${e.idx !== undefined ? `<span class="sw-num">${e.idx + 1}</span>` : ""}
+        <span class="key-badge small">${esc(k)}</span>
+        <span class="sw-text"><strong>${esc(s.title || t("untitled", "Untitled"))}</strong>${sub ? `<small>${esc(sub)}</small>` : ""}</span>
+        ${on ? icon("check") : ""}
+      </button>`;
+    };
+    let html = "";
+    if (setEntries.length && cur) {
+      html += `<p class="mini-label sw-group">${esc(cur.set.title)} · ${esc(t("songsInSet", "{n} songs", { n: cur.songs.length }))}</p>`;
+      html += setEntries.map(renderRow).join("");
+    }
+    if (libEntries.length) {
+      html += `<p class="mini-label sw-group">${esc(cur ? t("allSongs", "All songs") : t("songsTitle", "Songs"))}</p>`;
+      html += libEntries.map(renderRow).join("");
+    }
+    return html;
+  };
+
+  const body = openSheet({
+    title: t("switchSong", "Switch song"),
+    body: `<div class="switcher">
+      <label class="search">
+        <span data-icon="search"></span>
+        <input id="swSearch" type="search" autocomplete="off" placeholder="${esc(t("switchSearchPh", "Type a song title, artist, or genre…"))}" aria-label="${esc(t("switchSong", "Switch song"))}">
+      </label>
+      <div class="sw-list" id="swList" aria-label="${esc(t("songsTitle", "Songs"))}">${renderList()}</div>
+    </div>`,
+    actions: [{ label: t("close", "Close"), kind: "ghost" }]
+  });
+
+  const listEl = /** @type {HTMLElement} */ (body.querySelector("#swList"));
+  const searchEl = /** @type {HTMLInputElement} */ (body.querySelector("#swSearch"));
+  const activate = (/** @type {HTMLElement|null} */ btn) => {
+    if (!btn) return;
+    const kind = btn.dataset.swKind;
+    if (kind === "set" && cur) {
+      store.playSetlist(cur.set.id, Number(btn.dataset.swIdx || 0));
+    } else {
+      const id = btn.dataset.swId || "";
+      store.exitSetlist();
+      store.open(id);
+    }
+    if (!document.body.classList.contains("stage-open") && app.view !== "editor") app.show("editor");
+    closeSheet();
+  };
+
+  searchEl.addEventListener("input", () => {
+    q = searchEl.value;
+    cursor = 0;
+    listEl.innerHTML = renderList();
+    paintIcons(listEl);
+  });
+  searchEl.addEventListener("keydown", (e) => {
+    const btns = /** @type {HTMLElement[]} */ ([...listEl.querySelectorAll(".sw-opt")]);
+    if (!btns.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      cursor = (cursor + 1) % btns.length;
+      listEl.innerHTML = renderList();
+      paintIcons(listEl);
+      listEl.querySelector(".sw-opt.sel")?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      cursor = (cursor - 1 + btns.length) % btns.length;
+      listEl.innerHTML = renderList();
+      paintIcons(listEl);
+      listEl.querySelector(".sw-opt.sel")?.scrollIntoView({ block: "nearest" });
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      activate(btns[cursor] || btns[0]);
+    }
+  });
+  listEl.addEventListener("click", (e) => {
+    activate(/** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest(".sw-opt")));
   });
 }
 
@@ -618,6 +767,7 @@ export function openLinksImport(text = "") {
   let analyzed = null;
   /** What happened to a pasted web link: "" (none), "reading", or why it could not be read. */
   let web = "";
+  let chordsOnlyImport = false;
   const WEB_NOTE = /** @type {Record<string, [string, string]>} */ ({
     reading: ["webReading", "Reading the page…"],
     offline: ["webOffline", "You are offline. Open the page, copy the chords and paste them here."],
@@ -627,6 +777,12 @@ export function openLinksImport(text = "") {
     "slow-down": ["webSlowDown", "That was a lot of links in a short time. Wait a minute and try again, or paste the chords here."],
     blocked: ["webBlocked", "That site does not let Sonata read its pages. Open it, copy the chords and paste them here."]
   });
+  const analyzedBody = () => {
+    if (!analyzed) return "";
+    if (!chordsOnlyImport) return analyzed.body;
+    const stripped = stripLyricsToChordsOnly(analyzed.body, { key: parseKey(analyzed.manualKey) || undefined });
+    return stripped || analyzed.body;
+  };
   const summary = () => {
     if (web && !analyzed) {
       const [key, en] = WEB_NOTE[web] || WEB_NOTE.blocked;
@@ -640,10 +796,12 @@ export function openLinksImport(text = "") {
           <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="lkSetTitle" value="${esc(found.title || t("importedSetlist", "Imported setlist"))}" maxlength="80"></label>` : ""}`;
     }
     if (analyzed) {
+      const previewBody = analyzedBody();
       return `<div class="analyzed-chart">
         <p class="status-line synced">${esc(t("chartReady", "Chart ready"))} · <strong>${esc(pretty(analyzed.keyName))}</strong>${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}</p>
         <p class="import-title"><strong>${esc(analyzed.title)}</strong>${analyzed.artist ? ` <span class="muted">· ${esc(analyzed.artist)}</span>` : ""}</p>
-        <pre class="import-preview" tabindex="0" aria-label="${esc(t("preview", "Preview"))}">${esc(pretty(analyzed.body.split("\n").slice(0, 10).join("\n")))}</pre>
+        <label class="switch-row import-chords-only"><span>${esc(t("importChordsOnly", "Chords only (without lyrics)"))}</span><input type="checkbox" class="toggle" id="lkChordsOnly"${chordsOnlyImport ? " checked" : ""}></label>
+        <pre class="import-preview" tabindex="0" aria-label="${esc(t("preview", "Preview"))}">${esc(pretty(previewBody.split("\n").slice(0, 12).join("\n")))}</pre>
       </div>`;
     }
     return `<p class="muted">${esc(t("importNone", "Paste a link or chords to see what will be added."))}</p>`;
@@ -658,13 +816,17 @@ export function openLinksImport(text = "") {
       { label: t("add", "Add"), kind: "primary", onClick: (b) => {
         const n = found.songs.length + found.sets.length;
         if (!n && analyzed) {
+          if (chordsOnlyImport && store.settings.viewMode === "lyrics") {
+            store.settings.viewMode = "chords";
+            store.changed("settings");
+          }
           const song = store.createSong({
             title: analyzed.title,
             artist: analyzed.artist,
             manualKey: analyzed.manualKey,
             capo: analyzed.capo,
             bpm: analyzed.bpm,
-            body: analyzed.body,
+            body: analyzedBody(),
             links: analyzed.links
           });
           store.open(song.id);
@@ -725,6 +887,13 @@ export function openLinksImport(text = "") {
     read();
   };
   file.addEventListener("change", () => { takeFile(file.files?.[0]); file.value = ""; });
+  body.addEventListener("change", (e) => {
+    const el = /** @type {HTMLInputElement} */ (e.target);
+    if (el.id !== "lkChordsOnly") return;
+    chordsOnlyImport = el.checked;
+    const pre = /** @type {HTMLElement|null} */ (body.querySelector(".import-preview"));
+    if (pre && analyzed) pre.textContent = pretty(analyzedBody().split("\n").slice(0, 12).join("\n"));
+  });
   body.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) e.preventDefault(); });
   body.addEventListener("drop", (e) => { const f = e.dataTransfer?.files?.[0]; if (f) { e.preventDefault(); takeFile(f); } });
   area.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(read, 200); });

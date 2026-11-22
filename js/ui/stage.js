@@ -7,6 +7,7 @@ import { buildLines, linesToHtml } from "../core/chart.js";
 import { keyShort, pretty } from "../core/music.js";
 import { syncMetroButton, initMetronome } from "./metronome.js";
 import { stepSetlist } from "./editor.js";
+import { openSongSwitcher } from "./sheets-lazy.js";
 
 const THEMES = ["stage", "dark", "light"];
 let open = false;
@@ -27,6 +28,7 @@ const scroller = () => $("stageScroll");
 export function initStage() {
   initMetronome();
   $("stageExit").addEventListener("click", closeStage);
+  $("stageSwitchBtn")?.addEventListener("click", () => openSongSwitcher());
   $("stagePrev").addEventListener("click", () => stepSetlist(-1));
   $("stageNext").addEventListener("click", () => stepSetlist(1));
   $("stageKeyDown").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), -1); });
@@ -80,15 +82,15 @@ export function initStage() {
 
 /** @param {KeyboardEvent} e */
 function onKey(e) {
-  if (!open) return;
+  if (!open || /** @type {HTMLDialogElement} */ ($("sheet")).open) return;
   const tag = /** @type {HTMLElement} */ (e.target).tagName;
   if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
   // Space and Enter must still press a focused button or link.
   if ((tag === "BUTTON" || tag === "A") && (e.key === " " || e.key === "Enter")) return;
   if (e.key === "Escape") { e.preventDefault(); closeStage(); }
   else if (e.key === " ") { e.preventDefault(); toggleScroll(); }
-  else if (e.key === "ArrowRight") { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(1); } }
-  else if (e.key === "ArrowLeft") { if (store.currentSetlist()) { e.preventDefault(); stepSetlist(-1); } }
+  else if (e.key === "ArrowRight") { if (store.currentSetlist() || (!store.active()?.readonly && store.songs.length > 1)) { e.preventDefault(); stepSetlist(1); } }
+  else if (e.key === "ArrowLeft") { if (store.currentSetlist() || (!store.active()?.readonly && store.songs.length > 1)) { e.preventDefault(); stepSetlist(-1); } }
   else if (e.key === "ArrowUp" && scrolling) { e.preventDefault(); speed(5); }
   else if (e.key === "ArrowDown" && scrolling) { e.preventDefault(); speed(-5); }
   // Page-turner pedals send Page Down/Up or the down/up arrows: one screen at a time, then the next song.
@@ -219,14 +221,20 @@ function renderStage() {
   $("stageKey").textContent = pretty(keyShort(k));
   $("stageBpm").textContent = String(metronome.bpm);
   const cur = store.currentSetlist();
-  // Setlist: previous/next sit at the ends of the bottom dock, under the thumbs.
-  $("stageCount").hidden = !cur;
-  $("stagePrev").hidden = !cur;
-  $("stageNext").hidden = !cur;
+  const canStep = Boolean(cur) || (!s.readonly && store.songs.length > 1);
+  // Setlist / library steppers sit at the ends of the bottom dock, under the thumbs.
+  $("stageCount").hidden = !canStep;
+  $("stagePrev").hidden = !canStep;
+  $("stageNext").hidden = !canStep;
   if (cur) {
     $("stageCount").textContent = `${cur.index + 1}/${cur.songs.length}`;
     /** @type {HTMLButtonElement} */ ($("stagePrev")).disabled = cur.index <= 0;
     /** @type {HTMLButtonElement} */ ($("stageNext")).disabled = cur.index >= cur.songs.length - 1;
+  } else if (canStep) {
+    const idx = Math.max(0, store.songs.findIndex((x) => x.id === s.id));
+    $("stageCount").textContent = `${idx + 1}/${store.songs.length}`;
+    /** @type {HTMLButtonElement} */ ($("stagePrev")).disabled = idx <= 0;
+    /** @type {HTMLButtonElement} */ ($("stageNext")).disabled = idx >= store.songs.length - 1;
   }
   measureChrome();
   const lines = s.body.trim() ? buildLines(s.body, renderOptions(s, /** @type {any} */ (mode))) : [];

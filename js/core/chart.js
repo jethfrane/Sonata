@@ -10,7 +10,7 @@ import {
 /**
  * @typedef {import("./music.js").Key} Key
  * @typedef {import("./music.js").Chord} Chord
- * @typedef {"chords"|"nashville"|"roman"|"lyrics"} ViewMode
+ * @typedef {"chords"|"chords-only"|"nashville"|"roman"|"lyrics"} ViewMode
  * @typedef {{ mode?: ViewMode, key: Key, transpose?: number, capo?: number,
  *   spelling?: import("./music.js").Spelling, title?: string }} RenderOptions
  * @typedef {{ type: "header"|"section"|"note"|"lyrics", text: string }
@@ -82,6 +82,34 @@ export function chordTransform(o) {
 }
 
 /**
+ * Compact wide lyric-alignment gaps when showing chords without lyrics.
+ * @param {string} chords
+ */
+function compactChordLine(chords) {
+  return String(chords || "").trim().replace(/\s{3,}/g, "  ");
+}
+
+const SECTION_LINE_RE = /^\s*\[?\s*(?:intro|introd(?:u[cç][aã]o|ucción)?|pre[- ]?chorus|post[- ]?chorus|verse|verso|estrofe|estrofa|stanza|chorus|refr[aã]o|coro|koro|bridge|ponte|puente|tulalay|interlude|interl[uú]dio|instrumental|(?:guitar|piano|keys|bass|sax|drum|violin|synth)\s+solo|solo|outro|final|tag|ending|refrain|hook|vamp|coda|turnaround|break|channel|rap|chant|ad[- ]?lib|modulation|key\s+change)(?:\s+(?:\d+[a-z]?|x\s?\d+|\d+\s?x|[ivx]{1,4}|[ab]))?(?:\s*\([^)\n]{1,24}\))?\s*\]?\s*:?\s*$/i;
+const BRACKET_TAG_RE = /^\s*\[([^\]\n]{1,32})\]\s*:?\s*$/;
+
+/**
+ * Extract a section name from a standalone section line without `##` (e.g. "[Chorus]", "Verse 1:", "[Guitar Solo]").
+ * @param {string} line
+ */
+function inlineSectionLabel(line) {
+  const t = String(line || "").trim();
+  if (!t) return "";
+  const br = t.match(BRACKET_TAG_RE);
+  if (br) {
+    const clean = br[1].replace(/:\s*$/, "").trim();
+    return clean && !parseChord(clean) && !isNeutralToken(clean) ? clean : "";
+  }
+  if (!SECTION_LINE_RE.test(t)) return "";
+  const clean = t.replace(/^\[|\]$/g, "").replace(/:\s*$/, "").trim();
+  return clean && !parseChord(clean) && !isNeutralToken(clean) ? clean : "";
+}
+
+/**
  * @param {string} body
  * @param {RenderOptions} o
  * @returns {ChartLine[]}
@@ -112,12 +140,33 @@ export function buildLines(body, o) {
         if (text) out.push({ type: "lyrics", text });
         continue;
       }
+      if (mode === "chords-only") {
+        const sec = inlineSectionLabel(line);
+        if (sec) { out.push({ type: "section", text: sec }); continue; }
+        /** @type {string[]} */
+        const parts = [];
+        for (const m of line.matchAll(/\[([^\]]+)\]/g)) {
+          const inner = m[1].trim();
+          const c = parseChord(inner);
+          if (c) parts.push(fn(c));
+          else if (isNeutralToken(inner)) parts.push(inner);
+        }
+        if (parts.length) out.push({ type: "chords", chords: parts.join("  ") });
+        continue;
+      }
       const { chords, lyrics } = splitInline(line, fn);
       out.push(chords.trim() ? { type: "pair", chords, lyrics } : { type: "lyrics", text: lyrics });
       continue;
     }
     if (kind === "chords") {
       if (mode === "lyrics") continue;
+      if (mode === "chords-only") {
+        const chords = compactChordLine(mapChords(line, fn));
+        const next = src[i + 1];
+        if (next !== undefined && lineKind(next) === "lyrics" && !inlineSectionLabel(next)) i++;
+        if (chords) out.push({ type: "chords", chords });
+        continue;
+      }
       const chords = mapChords(line, fn);
       const next = src[i + 1];
       if (next !== undefined && lineKind(next) === "lyrics") {
@@ -128,13 +177,42 @@ export function buildLines(body, o) {
       }
       continue;
     }
+    if (mode === "chords-only") {
+      const sec = inlineSectionLabel(line);
+      if (sec) out.push({ type: "section", text: sec });
+      continue;
+    }
     out.push({ type: "lyrics", text: mode === "lyrics" ? line.trim() : line.replace(/\s+$/, "") });
   }
-  // Lyrics view: collapse the blank runs left behind by removed chord lines.
-  if (mode === "lyrics") {
-    return out.filter((l, i, a) => !(l.type === "empty" && (i === 0 || a[i - 1].type === "empty")));
+  // Lyrics / Chords-only view: collapse blank runs left behind by stripped lines.
+  if (mode === "lyrics" || mode === "chords-only") {
+    const collapsed = out.filter((l, i, a) => !(l.type === "empty" && (i === 0 || a[i - 1].type === "empty")));
+    while (collapsed.length && collapsed[collapsed.length - 1].type === "empty") collapsed.pop();
+    return collapsed;
   }
   return out;
+}
+
+/**
+ * Convert a full chart body (including charts imported from chord websites) into a clean
+ * chords-only chart string with sections, notes, and chord progressions (no lyrics).
+ * @param {string} body
+ * @param {{ key?: Key, spelling?: import("./music.js").Spelling }} [o]
+ */
+export function stripLyricsToChordsOnly(body, o = {}) {
+  const key = o.key || keyFromTonic(0, "major");
+  const lines = buildLines(body, { mode: "chords-only", key, spelling: o.spelling || "auto" });
+  return lines.map((l) => {
+    switch (l.type) {
+      case "empty": return "";
+      case "divider": return "---";
+      case "header": return `# ${l.text}`;
+      case "section": return `## ${l.text}`;
+      case "note": return `> ${l.text}`;
+      case "chords": return l.chords;
+      default: return "";
+    }
+  }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /** Wrap chord tokens (and rhythm slashes) in spans. @param {string} text */

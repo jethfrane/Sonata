@@ -6,7 +6,8 @@ import { openShare } from "./sheets-lazy.js";
 import { store, soundingKey, shapeKey, renderOptions } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
-import { packSong, qrUrl } from "../core/share.js";
+import { packSong, packSet, qrUrl } from "../core/share.js";
+import { liveSetUrl } from "./liveset.js";
 
 /** @typedef {{ columns: number, landscape: boolean }} ExportOptions */
 
@@ -22,7 +23,7 @@ export function exportDocs(setId) {
     const meta = [`Key ${pretty(keyShort(k))}`];
     if (song.capo) meta.push(`Capo ${song.capo} (${pretty(keyShort(shapeKey(song)))} shapes)`);
     if (song.bpm) meta.push(`${song.bpm} BPM`);
-    meta.push({ chords: "Chords", nashville: "Nashville numbers", roman: "Roman numerals", lyrics: "Lyrics" }[/** @type {"chords"} */ (mode)] || "Chords");
+    meta.push({ chords: "Chords", "chords-only": "Chords only", nashville: "Nashville numbers", roman: "Roman numerals", lyrics: "Lyrics" }[/** @type {"chords"} */ (mode)] || "Chords");
     return { title: song.title, artist: song.artist, creator: song.creator, meta: meta.join("  ·  "), lines: buildLines(song.body, renderOptions(song, mode)) };
   });
 }
@@ -37,33 +38,47 @@ export async function exportPdf(name, o, setId) {
   download(`${slug(name || docs[0].title)}.pdf`, await buildPdfSmall(docs, { ...o, accent: accent() }));
 }
 
-/** @param {ExportOptions} o */
-export async function exportPng(o) {
-  const doc = exportDocs()[0];
-  if (!doc) return;
+/** @param {ExportOptions} o @param {string} [setId] */
+export async function exportPng(o, setId) {
+  const docs = exportDocs(setId);
+  if (!docs.length) return;
   const [{ renderPngPages }, { qrModules }] = await Promise.all([import("../lib/export.js"), import("../lib/qr.js")]);
   await document.fonts?.ready;
   const logo = /** @type {HTMLImageElement|null} */ (document.querySelector(".brand img"));
-  // The QR opens this exact chart; if the song is too long for a code it points to the app instead.
-  const song = store.active();
+  const set = setId ? store.setlists.find((x) => x.id === setId) : store.currentSetlist()?.set || null;
+  const isSet = Boolean(set && docs.length > 1);
+  const song = !isSet ? (set ? store.setlistSongs(set)[0] : store.active()) : null;
   let qr = null;
   let qrNote = "";
-  if (song && !song.readonly) {
+  if (set && isSet) {
+    const target = set.liveId ? liveSetUrl(set.liveId, set.title) : await qrUrl(location.origin, packSet(set, store.setlistSongs(set)));
+    qr = qrModules(target);
+    if (qr) qrNote = set.liveId ? "Opens this live setlist in Sonata." : "Opens this setlist in Sonata on any phone.";
+  } else if (song && !song.readonly) {
     // Upper-case QR link: alphanumeric mode, a smaller code that scans more easily from paper.
     qr = qrModules(await qrUrl(location.origin, packSong(song)));
     if (qr) qrNote = "Opens this song in Sonata on any phone.";
   }
   if (!qr) { qr = qrModules(`${location.origin}/`); qrNote = "Opens Sonata on any phone."; }
-  const pages = await renderPngPages(doc, { ...o, accent: accent(), logo, qr, qrNote });
-  openPngPreview(doc.title, pages);
+  const pageGroups = await Promise.all(docs.map((doc, idx) => renderPngPages(doc, {
+    ...o,
+    accent: accent(),
+    logo,
+    qr: idx === 0 ? qr : null,
+    qrNote: idx === 0 ? qrNote : "",
+    qrTitle: isSet ? "Scan to open this setlist" : "Scan to open this chart",
+    setLabel: isSet && set ? `${set.title} · Song ${idx + 1} of ${docs.length}` : ""
+  })));
+  const pages = pageGroups.flat();
+  openPngPreview(set && isSet ? set.title : docs[0].title, pages, setId);
 }
 
 /**
  * Show the finished image first. From here it can be copied (to paste into a chat), shared or
  * downloaded; nothing is saved to the device unless the person asks for it.
- * @param {string} title @param {Blob[]} pages
+ * @param {string} title @param {Blob[]} pages @param {string} [setId]
  */
-function openPngPreview(title, pages) {
+function openPngPreview(title, pages, setId) {
   const name = (/** @type {number} */ i) => `${slug(title)}${pages.length > 1 ? `-page-${i + 1}` : ""}.png`;
   const urls = pages.map((b) => URL.createObjectURL(b));
   const canCopy = Boolean(navigator.clipboard?.write) && typeof ClipboardItem !== "undefined";
@@ -85,7 +100,7 @@ function openPngPreview(title, pages) {
       </figure>`).join("")}</div>
     </div>`,
     actions: [
-      { label: t("back", "Back"), kind: "ghost", onClick: () => { openShare(); return false; } },
+      { label: t("back", "Back"), kind: "ghost", onClick: () => { openShare(setId); return false; } },
       ...(canShare ? [{ label: t("share", "Share"), onClick: async () => { try { await navigator.share({ files: files(), title }); } catch { /* closed */ } return false; } }] : []),
       { label: many ? t("downloadAll", "Download all") : t("download", "Download"), onClick: async () => {
         for (let i = 0; i < pages.length; i++) {

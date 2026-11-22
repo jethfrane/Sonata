@@ -35,6 +35,7 @@ export function initLibrary() {
   });
   $$("button[data-filter]").forEach((b) => b.addEventListener("click", () => {
     limit = PAGE;
+    peekId = "";
     filter = /** @type {any} */ (b.dataset.filter);
     renderLibrary();
   }));
@@ -49,12 +50,14 @@ export function initLibrary() {
   $("libraryList").addEventListener("dblclick", (e) => {
     const row = /** @type {HTMLElement} */ (e.target).closest("[data-id]");
     if (!row || !wide.matches || !/** @type {HTMLElement} */ (e.target).closest('[data-act="open"]')) return;
+    peekId = "";
     store.exitSetlist(); store.open(row.getAttribute("data-id") || ""); app.show("editor");
   });
   $("songPeek").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("button"));
     const id = $("songPeek").dataset.id || "";
     if (!b || !store.song(id)) return;
+    peekId = "";
     store.exitSetlist();
     if (b.id === "peekEdit") { store.open(id); app.show("editor"); }
     if (b.id === "peekPresent") { store.open(id); app.openStage(); }
@@ -108,7 +111,13 @@ async function onListClick(e) {
   const id = btn.closest("[data-id]")?.getAttribute("data-id") || "";
   const act = btn.dataset.act;
   if (act === "open") {
-    if (wide.matches && /** @type {MouseEvent} */ (e).detail < 2) { peekId = id; renderLibrary(); return; }
+    if (wide.matches && /** @type {MouseEvent} */ (e).detail < 2) {
+      if (peekId === id) { peekId = ""; store.exitSetlist(); store.open(id); app.show("editor"); return; }
+      peekId = id;
+      renderLibrary();
+      return;
+    }
+    peekId = "";
     store.exitSetlist(); store.open(id); app.show("editor");
   }
   else if (act === "fav") toggleFavorite(id);
@@ -252,11 +261,12 @@ function setlistMenu(id) {
       <button type="button" class="menu-item" data-m="play">${icon("present")}<span>${esc(t("playSet", "Play"))}</span></button>
       <button type="button" class="menu-item" data-m="edit">${icon("edit")}<span>${esc(t("edit", "Edit"))}</span></button>
       <button type="button" class="menu-item" data-m="share">${icon("share")}<span>${esc(t("share", "Share"))}</span></button>
+      ${set.liveId || set.source ? `<button type="button" class="menu-item" data-m="sync">${icon("refresh")}<span>${esc(t("syncSetlist", "Sync Drive link"))}</span></button>` : ""}
       <button type="button" class="menu-item" data-m="print">${icon("print")}<span>${esc(t("print", "Print"))}</span></button>
       <button type="button" class="menu-item danger" data-m="del">${icon("trash")}<span>${esc(t("delete", "Delete"))}</span></button>
     </div>`
   });
-  body.addEventListener("click", (e) => {
+  body.addEventListener("click", async (e) => {
     const m = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-m]"))?.dataset.m;
     if (!m) return;
     /** @type {HTMLDialogElement} */ ($("sheet")).close();
@@ -264,6 +274,7 @@ function setlistMenu(id) {
     if (m === "play") { if (store.playSetlist(id)) app.openStage(); }
     if (m === "edit") openSetlistEditor(id);
     if (m === "share") openShare(id);
+    if (m === "sync") { await (await import("./liveset.js")).syncLiveSetNow(id); renderLibrary(); }
     if (m === "del") {
       const entry = store.trashSetlist(id);
       renderLibrary();
@@ -372,10 +383,11 @@ export function renderLibrary() {
     list.innerHTML = sets.map((s) => {
       const songs = store.setlistSongs(s);
       const preview = songs.slice(0, 4).map((x) => x.title).join(" · ");
+      const driveTag = s.liveId ? t("liveOnDrive", "Live on Drive") : s.source ? t("syncedFromDrive", "Synced from Drive") : "";
       return `<div class="row set-row${store.setlist.id === s.id ? " active" : ""}" data-id="${esc(s.id)}">
         <button type="button" class="row-main" data-act="set-open">
-          <span class="row-icon">${icon("list")}</span>
-          <span class="row-text"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${esc(t("songsInSet", "{n} songs", { n: songs.length }))}${preview ? " · " + esc(preview) : ""}</span></span>
+          <span class="row-icon">${icon(driveTag ? "cloud-check" : "list")}</span>
+          <span class="row-text"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${driveTag ? `<b class="drive-tag">${esc(driveTag)}</b> · ` : ""}${esc(t("songsInSet", "{n} songs", { n: songs.length }))}${preview ? " · " + esc(preview) : ""}</span></span>
         </button>
         <button type="button" class="icon-btn" data-act="set-play" aria-label="${esc(t("playSet", "Play"))}" title="${esc(t("playSet", "Play"))}">${icon("present")}</button>
         <button type="button" class="icon-btn" data-act="set-more" aria-label="${esc(t("moreActions", "More actions"))}">${icon("more")}</button>

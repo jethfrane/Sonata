@@ -1,5 +1,17 @@
 [
   {
+    "version": "7.1.0",
+    "date": "2026-11-22",
+    "whatsNew": "Chords-only view (including when importing from chord site links), a faster Quick Song Switcher across Chart, Setlists and Stage, cleaner side margins across preview, stage and PNG exports, multi-song setlist PNGs, and streamlined Google Drive live setlist sharing & sync.",
+    "changes": [
+      "Chords only mode: switch any chart in View, Stage, or Export (PDF/PNG/TXT/Print) to show only the chord progression and section labels with compact spacing and tap-to-hear chord popups.",
+      "Chords-only import toggle: when importing from a chord site link or ChordPro/text paste, toggle \"Chords only (without lyrics)\" to preview and save just the chord progression.",
+      "Faster song switching: press Cmd/Ctrl+K from anywhere or tap Switch / the setlist title / Stage title to search and jump to any song; use the scrollable pill strip above setlists or Prev/Next in Stage across all library songs.",
+      "Cleaner margins & PNG exports: added comfortable side margins in Preview, Stage, and 9:16 / 16:9 PNGs, subtle column divider rules, multi-song setlist PNG export with scannable live QR links, and balanced typography scale.",
+      "Optimized Google Drive live setlists: direct Google sign-in from Share, 4s auto-sync for published setlists, 1-tap Sync button & status badges in the setlist bar and library rows, plus rich link previews for /set/<id>."
+    ]
+  },
+  {
     "version": "7.0.0",
     "date": "2026-11-20",
     "whatsNew": "A calmer 3-tab layout (Songs, Chart, Tools) with a dedicated Tools Hub, a rearranged Minor Circle of Fifths and interactive Key Finder, floating popover dropdowns, a 30-day Trash for deleted songs and setlists, and built-in AI Agents & MCP connectivity.",

@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { loadBank } from "./bank.js";
+import { loadSet } from "./set.js";
 
 const ORIGIN = "https://sonata.jethrofrane.xyz";
 /** One preview image per kind of page (public/og/*.png, made by tests/og.mjs). */
@@ -84,6 +85,25 @@ async function describe(route, query) {
   const seg = rawSeg.map((x) => x.toLowerCase());
   if (query.s) { const info = sharedInfo(decodeShare(query.s)); if (info) return info; }
   if (seg[0] === "q" && rawSeg[1]) { const info = sharedInfo(decodeQr(rawSeg[1])); if (info) return info; }
+  if (seg[0] === "set" && rawSeg[1]) {
+    // A live setlist stored on the leader's Google Drive: show title and song count in link previews.
+    const r = await Promise.race([loadSet(rawSeg[1]), new Promise((ok) => setTimeout(() => ok({ status: 504 }), 2500))]);
+    if (r.status === 200 && r.file) {
+      const f = r.file;
+      return {
+        title: `${clip(f.t, 60)} · Setlist`,
+        desc: `A live setlist of ${Array.isArray(f.s) ? f.s.length : 0} songs. Open it in Sonata to see the charts, transpose and present.`,
+        robots: true,
+        image: og("setlist")
+      };
+    }
+    return {
+      title: "Live setlist",
+      desc: "A live setlist on Sonata. Open it to see the charts, transpose and present.",
+      robots: true,
+      image: og("setlist")
+    };
+  }
   if (seg[0] === "bank" && rawSeg[1]) {
     // A public Song Bank: name and size, read from their Drive (not stored here).
     const r = await Promise.race([loadBank(rawSeg[1]), new Promise((ok) => setTimeout(() => ok({ status: 504 }), 2500))]);

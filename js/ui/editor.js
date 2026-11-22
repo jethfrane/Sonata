@@ -4,7 +4,7 @@ import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
-import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport } from "./sheets-lazy.js";
+import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport, openSongSwitcher } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
 import { loneLink } from "../core/import.js";
 
@@ -103,7 +103,7 @@ export function initEditor() {
   // Tap a chord in the chart view to see its shapes and hear it.
   $("preview").addEventListener("click", (e) => {
     const c = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest(".ch"));
-    if (!c || store.settings.viewMode !== "chords") return;
+    if (!c || (store.settings.viewMode !== "chords" && store.settings.viewMode !== "chords-only")) return;
     openChordSheet(c.textContent?.trim() || "");
   });
   title().addEventListener("input", () => {
@@ -150,6 +150,7 @@ export function initEditor() {
   $("keyUpBtn").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), 1); });
   $("keyPill").addEventListener("click", () => openKeySheet());
   $("detailsBtn").addEventListener("click", () => openDetails());
+  $("switchSongBtn")?.addEventListener("click", () => openSongSwitcher());
   $("shareSongBtn").addEventListener("click", () => openShare());
   $$("button[data-mode]").forEach((b) => b.addEventListener("click", () => {
     store.settings.viewMode = /** @type {any} */ (b.dataset.mode);
@@ -186,6 +187,18 @@ export function initEditor() {
   $("setPrevBtn").addEventListener("click", () => stepSetlist(-1));
   $("setNextBtn").addEventListener("click", () => stepSetlist(1));
   $("setExitBtn").addEventListener("click", () => store.exitSetlist());
+  $("setlistBarTitleBtn")?.addEventListener("click", () => openSongSwitcher());
+  $("setSyncBtn")?.addEventListener("click", async () => {
+    const cur = store.currentSetlist();
+    if (!cur) return;
+    (await import("./liveset.js")).syncLiveSetNow(cur.set.id);
+  });
+  $("setlistStrip")?.addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-set-idx]"));
+    if (!b) return;
+    const cur = store.currentSetlist();
+    if (cur) store.playSetlist(cur.set.id, Number(b.dataset.setIdx));
+  });
   try { barType = localStorage.getItem("sonata_bar_type") || "triad"; } catch { /* ignore */ }
   $("chordBar").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
@@ -387,10 +400,16 @@ export function renderPreview() {
   setHtml(out, html);
   fitPreview();
   const k = soundingKey(s);
-  const labels = { chords: t("chordsMode", "Chords"), nashville: t("numbersMode", "Nashville numbers"), roman: t("romanMode", "Roman numerals"), lyrics: t("lyricsMode", "Lyrics only") };
+  const labels = {
+    chords: t("chordsMode", "Chords"),
+    "chords-only": t("chordsOnlyMode", "Chords only"),
+    nashville: t("numbersMode", "Nashville numbers"),
+    roman: t("romanMode", "Roman numerals"),
+    lyrics: t("lyricsMode", "Lyrics only")
+  };
   let label = `${labels[/** @type {"chords"} */ (mode)] || ""}`;
-  if (mode === "chords") label += ` · ${t("keyOf", "Key of {key}", { key: pretty(keyShort(k)) })}`;
-  if (mode === "chords" && s.capo) label += ` · ${t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) })}`;
+  if (mode === "chords" || mode === "chords-only") label += ` · ${t("keyOf", "Key of {key}", { key: pretty(keyShort(k)) })}`;
+  if ((mode === "chords" || mode === "chords-only") && s.capo) label += ` · ${t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) })}`;
   if (mode === "nashville" || mode === "roman") label += ` · ${pretty(keyShort(writtenKey(s)))}`;
   $("previewLabel").textContent = label;
 }
@@ -476,6 +495,26 @@ function updateSetlistBar() {
   $("setlistBarTitle").textContent = t("setlistOf", "{title} · {i} of {n}", { title: cur.set.title, i: cur.index + 1, n: cur.songs.length });
   /** @type {HTMLButtonElement} */ ($("setPrevBtn")).disabled = cur.index <= 0;
   /** @type {HTMLButtonElement} */ ($("setNextBtn")).disabled = cur.index >= cur.songs.length - 1;
+  const badge = $("setlistSyncBadge");
+  const syncBtn = $("setSyncBtn");
+  const isLive = Boolean(cur.set.liveId);
+  const isSource = Boolean(cur.set.source);
+  if (badge) {
+    badge.hidden = !isLive && !isSource;
+    if (isLive) badge.textContent = t("driveLive", "Live");
+    else if (isSource) badge.textContent = t("driveSynced", "Drive");
+  }
+  if (syncBtn) syncBtn.hidden = !isLive && !isSource;
+  const strip = $("setlistStrip");
+  if (strip) {
+    const html = cur.songs.length > 1 ? cur.songs.map((song, i) => {
+      const on = i === cur.index;
+      return `<button type="button" class="setlist-pill${on ? " active" : ""}" data-set-idx="${i}"${on ? ' aria-current="true"' : ""}><b>${i + 1}.</b><span>${esc(song.title)}</span><small>${esc(pretty(keyShort(soundingKey(song))))}</small></button>`;
+    }).join("") : "";
+    if (strip.dataset.html !== html) { strip.innerHTML = html; strip.dataset.html = html; }
+    strip.hidden = cur.songs.length <= 1;
+    if (strip.scrollWidth > strip.clientWidth) strip.querySelector(".setlist-pill.active")?.scrollIntoView({ block: "nearest", inline: "center" });
+  }
 }
 
 /** Show which video link is loaded in the player, and whether tapping it will pause or play. */
@@ -494,8 +533,11 @@ function paintLinkChips() {
 /** @param {number} d */
 export function stepSetlist(d) {
   const cur = store.currentSetlist();
-  if (!cur) return;
-  store.playSetlist(cur.set.id, cur.index + d);
+  if (cur) { store.playSetlist(cur.set.id, cur.index + d); return; }
+  if (store.active()?.readonly || store.songs.length <= 1) return;
+  const idx = Math.max(0, store.songs.findIndex((s) => s.id === store.activeId));
+  const next = Math.min(store.songs.length - 1, Math.max(0, idx + d));
+  if (next !== idx) store.open(store.songs[next].id);
 }
 
 /** Load the active song into the editor. */

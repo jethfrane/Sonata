@@ -208,7 +208,7 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 .peek-meta { display: flex; flex-wrap: wrap; gap: 5px; }
 .peek-meta .chip.static { min-height: 24px; line-height: 24px; font-size: var(--fs-xs); padding: 0 9px; background: var(--surface-2); }
 .peek-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.peek-chart { padding-top: 8px; border-top: 1px solid var(--line); }
+.peek-chart { padding: 14px 16px 18px; border-top: 1px solid var(--line); }
 
 /* ---------- Song Bank: the owner's look, gigs, cover ---------- */
 #view-bank.bank-themed { background: var(--bg); color: var(--text); font-family: var(--ui); min-height: 100%; }
@@ -252,10 +252,11 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 .theme-sw[data-preset="auto"] .theme-chip b { color: #8a8a93; }
 
 /* PNG export preview */
+.sheet.png-sheet { width: min(920px, calc(100vw - 24px)); }
 .png-preview { display: grid; gap: 14px; min-width: 0; }
 /* Pages are 9:16, like a phone screen: shown whole, side by side, swipe between them. */
-.png-pages { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; justify-content: safe center; padding-bottom: 6px; }
+.png-pages { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; justify-content: safe center; padding: 4px 12px 8px; }
 .png-page { margin: 0; display: grid; gap: 8px; flex: 0 0 auto; scroll-snap-align: center; justify-items: center; }
-.png-page img { display: block; width: auto; height: auto; max-width: min(100%, 82vw); max-height: min(64vh, 640px); border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; box-shadow: var(--shadow-sm); -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
+.png-page img { display: block; width: auto; height: auto; max-width: min(100%, 84vw); max-height: min(68vh, 680px); border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; box-shadow: var(--shadow-sm); -webkit-touch-callout: default; user-select: auto; -webkit-user-select: auto; }
 .png-pages.many .png-page img { max-width: 72vw; }
 .png-page figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; color: var(--muted); font-size: var(--fs-sm); }

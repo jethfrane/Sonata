@@ -313,7 +313,8 @@ export async function buildPdfSmall(docs, o = {}) {
 
 /**
  * @typedef {ExportOptions & { fontFamily?: string, uiFont?: string, logo?: HTMLImageElement|null,
- *   qr?: { n: number, dark: (r: number, c: number) => boolean }|null, qrNote?: string }} PngOptions
+ *   qr?: { n: number, dark: (r: number, c: number) => boolean }|null, qrNote?: string,
+ *   qrTitle?: string, setLabel?: string }} PngOptions
  */
 
 /** Row heights in units of the type size. Chord lines with no words get more air. @param {{ kind: string, keep?: boolean }} r */
@@ -383,27 +384,39 @@ export async function renderPngPages(doc, o = {}) {
   const C = { text: "#0f172a", sub: "#334155", muted: "#64748b", line: "#e2e8f0", soft: "#f1f5f9" };
   const W = land ? 1920 : 1080;
   const H = land ? 1080 : 1920;
-  const pad = 72, gap = 44, scale = 2;
+  const pad = land ? 96 : 84, gap = land ? 54 : 44, scale = 2;
   const colW = (W - pad * 2 - gap * (columns - 1)) / columns;
   const hasBy = Boolean(doc.artist || doc.creator);
   // Header: title, credits and key pills. Later pages repeat a slim title bar.
-  const titleY = 118, byY = 160;
-  const pillY = hasBy ? 188 : 150, pillH = 42;
-  const headH = pillY + pillH + 46;
-  const headRest = 128;
-  const qrUnits = 160;
-  const footQr = o.qr ? qrUnits + 80 : 92;
-  const footRest = 92;
+  const titleY = 104, byY = 142;
+  const pillY = hasBy ? 164 : 128, pillH = 38;
+  const headH = pillY + pillH + 30;
+  const headRest = 108;
+  const qrUnits = 136;
+  const footQr = o.qr ? qrUnits + 64 : 76;
+  const footRest = 76;
 
   const probe = /** @type {CanvasRenderingContext2D} */ (document.createElement("canvas").getContext("2d"));
   probe.font = `400 100px ${mono}`;
   const ratio = probe.measureText("M").width / 100 || 0.6;
 
-  // Type size: the largest that keeps the longest line whole and the chart on as few pages as possible.
-  const minSize = columns === 1 ? 22 : 18;
-  const maxSize = columns === 1 ? 40 : 30;
-  const longest = Math.max(1, longestLine(doc.lines));
-  const startSize = Math.max(minSize, Math.min(maxSize, Math.floor(colW / (longest * ratio))));
+  // Type size: maximize readability and fill available canvas space while keeping lines intact when possible.
+  const minSize = columns === 1 ? 20 : 17;
+  const maxSize = columns === 1 ? 48 : 36;
+  const lineLens = doc.lines.map((l) => {
+    if (l.type === "pair") return Math.max(l.chords.length, l.lyrics.length);
+    if (l.type === "chords") return l.chords.length;
+    if (l.type === "lyrics" || l.type === "note") return l.text.length;
+    return 0;
+  }).filter((n) => n > 0).sort((a, b) => a - b);
+  const longest = lineLens.length ? lineLens[lineLens.length - 1] : 1;
+  const fitSize = Math.floor(colW / (longest * ratio));
+  let targetStart = fitSize;
+  if (fitSize < minSize && lineLens.length) {
+    const p85 = Math.max(36, lineLens[Math.min(lineLens.length - 1, Math.floor((lineLens.length - 1) * 0.85))]);
+    targetStart = Math.floor(colW / (p85 * ratio));
+  }
+  const startSize = Math.max(minSize, Math.min(maxSize, targetStart));
   const plan = (/** @type {number} */ size) => {
     const rows = printRows(doc.lines, Math.max(14, Math.floor(colW / (size * ratio))));
     return { size, rows, ...flowRows(rows, { size, columns, first: H - headH - footQr - 16, rest: H - headRest - footRest - 16 }) };
@@ -411,6 +424,13 @@ export async function renderPngPages(doc, o = {}) {
   const fewest = plan(minSize).pages.length;
   let best = plan(startSize);
   for (let size = startSize - 1; size >= minSize && best.pages.length > fewest; size--) best = plan(size);
+  // If a single-page chart fits easily with room to spare at a larger size, step up carefully.
+  if (best.pages.length === 1 && fitSize > startSize) {
+    for (let size = Math.min(maxSize, fitSize); size > best.size; size--) {
+      const cand = plan(size);
+      if (cand.pages.length === 1) { best = cand; break; }
+    }
+  }
   const { size, rows, pages } = best;
   const charW = size * ratio;
   const total = pages.length;
@@ -431,9 +451,13 @@ export async function renderPngPages(doc, o = {}) {
   pages.forEach((items, pi) => {
     const first = pi === 0;
     const foot = first ? footQr : footRest;
-    const avail = H - (first ? headH : headRest) - foot;
-    // A one-page chart sits a little above the middle of the free space instead of leaving a blank lower half.
-    const top = (first ? headH : headRest) + (total === 1 ? Math.max(0, Math.round((avail - best.used) * 0.38)) : 0);
+    const headCur = first ? headH : headRest;
+    const avail = H - headCur - foot;
+    // Open row spacing slightly on short one-page charts so they fill the frame cleanly with balanced top breathing room.
+    const vScale = total === 1 && best.used > 0 ? Math.min(1.12, Math.max(1, (avail * 0.84) / best.used)) : 1;
+    const scaledUsed = best.used * vScale;
+    const maxTopPad = Math.max(0, Math.floor((avail - scaledUsed) * 0.5));
+    const top = headCur + (total === 1 ? Math.min(maxTopPad, Math.max(12, Math.round((avail - scaledUsed) * 0.22))) : 10);
     const canvas = document.createElement("canvas");
     canvas.width = W * scale;
     canvas.height = H * scale;
@@ -447,40 +471,47 @@ export async function renderPngPages(doc, o = {}) {
     if (first) {
       let x0 = pad;
       if (o.logo && o.logo.complete && o.logo.naturalWidth) {
-        try { ctx.drawImage(o.logo, pad, 66, 64, 64); x0 = pad + 84; } catch { /* tainted */ }
+        try { ctx.drawImage(o.logo, pad, 56, 58, 58); x0 = pad + 76; } catch { /* tainted */ }
       }
-      let ts = 54;
+      let ts = 50;
       ctx.font = `750 ${ts}px ${ui}`;
-      while (ts > 34 && ctx.measureText(doc.title).width > W - x0 - pad) { ts -= 2; ctx.font = `750 ${ts}px ${ui}`; }
+      while (ts > 32 && ctx.measureText(doc.title).width > W - x0 - pad) { ts -= 2; ctx.font = `750 ${ts}px ${ui}`; }
       ctx.fillStyle = C.text;
       ctx.fillText(fit(ctx, doc.title, W - x0 - pad), x0, titleY);
       const by = [doc.artist ? `by ${doc.artist}` : "", doc.creator ? `arr. ${doc.creator}` : ""].filter(Boolean).join("   ·   ");
-      if (by) { ctx.fillStyle = C.sub; ctx.font = `550 24px ${ui}`; ctx.fillText(fit(ctx, by, W - x0 - pad), x0, byY); }
+      if (by) { ctx.fillStyle = C.sub; ctx.font = `550 23px ${ui}`; ctx.fillText(fit(ctx, by, W - x0 - pad), x0, byY); }
       // Key, tempo and view as pills: the key is the one a player looks for first.
       let px = pad;
-      ctx.font = `650 20px ${ui}`;
+      ctx.font = `650 19px ${ui}`;
       doc.meta.split("·").map((x) => x.trim()).filter(Boolean).forEach((label, i) => {
-        const w = Math.ceil(ctx.measureText(label).width) + 36;
+        const w = Math.ceil(ctx.measureText(label).width) + 34;
         if (px + w > W - pad) return;
         ctx.fillStyle = i === 0 ? tint : C.soft; pill(ctx, px, pillY, w, pillH, pillH / 2);
-        ctx.fillStyle = i === 0 ? accent : C.sub; ctx.fillText(label, px + 18, pillY + 28);
+        ctx.fillStyle = i === 0 ? accent : C.sub; ctx.fillText(label, px + 17, pillY + 26);
         px += w + 10;
       });
-      ctx.fillStyle = C.line; ctx.fillRect(pad, headH - 24, W - pad * 2, 1);
+      ctx.fillStyle = C.line; ctx.fillRect(pad, headH - 18, W - pad * 2, 1);
     } else {
-      ctx.fillStyle = C.text; ctx.font = `700 30px ${ui}`;
-      ctx.fillText(fit(ctx, doc.title, W - pad * 2 - 260), pad, 78);
-      ctx.fillStyle = C.muted; ctx.font = `600 20px ${ui}`; ctx.textAlign = "right";
-      ctx.fillText(doc.meta.split("·")[0].trim(), W - pad, 78);
+      ctx.fillStyle = C.text; ctx.font = `700 28px ${ui}`;
+      ctx.fillText(fit(ctx, doc.title, W - pad * 2 - 260), pad, 70);
+      ctx.fillStyle = C.muted; ctx.font = `600 19px ${ui}`; ctx.textAlign = "right";
+      ctx.fillText(doc.meta.split("·")[0].trim(), W - pad, 70);
       ctx.textAlign = "left";
-      ctx.fillStyle = C.line; ctx.fillRect(pad, headRest - 24, W - pad * 2, 1);
+      ctx.fillStyle = C.line; ctx.fillRect(pad, headRest - 18, W - pad * 2, 1);
+    }
+    if (columns > 1 && items.some((it) => it.col > 0)) {
+      ctx.fillStyle = C.line;
+      for (let c = 1; c < columns; c++) {
+        const gx = Math.round(pad + c * colW + (c - 1) * gap + gap / 2);
+        ctx.fillRect(gx, headCur, 1, H - headCur - foot - 6);
+      }
     }
 
     // ---- Chart
     for (const it of items) {
       const r = rows[it.row];
       const x = pad + it.col * (colW + gap);
-      const yTop = top + it.y;
+      const yTop = top + it.y * vScale;
       const base = yTop + rowUnits(r) * size - size * 0.25;
       if (r.kind === "gap") continue;
       if (r.kind === "divider") { ctx.fillStyle = C.line; ctx.fillRect(x, yTop + size * 0.6, colW, 1); continue; }
@@ -506,7 +537,7 @@ export async function renderPngPages(doc, o = {}) {
     }
 
     // ---- Footer
-    const credit = "Made with Sonata  ·  sonata.jethrofrane.xyz";
+    const credit = o.setLabel ? `${o.setLabel}  ·  sonata.jethrofrane.xyz` : "Made with Sonata  ·  sonata.jethrofrane.xyz";
     const pageNote = total > 1 ? `Page ${pi + 1} of ${total}` : "";
     ctx.fillStyle = C.line; ctx.fillRect(pad, H - foot + 10, W - pad * 2, 1);
     if (first && o.qr) {
@@ -514,7 +545,8 @@ export async function renderPngPages(doc, o = {}) {
       const quiet = 4;
       const mod = Math.max(2, Math.floor((qrUnits * scale) / (o.qr.n + quiet * 2)));
       const side = mod * (o.qr.n + quiet * 2);
-      const qx = pad * scale, qy = Math.round((H - foot + 40) * scale);
+      const qTop = H - foot + 28;
+      const qx = pad * scale, qy = Math.round(qTop * scale);
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = "#ffffff"; ctx.fillRect(qx, qy, side, side);
@@ -522,17 +554,18 @@ export async function renderPngPages(doc, o = {}) {
       for (let r = 0; r < o.qr.n; r++) for (let c = 0; c < o.qr.n; c++) if (o.qr.dark(r, c)) ctx.fillRect(qx + (c + quiet) * mod, qy + (r + quiet) * mod, mod, mod);
       ctx.restore();
       const tx = pad + side / scale + 24;
-      const ty = H - foot + 40 + side / scale / 2;
+      const ty = qTop + side / scale / 2;
       const tw = W - tx - pad;
-      ctx.fillStyle = C.text; ctx.font = `700 26px ${ui}`; ctx.fillText(fit(ctx, "Scan to open this chart", tw), tx, ty - 22);
-      ctx.fillStyle = C.sub; ctx.font = `500 20px ${ui}`;
-      ctx.fillText(fit(ctx, o.qrNote || "Opens in Sonata on any phone.", tw), tx, ty + 10);
-      ctx.fillStyle = C.muted; ctx.fillText(fit(ctx, "Free, works offline, no account.", tw), tx, ty + 40);
+      ctx.fillStyle = C.text; ctx.font = `700 25px ${ui}`; ctx.fillText(fit(ctx, o.qrTitle || "Scan to open this chart", tw), tx, ty - 24);
+      ctx.fillStyle = C.sub; ctx.font = `500 19px ${ui}`;
+      ctx.fillText(fit(ctx, o.qrNote || "Opens in Sonata on any phone.", tw), tx, ty + 6);
+      ctx.fillStyle = C.muted; ctx.fillText(fit(ctx, "Free, works offline, no account.", tw), tx, ty + 34);
       ctx.font = `500 17px ${ui}`;
-      ctx.fillText(fit(ctx, pageNote ? `${credit}  ·  ${pageNote}` : credit, tw), tx, ty + 72);
+      ctx.fillText(fit(ctx, pageNote ? `${credit}  ·  ${pageNote}` : credit, tw), tx, ty + 64);
     } else {
-      ctx.fillStyle = C.muted; ctx.font = `500 18px ${ui}`; ctx.fillText(credit, pad, H - 36);
-      if (pageNote) { ctx.textAlign = "right"; ctx.font = `650 18px ${ui}`; ctx.fillText(pageNote, W - pad, H - 36); ctx.textAlign = "left"; }
+      ctx.fillStyle = C.muted; ctx.font = `500 18px ${ui}`;
+      ctx.fillText(fit(ctx, credit, pageNote ? W - pad * 2 - 140 : W - pad * 2), pad, H - 28);
+      if (pageNote) { ctx.textAlign = "right"; ctx.font = `650 18px ${ui}`; ctx.fillText(pageNote, W - pad, H - 28); ctx.textAlign = "left"; }
     }
     out.push(new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG failed"))), "image/png")));
   });

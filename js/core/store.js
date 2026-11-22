@@ -138,7 +138,7 @@ export function normalizeSettings(raw) {
   if (!["en", "fil"].includes(s.language)) s.language = "en";
   if (!["s", "m", "l"].includes(s.uiText)) s.uiText = "m";
   if (!["auto", "sharp", "flat"].includes(s.enharmonicPref)) s.enharmonicPref = "auto";
-  if (!["chords", "nashville", "roman", "lyrics"].includes(s.viewMode)) s.viewMode = "chords";
+  if (!["chords", "chords-only", "nashville", "roman", "lyrics"].includes(s.viewMode)) s.viewMode = "chords";
   if (!["stage", "dark", "light"].includes(s.presTheme)) s.presTheme = "stage";
   s.metronomeBpm = int(s.metronomeBpm, 30, 300, 90);
   s.metronomeBeats = int(s.metronomeBeats, 1, 12, 4);

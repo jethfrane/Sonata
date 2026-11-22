@@ -57,12 +57,26 @@
 
 /* ---------- Chart editor ---------- */
 #view-editor { padding: 22px var(--gutter) 28px; max-width: 1520px; margin: 0 auto; }
-.banner, .setlist-bar { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; margin-bottom: 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; font-size: var(--fs-sm); flex-wrap: wrap; }
+.banner { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; margin-bottom: 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; font-size: var(--fs-sm); flex-wrap: wrap; }
 .banner-text { flex: 1; min-width: 160px; }
-.setlist-bar { padding: 4px; }
-.setlist-bar-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
-.setlist-bar-title span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setlist-bar { display: grid; gap: 6px; padding: 6px 8px; margin-bottom: 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; font-size: var(--fs-sm); }
+.setlist-bar-top { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.setlist-bar-title { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 38px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: inherit; font: inherit; text-align: center; transition: background .14s var(--ease); }
+.setlist-bar-title:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.setlist-bar-title [data-icon] { flex: none; }
+.setlist-bar-title span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setlist-bar-badge { flex: none; padding: 2px 7px; border-radius: 999px; background: var(--surface); color: var(--accent-strong); font-size: 11px; font-weight: 700; box-shadow: var(--shadow-sm); }
+.setlist-strip { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 4px; scrollbar-width: none; }
+.setlist-strip::-webkit-scrollbar { display: none; }
+.setlist-pill { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; max-width: 210px; padding: 0 10px; border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 999px; background: var(--surface); color: var(--text); font-size: var(--fs-xs); font-weight: 600; transition: border-color .14s, background .14s, color .14s; }
+.setlist-pill:hover { border-color: var(--accent); color: var(--text); }
+.setlist-pill.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.setlist-pill b { font-family: var(--mono); color: var(--text-2); }
+.setlist-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setlist-pill small { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+.setlist-pill.active b, .setlist-pill.active small { color: var(--accent-ink); }
 .setlist-bar .icon-btn { color: var(--accent-strong); }
+.drive-tag { color: var(--accent-strong); font-weight: 700; }
 .editor-head { margin-bottom: 12px; }
 .title-row { display: flex; align-items: center; gap: 12px; }
 .title-input { flex: 1; min-width: 0; padding: 2px 0; border: 0; background: transparent; font-size: var(--fs-3xl); font-weight: 750; letter-spacing: -.035em; color: var(--text); text-overflow: ellipsis; }
@@ -85,7 +99,8 @@
 html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: none; }
 .key-pill-label { font-size: var(--fs-2xs); font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .key-pill strong { font: 700 17px var(--mono); color: var(--accent-strong); }
-.view-mode { margin-left: auto; }
+.view-mode { margin-left: auto; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.view-mode::-webkit-scrollbar { display: none; }
 .pane-switch { display: none; }
 .chord-bar { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; }
 .chord-bar::-webkit-scrollbar { display: none; }
@@ -102,7 +117,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .editor-panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 10px; height: calc(100dvh - 250px); min-height: 440px; }
 .pane { position: relative; min-width: 0; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
 .chart-input {
-  flex: 1; width: 100%; min-height: 0; padding: 18px 20px; border: 0; resize: none;
+  flex: 1; width: 100%; min-height: 0; padding: 22px clamp(24px, 2.8vw, 40px); border: 0; resize: none;
   background: transparent; color: var(--text);
   font: 450 var(--chart-size)/var(--chart-line) var(--mono); tab-size: 2; white-space: pre; overflow: auto;
 }
@@ -117,7 +132,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .edit-head { padding-right: 18px; }
 .edit-stats { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .preview-label { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#preview { flex: 1; overflow: auto; padding: 18px 22px 40px; }
+#preview { flex: 1; overflow: auto; padding: 24px clamp(28px, 3.2vw, 48px) 44px; }
 .song-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
 .song-links .mini-label { margin: 0 6px 0 0; }
 .link-chip span { color: var(--muted); }
@@ -207,8 +222,8 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .pane-switch button .icon { display: none; }
   #view-editor[data-pane="preview"] .editor-toolbar .tool-group:first-child { display: none; }
   .view-mode { order: 5; width: 100%; display: flex; }
-  .view-mode button { flex: 1; padding: 0 4px; }
-  .chart-input, #preview { padding: 14px; }
+  .view-mode button { flex: 1 0 auto; padding: 0 9px; }
+  .chart-input, #preview { padding: 18px 20px; }
   .welcome { padding: 20px 16px; }
 }
 @media (max-width: 380px) {

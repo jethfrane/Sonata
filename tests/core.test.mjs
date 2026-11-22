@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as M from "../js/core/music.js";
-import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart } from "../js/core/chart.js";
+import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, stripLyricsToChordsOnly } from "../js/core/chart.js";
 import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
@@ -974,4 +974,31 @@ test("v7: router parsePath/buildPath for /tools and /tools/key-finder, and enhan
   assert.equal(wtChart.title, "Way Maker");
   assert.equal(wtChart.artist, "Sinach");
   assert.ok(wtChart.text.includes("F") && wtChart.text.includes("You are here"));
+});
+
+test("chords-only mode & stripLyricsToChordsOnly for chord-site imports and inline charts", () => {
+  const key = M.parseKey("G");
+  const mixed = "# Amazing Grace\n## Verse 1\nG                 D\nShould old acquaintance be forgot\n    G              C\nAnd never brought to mind\n\n[Chorus]\n> Full band\nFor [G]auld lang [D]syne, my dear\nFor [Em]auld [C]lang [G]syne\n\nOutro:\nG///  D///  G";
+  const lines = buildLines(mixed, { key, mode: "chords-only", title: "Amazing Grace" });
+  const text = linesToText(lines);
+  assert.ok(text.includes("[Verse 1]") && text.includes("[Chorus]") && text.includes("[Outro]"), "keeps section headers from ##, [Chorus], and Outro:");
+  assert.ok(text.includes("G  D") && text.includes("G  C") && text.includes("Em  C  G"), "keeps chords in compact spacing");
+  assert.ok(text.includes("(Full band)"), "keeps performance notes");
+  assert.ok(!/acquaintance|never brought|auld lang/i.test(text), "removes all lyrics");
+
+  // Transposing in chords-only mode transforms chords properly
+  const transposed = linesToText(buildLines(mixed, { key, mode: "chords-only", transpose: 2 }));
+  assert.ok(transposed.includes("A  E") && transposed.includes("F#m  D  A"), "transposes chords-only chart +2");
+
+  // stripLyricsToChordsOnly works on charts analyzed from chord-site links
+  const analyzed = analyzeRawChart("https://chords.example.com/song\nTitle: Way Maker\n[Verse 1]\nF                 C\nYou are here, moving in our midst\nG                 Am\nI worship You, I worship You");
+  assert.ok(analyzed);
+  const stripped = stripLyricsToChordsOnly(analyzed.body, { key: M.parseKey(analyzed.keyName) || M.parseKey("C") });
+  assert.equal(stripped, "## Verse 1\nF  C\nG  Am");
+
+  // Lyric lines ending in ":" are stripped as lyrics while true musical headers stay preserved
+  const colonEdge = "Verse 1 (Softly):\nG\nAnd He said:\nC\nBreak my heart again\n\n[Guitar Solo]\nAm  F  C  G\n\nBridge 2x:\nD  Em  C  G";
+  const edgeOut = stripLyricsToChordsOnly(colonEdge, { key });
+  assert.ok(edgeOut.includes("## Verse 1 (Softly)") && edgeOut.includes("## Guitar Solo") && edgeOut.includes("## Bridge 2x"), "keeps musical sections including (descriptor), [Guitar Solo], Bridge 2x");
+  assert.ok(!/And He said|Break my heart/i.test(edgeOut), "strips lyric lines even when ending in colon or starting with a word like Break");
 });

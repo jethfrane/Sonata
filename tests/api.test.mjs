@@ -84,6 +84,14 @@ test("link previews: shared songs, QR links, setlists, chords and song banks", {
   assert.match(meta(html, "og:description"), /2 songs · OPM, Pop · Jethro/);
   assert.match(html, /<meta name="robots" content="noindex">/, "personal lists stay out of search engines");
 
+  const SET_PREVIEW = { type: "sonata-set", v: 1, t: "Sunday Morning", s: [{ t: "A", b: "G C" }, { t: "B", b: "D A" }] };
+  const dSet = fakeDrive(() => json(SET_PREVIEW));
+  html = await page(`/set/${ID}/sunday-morning`);
+  dSet.restore();
+  assert.equal(meta(html, "og:title"), "Sunday Morning · Setlist · Sonata");
+  assert.match(meta(html, "og:description"), /2 songs/);
+  assert.equal(meta(html, "og:image"), "https://sonata.jethrofrane.xyz/og/setlist.png");
+
   // A crafted title can't inject markup into the page head.
   html = await page("/share/x", `&s=${await encodeShare(packSong({ title: '"><script>alert(1)</script>', body: "G" }))}`);
   assert.ok(!html.includes("<script>alert(1)"));

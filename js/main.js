@@ -11,7 +11,7 @@ import { normalizeProfile, parseBankFile } from "./core/bank.js";
 import { initEditor, refreshEditor } from "./ui/editor.js";
 import { initLibrary, renderLibrary, renderRecent, newSong } from "./ui/library.js";
 import { parsePath, buildPath, findSong, PAGE_META, SECTIONS } from "./router.js";
-import { openSettings, openImportSet, chordsModule, bankModule, openLinksImport, playModule, theoryModule, stageModule, driveModule, openBackup, openHelp, startTour } from "./ui/sheets-lazy.js";
+import { openSettings, openImportSet, openSongSwitcher, chordsModule, bankModule, openLinksImport, playModule, theoryModule, stageModule, driveModule, openBackup, openHelp, startTour } from "./ui/sheets-lazy.js";
 
 /** @typedef {import("./ui/ctx.js").View} View */
 const VIEWS = /** @type {View[]} */ (["songs", "editor", "tools", "chords", "theory", "play", "bank"]);
@@ -464,6 +464,7 @@ async function boot() {
   dark.addEventListener("change", () => { if (store.settings.theme === "system") applyTheme(); });
   document.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); store.persist(); toast(t("savedNow", "Saved"), "success", { ms: 1400 }); }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openSongSwitcher(); }
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && app.view === "editor") { e.preventDefault(); openStage(); }
     // "?" opens Help anywhere except while typing.
     if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey && !isStageOpen() && !/** @type {HTMLDialogElement} */ ($("sheet")).open) {

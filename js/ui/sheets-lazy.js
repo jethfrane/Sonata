@@ -27,6 +27,7 @@ const call = async (id, args) => {
 /** @param {string} [id] @param {string[]} [songIds] songs a new setlist starts with */ export const openSetlistEditor = (id, songIds) => call("openSetlistEditor", [id, songIds]);
 /** @param {any} data */ export const openImportSet = (data, /** @type {string} */ source = "") => call("openImportSet", [data, source]);
 export const openSettings = () => call("openSettings", []);
+export const openSongSwitcher = () => call("openSongSwitcher", []);
 /** QR encoder (loaded on first use). */
 export const loadQr = () => chunk(() => import("../lib/qr.js"));
 /** Play: instruments, tuner, metronome, drums and the audio engine. */

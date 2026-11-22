@@ -589,6 +589,81 @@ console.log("Charts fit a phone's width");
   await p.close();
 }
 
+console.log("Chords-only mode, quick switcher, margins & Drive setlist UX");
+{
+  p = await open("/editor");
+  await p.click('[data-mode="chords-only"]'); await p.waitForTimeout(150);
+  const pvText = await p.textContent("#preview");
+  ok(pvText.includes("G") && pvText.includes("D/F#") && !pvText.includes("Light of the world"), "chords-only view shows chords without lyrics");
+  await p.click("#preview .ch >> nth=0"); await p.waitForTimeout(350);
+  ok(await p.evaluate(() => document.getElementById("sheet").open) && (await p.textContent("#sheetTitle")) === "G", "tapping a chord in chords-only view opens its chord shapes");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(150);
+
+  // Side margins on preview and stage
+  const pvPad = await p.evaluate(() => { const cs = getComputedStyle(document.getElementById("preview")); return parseFloat(cs.paddingLeft); });
+  ok(pvPad >= 24, `preview has generous side margin (${pvPad}px)`);
+  await p.click("#presentBtn"); await p.waitForTimeout(350);
+  const stMargins = await p.evaluate(() => {
+    const sc = getComputedStyle(document.getElementById("stageScroll"));
+    return { scrollPad: parseFloat(sc.paddingLeft), mode: document.getElementById("stageMode").value, nextVis: !document.getElementById("stageNext").hidden };
+  });
+  ok(stMargins.scrollPad >= 28 && stMargins.mode === "chords-only" && stMargins.nextVis, `stage keeps chords-only mode, side margins (${stMargins.scrollPad}px) and prev/next song switching`);
+  await p.click("#stageSwitchBtn"); await p.waitForTimeout(250);
+  await p.keyboard.press("Escape"); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => document.body.classList.contains("stage-open") && !document.getElementById("sheet").open), "Escape in Quick Song Switcher over Stage closes dialog without closing Stage");
+  await p.click("#stageSwitchBtn"); await p.waitForTimeout(250);
+  await p.fill("#swSearch", "Buwan"); await p.waitForTimeout(100);
+  await p.press("#swSearch", "Enter"); await p.waitForTimeout(250);
+  ok((await p.textContent("#stageTitle")) === "Buwan", "quick song switcher works right from Stage view");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+
+  // Switch song button & Ctrl+K from non-editor tabs
+  await p.click('.tab[data-view="tools"]'); await p.waitForTimeout(150);
+  await p.keyboard.press("Control+k"); await p.waitForTimeout(250);
+  ok(await p.locator(".sw-opt").count() >= 2, "Ctrl+K opens Quick Song Switcher from Tools");
+  await p.click('.sw-opt:has-text("Here I Am to Worship")'); await p.waitForTimeout(200);
+  ok((await p.inputValue("#songTitle")) === "Here I Am to Worship" && await p.evaluate(() => window.__sonata.app.view === "editor"), "clicking a song in switcher navigates to Chart editor in 1 tap");
+  await p.click('[data-mode="chords"]');
+  await p.click("#switchSongBtn"); await p.waitForTimeout(200);
+  ok(await p.locator(".sw-opt").count() >= 2, "Switch button opens Quick Song Switcher");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(150);
+
+  // Setlist pill strip + desktop single-click peek preserves active setlist + setlist PNG export
+  await p.evaluate(() => {
+    const s = window.__sonata.store;
+    const set = s.saveSetlist({ title: "Sunday Worship", items: s.songs.map((x) => ({ songId: x.id })) });
+    s.playSetlist(set.id);
+  });
+  await p.waitForTimeout(250);
+  await p.click('.tab[data-view="songs"]'); await p.waitForTimeout(150);
+  await p.click('#libraryList .row[data-id] >> nth=1 >> [data-act="open"]'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => Boolean(window.__sonata.store.currentSetlist())), "single-click peek in library preserves active setlist");
+  await p.click('.tab[data-view="editor"]'); await p.waitForTimeout(150);
+  ok(await p.locator("#setlistStrip .setlist-pill").count() === 2, "setlist pill strip shows all songs for 1-tap switching");
+  await p.click('#setlistStrip .setlist-pill >> nth=1'); await p.waitForTimeout(200);
+  ok((await p.inputValue("#songTitle")) === "Buwan", "tapping a setlist pill switches directly to that song");
+  await p.click("#shareSongBtn"); await p.waitForTimeout(400);
+  await p.click('#sheet [data-export="png"]'); await p.waitForTimeout(1500);
+  ok(await p.locator(".png-page img").count() >= 1 && (await p.textContent("#sheetTitle")) === "Image preview", "PNG export works for setlists and multi-song views");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+
+  // Import from chord-site link with Chords-only toggle
+  await p.route("**/api/import*", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ title: "Oceans", artist: "Hillsong United", text: "[Verse 1]\nBm        A/C#      D\nYou call me out upon the waters\nA                 G\nThe great unknown where feet may fail" })
+  }));
+  await p.click('.tabs [data-view="songs"]'); await p.waitForTimeout(150);
+  await p.click("#addLinksBtn"); await p.waitForTimeout(200);
+  await p.fill("#lkText", "https://chords.example-site.com/oceans"); await p.waitForTimeout(600);
+  await p.check("#lkChordsOnly"); await p.waitForTimeout(150);
+  const preText = await p.textContent(".import-preview");
+  ok(preText.includes("Bm") && preText.includes("A/C♯") && !preText.includes("waters"), "chord-site link import toggles cleanly to chords only without lyrics");
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(300);
+  ok((await p.inputValue("#songTitle")) === "Oceans" && !(await p.inputValue("#songBody")).includes("waters"), "added chart from chord link saves without lyrics when Chords only is checked");
+  await p.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);

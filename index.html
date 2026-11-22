@@ -120,10 +120,14 @@
           <button class="btn small ghost" id="closeSharedBtn" type="button" data-i18n="close">Close</button>
         </div>
         <div class="setlist-bar" id="setlistBar" hidden>
-          <button class="icon-btn" id="setPrevBtn" type="button" aria-label="Previous song" data-i18n-attr="aria-label:prevSong"><span data-icon="chevron-left"></span></button>
-          <div class="setlist-bar-title"><span data-icon="list"></span><span id="setlistBarTitle"></span></div>
-          <button class="icon-btn" id="setNextBtn" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong"><span data-icon="chevron-right"></span></button>
-          <button class="icon-btn" id="setExitBtn" type="button" aria-label="Leave setlist" data-i18n-attr="aria-label:leaveSetlist"><span data-icon="x"></span></button>
+          <div class="setlist-bar-top">
+            <button class="icon-btn" id="setPrevBtn" type="button" aria-label="Previous song" data-i18n-attr="aria-label:prevSong"><span data-icon="chevron-left"></span></button>
+            <button class="setlist-bar-title" id="setlistBarTitleBtn" type="button" aria-haspopup="dialog" title="Switch song in setlist"><span data-icon="list"></span><span id="setlistBarTitle"></span><span class="setlist-bar-badge" id="setlistSyncBadge" hidden></span></button>
+            <button class="icon-btn" id="setSyncBtn" type="button" aria-label="Sync shared setlist" data-i18n-attr="aria-label:syncSetlist,title:syncSetlist" hidden><span data-icon="refresh"></span></button>
+            <button class="icon-btn" id="setNextBtn" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong"><span data-icon="chevron-right"></span></button>
+            <button class="icon-btn" id="setExitBtn" type="button" aria-label="Leave setlist" data-i18n-attr="aria-label:leaveSetlist"><span data-icon="x"></span></button>
+          </div>
+          <div class="setlist-strip" id="setlistStrip" role="group" aria-label="Setlist songs" data-i18n-attr="aria-label:setlistSongs"></div>
         </div>
 
         <header class="editor-head">
@@ -132,6 +136,7 @@
             <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
             <span class="save-state" id="saveState" aria-live="polite"></span>
             <div class="head-actions">
+              <button class="btn" id="switchSongBtn" type="button" aria-haspopup="dialog" aria-label="Switch song" data-i18n-attr="aria-label:switchSong,title:switchSongShortcut"><span data-icon="list"></span><span data-i18n="switchSongShort">Switch</span></button>
               <button class="btn" id="shareSongBtn" type="button"><span data-icon="share"></span><span data-i18n="shareExportShort">Share</span></button>
               <button class="btn primary present-btn" id="presentBtn" type="button"><span data-icon="present"></span><span data-i18n="present">Present</span></button>
             </div>
@@ -154,6 +159,7 @@
           </div>
           <div class="segmented view-mode" role="group" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
             <button type="button" data-mode="chords" data-i18n="modeChords">Chords</button>
+            <button type="button" data-mode="chords-only" data-i18n="modeChordsOnly">Chords only</button>
             <button type="button" data-mode="nashville" data-i18n="modeNumbers">Numbers</button>
             <button type="button" data-mode="roman" data-i18n="modeRoman">Roman</button>
             <button type="button" data-mode="lyrics" data-i18n="modeLyrics">Lyrics</button>
@@ -494,7 +500,7 @@
   <!-- STAGE -->
   <section class="stage" id="stage" hidden aria-label="Stage view" data-i18n-attr="aria-label:stage">
     <header class="stage-top" id="stageTop">
-      <div class="stage-title"><strong id="stageTitle"></strong><span><span class="stage-count" id="stageCount" hidden></span><span id="stageMeta"></span></span></div>
+      <button class="stage-title" id="stageSwitchBtn" type="button" aria-haspopup="dialog" title="Switch song" data-i18n-attr="title:switchSong"><strong id="stageTitle"></strong><span><span class="stage-count" id="stageCount" hidden></span><span id="stageMeta"></span></span></button>
       <div class="stage-tools">
         <div class="stage-group">
           <button class="stage-btn" id="stageKeyDown" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown"><span data-icon="minus"></span></button>
@@ -507,6 +513,7 @@
         </div>
         <select class="stage-select" id="stageMode" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
           <option value="chords" data-i18n="modeChords">Chords</option>
+          <option value="chords-only" data-i18n="modeChordsOnly">Chords only</option>
           <option value="nashville" data-i18n="modeNumbers">Numbers</option>
           <option value="roman" data-i18n="modeRoman">Roman</option>
           <option value="lyrics" data-i18n="modeLyrics">Lyrics</option>
