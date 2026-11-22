@@ -96,7 +96,7 @@ const BRACKET_TAG_RE = /^\s*\[([^\]\n]{1,32})\]\s*:?\s*$/;
  * Extract a section name from a standalone section line without `##` (e.g. "[Chorus]", "Verse 1:", "[Guitar Solo]").
  * @param {string} line
  */
-function inlineSectionLabel(line) {
+export function inlineSectionLabel(line) {
   const t = String(line || "").trim();
   if (!t) return "";
   const br = t.match(BRACKET_TAG_RE);

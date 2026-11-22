@@ -1,6 +1,6 @@
 [
   {
-    "version": "7.1.0",
+    "version": "7.1.1",
     "date": "2026-11-22",
     "whatsNew": "Chords-only view (including when importing from chord site links), a faster Quick Song Switcher across Chart, Setlists and Stage, cleaner side margins across preview, stage and PNG exports, multi-song setlist PNGs, and streamlined Google Drive live setlist sharing & sync.",
     "changes": [

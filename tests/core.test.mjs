@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as M from "../js/core/music.js";
-import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, stripLyricsToChordsOnly } from "../js/core/chart.js";
+import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, stripLyricsToChordsOnly, inlineSectionLabel } from "../js/core/chart.js";
 import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
@@ -1001,4 +1001,7 @@ test("chords-only mode & stripLyricsToChordsOnly for chord-site imports and inli
   const edgeOut = stripLyricsToChordsOnly(colonEdge, { key });
   assert.ok(edgeOut.includes("## Verse 1 (Softly)") && edgeOut.includes("## Guitar Solo") && edgeOut.includes("## Bridge 2x"), "keeps musical sections including (descriptor), [Guitar Solo], Bridge 2x");
   assert.ok(!/And He said|Break my heart/i.test(edgeOut), "strips lyric lines even when ending in colon or starting with a word like Break");
+  assert.equal(inlineSectionLabel("And He said:"), "");
+  assert.equal(inlineSectionLabel("[Guitar Solo]"), "Guitar Solo");
+  assert.equal(inlineSectionLabel("Verse 1:"), "Verse 1");
 });

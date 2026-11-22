@@ -39,7 +39,7 @@
   .stage-tools { gap: 4px; flex-wrap: nowrap; }
   .stage-group { gap: 4px; }
   .stage-key { min-width: 34px; }
-  .stage-select { flex: 0 1 auto; min-width: 0; max-width: 108px; padding: 0 6px; }
+  .stage-select { flex: 0 1 auto; min-width: 0; max-width: 138px; padding: 0 26px 0 9px; background-position: right 8px center; background-size: 13px; text-overflow: ellipsis; }
 }
 /* Narrowest phones: undo/redo give their room to the key and Edit/View controls. */
 @media (max-width: 380px) {
@@ -48,7 +48,7 @@
 /* 320–355px phones: 12 keys in three rows of four keeps each key 44px wide. */
 @media (max-width: 355px) {
   .key-picker { grid-template-columns: repeat(4, 1fr); }
-  .stage-select { font-size: 13px; padding: 0 2px; }
+  .stage-select { font-size: 12.5px; max-width: 106px; padding: 0 22px 0 6px; background-position: right 6px center; background-size: 12px; }
   .stage-top .stage-tools { justify-content: flex-start; }
 }
 

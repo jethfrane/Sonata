@@ -1,7 +1,7 @@
 // @ts-check
 // Dependency-free exports: PDF (built by hand), PNG (canvas) and plain text.
 // Exports always use a light, print-friendly look regardless of app theme.
-import { pairSegments, linesToText, longestLine } from "../core/chart.js";
+import { pairSegments, linesToText, longestLine, inlineSectionLabel } from "../core/chart.js";
 
 /**
  * @typedef {import("../core/chart.js").ChartLine} ChartLine
@@ -53,12 +53,6 @@ export function accentInk(hex) {
   for (let i = 0; i < 60 && 1.05 / (luminance(out) + 0.05) < 4.5; i++) { l -= 0.015; out = rgb(); }
   return out;
 }
-
-/** A short line that names a part of the song ("Verse:", "Chorus 2", "Bridge:"), written without the ## mark. */
-const SECTION_NAME = /^\s*\[?\s*(?:pre[- ]?chorus|post[- ]?chorus|verse|chorus|bridge|intro|outro|interlude|instrumental|refrain|tag|coda|ending|hook|turnaround|vamp|solo|break|koro)(?:\s*\d+)?(?:\s*\(?x\s?\d+\)?)?\s*\]?\s*:?\s*$/i;
-const LABEL_LINE = /^\S[^:]{0,22}:\s*$/;
-/** @param {string} text */
-const sectionLabel = (text) => (SECTION_NAME.test(text) || LABEL_LINE.test(text) ? text.trim().replace(/^\[|\]$/g, "").replace(/:\s*$/, "").trim() : "");
 
 /**
  * Split a chord line into words with their column, marking timing marks (/ - | x2) so
@@ -146,7 +140,7 @@ function printRows(lines, max) {
     else if (l.type === "header") wrapText(l.text, max).forEach((t) => rows.push({ kind: "header", text: t }));
     else if (l.type === "section") rows.push({ kind: "section", text: l.text.toUpperCase() });
     else if (l.type === "note") wrapText(l.text, max).forEach((t) => rows.push({ kind: "note", text: t }));
-    else if (l.type === "lyrics" && sectionLabel(l.text)) rows.push({ kind: "section", text: sectionLabel(l.text).toUpperCase() });
+    else if (l.type === "lyrics" && inlineSectionLabel(l.text)) rows.push({ kind: "section", text: inlineSectionLabel(l.text).toUpperCase() });
     else if (l.type === "lyrics") wrapText(l.text, max).forEach((t) => rows.push({ kind: "lyric", text: t }));
     else if (l.type === "chords") wrapText(l.chords, max).forEach((t) => rows.push({ kind: "chord", text: t }));
     else if (l.type === "pair") wrapPair(l.chords, l.lyrics, max).forEach((r) => {

@@ -222,7 +222,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .pane-switch button .icon { display: none; }
   #view-editor[data-pane="preview"] .editor-toolbar .tool-group:first-child { display: none; }
   .view-mode { order: 5; width: 100%; display: flex; }
-  .view-mode button { flex: 1 0 auto; padding: 0 9px; }
+  .view-mode button { flex: 1 0 auto; padding: 0 6px; font-size: var(--fs-xs); }
   .chart-input, #preview { padding: 18px 20px; }
   .welcome { padding: 20px 16px; }
 }
