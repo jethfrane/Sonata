@@ -3,9 +3,9 @@
 // Drive account, about, and shared-setlist import.
 import { esc, icon, toast, openSheet, closeSheet, copyText, download, slug, paintIcons } from "./dom.js";
 import { t, setLang, applyI18n } from "./i18n.js";
-import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick, adoptShared } from "./ctx.js";
+import { store, app, detectedKey, soundingKey, shapeKey, writtenKey, signed, tick, adoptShared, renderOptions } from "./ctx.js";
 import { keyShort, parseKey, pretty, transposeText, keyFromTonic, keyValue, detectKey } from "../core/music.js";
-import { analyzeRawChart, stripLyricsToChordsOnly } from "../core/chart.js";
+import { analyzeRawChart, stripLyricsToChordsOnly, buildLines, linesToText } from "../core/chart.js";
 import { loneLink } from "../core/import.js";
 import { sampleUrls } from "../audio.js";
 import { liveSetUrl, publishLiveSet, stopLiveSet, watchLiveSets } from "./liveset.js";
@@ -44,8 +44,8 @@ export function capoOptions(capo) {
   return html;
 }
 
-/** Key, transpose, capo and spelling for the open song (the editor's key pill). */
-export function openKeySheet() {
+/** Key, transpose, capo and spelling for the open song (the editor's key pill). @param {"key"|"capo"} [focusPart] */
+export function openKeySheet(focusPart = "key") {
   const s = store.active();
   if (!s) return;
   const seg = (/** @type {string} */ v, /** @type {string} */ label) => {
@@ -58,13 +58,19 @@ export function openKeySheet() {
     return `<div class="key-sheet">
       <div class="big-key"><span class="mini-label">${esc(t("playsIn", "Band plays in"))}</span><strong>${esc(pretty(k.name))}</strong>
         <span class="muted">${s.capo ? esc(t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) })) : det ? esc(t("detectedAs", "Detected from chords: {key}", { key: pretty(det.name) })) : "&nbsp;"}</span></div>
-      <div class="field"><span>${esc(t("transpose", "Transpose"))}</span>
-        <div class="stepper"><button class="icon-btn" type="button" data-tr="-1" aria-label="${esc(t("transposeDown", "Down a half step"))}">${icon("minus")}</button>
-        <output aria-live="polite">${esc(signed(s.transpose))}</output>
-        <button class="icon-btn" type="button" data-tr="1" aria-label="${esc(t("transposeUp", "Up a half step"))}">${icon("plus")}</button></div></div>
+      <div class="field-row">
+        <div class="field"><span>${esc(t("transpose", "Transpose"))}</span>
+          <div class="stepper"><button class="icon-btn" type="button" data-tr="-1" aria-label="${esc(t("transposeDown", "Down a half step"))}">${icon("minus")}</button>
+          <output aria-live="polite">${esc(signed(s.transpose))}</output>
+          <button class="icon-btn" type="button" data-tr="1" aria-label="${esc(t("transposeUp", "Up a half step"))}">${icon("plus")}</button></div></div>
+        <div class="field"><span>${esc(t("capo", "Capo"))}</span>
+          <div class="stepper"><button class="icon-btn" type="button" data-capo="-1" aria-label="${esc(t("capoDown", "Capo down"))}"${s.capo <= 0 ? " disabled" : ""}>${icon("minus")}</button>
+          <output aria-live="polite">${s.capo}</output>
+          <button class="icon-btn" type="button" data-capo="1" aria-label="${esc(t("capoUp", "Capo up"))}"${s.capo >= 11 ? " disabled" : ""}>${icon("plus")}</button></div></div>
+      </div>
       <div class="field-row">
         <label class="field"><span>${esc(t("songKey", "Song key"))}</span><select class="select" id="ksKey"${s.readonly ? " disabled" : ""}>${keyOptions(s.manualKey, det)}</select></label>
-        <label class="field"><span>${esc(t("capo", "Capo"))}</span><select class="select" id="ksCapo">${capoOptions(s.capo)}</select></label>
+        <label class="field"><span>${esc(t("capo", "Capo"))} (${esc(t("override", "override"))})</span><select class="select" id="ksCapo">${capoOptions(s.capo)}</select></label>
       </div>
       <div class="field"><span>${esc(t("spelling", "Sharps or flats"))}</span>
         <div class="segmented full" role="group">${seg("auto", t("spellAuto", "Auto"))}${seg("sharp", "♯")}${seg("flat", "♭")}</div></div>
@@ -76,6 +82,7 @@ export function openKeySheet() {
     </div>`;
   };
   const body = openSheet({ title: t("keyAndCapo", "Key & capo"), body: render(), focus: false, actions: [{ label: t("done", "Done"), kind: "primary" }] });
+  if (focusPart === "capo" && !matchMedia("(pointer: coarse)").matches) /** @type {HTMLElement|null} */ (body.querySelector("#ksCapo"))?.focus();
   const rerender = () => { body.innerHTML = render(); };
   /** @param {Partial<import("../core/store.js").Song>} patch */
   const apply = (patch) => {
@@ -85,6 +92,7 @@ export function openKeySheet() {
   body.addEventListener("click", (e) => {
     const target = /** @type {HTMLElement} */ (e.target);
     const tr = /** @type {HTMLElement|null} */ (target.closest("[data-tr]"));
+    const cp = /** @type {HTMLElement|null} */ (target.closest("[data-capo]"));
     const sp = /** @type {HTMLElement|null} */ (target.closest("[data-spelling]"));
     if (tr) {
       tick();
@@ -92,6 +100,9 @@ export function openKeySheet() {
       if (next > 11) next -= 12;
       if (next < -11) next += 12;
       apply({ transpose: next });
+    } else if (cp) {
+      tick();
+      apply({ capo: Math.max(0, Math.min(11, s.capo + Number(cp.dataset.capo))) });
     } else if (sp) {
       store.settings.enharmonicPref = /** @type {any} */ (sp.dataset.spelling);
       store.changed("settings");
@@ -110,8 +121,20 @@ export function openKeySheet() {
   });
   body.addEventListener("change", (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
-    if (el.id === "ksKey") apply({ manualKey: el.value });
-    if (el.id === "ksCapo") apply({ capo: Number(el.value) });
+    if (el.id === "ksKey") {
+      // When overriding a key while an active transpose offset exists, bake the visible transpose
+      // so the chords on screen remain intact and the key label immediately matches the chosen key.
+      if (!s.readonly && el.value !== "auto" && s.transpose) {
+        const from = writtenKey(s);
+        const pref = /** @type {any} */ (store.settings.enharmonicPref);
+        store.update(s, { body: transposeText(s.body, s.transpose, from, pref), transpose: 0, manualKey: el.value });
+        store.emit("song-open", s);
+        rerender();
+      } else {
+        apply({ manualKey: el.value });
+      }
+    }
+    if (el.id === "ksCapo") apply({ capo: Number(el.value) || 0 });
   });
 }
 
@@ -121,7 +144,7 @@ const linkRows = (links) => links.map((l, i) => `<div class="link-row" data-i="$
   <input class="input" data-k="url" value="${esc(l.url)}" placeholder="https://" inputmode="url" aria-label="URL">
   <button class="icon-btn" type="button" data-remove="${i}" aria-label="${esc(t("remove", "Remove"))}">${icon("x")}</button></div>`).join("");
 
-/** Song details: title, artist, arranger, key, tempo, notes, links. */
+/** Song details: title, artist, arranger, key, capo, tempo, notes, links. */
 export function openDetails() {
   const s = store.active();
   if (!s || s.readonly) return;
@@ -136,13 +159,14 @@ export function openDetails() {
       </div>
       <div class="field-row">
         <label class="field"><span>${esc(t("songKey", "Song key"))}</span><select class="select" id="dKey">${keyOptions(s.manualKey, detectedKey(s))}</select></label>
-        <label class="field"><span>${esc(t("bpm", "Tempo (BPM)"))}</span><input class="input" id="dBpm" type="number" min="30" max="300" inputmode="numeric" value="${s.bpm ?? ""}"></label>
+        <label class="field"><span>${esc(t("capo", "Capo"))}</span><select class="select" id="dCapo">${capoOptions(s.capo)}</select></label>
       </div>
       <div class="field-row">
+        <label class="field"><span>${esc(t("bpm", "Tempo (BPM)"))}</span><input class="input" id="dBpm" type="number" min="30" max="300" inputmode="numeric" value="${s.bpm ?? ""}"></label>
         <label class="field"><span>${esc(t("genre", "Genre"))}</span><input class="input" id="dGenre" value="${esc(s.genre)}" maxlength="40" list="dGenres" autocomplete="off" placeholder="OPM, Worship, Pop…">
           <datalist id="dGenres">${[...new Set(store.songs.map((x) => x.genre).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist></label>
-        <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my Song Bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
       </div>
+      <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my Song Bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
       <label class="field"><span>${esc(t("notes", "Notes"))}</span><textarea class="input" id="dNotes" rows="3">${esc(s.description)}</textarea></label>
       <div class="field"><span>${esc(t("links", "Links"))}</span><div id="dLinks">${linkRows(links)}</div>
         <button class="btn small ghost" type="button" id="dAddLink">${icon("plus")}${esc(t("addLink", "Add link"))}</button></div>
@@ -152,17 +176,28 @@ export function openDetails() {
       { label: t("save", "Save"), kind: "primary", onClick: (b) => {
         const v = (/** @type {string} */ id) => /** @type {HTMLInputElement} */ (b.querySelector("#" + id)).value;
         const bpm = Number(v("dBpm"));
-        store.update(s, {
+        const nextKey = v("dKey");
+        const capo = Math.max(0, Math.min(11, Number(v("dCapo")) || 0));
+        /** @type {Partial<import("../core/store.js").Song>} */
+        const patch = {
           title: v("dTitle").trim() || "Untitled",
           artist: v("dArtist").trim(),
           creator: v("dCreator").trim(),
-          manualKey: v("dKey"),
+          manualKey: nextKey,
+          capo,
           bpm: bpm >= 30 && bpm <= 300 ? Math.round(bpm) : null,
           description: v("dNotes"),
           genre: v("dGenre").trim().slice(0, 40),
           inBank: /** @type {HTMLInputElement} */ (b.querySelector("#dInBank")).checked,
           links: links.filter((l) => l.name.trim() || l.url.trim()).map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
-        });
+        };
+        if (nextKey !== s.manualKey && nextKey !== "auto" && s.transpose) {
+          const from = writtenKey(s);
+          const pref = /** @type {any} */ (store.settings.enharmonicPref);
+          patch.body = transposeText(s.body, s.transpose, from, pref);
+          patch.transpose = 0;
+        }
+        store.update(s, patch);
         store.emit("song-open", s);
       } }
     ]
@@ -313,6 +348,7 @@ export async function openShare(setId) {
           <div class="share-link"><input class="input" id="shareUrl" readonly value="${esc(currentShareLink())}" aria-label="Link"></div>
           <div class="share-actions">
             <button class="btn primary" type="button" id="shareCopy">${icon("copy")}${esc(t("copyLink", "Copy link"))}</button>
+            ${!s && song ? `<button class="btn" type="button" id="shareCopyText">${icon("text")}${esc(t("copyChart", "Copy chart"))}</button>` : ""}
             ${"share" in navigator ? `<button class="btn" type="button" id="shareNative">${icon("share")}${esc(t("shareNative", "Share…"))}</button>` : ""}
             ${svg ? `<button class="btn" type="button" id="shareQr">${icon("qr")}${esc(t("downloadQr", "QR image"))}</button>` : ""}
             ${s ? `<button class="btn" type="button" id="shareSongLinks">${icon("link")}${esc(t("songLinks", "Song links"))}</button>` : ""}
@@ -361,7 +397,18 @@ export async function openShare(setId) {
     if (kind === "png") busy(b, () => exportPng(opts, curSet?.id));
     if (kind === "txt") busy(b, () => exportTxt(curSet?.id));
     if (kind === "print") { closeSheet(); printChart(opts, curSet?.id); }
-    if (b.id === "shareCopy") { if (await copyText(currentShareLink())) toast(t("linkCopied", "Link copied"), "success"); }
+    if (b.id === "shareCopy") {
+      if (await copyText(currentShareLink())) {
+        toast(t("linkCopied", "Link copied"), "success");
+        const prev = b.innerHTML;
+        b.innerHTML = `${icon("check")}${esc(t("copied", "Copied!"))}`;
+        setTimeout(() => { if (b.isConnected) b.innerHTML = prev; }, 1600);
+      }
+    }
+    if (b.id === "shareCopyText" && song) {
+      const txt = `${song.title}\n\n${linesToText(buildLines(song.body, renderOptions(song)))}`;
+      if (await copyText(txt)) toast(t("copied", "Copied"), "success");
+    }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${curTitle} · Sonata`, url: currentShareLink() }); } catch { /* cancelled */ } }
     if (b.id === "qrZoom" && svg) {
       // Over everything in the sheet, white edge to edge: the easiest thing for a camera to read.
@@ -797,9 +844,16 @@ export function openLinksImport(text = "") {
     }
     if (analyzed) {
       const previewBody = analyzedBody();
+      const detKey = detectKey(analyzed.body);
+      const effKey = parseKey(analyzed.manualKey) || detKey || parseKey(analyzed.keyName);
+      const statusKey = effKey ? effKey.name : analyzed.keyName;
       return `<div class="analyzed-chart">
-        <p class="status-line synced">${esc(t("chartReady", "Chart ready"))} · <strong>${esc(pretty(analyzed.keyName))}</strong>${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}</p>
+        <p class="status-line synced">${esc(t("chartReady", "Chart ready"))} · <strong>${esc(pretty(statusKey))}</strong>${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}</p>
         <p class="import-title"><strong>${esc(analyzed.title)}</strong>${analyzed.artist ? ` <span class="muted">· ${esc(analyzed.artist)}</span>` : ""}</p>
+        <div class="field-row import-overrides">
+          <label class="field"><span>${esc(t("songKey", "Song key"))}</span><select class="select" id="lkKey">${keyOptions(analyzed.manualKey || "auto", detKey)}</select></label>
+          <label class="field"><span>${esc(t("capo", "Capo"))}</span><select class="select" id="lkCapo">${capoOptions(analyzed.capo || 0)}</select></label>
+        </div>
         <label class="switch-row import-chords-only"><span>${esc(t("importChordsOnly", "Chords only (without lyrics)"))}</span><input type="checkbox" class="toggle" id="lkChordsOnly"${chordsOnlyImport ? " checked" : ""}></label>
         <pre class="import-preview" tabindex="0" aria-label="${esc(t("preview", "Preview"))}">${esc(pretty(previewBody.split("\n").slice(0, 12).join("\n")))}</pre>
       </div>`;
@@ -873,8 +927,9 @@ export function openLinksImport(text = "") {
       page = await r.json();
     } catch { page = { error: "blocked" }; }
     if (mine !== turn) return;
+    const srcUrl = page?.source || link;
     analyzed = page && typeof page.text === "string"
-      ? analyzeRawChart([link, page.title ? `Title: ${page.title}` : "", page.artist ? `Artist: ${page.artist}` : "", page.text].filter(Boolean).join("\n"))
+      ? analyzeRawChart([srcUrl, page.title ? `Title: ${page.title}` : "", page.artist ? `Artist: ${page.artist}` : "", page.text].filter(Boolean).join("\n"))
       : null;
     web = analyzed ? "" : String(page?.error || "no-chords");
     paint();
@@ -888,11 +943,22 @@ export function openLinksImport(text = "") {
   };
   file.addEventListener("change", () => { takeFile(file.files?.[0]); file.value = ""; });
   body.addEventListener("change", (e) => {
-    const el = /** @type {HTMLInputElement} */ (e.target);
-    if (el.id !== "lkChordsOnly") return;
-    chordsOnlyImport = el.checked;
-    const pre = /** @type {HTMLElement|null} */ (body.querySelector(".import-preview"));
-    if (pre && analyzed) pre.textContent = pretty(analyzedBody().split("\n").slice(0, 12).join("\n"));
+    const el = /** @type {HTMLInputElement|HTMLSelectElement} */ (e.target);
+    if (el.id === "lkChordsOnly") {
+      chordsOnlyImport = /** @type {HTMLInputElement} */ (el).checked;
+      const pre = /** @type {HTMLElement|null} */ (body.querySelector(".import-preview"));
+      if (pre && analyzed) pre.textContent = pretty(analyzedBody().split("\n").slice(0, 12).join("\n"));
+    } else if (analyzed && (el.id === "lkKey" || el.id === "lkCapo")) {
+      if (el.id === "lkKey") {
+        analyzed.manualKey = el.value;
+        const k = parseKey(el.value) || detectKey(analyzed.body);
+        if (k) analyzed.keyName = k.name;
+      } else {
+        analyzed.capo = Math.max(0, Math.min(11, Number(el.value) || 0));
+      }
+      const st = /** @type {HTMLElement|null} */ (body.querySelector(".analyzed-chart .status-line"));
+      if (st) st.innerHTML = `${esc(t("chartReady", "Chart ready"))} · <strong>${esc(pretty(analyzed.keyName))}</strong>${analyzed.capo ? ` · Capo ${analyzed.capo}` : ""}${analyzed.bpm ? ` · ${analyzed.bpm} BPM` : ""}`;
+    }
   });
   body.addEventListener("dragover", (e) => { if (e.dataTransfer?.types.includes("Files")) e.preventDefault(); });
   body.addEventListener("drop", (e) => { const f = e.dataTransfer?.files?.[0]; if (f) { e.preventDefault(); takeFile(f); } });

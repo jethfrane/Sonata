@@ -303,6 +303,7 @@ export function initSelectMenus() {
   let activeMenu = null;
   /** @type {HTMLDialogElement|null} */
   let activeDlg = null;
+  let openRectTop = 0;
 
   const onDlgClose = () => closeMenu(false);
 
@@ -372,9 +373,13 @@ export function initSelectMenus() {
 
     const paint = () => {
       const visible = opts.filter((o) => showAll || o.dataset.more === undefined);
+      let lastGroup = "";
       menu.innerHTML = visible.map((o) => {
+        const grp = o.parentElement?.tagName === "OPTGROUP" ? o.parentElement.getAttribute("label") || "" : "";
+        const head = grp && grp !== lastGroup ? `<div class="ui-select-group" role="presentation">${esc(grp)}</div>` : "";
+        lastGroup = grp;
         const on = o.value === sel.value;
-        return `<button type="button" role="option" class="ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-selected="${on ? "true" : "false"}"${o.disabled ? " disabled" : ""}><span class="ui-select-label">${esc(o.textContent || "")}</span><span class="ui-select-check">${on ? icon("check") : ""}</span></button>`;
+        return head + `<button type="button" role="option" class="ui-select-opt${on ? " on" : ""}" data-val="${esc(o.value)}" aria-selected="${on ? "true" : "false"}"${o.disabled ? " disabled" : ""}><span class="ui-select-label">${esc(o.textContent || "")}</span><span class="ui-select-check">${on ? icon("check") : ""}</span></button>`;
       }).join("") + (showAll ? "" : `<button type="button" role="option" class="ui-select-more" aria-selected="false">${esc(document.documentElement.lang === "fil" ? "Iba pa…" : "More…")}</button>`);
     };
 
@@ -418,6 +423,7 @@ export function initSelectMenus() {
     sel.setAttribute("data-open", "1");
     activeSelect = sel;
     activeMenu = menu;
+    openRectTop = sel.getBoundingClientRect().top;
     position();
 
     const activeOpt = /** @type {HTMLElement|null} */ (menu.querySelector(".ui-select-opt.on:not(:disabled)") || menu.querySelector(".ui-select-opt:not(:disabled)"));
@@ -491,8 +497,9 @@ export function initSelectMenus() {
 
   window.addEventListener("resize", () => { if (activeMenu) closeMenu(false); });
   window.addEventListener("scroll", (e) => {
-    if (!activeMenu) return;
+    if (!activeMenu || !activeSelect) return;
     if (e.target === activeMenu || (e.target instanceof Node && activeMenu.contains(e.target))) return;
+    if (Math.abs(activeSelect.getBoundingClientRect().top - openRectTop) <= 8) return;
     closeMenu(false);
   }, true);
 }

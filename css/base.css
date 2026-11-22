@@ -127,6 +127,8 @@ html[data-theme="dark"] .select[data-open="1"] {
 .ui-select-opt.on { background: var(--accent-soft); color: var(--accent-strong); font-weight: 650; }
 .ui-select-opt.on:hover:not(:disabled), .ui-select-opt.on:focus-visible { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 .ui-select-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-select-group { padding: 6px 10px 2px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ui-select-group:not(:first-child) { margin-top: 2px; border-top: 1px solid color-mix(in srgb, var(--line) 75%, transparent); padding-top: 8px; }
 .ui-select-check { display: inline-grid; place-items: center; width: 16px; height: 16px; flex: none; color: var(--accent-strong); }
 .ui-select-check .icon { width: 15px; height: 15px; }
 .ui-select-more {

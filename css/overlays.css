@@ -41,6 +41,7 @@
 .key-sheet .big-key strong { font-size: 30px; font-weight: 750; color: var(--accent-strong); letter-spacing: -.02em; }
 .key-sheet .big-key .muted { font-size: var(--fs-sm); }
 .key-sheet .stepper { justify-content: center; }
+.import-overrides { margin: 8px 0 4px; }
 
 .share { display: grid; gap: 4px; }
 .share-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }

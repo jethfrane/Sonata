@@ -135,7 +135,14 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 #preview { flex: 1; overflow: auto; padding: 24px clamp(28px, 3.2vw, 48px) 44px; }
 .song-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
 .song-links .mini-label { margin: 0 6px 0 0; }
+.link-pill { display: inline-flex; align-items: center; gap: 3px; }
 .link-chip span { color: var(--muted); }
+.link-copy { padding: 0 8px; min-width: 30px; color: var(--muted); }
+.link-copy .icon { width: 14px; height: 14px; }
+.link-copy.copied, #copyChartBtn.copied { color: var(--success); }
+.meta-chips button.chip { cursor: pointer; }
+.meta-chips button.chip.muted { color: var(--muted); border-style: dashed; }
+.meta-chips button.chip:hover { border-color: var(--accent); color: var(--accent-strong); }
 
 /* ---------- Chart typography (preview, stage, print) ---------- */
 .chart { font: 450 var(--chart-size)/var(--chart-line) var(--mono); color: var(--text); }

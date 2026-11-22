@@ -664,6 +664,67 @@ console.log("Chords-only mode, quick switcher, margins & Drive setlist UX");
   await p.close();
 }
 
+console.log("v7.2.0 chord/key detection, Key & Capo overrides, copy & link import on phone + desktop");
+{
+  const shot1Body = "## Intro\nG - D\n\n## Verse\nG/// - D/F#/// - G/// - D///\n\n## Pre-Chorus\nG/// //// - D/F#/// ////\nG/// //// - Bm///- A///\n\n## Chorus\nD/// - G/// - Bm///\nEm/// - A///\n\n## Bridge\nG/// //// - D/F#/// ////\nG/// //// - Bm///- A///";
+  const holyBody = "## Chorus\nBm   D/F#m   G   A   D\nDwell in us\nG   D/F#m\nWe believe";
+  p = await open("/editor", {
+    viewport: { width: 390, height: 844 },
+    touch: true,
+    songs: [
+      { id: "song-shot1", title: "Glory Worship", body: shot1Body },
+      { id: "song-shot2", title: "Holy Spirit", body: holyBody, links: [{ name: "Chord reference", url: "https://tabs.ultimate-guitar.com/tab/bryan-torwalt/holy-spirit-123" }] }
+    ]
+  });
+  ok((await p.textContent("#keyPillValue")) === "D" && await p.locator('#metaChips [data-open-key="key"]').textContent().then((s) => s.includes("Key D")), "Screenshot 1 detects Key D (not G) and renders clickable Key chip");
+  const chTexts = await p.locator("#preview .ch").allInnerTexts();
+  ok(chTexts.includes("Bm") && chTexts.includes("A"), "Bm///- A/// line renders Bm and A as interactive chords");
+  ok((await p.textContent(".view-mode .active")).trim() === "Chords" && await p.isVisible('#metaChips [data-open-key="capo"]'), "Capo chip is directly clickable below title on phone");
+  // Click Capo chip -> opens Key & capo -> tap + Capo stepper twice -> sets Capo 2
+  await p.click('#metaChips [data-open-key="capo"]'); await p.waitForTimeout(250);
+  ok(await p.evaluate(() => document.getElementById("sheet").open), "tapping Capo chip opens Key & capo sheet");
+  await p.click('[data-capo="1"]'); await p.click('[data-capo="1"]'); await p.waitForTimeout(150);
+  // Open #ksKey dropdown menu -> verify Major/Minor group headers
+  await p.dispatchEvent("#ksKey", "mousedown"); await p.waitForTimeout(150);
+  ok(await p.locator(".ui-select-menu .ui-select-group").count() === 2, "key selector renders Major and Minor group headers");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(100);
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(200);
+  ok((await p.textContent('#metaChips [data-open-key="capo"]')).includes("Capo 2"), "Capo 2 stepper persists and updates Capo chip");
+
+  // Song details includes Capo override & Key override
+  await p.click("#detailsBtn"); await p.waitForTimeout(250);
+  ok(await p.isVisible("#dCapo") && (await p.inputValue("#dCapo")) === "2", "Song details includes editable Capo field synced to Capo 2");
+  await p.selectOption("#dKey", "E:major");
+  await p.selectOption("#dCapo", "3");
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(250);
+  ok((await p.textContent("#keyPillValue")) === "E" && (await p.textContent('#metaChips [data-open-key="capo"]')).includes("Capo 3"), "Song details overrides both Song Key and Capo");
+
+  // Open Holy Spirit -> D/F#m detected as chord, link labeled Ultimate Guitar with 1-tap Copy button
+  await p.click(".bn[data-view='songs']"); await p.waitForTimeout(150);
+  await p.click('#libraryList .row[data-id="song-shot2"]'); await p.waitForTimeout(300);
+  const holyCh = await p.locator("#preview .ch").allInnerTexts();
+  ok(holyCh.some((x) => x.startsWith("D/F#")), "D/F#m line renders D/F# as interactive chord");
+  ok((await p.textContent("#songLinks .link-chip")).includes("Ultimate Guitar") && await p.isVisible('#songLinks [data-copy-url]'), "imported UG link shows source name and 1-tap copy button");
+  await p.click('#songLinks [data-copy-url]'); await p.waitForTimeout(150);
+  ok((await p.evaluate(() => navigator.clipboard.readText())).includes("ultimate-guitar.com"), "1-tap link copy button copies reference URL");
+
+  // Mobile Share snippet import + inline Key & Capo overrides inside Import
+  await p.route("**/api/import*", (route) => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ title: "Here Again", artist: "Elevation Worship", source: "https://tabs.ultimate-guitar.com/tab/elevation-worship/here-again", text: "Key: D\nCapo 2\nG   Am   F\n|1---2---3---4---|\nCan't go back to the beginning\nC   G\nYou hold me" })
+  }));
+  await p.click(".bn[data-view='songs']"); await p.waitForTimeout(150);
+  await p.click("#addLinksBtn"); await p.waitForTimeout(200);
+  await p.fill("#lkText", "Here Again Chords by Elevation Worship https://tabs.ultimate-guitar.com/tab/elevation-worship/here-again");
+  await p.waitForTimeout(600);
+  ok((await p.textContent("#lkFound")).includes("Here Again") && await p.isVisible("#lkKey") && await p.isVisible("#lkCapo"), "mobile Share snippet with prepended title auto-fetches URL and shows Key & Capo overrides");
+  await p.selectOption("#lkCapo", "4"); await p.waitForTimeout(150);
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(300);
+  ok((await p.textContent('#metaChips [data-open-key="capo"]')).includes("Capo 4") && (await p.textContent("#keyPillValue")) === "D" && !(await p.inputValue("#songBody")).includes("1---2---3---4"), "Import saves Key & Capo overrides cleanly without beat grid noise");
+  await p.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);

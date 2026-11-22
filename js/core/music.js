@@ -43,10 +43,11 @@ const normalizeNote = (s) => {
   return n;
 };
 
-const QUALITY_RE = /^(?:maj|Maj|M|min|m|-|dim|°|o|aug|\+|sus|add|dom|ø|Δ)?(?:\d{1,2})?(?:(?<=6)\/9)?(?:(?:maj|Maj|M|min|m|sus|add|dim|aug|dom|alt|no|omit)\d{0,2}|[#b♯♭+\-]\d{1,2})*(?:\([^)]*\))?$/;
+const QUALITY_RE = /^(?:[Mm]aj|M|[Mm]in|m|-|[Dd]im|°|o|[Aa]ug|\+|[Ss]us|[Aa]dd|[Dd]om|ø|Δ|MAJ|MIN|DIM|AUG|SUS|ADD|DOM)?(?:\d{1,2})?(?:(?<=6)\/9)?(?:(?:[Mm]aj|M|[Mm]in|m|[Ss]us|[Aa]dd|[Dd]im|[Aa]ug|[Dd]om|[Aa]lt|[Nn]o|[Oo]mit|MAJ|MIN|SUS|ADD|DIM|AUG|DOM|ALT|NO|OMIT)\d{0,2}|[#b♯♭+\-]\d{1,2})*(?:\([^)]*\))*$/;
 
 /**
  * Parse one chord symbol such as "G", "F#m7", "C/G", "Bbmaj7", "D///".
+ * Accepts slash chords with redundant quality suffixes on the bass (e.g. "D/F#m").
  * Returns null for anything that is not a chord.
  * @param {string} input
  * @returns {Chord|null}
@@ -73,7 +74,9 @@ export function parseChord(input) {
   if (quality && !QUALITY_RE.test(quality)) return null;
   let bass = "";
   if (bassRaw) {
-    bass = normalizeNote(bassRaw);
+    // Allow bass notes accidentally suffixed with a chord quality (e.g. "D/F#m" -> bass "F#").
+    const mBass = bassRaw.match(/^([A-Ga-g](?:#|b|♯|♭)?)(?:(?:m|min|maj|dim|aug|sus|add|dom)\d*|\d+)?$/i);
+    bass = normalizeNote(mBass ? mBass[1] : bassRaw);
     if (!(bass in NOTE_TO_PC)) return null;
   }
   return { raw: text, root, quality, bass, rootPc: NOTE_TO_PC[root], bassPc: bass ? NOTE_TO_PC[bass] : null, slashes };
@@ -87,12 +90,12 @@ export function parseChord(input) {
  */
 export function chordFamily(chord) {
   const q = typeof chord === "string" ? chord : chord.quality || "";
-  if (/^(dim|°|o)/.test(q)) return "diminished";
-  if (/^(ø|m7b5|m7-5|min7b5)/.test(q)) return "half-diminished";
-  if (/^(aug|\+)/.test(q)) return "augmented";
+  if (/^(?:dim|°|o)/i.test(q)) return "diminished";
+  if (/^(?:ø|m7b5|m7-5|min7b5)/i.test(q)) return "half-diminished";
+  if (/^(?:aug|\+)/i.test(q)) return "augmented";
   if (/^(maj|Maj|M(?!in))/.test(q)) return "major";
-  if (/^(m|min|-)/.test(q)) return "minor";
-  if (/sus/.test(q)) return "suspended";
+  if (/^(?:m|min|-)/i.test(q) && !/^(?:maj|Maj)/.test(q)) return "minor";
+  if (/^(?:sus|4$)/i.test(q) || /sus/i.test(q)) return "suspended";
   if (q === "5") return "power";
   return "major";
 }
@@ -114,18 +117,18 @@ export function chordTones(chordOrText) {
   else if (fam === "diminished") iv = /7/.test(q) ? [0, 3, 6, 9] : [0, 3, 6];
   else if (fam === "half-diminished") iv = [0, 3, 6, 10];
   else if (fam === "augmented") iv = [0, 4, 8];
-  else if (/sus2/.test(q)) iv = [0, 2, 7];
-  else if (/sus/.test(q)) iv = [0, 5, 7];
+  else if (/sus2/i.test(q)) iv = [0, 2, 7];
+  else if (/sus|^4$/i.test(q)) iv = [0, 5, 7];
   else if (fam === "minor") iv = [0, 3, 7];
   else iv = [0, 4, 7];
   const has = (/** @type {RegExp} */ r) => r.test(q);
   if (fam !== "diminished" && fam !== "half-diminished") {
     if (has(/(maj|Maj|M)(7|9|11|13)/) || has(/^m(?:in)?(?:Maj|M)7/)) iv.push(11);
-    else if (has(/(^|[^d])(7|9|11|13)/) && !has(/add|6/)) iv.push(10);
+    else if (has(/(^|[^d])(7|9|11|13)/) && !has(/add|6/i)) iv.push(10);
     if (has(/6/) && !has(/b6/)) iv.push(9);
   }
-  if (has(/9|add9|add2/)) iv.push(has(/b9/) ? 1 : has(/#9/) ? 3 : 2);
-  if (has(/11/)) iv.push(has(/#11/) ? 6 : 5);
+  if (has(/9|add9|add2|^2$/i)) iv.push(has(/b9/) ? 1 : has(/#9/) ? 3 : 2);
+  if (has(/11|add4/i)) iv.push(has(/#11/) ? 6 : 5);
   if (has(/13/)) iv.push(9);
   if (has(/b5|-5/) && fam !== "half-diminished") iv = iv.map((x) => (x === 7 ? 6 : x));
   if (has(/#5/) && fam !== "augmented") iv = iv.map((x) => (x === 7 ? 8 : x));
@@ -206,39 +209,104 @@ export function identifyChord(midis, flats = false) {
   return null;
 }
 
-/** @param {string} token */
+/** Strip wrapping brackets, quotes and hyphens around one token while preserving chord parens like G(add9). @param {string} token */
 function splitToken(token) {
-  const m = token.match(/^([|()[\]{}<>"'.,;:]*)(.*?)([|()[\]{}<>"'.,;:]*)$/);
-  return m ? { lead: m[1], core: m[2], trail: m[3] } : { lead: "", core: token, trail: "" };
+  const m = String(token || "").match(/^([|()[\]{}<>"'.,;:\-–—]*)(.*?)([|()[\]{}<>"'.,;:\-–—]*)$/);
+  if (!m) return { lead: "", core: token, trail: "" };
+  let [, lead, core, trail] = m;
+  while (trail.startsWith(")") && (core.split("(").length - 1) > (core.split(")").length - 1)) {
+    core += ")";
+    trail = trail.slice(1);
+  }
+  return { lead, core, trail };
 }
 
 /** Tokens allowed on a chord line that are not chords: bars, repeats, N.C., "x2". */
-const NEUTRAL_TOKEN = /^(?:[|:%/.\-]+|N\.?C\.?|x\d+|\d+x|\(x?\d+x?\)|\(?(?:repeat|rpt|fine)\)?|-+)$/i;
+const NEUTRAL_TOKEN = /^(?:[|:%/.\-–—]+|N\.?C\.?|x\d+|\d+x|\(x?\d+x?\)|\(?(?:repeat|rpt|fine)\)?)$/i;
 
-/** "Intro:", "Tag:", "Turnaround:" in front of the chords of a line. */
-const LINE_LABEL = /^(?:intro|outro|interlude|instrumental|inst|tag|turnaround|turn|vamp|ending|end|coda|riff|solo|break|refrain|link)\d*:$/i;
+/** Performance cues allowed in parentheses on a chord line without turning it into lyrics. */
+const PAREN_CUE = /^\(\s*(?:hold|stop|pause|break|build|swell|ring|let\s+(?:it\s+)?ring|ring\s+out|mute|muted|palm\s+mute|pm|fade(?:\s+out)?|dim|rit|rall|a\s+tempo|nc|n\.?c\.?|tacit|tacet|drums|bass|keys|piano|guitar|acappella|a\s+capella|vocal|solo|inst|instrumental|soft|softly|loud|big|down|up|once|twice|repeat|rpt|fine|last\s+time|\d+(?:st|nd|rd|th)?\s+time|to\s+\w+|x?\d+x?)\s*\)$/i;
+
+/** Section prefix at the start of a chord line: "Intro:", "Verse 1:", "Chorus:", "[Bridge]:". */
+const SEC_PREFIX = /^(\[?\s*(?:intro|outro|interlude|instrumental|inst|tag|turnaround|turn|vamp|ending|end|coda|riff|solo|break|refrain|link|hook|verse|chorus|pre-?chorus|post-?chorus|bridge|stanza|koro|coro|verso|ponte|v|c|br|pc)(?:\s+\d+[a-z]?)?\s*\]?:\s+)/i;
+
+/** Single-word "Intro:", "Tag:", etc. @see NEUTRAL_TOKEN */
+const LINE_LABEL = /^\[?(?:intro|outro|interlude|instrumental|inst|tag|turnaround|turn|vamp|ending|end|coda|riff|solo|break|refrain|link|hook|verse|chorus|pre-?chorus|post-?chorus|bridge|stanza|koro|coro|verso|ponte|v|c|br|pc)\d*\]?:$/i;
 
 /** Tokens drawn in the muted colour on a chord line (not chords). @param {string} token */
-export const isNeutralToken = (token) => NEUTRAL_TOKEN.test(token) || LINE_LABEL.test(token);
+export const isNeutralToken = (token) => NEUTRAL_TOKEN.test(token) || LINE_LABEL.test(token) || PAREN_CUE.test(token);
 
 const SECTION_WORD = /^(verse|chorus|bridge|intro|outro|interlude|tag|pre-?chorus|instrumental|ending|coda|v\d|c\d)[\s\d:]*$/i;
 
 /**
- * True when every token on the line is a chord or a neutral rhythm mark.
+ * Split one non-whitespace chunk into chord/mark sub-parts.
+ * Handles glued dashes like "Bm///-" as well as hyphen-joined chords like "G-D" or "Bm///-A///".
+ * Returns null if any sub-part is neither a chord nor a neutral mark.
+ * @param {string} token
+ * @returns {{ kind: "chord", lead: string, core: string, trail: string, chord: Chord }[] | { kind: "mark", text: string }[] | null}
+ */
+export function tokenizeChordChunk(token) {
+  if (!token) return null;
+  if (NEUTRAL_TOKEN.test(token) || PAREN_CUE.test(token)) return [{ kind: "mark", text: token }];
+  const { lead, core, trail } = splitToken(token);
+  if (!/^[a-g]$/.test(core)) {
+    const direct = parseChord(core);
+    if (direct) {
+      /** @type {any[]} */
+      const res = [];
+      if (lead) res.push({ kind: "mark", text: lead });
+      res.push({ kind: "chord", lead: "", core, trail: "", chord: direct });
+      if (trail) res.push({ kind: "mark", text: trail });
+      return res;
+    }
+  }
+  if (/[-–—]/.test(token)) {
+    const parts = token.split(/(-+|–+|—+)/);
+    if (parts.length >= 3) {
+      /** @type {any[]} */
+      const built = [];
+      let chordCount = 0;
+      for (const part of parts) {
+        if (!part) continue;
+        if (/^(?:-+|–+|—+)$/.test(part) || NEUTRAL_TOKEN.test(part)) {
+          built.push({ kind: "mark", text: part });
+          continue;
+        }
+        const sp = splitToken(part);
+        if (/^[a-g]$/.test(sp.core)) return null;
+        const c = parseChord(sp.core);
+        if (!c) return null;
+        chordCount++;
+        if (sp.lead) built.push({ kind: "mark", text: sp.lead });
+        built.push({ kind: "chord", lead: "", core: sp.core, trail: "", chord: c });
+        if (sp.trail) built.push({ kind: "mark", text: sp.trail });
+      }
+      if (chordCount > 0) return built;
+    }
+  }
+  return null;
+}
+
+/** Scan a line keeping parenthesized expressions like "(let ring)" intact as single chunks. @param {string} text */
+const scanLineTokens = (text) => text.match(/\S*\([^)]*\)\S*|\S+/g) || [];
+
+/**
+ * True when every token on the line is a chord, rhythm mark, or musical cue.
  * @param {string} line
  */
 export function isChordLine(line) {
-  const t = line.trim();
+  let t = line.trim();
   if (!t || /^(#|---|>|\/\/)/.test(t) || /\[[^\]]+\]/.test(line) || SECTION_WORD.test(t)) return false;
+  const sec = t.match(SEC_PREFIX);
+  if (sec) t = t.slice(sec[0].length);
   let chords = 0;
-  const tokens = t.split(/\s+/);
+  const tokens = scanLineTokens(t);
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    if (NEUTRAL_TOKEN.test(token) || (i === 0 && LINE_LABEL.test(token))) continue;
-    const core = splitToken(token).core;
-    if (/^[a-g]$/.test(core)) return false; // "a", "e": an ordinary word on a lyric line
-    if (parseChord(core)) chords++;
-    else return false;
+    if (NEUTRAL_TOKEN.test(token) || PAREN_CUE.test(token) || (i === 0 && LINE_LABEL.test(token))) continue;
+    const parts = tokenizeChordChunk(token);
+    if (!parts) return false;
+    chords += parts.filter((p) => p.kind === "chord").length;
   }
   return chords > 0;
 }
@@ -271,7 +339,14 @@ export function extractChords(text) {
     if (kind === "inline") {
       for (const m of line.matchAll(/\[([^\]]+)\]/g)) { const c = parseChord(m[1]); if (c) out.push(c); }
     } else if (kind === "chords") {
-      for (const token of line.trim().split(/\s+/)) { const c = parseChord(splitToken(token).core); if (c) out.push(c); }
+      let t = line.trim();
+      const sec = t.match(SEC_PREFIX);
+      if (sec) t = t.slice(sec[0].length);
+      for (const token of scanLineTokens(t)) {
+        const parts = tokenizeChordChunk(token);
+        if (!parts) continue;
+        for (const p of parts) if (p.kind === "chord") out.push(p.chord);
+      }
     }
   }
   return out;
@@ -343,48 +418,13 @@ export const keyValue = (key) => `${key.root}:${key.mode}`;
 export const keyShort = (key) => key.root + (key.mode === "minor" ? "m" : "");
 
 /**
- * Score all 24 keys (12 major + 12 minor) against a list of chords.
- * Weights the first and last chord, which usually sit on the tonic.
- * @param {Chord[]} chords
- * @returns {{ tonic: number, mode: "major"|"minor", score: number }[]}
- */
-function scoreKeyCandidates(chords) {
-  const MAJOR_W = { 0: 3, 2: 1.35, 4: 1.2, 5: 1.55, 7: 2.25, 9: 1.45, 11: 0.65, 3: 0.45, 8: 0.35, 10: 0.5 };
-  const MINOR_W = { 0: 3, 2: 0.7, 3: 1.75, 5: 1.45, 7: 1.55, 8: 1.45, 10: 1.35, 11: 0.55 };
-  /** @type {{tonic:number, mode:"major"|"minor", score:number}[]} */
-  const cands = [];
-  for (let tonic = 0; tonic < 12; tonic++) {
-    for (const mode of /** @type {const} */ (["major", "minor"])) {
-      const prof = /** @type {Record<number, number>} */ (mode === "major" ? MAJOR_W : MINOR_W);
-      let score = 0;
-      chords.forEach((c, i) => {
-        const d = mod12(c.rootPc - tonic);
-        const fam = chordFamily(c);
-        const w = 1 + (i === 0 ? 0.45 : 0) + (i === chords.length - 1 ? 0.7 : 0);
-        score += (prof[d] ?? -0.35) * w;
-        if (mode === "major") {
-          if ([0, 5, 7].includes(d) && ["major", "suspended", "power"].includes(fam)) score += 1.05 * w;
-          if ([2, 4, 9].includes(d) && fam === "minor") score += 0.95 * w;
-          if (d === 11 && (fam === "diminished" || fam === "half-diminished")) score += 0.8 * w;
-        } else {
-          if ([0, 5].includes(d) && fam === "minor") score += 1.1 * w;
-          if (d === 7 && fam !== "diminished") score += 0.8 * w;
-          if (d === 2 && (fam === "diminished" || fam === "half-diminished")) score += 0.7 * w;
-        }
-      });
-      cands.push({ tonic, mode, score });
-    }
-  }
-  cands.sort((a, b) => b.score - a.score);
-  return cands;
-}
-
-/**
- * True when a chord fits diatonically into a key (including harmonic-minor V in minor keys).
+ * True when a chord fits diatonically into a key (including harmonic-minor V and scale-tone slash bass).
  * @param {Chord} c
  * @param {Key} key
  */
-function chordFitsKey(c, key) {
+export function chordFitsKey(c, key) {
+  const scale = SCALES[key.mode];
+  if (c.bassPc !== null && !scale.includes(mod12(c.bassPc - key.tonic))) return false;
   const d = mod12(c.rootPc - key.tonic);
   const fam = chordFamily(c);
   if (key.mode === "major") {
@@ -398,6 +438,106 @@ function chordFitsKey(c, key) {
   if (d === 7 && fam !== "diminished" && fam !== "half-diminished" && fam !== "augmented") return true;
   if (d === 2 && (fam === "diminished" || fam === "half-diminished")) return true;
   return false;
+}
+
+/**
+ * Fraction (0..1) of chords in a progression that fit diatonically in a candidate key.
+ * @param {Chord[]} chords
+ * @param {Key} key
+ */
+export function chordFitRatio(chords, key) {
+  if (!chords.length) return 0;
+  let hits = 0;
+  for (const c of chords) if (chordFitsKey(c, key)) hits++;
+  return hits / chords.length;
+}
+
+/**
+ * Score all 24 keys (12 major + 12 minor) against a list of chords.
+ * Requires chord-quality agreement per scale degree, weights diatonic coverage,
+ * functional triads (I/IV/V), and cadences so songs opening on IV (e.g. G in Key of D)
+ * are detected accurately.
+ * @param {Chord[]} chords
+ * @returns {{ tonic: number, mode: "major"|"minor", score: number }[]}
+ */
+function scoreKeyCandidates(chords) {
+  const MAJOR_W = { 0: 2.4, 2: 1.3, 4: 1.1, 5: 1.8, 7: 2.1, 9: 1.5, 11: 0.65 };
+  const MINOR_W = { 0: 2.4, 2: 0.7, 3: 1.6, 5: 1.5, 7: 1.6, 8: 1.45, 10: 1.35 };
+  /** @type {Map<string, Chord>} */
+  const seen = new Map();
+  for (const c of chords) {
+    const id = `${c.rootPc}:${chordFamily(c)}:${c.bassPc ?? ""}`;
+    if (!seen.has(id)) seen.set(id, c);
+  }
+  const uniqueList = [...seen.values()];
+  /** @type {{tonic:number, mode:"major"|"minor", score:number}[]} */
+  const cands = [];
+  for (let tonic = 0; tonic < 12; tonic++) {
+    for (const mode of /** @type {const} */ (["major", "minor"])) {
+      const key = keyFromTonic(tonic, mode);
+      const scale = SCALES[mode];
+      const prof = /** @type {Record<number, number>} */ (mode === "major" ? MAJOR_W : MINOR_W);
+      let score = 0;
+      let hasTonic = false, hasSub = false, hasDom = false, hasHarmV = false;
+      chords.forEach((c, i) => {
+        const d = mod12(c.rootPc - tonic);
+        const fam = chordFamily(c);
+        const fits = chordFitsKey(c, key);
+        const w = 1 + (i === 0 ? 0.25 : 0) + (i === chords.length - 1 ? 0.45 : 0);
+        if (fits) {
+          score += ((prof[d] ?? 0.6) + 1.0) * w;
+          if (d === 0) { hasTonic = true; score += 0.65 * w; }
+          if (mode === "major") {
+            if (d === 5) hasSub = true;
+            if (d === 7) {
+              hasDom = true;
+              if (/^(?:dom)?(?:7|9|11|13)(?!.*(?:maj|M))/.test(c.quality)) score += 0.7 * w;
+            }
+          } else {
+            if (d === 5 || d === 3 || d === 8) hasSub = true;
+            if (d === 7 || d === 10) hasDom = true;
+            if (d === 7 && (fam === "major" || /^(?:dom)?7/.test(c.quality))) hasHarmV = true;
+          }
+          if (c.bassPc !== null) {
+            score += 0.55 * w;
+            if (d === 0 && mod12(c.bassPc - tonic) === (mode === "major" ? 4 : 3)) score += 0.35 * w;
+          }
+        } else {
+          // Clashing quality on a scale degree (e.g. A major in G major) or off-scale chord is penalized.
+          score += (scale.includes(d) ? -0.75 : -1.25) * w;
+          if (c.bassPc !== null && !scale.includes(mod12(c.bassPc - tonic))) score -= 0.5 * w;
+        }
+        if (i > 0) {
+          const prev = chords[i - 1];
+          const dp = mod12(prev.rootPc - tonic);
+          const prevFits = chordFitsKey(prev, key);
+          if (prevFits && fits) {
+            if (dp === 7 && d === 0) score += 0.75; // V -> I / i
+            if (dp === 5 && d === 7) score += 0.4;  // IV -> V
+            if (dp === 5 && d === 0) score += 0.45; // IV -> I
+            if (dp === 2 && d === 7) score += 0.35; // ii -> V
+            if (dp === 0 && prev.bassPc !== null && mod12(prev.bassPc - tonic) === 4 && d === 5) score += 0.55; // I/3 -> IV
+          }
+        }
+      });
+      const fitUnique = uniqueList.filter((c) => chordFitsKey(c, key)).length;
+      const fitRatio = uniqueList.length ? fitUnique / uniqueList.length : 0;
+      score += fitRatio * (6.0 + uniqueList.length * 0.85);
+      if (fitUnique === uniqueList.length && uniqueList.length >= 3) score += 2.5;
+      if (mode === "major" && hasTonic && hasSub && hasDom) score += 3.5;
+      if (mode === "minor" && hasTonic && hasSub && hasDom) {
+        score += 2.5;
+        // Aeolian minor loop starting on i (e.g. Am - F - C - G), unless ending on the relative Major tonic (C)
+        const startsMinorTonic = chords.length > 0 && mod12(chords[0].rootPc - tonic) === 0 && chordFamily(chords[0]) === "minor";
+        const endsRelMajor = chords.length > 1 && mod12(chords[chords.length - 1].rootPc - tonic) === 3 && chordFamily(chords[chords.length - 1]) === "major";
+        if (startsMinorTonic && !endsRelMajor) score += 2.8;
+      }
+      if (mode === "minor" && hasTonic && hasHarmV) score += 2.2;
+      cands.push({ tonic, mode, score });
+    }
+  }
+  cands.sort((a, b) => b.score - a.score);
+  return cands;
 }
 
 /**
@@ -489,15 +629,20 @@ export function mapChords(text, fn) {
       return line.replace(/\[([^\]]+)\]/g, (whole, inner) => { const c = parseChord(inner); return c ? `[${fn(c)}]` : whole; });
     }
     if (kind !== "chords") return line;
-    // Rebuild the line keeping each chord's start column when possible.
-    let out = "";
-    const re = /\S+/g;
+    // Preserve optional leading whitespace + section label (e.g. "Verse 1: ")
+    const leadSec = line.match(/^\s*(\[?\s*(?:intro|outro|interlude|instrumental|inst|tag|turnaround|turn|vamp|ending|end|coda|riff|solo|break|refrain|link|hook|verse|chorus|pre-?chorus|post-?chorus|bridge|stanza|koro|coro|verso|ponte|v|c|br|pc)(?:\s+\d+[a-z]?)?\s*\]?:\s+)/i);
+    let out = leadSec ? leadSec[0] : "";
+    const re = /\S*\([^)]*\)\S*|\S+/g;
+    re.lastIndex = out.length;
     let m;
     while ((m = re.exec(line))) {
-      const { lead, core, trail } = splitToken(m[0]);
-      const c = parseChord(core);
-      const next = c ? lead + fn(c) + trail : m[0];
-      const pad = Math.max(out.length ? 1 : 0, m.index - out.length);
+      const tok = m[0];
+      let next = tok;
+      if (!PAREN_CUE.test(tok) && !NEUTRAL_TOKEN.test(tok)) {
+        const parts = tokenizeChordChunk(tok);
+        if (parts) next = parts.map((p) => (p.kind === "chord" ? fn(p.chord) : p.text)).join("");
+      }
+      const pad = Math.max(out.length > (leadSec ? leadSec[0].length : 0) ? 1 : 0, m.index - out.length);
       out += " ".repeat(pad) + next;
     }
     return out;

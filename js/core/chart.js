@@ -4,8 +4,10 @@
 // view, export and the stage share one layout.
 import {
   parseChord, lineKind, mapChords, transposeChord, romanChord, nashvilleChord,
-  keyFromTonic, prefersFlats, isChordLine, isNeutralToken, extractChords, detectKey, parseKey, keyValue
+  keyFromTonic, prefersFlats, isChordLine, isNeutralToken, extractChords, detectKey,
+  parseKey, keyValue, tokenizeChordChunk, chordFitRatio, transposeText, mod12
 } from "./music.js";
+import { stripAsciiTabLines } from "./import.js";
 
 /**
  * @typedef {import("./music.js").Key} Key
@@ -215,11 +217,24 @@ export function stripLyricsToChordsOnly(body, o = {}) {
   }).join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-/** Wrap chord tokens (and rhythm slashes) in spans. @param {string} text */
+/** Wrap chord tokens (and rhythm slashes, hyphens, cues) in spans. @param {string} text */
 function chordHtml(text) {
-  return text.split(/(\s+)/).map((tok) => {
+  const leadSec = text.match(/^\s*(\[?\s*(?:intro|outro|interlude|instrumental|inst|tag|turnaround|turn|vamp|ending|end|coda|riff|solo|break|refrain|link|hook|verse|chorus|pre-?chorus|post-?chorus|bridge|stanza|koro|coro|verso|ponte|v|c|br|pc)(?:\s+\d+[a-z]?)?\s*\]?:\s+)/i);
+  const head = leadSec ? `<span class="ch-mark">${esc(leadSec[0])}</span>` : "";
+  const rest = leadSec ? text.slice(leadSec[0].length) : text;
+  const parts = rest.match(/\s+|\S*\([^)]*\)\S*|\S+/g) || [];
+  return head + parts.map((tok) => {
     if (!tok || /^\s+$/.test(tok)) return tok;
     if (isNeutralToken(tok)) return `<span class="ch-mark">${esc(tok)}</span>`;
+    const sub = tokenizeChordChunk(tok);
+    if (sub) {
+      return sub.map((p) => {
+        if (p.kind === "mark") return `<span class="ch-mark">${esc(p.text)}</span>`;
+        const m = p.core.match(/^(.*?)(\/{2,}|\/)$/);
+        if (m && m[1] && !m[1].endsWith("/")) return `<b class="ch">${esc(m[1])}</b><span class="ch-mark">${esc(m[2])}</span>`;
+        return `<b class="ch">${esc(p.core)}</b>`;
+      }).join("");
+    }
     const m = tok.match(/^(.*?)(\/{2,}|\/)$/);
     if (m && m[1] && !m[1].endsWith("/")) return `<b class="ch">${esc(m[1])}</b><span class="ch-mark">${esc(m[2])}</span>`;
     if (/^\/+$/.test(tok)) return `<span class="ch-mark">${esc(tok)}</span>`;
@@ -316,18 +331,54 @@ export function uniqueChords(body, o) {
   const seen = [];
   for (const line of String(body || "").split("\n")) {
     const kind = lineKind(line);
-    /** @type {string[]} */
-    let raw = [];
-    if (kind === "inline") raw = [...line.matchAll(/\[([^\]]+)\]/g)].map((m) => m[1]);
-    else if (kind === "chords" && isChordLine(line)) raw = line.trim().split(/\s+/);
-    for (const r of raw) {
-      const c = parseChord(r.replace(/^[|(]+|[|)]+$/g, ""));
-      if (!c) continue;
-      const name = fn({ ...c, slashes: "" });
-      if (!seen.includes(name)) seen.push(name);
+    if (kind === "inline") {
+      for (const m of line.matchAll(/\[([^\]]+)\]/g)) {
+        const c = parseChord(m[1]);
+        if (!c) continue;
+        const name = fn({ ...c, slashes: "" });
+        if (!seen.includes(name)) seen.push(name);
+      }
+    } else if (kind === "chords" && isChordLine(line)) {
+      const toks = line.trim().match(/\S*\([^)]*\)\S*|\S+/g) || [];
+      for (const tok of toks) {
+        const parts = tokenizeChordChunk(tok);
+        if (!parts) continue;
+        for (const p of parts) {
+          if (p.kind !== "chord") continue;
+          const name = fn({ ...p.chord, slashes: "" });
+          if (!seen.includes(name)) seen.push(name);
+        }
+      }
     }
   }
   return seen;
+}
+
+/** Friendly label for a reference link URL (e.g. "Ultimate Guitar" instead of generic "Chord reference"). @param {string} url */
+export function friendlyLinkName(url) {
+  try {
+    const h = new URL(url).hostname.replace(/^www\.|^tabs\.|^m\./, "").toLowerCase();
+    if (/youtu\.?be/.test(h)) return "YouTube";
+    if (h.includes("ultimate-guitar")) return "Ultimate Guitar";
+    if (h.includes("worshiptogether")) return "WorshipTogether";
+    if (h.includes("cifraclub")) return "Cifra Club";
+    if (h.includes("praisecharts")) return "PraiseCharts";
+    if (h.includes("songselect") || h.includes("ccli")) return "SongSelect";
+    if (h.includes("chordie")) return "Chordie";
+    if (h.includes("spotify")) return "Spotify";
+    if (h.includes("e-chords")) return "E-Chords";
+    return h || "Chord reference";
+  } catch {
+    return "Chord reference";
+  }
+}
+
+/** Parse a capo number including Roman numerals (I..XI). @param {string} s */
+function parseCapoToken(s) {
+  const rom = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9, x: 10, xi: 11 };
+  const t = String(s || "").trim().toLowerCase();
+  if (t in rom) return /** @type {any} */ (rom)[t];
+  return parseInt(t, 10) || 0;
 }
 
 /**
@@ -337,7 +388,7 @@ export function uniqueChords(body, o) {
  * @param {string} raw
  */
 export function analyzeRawChart(raw) {
-  const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+  const lines = stripAsciiTabLines(String(raw || "").replace(/\r\n?/g, "\n")).split("\n");
   let title = "";
   let artist = "";
   let manualKey = "auto";
@@ -357,8 +408,7 @@ export function analyzeRawChart(raw) {
     }
     // Extract standalone http(s) reference links (non-Sonata share links)
     if (/^https?:\/\/\S+$/i.test(t) && !/(\?s=|\/q\/|\/share\/)/i.test(t)) {
-      const isYt = /youtu\.?be|youtube\.com/i.test(t);
-      links.push({ name: isYt ? "YouTube" : "Chord reference", url: t });
+      links.push({ name: friendlyLinkName(t), url: t });
       continue;
     }
     // ChordPro directives: {title: ...}, {artist: ...}, {key: ...}, {capo: ...}, {tempo: ...}
@@ -369,7 +419,7 @@ export function analyzeRawChart(raw) {
       if ((k === "t" || k === "title") && v) title = v;
       else if ((k === "st" || k === "subtitle" || k === "artist") && v) artist = v;
       else if (k === "key" && v) { const pk = parseKey(v); if (pk) manualKey = keyValue(pk); }
-      else if (k === "capo" && v) capo = Math.max(0, Math.min(11, parseInt(v, 10) || 0));
+      else if (k === "capo" && v) capo = Math.max(0, Math.min(11, parseCapoToken(v)));
       else if ((k === "tempo" || k === "bpm") && v) bpm = Math.max(30, Math.min(300, parseInt(v, 10) || 0));
       else if (k === "soc" || k === "start_of_chorus") bodyLines.push("## Chorus");
       else if (k === "sov" || k === "start_of_verse") bodyLines.push("## Verse");
@@ -389,8 +439,8 @@ export function analyzeRawChart(raw) {
       if (pk) manualKey = keyValue(pk);
       continue;
     }
-    const metaCapo = t.match(/^(?:capo|capotraste)\s*:?\s*(?:(\d{1,2})(?:st|nd|rd|th|ª|º)?(?:\s+(?:fret|casa|traste))?|(?:fret|casa|traste)\s*(\d{1,2}))$/i);
-    if (metaCapo) { capo = Math.max(0, Math.min(11, parseInt(metaCapo[1] || metaCapo[2], 10) || 0)); continue; }
+    const metaCapo = t.match(/^\[?(?:capo|capotraste)\s*:?\s*(?:(\d{1,2}|[ivx]{1,4})(?:st|nd|rd|th|ª|º)?(?:\s+(?:fret|casa|traste))?|(?:fret|casa|traste)\s*(\d{1,2})|none|no\s+capo)\]?$/i);
+    if (metaCapo) { capo = Math.max(0, Math.min(11, parseCapoToken(metaCapo[1] || metaCapo[2] || "0"))); continue; }
     const metaBpm = t.match(/^(?:tempo|bpm)\s*:?\s*(\d{2,3})(?:\s*bpm)?$/i) || t.match(/^(\d{2,3})\s*bpm$/i);
     if (metaBpm) { bpm = Math.max(30, Math.min(300, parseInt(metaBpm[1], 10) || 0)); continue; }
 
@@ -421,12 +471,30 @@ export function analyzeRawChart(raw) {
     }
   }
 
-  const body = bodyLines.join("\n").trim();
-  const parsedChords = extractChords(body);
+  let body = bodyLines.join("\n").trim();
+  let parsedChords = extractChords(body);
   if (!parsedChords.length) return null;
 
-  const detKey = manualKey !== "auto" ? parseKey(manualKey) : detectKey(parsedChords);
-  const keyObj = detKey || keyFromTonic(0, "major");
+  let detected = detectKey(parsedChords);
+  const headerKey = manualKey !== "auto" ? parseKey(manualKey) : null;
+  if (headerKey && detected) {
+    const dFit = chordFitRatio(parsedChords, detected);
+    const hFit = chordFitRatio(parsedChords, headerKey);
+    // Chord websites (Ultimate Guitar, WorshipTogether) report the CONCERT key alongside Capo shapes
+    // (e.g. "Key: D" + "Capo 2" with C-shape chords G Am F). Lift body into concert key so Sonata's capo displays exact shapes without double-shifting!
+    if (capo > 0 && headerKey.mode === detected.mode && mod12(headerKey.tonic - capo) === detected.tonic && dFit >= 0.72 && hFit < dFit - 0.1) {
+      body = transposeText(body, capo, detected, "auto");
+      parsedChords = extractChords(body);
+      const lifted = detectKey(parsedChords);
+      if (lifted) detected = lifted;
+      if (lifted && lifted.tonic === headerKey.tonic && lifted.mode === headerKey.mode) manualKey = "auto";
+    } else if (parsedChords.length >= 4 && hFit + 0.15 < dFit) {
+      // Discard inaccurate scraped Key metadata (e.g. UG says Key: F# or Key: Bm on a G/D chart)
+      manualKey = "auto";
+    }
+  }
+
+  const keyObj = (manualKey !== "auto" ? parseKey(manualKey) : null) || detected || keyFromTonic(0, "major");
   const distinct = uniqueChords(body, { key: keyObj, mode: "chords" });
   const romans = [...new Set(parsedChords.slice(0, 8).map((c) => romanChord(c, keyObj)))].slice(0, 6);
   if (!title) {

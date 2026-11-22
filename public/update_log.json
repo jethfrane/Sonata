@@ -1,5 +1,16 @@
 [
   {
+    "version": "7.2.0",
+    "date": "2026-11-22",
+    "whatsNew": "Much sharper chord and key detection across rhythm slashes, slash-bass typos and worship progressions starting on IV, 1-tap Key and Capo overrides everywhere, and smarter chord link import & copy actions.",
+    "changes": [
+      "Chord detection fixes: chord lines with glued hyphens (Bm///-, G-D), slash chords with quality suffixes on the bass (D/F#m), section prefixes (Verse 1: G C), suspended/add2/add4 shapes (Gsus, D2, G(add9)), and parenthesized cues ((hold), (let ring)) are all detected cleanly.",
+      "Key detection & Capo fix: fixed scoring so songs starting on IV (like G in Key of D) or importing concert Key metadata with Capo shapes no longer misdetect or double-shift (e.g. Key E +2), and inaccurate scraped Key tags are automatically corrected.",
+      "1-tap Key & Capo overrides: tap the Key or Capo chip directly under any song title, use the Capo −/+ steppers in Key & capo, set Capo in Song details, or override both Key and Capo right inside the Import preview.",
+      "Improved link import & copy: mobile Share snippets wrapping a URL now auto-fetch in Import, imported links show their source name (Ultimate Guitar, WorshipTogether, etc.) with a 1-tap Copy button, and Copy chart is available right inside Share and Editor."
+    ]
+  },
+  {
     "version": "7.1.1",
     "date": "2026-11-22",
     "whatsNew": "Chords-only view (including when importing from chord site links), a faster Quick Song Switcher across Chart, Setlists and Stage, cleaner side margins across preview, stage and PNG exports, multi-song setlist PNGs, and streamlined Google Drive live setlist sharing & sync.",

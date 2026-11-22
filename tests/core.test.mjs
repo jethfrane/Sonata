@@ -1005,3 +1005,44 @@ test("chords-only mode & stripLyricsToChordsOnly for chord-site imports and inli
   assert.equal(inlineSectionLabel("[Guitar Solo]"), "Guitar Solo");
   assert.equal(inlineSectionLabel("Verse 1:"), "Verse 1");
 });
+
+test("v7.2: chord detection (Bm///-, D/F#m, G-D, cues), key detection, concert+capo import & mobile share link extraction", async () => {
+  const { loneLink, stripAsciiTabLines } = await import("../js/core/import.js");
+
+  // 1. Screenshot 1: Bm///- glued hyphen + Key of D starting on G (IV)
+  const s1 = "INTRO\nG - D\nVERSE\nG/// - D/F#/// - G/// - D///\nPRE-CHORUS\nG/// //// - D/F#/// ////\nG/// //// - Bm///- A///\nCHORUS\nD/// - G/// - Bm///\nEm/// - A///\nBRIDGE\nG/// //// - D/F#/// ////\nG/// //// - Bm///- A///";
+  assert.ok(M.isChordLine("G/// //// - Bm///- A///"), "detects Bm///- as a chord line");
+  assert.equal(M.detectKey(s1).name, "D major", "Screenshot 1 progression detects D major (not G)");
+  assert.ok(M.transposeText("G/// //// - Bm///- A///", 2, M.parseKey("D")).includes("C#m///- B///"), "transposes glued Bm///- preserving hyphen");
+
+  // 2. Screenshots 2 & 3: Holy Spirit (D/F#m bass suffix + Key D even with wrong scraped Key: F#)
+  const s2 = "Key: F#\n[Chorus]\n              D\nIt's Your presence that makes the\n     Bm\nDifference\n       G\nAs we sing for Your glory\n     Em       A\nHoly Spirit surround us\n         D\nWith Your presence that makes the\n     Bm\nDifference\n       G     F#m            Em\nHoly Spirit fill us with Your fire of\n E/G#\nrevival\n      G             D/F#m\nWe believe, we receive\nEm       A         G    A\nHoly Spirit dwell in us\n  Bm      D/F#m       G  A  D\nDwell in us, Dwell in us";
+  assert.ok(M.parseChord("D/F#m"), "parses slash chord with quality on bass note");
+  assert.equal(M.parseChord("D/F#m").bass, "F#");
+  assert.ok(M.isChordLine("Bm      D/F#m       G  A  D"), "detects chord line containing D/F#m");
+  const holyAnalyzed = analyzeRawChart(s2);
+  assert.equal(holyAnalyzed.keyName, "D major", "discards wrong scraped Key: F# and detects D major");
+  assert.equal(holyAnalyzed.manualKey, "auto");
+
+  // 3. Screenshot 4: Here Again (Key: D + Capo 2 with C-shape written chords & |1---2---3---4---| beat grid)
+  const s4 = stripAsciiTabLines("Key: D\nCapo 2\nG   Am   F\n|1---2---3---4---|\n[Verse 1]\nG         Am           F\nCan't go back, to the beginning\n[Chorus]\nC    G");
+  assert.ok(!s4.includes("1---2---3---4"), "strips beat-count grid line |1---2---3---4---|");
+  const hereAnalyzed = analyzeRawChart(s4);
+  assert.equal(hereAnalyzed.keyName, "D major", "keeps concert key D major");
+  assert.equal(hereAnalyzed.capo, 2);
+  // Because Sonata subtracts capo from written body chords, body is lifted to concert D so Capo 2 renders C shapes (G Am F) cleanly
+  const renderedCapo = linesToText(buildLines(hereAnalyzed.body, { key: M.parseKey("D"), capo: hereAnalyzed.capo }));
+  assert.ok(renderedCapo.includes("G   Am   F") && renderedCapo.includes("C    G"), "Capo 2 renders original C-shape fingerings without double-transposing");
+
+  // 4. Screenshots 5 & 6: Agnus Dei (wrong Key: Bm metadata vs G Gsus4 C D Em chart)
+  const agnus = analyzeRawChart("Key: Bm\n[Verse]\nG Gsus4 G C G G Gsus4 G C D Em\nHallelujah\nD C G\nFor the Lord God Almighty reigns\n[Chorus]\nC D G D G C G Em D\nHoly Holy");
+  assert.equal(agnus.keyName, "G major", "Agnus Dei detects G major and ignores wrong Key: Bm metadata");
+
+  // 5. Hyphen-joined chords, inline cues, section prefixes, parentheses qualities
+  assert.ok(M.isChordLine("Verse 1: G-D Bm///- A/// (hold)"));
+  assert.ok(M.parseChord("G(add9)") && M.parseChord("Gsus") && M.parseChord("D2") && M.parseChord("D4"));
+
+  // 6. Mobile Share snippets wrapping one chord-site URL
+  assert.equal(loneLink("Here Again Chords by Elevation Worship\nhttps://tabs.ultimate-guitar.com/tab/elevation-worship/here-again-chords-2441717"), "https://tabs.ultimate-guitar.com/tab/elevation-worship/here-again-chords-2441717");
+  assert.equal(loneLink("https://tabs.ultimate-guitar.com/tab/example\nTitle: Way Maker\nF  C  G  Am\nWay maker"), "");
+});

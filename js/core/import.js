@@ -5,19 +5,21 @@
 /** Largest chart passed on, in characters. */
 export const MAX_CHART = 20000;
 
-const CHORD = /^[A-G][#b♯♭]?(?:maj|min|dim|aug|sus|add|m|M)?\d*(?:(?:sus|add|maj|min|dim|aug|[#b♯♭+-])\d*)*(?:\([^)\s]*\))?(?:\/[A-G][#b♯♭]?)?$/;
-const MARK = /^(?:[|/\\\-–—.%:]+|\(?x\s?\d+\)?|N\.?C\.?)$/i;
+const CHORD = /^[A-G][#b♯♭]?(?:maj|min|dim|aug|sus|add|m|M|MAJ|MIN|DIM|AUG|SUS|ADD)?\d*(?:(?:sus|add|maj|min|dim|aug|SUS|ADD|MAJ|MIN|DIM|AUG|[#b♯♭+-])\d*)*(?:\([^)\s]*\))*(?:\/[A-G][#b♯♭]?(?:m|min|maj|dim|aug|sus|\d)*)?\/*$/i;
+const CHORD_TOKEN_CASE = /^[A-G][#b♯♭]?(?:[Mm]aj|M|[Mm]in|m|-|[Dd]im|°|o|[Aa]ug|\+|[Ss]us|[Aa]dd|[Dd]om|ø|Δ|MAJ|MIN|DIM|AUG|SUS|ADD)?\d*(?:(?:[Mm]aj|M|[Mm]in|m|[Ss]us|[Aa]dd|[Dd]im|[Aa]ug|[Nn]o|[Oo]mit|MAJ|MIN|SUS|ADD|DIM|AUG)\d*|(?<=6)\/9|[#b♯♭+-]\d*)*(?:\([^)\s]*\))*(?:\/[A-Ga-g](?:#|b|♯|♭)?(?:m|min|maj|dim|aug|sus|\d)*)?\/*$/;
+const MARK = /^(?:[|/\\\-–—.%:]+|\(?\s*(?:hold|stop|pause|break|build|let\s+ring|ring\s+out|mute|fade(?:\s+out)?|rit|nc|n\.c\.|repeat|rpt|fine|x?\s?\d+x?)\s*\)?)$/i;
 const SECTION = /^\[?\s*(?:intro|introd(?:u[cç][aã]o|ucción)?|verse|verso|estrofe|estrofa|stanza|pre[- ]?chorus|pr[eé][- ]?(?:refr[aã]o|coro)|chorus|refr[aã]o|coro|koro|bridge|ponte|puente|tulalay|interlude|interl[uú]dio|instrumental|solo|outro|final|tag|ending|refrain|hook|vamp|coda)\b[^\]]{0,24}\]?\s*:?$/i;
 
-/** Strip ASCII 6-string guitar/4-string uke tablature blocks (e|---3---|) and their single-chord header while keeping chords & lyrics intact. @param {string} text */
+/** Strip ASCII 6-string guitar/4-string uke tablature blocks (e|---3---|), beat-count grids (|1---2---3---4---|), and their single-chord header while keeping chords & lyrics intact. @param {string} text */
 export function stripAsciiTabLines(text) {
   const isTab = (/** @type {string} */ l) => /^\s*[eBGDAEagACT]\d?\s*[|:][-0-9hpb/\\~xs^v()|]{4,}/i.test(l);
+  const isBeatGrid = (/** @type {string} */ l) => /^\s*[|:\-0-9.&+\/\s]{6,}\s*$/.test(l) && /\d/.test(l) && !/[b-df-zA-Z]/.test(l) && (/[-]{2,}/.test(l) || /\|/.test(l));
   const lines = String(text || "").split("\n");
   /** @type {string[]} */
   const out = [];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
-    if (isTab(l)) continue;
+    if (isTab(l) || isBeatGrid(l)) continue;
     // Drop a lone chord name (like "G7" above a G7 tab box) when the very next line is an ASCII tab string
     if (isTab(lines[i + 1] || "") && chordsIn(l).count === 1 && l.trim().split(/\s+/).length === 1) continue;
     out.push(l);
@@ -25,12 +27,24 @@ export function stripAsciiTabLines(text) {
   return out.join("\n");
 }
 
+/** Check whether a raw token (possibly with rhythm slashes or hyphenated chords like "Bm///-" or "G-D") is a valid chord. @param {string} raw */
+function isChordTok(raw) {
+  const clean = raw.replace(/^[|()[\]\-–—]+|[|()[\]\-–—]+$/g, "");
+  if (CHORD_TOKEN_CASE.test(clean)) return true;
+  if (/[-–—]/.test(raw)) {
+    const parts = raw.split(/[-–—]+/).filter(Boolean);
+    return parts.length >= 2 && parts.every((p) => MARK.test(p) || CHORD_TOKEN_CASE.test(p.replace(/^[|()[\]]+|[|()[\]]+$/g, "")));
+  }
+  return false;
+}
+
 /** How many chords a line holds, and whether it is a chord line (mostly chords) or has inline [G] chords. @param {string} line */
 export function chordsIn(line) {
-  const inline = (line.match(/\[[A-G][^\]\s]{0,11}\]/g) || []).filter((x) => CHORD.test(x.slice(1, -1))).length;
-  const words = line.trim().split(/\s+/).filter(Boolean);
+  const inline = (line.match(/\[[A-G][^\]\s]{0,14}\]/g) || []).filter((x) => CHORD.test(x.slice(1, -1)) && CHORD_TOKEN_CASE.test(x.slice(1, -1))).length;
+  let t = line.trim().replace(/^\[?(?:intro|outro|interlude|instrumental|verse|chorus|pre-?chorus|bridge|tag|koro|coro)(?:\s+\d+)?\]?:\s+/i, "");
+  const words = (t.match(/\S*\([^)]*\)\S*|\S+/g) || []).filter(Boolean);
   const real = words.filter((w) => !MARK.test(w));
-  const chords = real.filter((w) => CHORD.test(w.replace(/^[(|]+|[)|]+$/g, ""))).length;
+  const chords = real.filter(isChordTok).length;
   const chordLine = chords > 0 && chords >= real.length * 0.6;
   return { count: chordLine ? chords : inline, chordLine, inline: inline > 0 };
 }
@@ -57,6 +71,7 @@ export function htmlToText(html) {
     .replace(/<\/(p|div|li|tr|h[1-6]|pre|section|article|blockquote|td|th)\s*>/gi, "\n")
     // An opening block tag starts a new line only if one has not just been started (</div><div> is one break, not two).
     .replace(/<(p|div|li|tr|h[1-6]|pre|section|article|blockquote)\b[^>]*>/gi, "\u0001")
+    .replace(/<([a-z]+)\b[^>]*data-(?:chord|name)=["']([A-G][^"']{0,10})["'][^>]*>\s*<\/\1>/gi, "$2")
     .replace(/<[^>]*>/g, ""))
     .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\r\n?/g, "\n").replace(/\n?[ \t]*\u0001/g, "\n").replace(/\t/g, "    ").replace(/[ ]+$/gm, "");
@@ -124,9 +139,9 @@ export function chartWindow(text) {
   if (best.n < 4 || chordLines < 2) return null;
   let from = best.from;
   // A section name or capo/key line just above the first chord line belongs to the chart.
-  for (let i = best.from - 1; i >= Math.max(0, best.from - 4); i--) {
+  for (let i = best.from - 1; i >= Math.max(0, best.from - 8); i--) {
     const t = lines[i].trim();
-    if (marks[i].section || /^(?:capo|capotraste|key|tom|tonalidad|tempo|bpm)\b/i.test(t)) from = i; else if (t) break;
+    if (marks[i].section || /^(?:capo|capotraste|key|tom|tonalidad|tempo|bpm|tuning)\b/i.test(t)) from = i; else if (t) break;
   }
   let to = best.to;
   // The words under the last chord line.
@@ -268,9 +283,15 @@ export function privateAddress(ip) {
   return s === "::" || s === "::1" || /^f[cd]/.test(s) || /^fe[89ab]/.test(s) || s.startsWith("ff") || s.startsWith("64:ff9b") || !s.includes(":");
 }
 
-/** One web link alone (not a Sonata share link): the case where Sonata reads the page. @param {string} text */
+/** One web link alone (or a short mobile share snippet wrapping one public URL): the case where Sonata reads the page. @param {string} text */
 export function loneLink(text) {
   const t = String(text || "").trim();
-  if (!/^https?:\/\/\S+$/i.test(t) || /(\?s=|\/q\/|\/share\/)/i.test(t)) return "";
-  return publicUrl(t) ? t : "";
+  if (!t || /(\?s=|\/q\/|\/share\/)/i.test(t)) return "";
+  if (/^https?:\/\/\S+$/i.test(t)) return publicUrl(t) ? t : "";
+  const lines = t.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 4 || lines.some((l) => chordsIn(l).count > 0)) return "";
+  const urls = t.match(/https?:\/\/[^\s<>"']+/gi) || [];
+  if (urls.length !== 1) return "";
+  const cleaned = urls[0].replace(/[.,;!?)\]]+$/, "");
+  return publicUrl(cleaned) ? cleaned : "";
 }

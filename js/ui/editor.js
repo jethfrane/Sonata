@@ -1,8 +1,8 @@
 // @ts-check
-import { $, $$, esc, icon, toast, copyText, paintIcons, fitChart } from "./dom.js";
+import { $, $$, esc, icon, toast, copyText, paintIcons, setIcon, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
-import { buildLines, linesToHtml, linesToText, uniqueChords } from "../core/chart.js";
+import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport, openSongSwitcher } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
@@ -93,10 +93,25 @@ export function initEditor() {
     const l = document.createElement("link"); l.rel = "preconnect"; l.href = "https://www.youtube-nocookie.com"; document.head.append(l);
   }, { passive: true });
   $("songLinks").addEventListener("click", async (e) => {
-    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-yt]"));
+    const target = /** @type {HTMLElement} */ (e.target);
+    const cp = /** @type {HTMLElement|null} */ (target.closest("[data-copy-url]"));
+    if (cp) {
+      if (await copyText(cp.dataset.copyUrl || "")) {
+        toast(t("linkCopied", "Link copied"), "success");
+        cp.innerHTML = icon("check");
+        cp.classList.add("copied");
+        setTimeout(() => { if (cp.isConnected) { cp.innerHTML = icon("copy"); cp.classList.remove("copied"); } }, 1500);
+      }
+      return;
+    }
+    const b = /** @type {HTMLElement|null} */ (target.closest("[data-yt]"));
     if (!b) return;
     try { (await player()).playVideo(b.dataset.yt || "", b.dataset.name || ""); }
     catch { toast(t("loadFailed", "Couldn't load this screen. Check your connection, or reload to get the latest version."), "error", { ms: 6000 }); }
+  });
+  $("metaChips").addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-open-key]"));
+    if (b) openKeySheet(b.dataset.openKey === "capo" ? "capo" : "key");
   });
   // The player says when its video starts, pauses or closes; the link chip follows.
   document.addEventListener("sonata:media", () => paintLinkChips());
@@ -165,7 +180,16 @@ export function initEditor() {
     const s = store.active();
     if (!s) return;
     const text = `${s.title}\n\n${linesToText(buildLines(s.body, renderOptions(s)))}`;
-    if (await copyText(text)) toast(t("copied", "Copied"), "success");
+    if (await copyText(text)) {
+      toast(t("copied", "Copied"), "success");
+      const btn = $("copyChartBtn");
+      const ic = /** @type {HTMLElement|null} */ (btn.querySelector("[data-icon]"));
+      if (ic) {
+        setIcon(ic, "check");
+        btn.classList.add("copied");
+        setTimeout(() => { if (ic.isConnected) setIcon(ic, "copy"); btn.classList.remove("copied"); }, 1500);
+      }
+    }
   });
   $("saveSharedBtn").addEventListener("click", () => {
     const shared = store.shared;
@@ -426,20 +450,26 @@ function updateMeta() {
   const k = soundingKey(s);
   const parts = [];
   if (s.artist) parts.push(`<span class="chip static" title="${esc(s.artist)}">${esc(s.artist)}</span>`);
-  parts.push(`<span class="chip static key">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${s.transpose ? ` <small>${esc(signed(s.transpose))}</small>` : ""}</span>`);
-  if (s.capo) parts.push(`<span class="chip static">${esc(t("capoN", "Capo {n}", { n: s.capo }))}</span>`);
+  parts.push(`<button type="button" class="chip key" data-open-key="key" title="${esc(t("keyAndCapo", "Key & capo"))}">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${s.transpose ? ` <small>${esc(signed(s.transpose))}</small>` : ""}</button>`);
+  parts.push(`<button type="button" class="chip${s.capo ? "" : " muted"}" data-open-key="capo" title="${esc(t("capo", "Capo"))}">${s.capo ? esc(t("capoN", "Capo {n}", { n: s.capo })) : `+ ${esc(t("capo", "Capo"))}`}</button>`);
   if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);
   if (s.creator) parts.push(`<span class="chip static muted">arr. ${esc(s.creator)}</span>`);
   const chipsHtml = parts.join("");
   setHtml(chips, chipsHtml);
-  const links = (s.links || []).map((l) => ({ name: l.name || l.url, href: safeHref(l.url) })).filter((l) => l.href);
+  const links = (s.links || []).map((l) => {
+    const href = safeHref(l.url);
+    const rawName = (l.name || "").trim();
+    const name = !href ? "" : (!rawName || /^chord reference$/i.test(rawName) ? friendlyLinkName(href) : rawName);
+    return { name, href };
+  }).filter((l) => l.href);
   const box = $("songLinks");
   box.hidden = !links.length;
   const linksHtml = links.length ? `<span class="mini-label">${esc(t("links", "Links"))}</span>` + links.map((l) => {
     const yt = youtubeId(l.href);
     // YouTube plays in the floating player (loaded only when tapped); other links open in a new tab.
-    return yt ? `<button type="button" class="chip link-chip yt-chip" data-yt="${esc(yt)}" data-name="${esc(l.name)}">${icon("youtube")}${esc(l.name)}</button>`
+    const mainChip = yt ? `<button type="button" class="chip link-chip yt-chip" data-yt="${esc(yt)}" data-name="${esc(l.name)}">${icon("youtube")}${esc(l.name)}</button>`
       : `<a class="chip link-chip" href="${esc(l.href)}" target="_blank" rel="noopener noreferrer nofollow">${esc(l.name)}<span aria-hidden="true">↗</span></a>`;
+    return `<span class="link-pill">${mainChip}<button type="button" class="chip link-copy" data-copy-url="${esc(l.href)}" aria-label="${esc(t("copyLink", "Copy link"))}: ${esc(l.name)}" title="${esc(t("copyLink", "Copy link"))}">${icon("copy")}</button></span>`;
   }).join("") : "";
   // Rebuilding unchanged links on every key would drop focus from a video chip and reset its play state.
   setHtml(box, linksHtml);

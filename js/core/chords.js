@@ -52,8 +52,8 @@ export const QUALITY_GROUPS = ["Major", "Minor", "Dominant", "Suspended", "Dim &
 const ALIASES = {
   maj: "", M: "", min: "m", "-": "m", mi: "m", min7: "m7", "-7": "m7", mi7: "m7", M7: "maj7", Maj7: "maj7", Δ: "maj7", Δ7: "maj7",
   "°": "dim", o: "dim", "°7": "dim7", o7: "dim7", ø: "m7b5", ø7: "m7b5", "m7-5": "m7b5", min7b5: "m7b5", "+": "aug", "+7": "7#5", aug7: "7#5",
-  sus: "sus4", 4: "sus4", 2: "add9", add2: "add9", madd2: "madd9", "m(add2)": "madd9", "m(add9)": "madd9", 69: "6/9", "m6/9": "m6", M9: "maj9", Maj9: "maj9", "mM7": "m(maj7)", "mMaj7": "m(maj7)", "mmaj7": "m(maj7)",
-  "7(b9)": "7b9", "7(#9)": "7#9", "7(#5)": "7#5", "7(b5)": "7b5", "7alt": "7#5", alt: "7#5", "7sus": "7sus4", "9sus": "9sus4", "add4": "add11", "dom7": "7"
+  sus: "sus4", 4: "sus4", 2: "add9", add2: "add9", madd2: "madd9", "m(add2)": "madd9", "m(add9)": "madd9", 69: "6/9", "6(9)": "6/9", "m6/9": "m6", M9: "maj9", Maj9: "maj9", "maj7(9)": "maj9", "mM7": "m(maj7)", "mMaj7": "m(maj7)", "mmaj7": "m(maj7)",
+  "7(b9)": "7b9", "7(#9)": "7#9", "7(#5)": "7#5", "7(b5)": "7b5", "7alt": "7#5", alt: "7#5", "7sus": "7sus4", "9sus": "9sus4", "add4": "add11", "(add9)": "add9", "(no3)": "5", no3: "5", dom7: "7"
 };
 
 /** @param {string} id */
@@ -67,7 +67,10 @@ export const qualityById = (id) => QUALITIES.find((q) => q.id === id) || null;
 export function describeChord(name) {
   const c = parseChord(String(name || "").trim());
   if (!c) return null;
-  const qid = c.quality in ALIASES ? /** @type {any} */ (ALIASES)[c.quality] : c.quality;
+  const qRaw = c.quality;
+  const qid = qRaw in ALIASES ? /** @type {any} */ (ALIASES)[qRaw]
+    : qRaw.toLowerCase() in ALIASES ? /** @type {any} */ (ALIASES)[qRaw.toLowerCase()]
+    : qRaw;
   const q = qualityById(qid);
   const iv = q ? q.iv : chordTones({ ...c, bass: "", bassPc: null }).map((pc) => mod12(pc - c.rootPc));
   const flats = c.root.includes("b") || (c.bass || "").includes("b") || (!c.root.includes("#") && prefersFlats(keyFromTonic(c.rootPc, /^m(?!aj)/.test(qid) ? "minor" : "major")));
