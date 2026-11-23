@@ -58,12 +58,16 @@ button.qr-box:focus-visible { outline: 3px solid var(--accent); outline-offset: 
 .share-link .input { font-size: 13px; color: var(--muted); min-height: 38px; font-family: var(--mono); }
 .share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .share-actions .btn { flex: 1 1 auto; }
-.export-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
 .export-grid .btn { min-height: 44px; }
 .export-grid .fmt { margin-left: 2px; padding: 1px 6px; border-radius: 6px; background: var(--surface-3); color: var(--muted); font: 650 11px/1.4 var(--ui); font-variant-numeric: tabular-nums; }
 
 .set-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.set-item { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.set-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.set-item-keys { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.set-slot-select { width: auto; min-width: 68px; max-width: 112px; min-height: 30px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: 600 12px/1.2 var(--ui); cursor: pointer; }
+.set-slot-select.overridden { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent); background: var(--accent-soft); }
+.import-fallback { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .set-num { width: 22px; font: 700 13px var(--mono); color: var(--muted); }
 .set-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .set-empty { padding: 12px; border: 1px dashed var(--line-strong); border-radius: 12px; text-align: center; }

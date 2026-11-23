@@ -5,10 +5,71 @@ import { pairSegments, linesToText, longestLine, inlineSectionLabel } from "../c
 
 /**
  * @typedef {import("../core/chart.js").ChartLine} ChartLine
- * @typedef {{ title: string, artist?: string, creator?: string, meta: string,
- *   lines: ChartLine[], notes?: string }} ExportDoc
+ * @typedef {{ title: string, artist?: string, creator?: string, key?: string, capo?: number, bpm?: number | null,
+ *   meta: string, lines: ChartLine[], notes?: string }} ExportDoc
  * @typedef {{ columns?: number, landscape?: boolean, accent?: string }} ExportOptions
  */
+
+const CHO_NEUTRAL_RE = /^(?:[|/\\\-–—.:*%~]+|\(?x\d+\)?|\(?hold\)?|N\.?C\.?|repeat|intro|outro|verse|chorus|bridge|tag|turnaround|vamp|pre-chorus|inst(?:rumental)?|solo|ending|coda|interlude)$/i;
+const CHO_TOKEN_RE = /^(?:[A-G](?:#|b)?(?:(?:maj|min|m|dim|aug|sus|add|M|dom|alt|\+|-|\d+|b5|#5|b9|#9|#11|b13|\([^)]*\))*)(?:\/[A-G](?:#|b)?(?:m|min)?)?|[#b]?(?:VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i)(?:maj|min|m|dim|aug|sus|add|\d)*(?:\/[#b]?(?:VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i))?|[#b]?[1-7](?:m|min|dim|aug|sus|add|\d)*(?:\/[#b]?[1-7])?)$/;
+
+const asciiAcc = (/** @type {string} */ s) => String(s || "").replace(/♯/g, "#").replace(/♭/g, "b");
+
+function formatChoToken(raw) {
+  if (!raw || CHO_NEUTRAL_RE.test(raw)) return raw;
+  const ascii = asciiAcc(raw);
+  const m = ascii.match(/^(.*?)(\/{2,}|\/)$/);
+  const core = m && m[1] && !m[1].endsWith("/") ? m[1] : ascii;
+  const tail = m && m[1] && !m[1].endsWith("/") ? m[2] : "";
+  const clean = core.replace(/^\[|\]$/g, "");
+  return CHO_TOKEN_RE.test(clean) ? `[${clean}]${tail}` : raw;
+}
+
+function mergeChoPair(chords, lyrics) {
+  const tokens = [...String(chords || "").matchAll(/\S+/g)];
+  const lyr = String(lyrics || "");
+  if (!tokens.length) return lyr;
+  let out = "";
+  let pos = 0;
+  for (const m of tokens) {
+    const idx = m.index ?? 0;
+    const tok = formatChoToken(m[0]);
+    if (idx <= lyr.length) {
+      if (idx > pos) out += lyr.slice(pos, idx);
+      out += tok;
+      pos = idx;
+    } else {
+      if (pos < lyr.length) { out += lyr.slice(pos); pos = lyr.length; }
+      out += ` ${tok}`;
+    }
+  }
+  if (pos < lyr.length) out += lyr.slice(pos);
+  return out;
+}
+
+/**
+ * Render an ExportDoc in standard ChordPro (.cho) format for OnSong, Planning Center, or SongSelect.
+ * @param {ExportDoc} doc
+ */
+export function docChordPro(doc) {
+  const out = [`{title: ${doc.title}}`];
+  if (doc.artist) out.push(`{artist: ${doc.artist}}`);
+  if (doc.creator) out.push(`{composer: ${doc.creator}}`);
+  if (doc.key) out.push(`{key: ${asciiAcc(doc.key)}}`);
+  if (doc.capo) out.push(`{capo: ${doc.capo}}`);
+  if (doc.bpm) out.push(`{tempo: ${doc.bpm}}`);
+  out.push("");
+  for (const l of doc.lines) {
+    if (l.type === "empty") out.push("");
+    else if (l.type === "header" || l.type === "section" || l.type === "note") out.push(`{comment: ${l.text}}`);
+    else if (l.type === "divider") out.push("");
+    else if (l.type === "lyrics") out.push(l.text || "");
+    else if (l.type === "chords") out.push(String(l.chords || "").trim().replace(/\S+/g, formatChoToken).replace(/\s{2,}/g, "  "));
+    else if (l.type === "pair") out.push(mergeChoPair(l.chords, l.lyrics));
+  }
+  if (doc.notes) out.push("", `{comment: ${doc.notes}}`);
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+}
 
 /** @param {ExportDoc} doc */
 export function docText(doc) {

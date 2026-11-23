@@ -1,13 +1,17 @@
 // Run with: node --test tests/
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import * as M from "../js/core/music.js";
 import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, autoFormatChart, stripLyricsToChordsOnly, inlineSectionLabel } from "../js/core/chart.js";
-import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
+import { Store, normalizeSong, normalizeSetlist, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
 import { detectPitch, noteFromFreq } from "../js/core/pitch.js";
-import { buildPdf, pdfString } from "../js/lib/export.js";
+import { buildPdf, pdfString, docChordPro } from "../js/lib/export.js";
+import FIL from "../js/ui/i18n-fil.js";
 
 test("chord parsing and families", () => {
   assert.equal(M.chordFamily(M.parseChord("CM7")), "major");
@@ -1122,4 +1126,132 @@ test("v7.3: autoFormatChart, expanded import extraction, and mood compatibility"
   assert.equal(unpackedMood.mood, "Joyful");
   const unpackedOld = unpackSong({ t: "Classic", b: "G C" });
   assert.equal(unpackedOld.mood, "");
+});
+
+test("v7.4.0 per-setlist key & capo overrides preserve base song and fingerprint compat", () => {
+  const store = new Store(memoryStorage());
+  const s1 = store.createSong({ title: "Grace", manualKey: "G:major", capo: 0, body: "G D Em C\nAmazing grace" });
+  const s2 = store.createSong({ title: "Cornerstone", manualKey: "C:major", capo: 0, body: "C F G Am\nChrist alone" });
+
+  // Backward-compatible legacy items vs slot overrides in normalizeSetlist
+  const norm = normalizeSetlist({ id: "set_norm", title: "Sunday", items: [{ songId: s1.id }, { songId: s2.id, key: "D:major", capo: 2 }] });
+  assert.equal(norm.items.length, 2);
+  assert.equal("key" in norm.items[0], false);
+  assert.equal(norm.items[1].key, "D:major");
+  assert.equal(norm.items[1].capo, 2);
+
+  const set = store.saveSetlist({ title: "Sunday Service", items: [{ songId: s1.id }, { songId: s2.id }] });
+  const beforeFp = libraryFingerprint({ songs: store.songs, setlists: store.setlists, deletedIds: store.deletedIds, trash: store.trash });
+  store.playSetlist(set.id, 0);
+  const entry0 = store.activeSetlistEntry();
+  assert.ok(entry0 && entry0.itemIndex === 0 && entry0.song.id === s1.id);
+
+  // Override slot 0 without touching the base song
+  store.updateSetlistItem(set.id, 0, { key: "A:major", capo: 2 });
+  const freshBase = store.song(s1.id);
+  assert.equal(freshBase.manualKey, "G:major");
+  assert.equal(freshBase.transpose, 0);
+  assert.equal(freshBase.capo, 0);
+  const slotAfter = store.setlistSlots(set)[0];
+  assert.equal(slotAfter.item.key, "A:major");
+  assert.equal(slotAfter.item.capo, 2);
+
+  const afterFp = libraryFingerprint({ songs: store.songs, setlists: store.setlists, deletedIds: store.deletedIds, trash: store.trash });
+  assert.notEqual(afterFp, beforeFp, "slot key/capo override changes libraryFingerprint");
+
+  // Trashing & restoring the song keeps setlist slot overrides via SetlistRef
+  store.trashSongs([s1.id]);
+  assert.equal(store.setlistSlots(set).length, 1);
+  store.restoreFromTrash([s1.id]);
+  const restoredSlot = store.setlistSlots(set)[0];
+  assert.equal(restoredSlot.item.key, "A:major");
+  assert.equal(restoredSlot.item.capo, 2);
+
+  // Clearing override removes keys cleanly and restores fingerprint
+  store.updateSetlistItem(set.id, 0, { key: null, capo: null });
+  const clearedItem = store.setlists.find((x) => x.id === set.id).items[0];
+  assert.equal("key" in clearedItem, false);
+  assert.equal("capo" in clearedItem, false);
+});
+
+test("v7.4.0 ChordPro (.cho) export formatting and re-import round-trip", () => {
+  const body = "## Verse 1\nG         D/F#\nAmazing grace how sweet\n\n## Chorus\nEm7   C   D///\n\nG          D\nAmen";
+  const lines = buildLines(body, { mode: "chords", key: M.parseKey("G:major"), transpose: 0, capo: 0, spelling: "auto" });
+  const cho = docChordPro({
+    title: "Amazing Grace",
+    artist: "John Newton",
+    creator: "Jethro Frane",
+    key: "G",
+    capo: 2,
+    bpm: 84,
+    meta: "Key G · Capo 2",
+    lines
+  });
+  assert.ok(cho.includes("{title: Amazing Grace}"));
+  assert.ok(cho.includes("{artist: John Newton}"));
+  assert.ok(cho.includes("{composer: Jethro Frane}"));
+  assert.ok(cho.includes("{key: G}"));
+  assert.ok(cho.includes("{capo: 2}"));
+  assert.ok(cho.includes("{tempo: 84}"));
+  assert.ok(cho.includes("{comment: Verse 1}"));
+  assert.ok(cho.includes("[G]Amazing gr[D/F#]ace how sweet"));
+  assert.ok(cho.includes("[Em7]  [C]  [D]///"), "preserves trailing rhythm slashes outside ChordPro brackets");
+  assert.ok(cho.includes("[G]Amen [D]"), "appends trailing chords past end of lyric line");
+
+  // Also verifies pretty Unicode accidentals (B♭, F♯m7) normalize cleanly to ASCII ChordPro [Bb] / [F#m7]
+  const sharpFlatLines = buildLines("Bb   F#m7\nHallelujah", { mode: "chords", key: M.parseKey("Bb:major"), transpose: 0, capo: 0, spelling: "auto" });
+  const sharpFlatCho = docChordPro({ title: "Grace", key: "B♭", meta: "Key B♭", lines: sharpFlatLines });
+  assert.ok(sharpFlatCho.includes("{key: Bb}") && sharpFlatCho.includes("[Bb]") && sharpFlatCho.includes("[F#m7]"), "normalizes Unicode accidentals in ChordPro directives and chords");
+
+  const reimported = analyzeRawChart(cho);
+  assert.ok(reimported);
+  assert.equal(reimported.title, "Amazing Grace");
+  assert.equal(reimported.artist, "John Newton");
+  assert.equal(reimported.manualKey, "G:major");
+  assert.equal(reimported.capo, 2);
+  assert.equal(reimported.bpm, 84);
+  assert.deepEqual(reimported.chords.slice(0, 5), ["G", "D/F#", "Em7", "C", "D"]);
+});
+
+test("v7.4.0 Filipino i18n-fil.js covers all HTML and JS UI translation keys", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const files = [path.join(root, "index.html")];
+  const walk = (d) => {
+    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, entry.name);
+      if (entry.isDirectory()) walk(p);
+      else if (entry.name.endsWith(".js") && !p.endsWith("i18n-fil.js") && !p.endsWith("i18n.js")) files.push(p);
+    }
+  };
+  walk(path.join(root, "js"));
+
+  /** @type {Map<string, string>} */
+  const used = new Map();
+  for (const file of files) {
+    const src = fs.readFileSync(file, "utf8");
+    const isHtml = file.endsWith(".html");
+    if (isHtml || src.includes("i18n.js")) {
+      for (const m of src.matchAll(/(?:^|[^.\w$])t\(\s*["']([a-zA-Z0-9_]+)["']\s*(?:,\s*(["'`])((?:\\.|(?!\2)[\s\S])*)\2|\))/g)) {
+        if (!used.has(m[1])) used.set(m[1], m[3] || "");
+      }
+    }
+    for (const m of src.matchAll(/data-i18n="([a-zA-Z0-9_]+)"/g)) {
+      if (!used.has(m[1])) used.set(m[1], "");
+    }
+    for (const m of src.matchAll(/data-i18n-attr="([^"]+)"/g)) {
+      for (const pair of m[1].split(",")) {
+        const key = pair.split(":")[1]?.trim();
+        if (key && !used.has(key)) used.set(key, "");
+      }
+    }
+  }
+  const missing = [...used.keys()].filter((k) => typeof FIL[k] !== "string" || !FIL[k].trim());
+  assert.deepEqual(missing, [], `missing Filipino translations: ${missing.join(", ")}`);
+  for (const [k, en] of used.entries()) {
+    if (!en) continue;
+    const vars = [...en.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+    for (const v of vars) {
+      assert.ok(FIL[k].includes(`{${v}}`), `FIL.${k} must keep placeholder {${v}}`);
+    }
+  }
 });

@@ -5,7 +5,7 @@
 // is brought up to date, never duplicated, and their own key and capo are kept.
 import { $, toast } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, adoptShared, findCopy } from "./ctx.js";
+import { store, app, adoptShared, findCopy, setlistSongsEffective } from "./ctx.js";
 import { buildSetFile, parseSetFile, unpackSong } from "../core/share.js";
 import { bankSlug, validBankId } from "../core/bank.js";
 import { openImportSet } from "./sheets-lazy.js";
@@ -16,7 +16,7 @@ export const liveSetUrl = (id, title = "") => `${location.origin}/set/${id}${ban
 /** What was last published for each setlist, to skip uploads when nothing changed. @type {Map<string, string>} */
 const published = new Map();
 /** @param {import("../core/store.js").Setlist} set */
-const fileText = (set) => { const f = buildSetFile(set, store.setlistSongs(set)); return JSON.stringify({ ...f, updatedAt: "" }); };
+const fileText = (set) => { const f = buildSetFile(set, setlistSongsEffective(set)); return JSON.stringify({ ...f, updatedAt: "" }); };
 
 /** Last time each followed source was checked during this session. @type {Map<string, number>} */
 const checkedAt = new Map();
@@ -68,9 +68,10 @@ export async function publishLiveSet(setId, o = {}) {
     }
     return false;
   }
-  if (!store.setlistSongs(curSet).length) { if (!o.quiet) toast(t("liveEmpty", "Add a song to this setlist first."), "error"); return false; }
+  const songs = setlistSongsEffective(curSet);
+  if (!songs.length) { if (!o.quiet) toast(t("liveEmpty", "Add a song to this setlist first."), "error"); return false; }
   const text = fileText(curSet);
-  const r = await d.publishBank(buildSetFile(curSet, store.setlistSongs(curSet)), curSet.liveId || "", `sonata_setlist_${bankSlug(curSet.title) || "live"}.json`);
+  const r = await d.publishBank(buildSetFile(curSet, songs), curSet.liveId || "", `sonata_setlist_${bankSlug(curSet.title) || "live"}.json`);
   if (!r.ok) {
     if (!o.quiet) toast(r.reason === "signin" ? t("reconnectText", "Your Google session expired. Reconnect to keep syncing.") : r.reason === "offline" ? t("offlineNote", "You're offline. Songs still save on this device.") : t("livePublishFailed", "Couldn't publish the live link. Please try again."), "error", { ms: 5000 });
     return false;
@@ -139,9 +140,23 @@ async function fetchSet(id) {
 function applySet(set, data) {
   let changed = false;
   const ids = data.s.map((sd) => { const r = adoptShared(unpackSong(sd)); if (r.status !== "same") changed = true; return r.song.id; });
+  const prevBySong = new Map();
+  for (const it of set.items) {
+    if (it.key === undefined && it.capo === undefined) continue;
+    if (!prevBySong.has(it.songId)) prevBySong.set(it.songId, []);
+    prevBySong.get(it.songId).push(it);
+  }
+  const nextItems = ids.map((songId) => {
+    const ov = prevBySong.get(songId)?.shift();
+    /** @type {import("../core/store.js").SetlistItem} */
+    const item = { songId };
+    if (ov?.key) item.key = ov.key;
+    if (ov?.capo !== undefined) item.capo = ov.capo;
+    return item;
+  });
   const before = set.items.map((i) => i.songId).join(",");
   if (before !== ids.join(",") || set.title !== data.t || set.description !== data.d) changed = true;
-  if (changed) store.saveSetlist({ id: set.id, title: data.t, description: data.d, links: data.l, items: ids.map((songId) => ({ songId })) });
+  if (changed) store.saveSetlist({ id: set.id, title: data.t, description: data.d, links: data.l, items: nextItems });
   return changed;
 }
 

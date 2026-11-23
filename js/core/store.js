@@ -22,11 +22,12 @@ export const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
  * @typedef {{ id: string, title: string, artist: string, creator: string, description: string,
  *   links: Link[], body: string, manualKey: string, isFavorite: boolean, transpose: number,
  *   capo: number, bpm: number|null, genre: string, mood?: string, inBank: boolean, createdAt: string, updatedAt: string,
- *   lastOpenedAt: string, readonly?: boolean, origin?: string }} Song
+ *   lastOpenedAt: string, readonly?: boolean, origin?: string, setlistKey?: string, setlistCapo?: number }} Song
  *   `origin`: the share id of the song this copy was saved from (see shareId in share.js).
+ * @typedef {{ songId: string, key?: string, capo?: number }} SetlistItem
  * @typedef {{ id: string, title: string, description: string, links: Link[],
- *   items: { songId: string }[], date: string, updatedAt: string, liveId?: string, source?: string }} Setlist
- * @typedef {{ setlistId: string, index: number }} SetlistRef
+ *   items: SetlistItem[], date: string, updatedAt: string, liveId?: string, source?: string }} Setlist
+ * @typedef {{ setlistId: string, index: number, key?: string, capo?: number }} SetlistRef
  * @typedef {{ kind: "song", id: string, trashedAt: string, updatedAt: string, item: Song, setlistRefs?: SetlistRef[] }} SongTrashEntry
  * @typedef {{ kind: "setlist", id: string, trashedAt: string, updatedAt: string, item: Setlist }} SetlistTrashEntry
  * @typedef {SongTrashEntry | SetlistTrashEntry} TrashEntry
@@ -112,10 +113,26 @@ export function normalizeSong(s) {
   return song;
 }
 
+/** @param {any} i @returns {SetlistItem|null} */
+export function normalizeSetlistItem(i) {
+  if (!i || typeof i !== "object" || Array.isArray(i) || typeof i.songId !== "string" || !i.songId.trim()) return null;
+  /** @type {SetlistItem} */
+  const out = { songId: i.songId.trim() };
+  const k = typeof i.key === "string" ? i.key.trim() : "";
+  if (k && k !== "auto") out.key = k;
+  if (i.capo !== undefined && i.capo !== null && i.capo !== "") {
+    const c = int(i.capo, 0, 11, -1);
+    if (c >= 0) out.capo = c;
+  }
+  return out;
+}
+
 /** @param {any} s @returns {Setlist|null} */
 export function normalizeSetlist(s) {
   if (!s || typeof s !== "object" || Array.isArray(s) || !s.id) return null;
-  const items = Array.isArray(s.items) ? s.items.filter((i) => i && typeof i.songId === "string").map((i) => ({ songId: i.songId })) : [];
+  const items = Array.isArray(s.items)
+    ? s.items.map(normalizeSetlistItem).filter(/** @returns {x is SetlistItem} */ (x) => Boolean(x))
+    : [];
   /** @type {Setlist} */
   const set = {
     id: str(s.id),
@@ -201,7 +218,16 @@ export function normalizeTrashEntry(x) {
     if (Array.isArray(x.setlistRefs)) {
       const refs = x.setlistRefs
         .filter((/** @type {any} */ r) => r && typeof r === "object" && !Array.isArray(r) && typeof r.setlistId === "string" && r.setlistId.trim())
-        .map((/** @type {any} */ r) => ({ setlistId: str(r.setlistId).trim(), index: Math.max(0, Math.round(Number(r.index) || 0)) }));
+        .map((/** @type {any} */ r) => {
+          /** @type {SetlistRef} */
+          const ref = { setlistId: str(r.setlistId).trim(), index: Math.max(0, Math.round(Number(r.index) || 0)) };
+          if (typeof r.key === "string" && r.key.trim() && r.key.trim() !== "auto") ref.key = r.key.trim();
+          if (r.capo !== undefined && r.capo !== null && r.capo !== "") {
+            const c = int(r.capo, 0, 11, -1);
+            if (c >= 0) ref.capo = c;
+          }
+          return ref;
+        });
       if (refs.length) entry.setlistRefs = refs;
     }
     return entry;
@@ -528,7 +554,13 @@ export class Store {
     for (const sl of this.setlists) {
       const before = setlistsBefore.find((x) => x.id === sl.id);
       if (!before) continue;
-      const items = before.items.map((i) => ({ songId: map.get(i.songId) || i.songId })).filter((i) => this.song(i.songId));
+      const items = before.items.map((i) => {
+        /** @type {SetlistItem} */
+        const copy = { songId: map.get(i.songId) || i.songId };
+        if (i.key) copy.key = i.key;
+        if (i.capo !== undefined) copy.capo = i.capo;
+        return copy;
+      }).filter((i) => this.song(i.songId));
       if (JSON.stringify(items) !== JSON.stringify(sl.items)) { sl.items = items; sl.updatedAt = t; }
     }
     this.changed();
@@ -577,7 +609,13 @@ export class Store {
       const setlistRefs = [];
       for (const sl of this.setlists) {
         sl.items.forEach((item, index) => {
-          if (item.songId === song.id) setlistRefs.push({ setlistId: sl.id, index });
+          if (item.songId === song.id) {
+            /** @type {SetlistRef} */
+            const ref = { setlistId: sl.id, index };
+            if (item.key) ref.key = item.key;
+            if (item.capo !== undefined) ref.capo = item.capo;
+            setlistRefs.push(ref);
+          }
         });
       }
       return {
@@ -704,7 +742,11 @@ export class Store {
       const sl = this.setlists.find((x) => x.id === ref.setlistId);
       if (!sl || sl.items.some((i) => i.songId === songId)) continue;
       const idx = Math.max(0, Math.min(sl.items.length, Math.round(Number(ref.index) || 0)));
-      sl.items.splice(idx, 0, { songId });
+      sl.items.splice(idx, 0, {
+        songId,
+        ...(ref.key ? { key: ref.key } : {}),
+        ...(ref.capo !== undefined ? { capo: ref.capo } : {})
+      });
       const prevSl = Date.parse(sl.updatedAt || sl.date) || 0;
       sl.updatedAt = new Date(Math.max(Date.now(), prevSl + 1)).toISOString();
     }
@@ -757,9 +799,49 @@ export class Store {
     return expired.length;
   }
 
+  /** Existing songs of a setlist paired with their slot overrides. @param {Setlist} set */
+  setlistSlots(set) {
+    /** @type {{ song: Song, item: SetlistItem, itemIndex: number }[]} */
+    const slots = [];
+    set.items.forEach((item, itemIndex) => {
+      const song = this.song(item.songId);
+      if (song) slots.push({ song, item, itemIndex });
+    });
+    return slots;
+  }
+
   /** Songs of a setlist that still exist. @param {Setlist} set */
   setlistSongs(set) {
     return set.items.map((i) => this.song(i.songId)).filter(/** @returns {s is Song} */ (s) => Boolean(s));
+  }
+
+  /** Active setlist context + exact slot item for the open song, if playing a setlist. */
+  activeSetlistEntry() {
+    if (!this.setlist.id) return null;
+    const set = this.setlists.find((s) => s.id === this.setlist.id);
+    if (!set) return null;
+    const slots = this.setlistSlots(set);
+    const slot = slots[this.setlist.index];
+    if (!slot || slot.song.id !== this.activeId) return null;
+    return { set, item: slot.item, itemIndex: slot.itemIndex, song: slot.song, index: this.setlist.index, slots };
+  }
+
+  /** Update key/capo overrides for one slot inside a setlist without mutating the base song. @param {string} setId @param {number} itemIndex @param {{ key?: string|null, capo?: number|null }} patch */
+  updateSetlistItem(setId, itemIndex, patch) {
+    const set = this.setlists.find((s) => s.id === setId);
+    const item = set?.items[itemIndex];
+    if (!set || !item) return;
+    if (patch.key !== undefined) {
+      const k = typeof patch.key === "string" ? patch.key.trim() : "";
+      if (!k || k === "auto") delete item.key;
+      else item.key = k;
+    }
+    if (patch.capo !== undefined) {
+      if (patch.capo === null) delete item.capo;
+      else item.capo = Math.max(0, Math.min(11, Math.round(Number(patch.capo) || 0)));
+    }
+    set.updatedAt = now();
+    this.changed("library");
   }
 
   /** @param {string} id @param {number} [index] */

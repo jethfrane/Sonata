@@ -1,10 +1,12 @@
 // @ts-check
 // Shared app context: the store, Drive, metronome, and key helpers every view uses.
 import { Store, memoryStorage } from "../core/store.js";
-import { detectKey, parseKey, keyFromTonic, keyShort, mod12 } from "../core/music.js";
+import { detectKey, parseKey, keyFromTonic, keyShort, keyValue, mod12 } from "../core/music.js";
 
 /**
  * @typedef {import("../core/store.js").Song} Song
+ * @typedef {import("../core/store.js").Setlist} Setlist
+ * @typedef {import("../core/store.js").SetlistItem} SetlistItem
  * @typedef {import("../core/music.js").Key} Key
  * @typedef {"songs"|"editor"|"tools"|"chords"|"theory"|"play"|"bank"} View
  */
@@ -63,46 +65,97 @@ export function writtenKey(song) {
   return parseKey(song?.manualKey) || detectedKey(song) || keyFromTonic(0, "major");
 }
 
-/** Key the band hears after transposing. @param {Song|null} song */
-export function soundingKey(song) {
-  const k = writtenKey(song);
-  return keyFromTonic(k.tonic + (song?.transpose || 0), k.mode, /** @type {any} */ (store.settings.enharmonicPref));
+/** Apply optional per-setlist slot key/capo override without mutating the base song. @param {Song|null} song @param {SetlistItem|null} [item] @returns {Song|null} */
+export function effectiveSong(song, item) {
+  if (!song) return null;
+  const slot = item !== undefined ? item : (store.setlist.id && song.id === store.activeId ? store.activeSetlistEntry()?.item : null);
+  if (!slot || (slot.key === undefined && slot.capo === undefined)) return song;
+  const wk = writtenKey(song);
+  let tr = song.transpose || 0;
+  if (slot.key) {
+    const target = parseKey(slot.key);
+    if (target) {
+      tr = mod12(target.tonic - wk.tonic);
+      if (tr > 6) tr -= 12;
+    }
+  }
+  const capo = slot.capo !== undefined ? slot.capo : song.capo || 0;
+  return {
+    ...song,
+    transpose: tr,
+    capo,
+    ...(slot.key ? { setlistKey: slot.key } : {}),
+    ...(slot.capo !== undefined ? { setlistCapo: slot.capo } : {})
+  };
 }
 
-/** Key of the chord shapes when a capo is used. @param {Song|null} song */
-export function shapeKey(song) {
+/** Resolve all songs in a setlist with any per-slot key/capo overrides applied. @param {Setlist} set */
+export function setlistSongsEffective(set) {
+  return store.setlistSlots(set).map(({ song, item }) => /** @type {Song} */ (effectiveSong(song, item)));
+}
+
+/** @param {Song|null} song @param {SetlistItem|null} [item] */
+export const effectiveCapo = (song, item) => effectiveSong(song, item)?.capo || 0;
+
+/** @param {Song|null} song @param {SetlistItem|null} [item] */
+export const effectiveTranspose = (song, item) => effectiveSong(song, item)?.transpose || 0;
+
+/** Key the band hears after transposing (including any active setlist slot override). @param {Song|null} song @param {SetlistItem|null} [item] */
+export function soundingKey(song, item) {
+  const eff = effectiveSong(song, item);
+  const pref = /** @type {any} */ (store.settings.enharmonicPref);
+  if (eff?.setlistKey) {
+    const ov = parseKey(eff.setlistKey);
+    if (ov) return pref === "auto" ? ov : keyFromTonic(ov.tonic, ov.mode, pref);
+  }
   const k = writtenKey(song);
-  return keyFromTonic(k.tonic + (song?.transpose || 0) - (song?.capo || 0), k.mode, /** @type {any} */ (store.settings.enharmonicPref));
+  return keyFromTonic(k.tonic + (eff?.transpose || 0), k.mode, pref);
+}
+
+/** Key of the chord shapes when a capo is used. @param {Song|null} song @param {SetlistItem|null} [item] */
+export function shapeKey(song, item) {
+  const eff = effectiveSong(song, item);
+  const s = soundingKey(song, item);
+  return keyFromTonic(s.tonic - (eff?.capo || 0), s.mode, /** @type {any} */ (store.settings.enharmonicPref));
 }
 
 /**
  * Options for rendering a chart.
  * @param {Song} song
  * @param {import("../core/chart.js").ViewMode} [mode]
+ * @param {SetlistItem|null} [item]
  */
-export function renderOptions(song, mode) {
+export function renderOptions(song, mode, item) {
+  const eff = /** @type {Song} */ (effectiveSong(song, item));
   return {
     mode: mode || /** @type {any} */ (store.settings.viewMode),
     key: writtenKey(song),
-    transpose: song.transpose || 0,
-    capo: song.capo || 0,
+    transpose: eff.transpose || 0,
+    capo: eff.capo || 0,
     spelling: /** @type {import("../core/music.js").Spelling} */ (store.settings.enharmonicPref),
     title: song.title
   };
 }
 
-/** Short label like "G" or "A (capo 2: G)". @param {Song|null} song */
-export function keyLabel(song) {
-  const s = soundingKey(song);
+/** Short label like "G" or "A (capo 2: G)". @param {Song|null} song @param {SetlistItem|null} [item] */
+export function keyLabel(song, item) {
+  const s = soundingKey(song, item);
   return keyShort(s);
 }
 
 /** @param {number} n */
 export const signed = (n) => (n > 0 ? `+${n}` : String(n));
 
-/** Transpose the active song by a half step, keeping it within an octave. @param {Song|null} song @param {number} delta */
+/** Transpose the active song (or active setlist slot override) by a half step, keeping it within an octave. @param {Song|null} song @param {number} delta */
 export function nudgeTranspose(song, delta) {
   if (!song) return;
+  const entry = !song.readonly && store.setlist.id && song.id === store.activeId ? store.activeSetlistEntry() : null;
+  if (entry) {
+    const cur = soundingKey(song, entry.item);
+    const nextKey = keyFromTonic(cur.tonic + delta, cur.mode, /** @type {any} */ (store.settings.enharmonicPref));
+    store.updateSetlistItem(entry.set.id, entry.itemIndex, { key: keyValue(nextKey) });
+    return;
+  }
   let next = (song.transpose || 0) + delta;
   if (next > 11 || next < -11) next = mod12(next) > 6 ? mod12(next) - 12 : mod12(next);
   if (song.readonly) { song.transpose = next; store.emit("change", "view"); return; }

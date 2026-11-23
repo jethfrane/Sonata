@@ -1,6 +1,6 @@
 # Connecting AI Agents & MCP to Sonata
 
-Sonata (`v7.3.0`) exposes **18 MCP tools** (tagged with MCP 2025-03-26 `annotations`, plus the `sonata://format-guide` resource and `import_chords_from_link` prompt) across three transports so AI assistants can format, analyze, extract, transpose, link, and manage your library & Trash safely. Machine-readable discovery lives at `/llms.txt` and `/llms-full.txt`.
+Sonata (`v7.4.0`) exposes **18 MCP tools** (tagged with MCP 2025-03-26 `annotations`, plus the `sonata://format-guide` resource and `import_chords_from_link` prompt) across three transports so AI assistants can format, analyze, extract, transpose, link, and manage your library & Trash safely. Machine-readable discovery lives at `/llms.txt` and `/llms-full.txt`.
 
 ---
 

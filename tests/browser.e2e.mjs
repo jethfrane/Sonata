@@ -120,7 +120,7 @@ await page.keyboard.press("Escape");
 const kt = await page.evaluate(() => /** @type {any} */ (window).__sonata.store.active());
 ok(kt.body === "D G A" && kt.transpose === 0, "Write into chart rewrites chords and resets transpose");
 await page.click("#shareSongBtn"); await page.waitForTimeout(400);
-ok(await page.locator('#sheet [data-export]').count() === 4 && await page.isVisible("#sheet .qr-box svg"), "share sheet has QR and 4 export buttons");
+ok(await page.locator('#sheet [data-export]').count() === 5 && await page.isVisible("#sheet .qr-box svg"), "share sheet has QR and 5 export buttons");
 const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 5000 }).catch(() => null), page.click('#sheet [data-export="pdf"]')]);
 ok(Boolean(dl) && /\.pdf$/.test(dl.suggestedFilename()), "PDF export downloads (lazy-loaded)");
 await page.keyboard.press("Escape");

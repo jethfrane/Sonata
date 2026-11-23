@@ -1,7 +1,7 @@
 // @ts-check
 import { $, $$, esc, icon, toast, copyText, paintIcons, setIcon, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
+import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, effectiveCapo, effectiveTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName, autoFormatChart } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport, openSongSwitcher } from "./sheets-lazy.js";
@@ -474,7 +474,8 @@ export function renderPreview() {
     lyrics: t("lyricsMode", "Lyrics only")
   };
   let label = `${labels[/** @type {"chords"} */ (mode)] || ""}`;
-  if ((mode === "chords" || mode === "chords-only") && s.capo) label += ` · ${t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) })}`;
+  const capo = effectiveCapo(s);
+  if ((mode === "chords" || mode === "chords-only") && capo) label += ` · ${t("capoShapes", "Capo {n} · {key} shapes", { n: capo, key: pretty(keyShort(shapeKey(s))) })}`;
   else if (mode === "nashville" || mode === "roman") label += ` · ${pretty(keyShort(writtenKey(s)))}`;
   else if (mode === "chords-only") label += ` · ${t("keyOf", "Key of {key}", { key: pretty(keyShort(k)) })}`;
   $("previewLabel").textContent = label;
@@ -490,10 +491,12 @@ function updateMeta() {
   const chips = $("metaChips");
   if (!s) { setHtml(chips, ""); return; }
   const k = soundingKey(s);
+  const tr = effectiveTranspose(s);
+  const capo = effectiveCapo(s);
   const parts = [];
   if (s.artist) parts.push(`<span class="chip static" title="${esc(s.artist)}">${esc(s.artist)}</span>`);
-  parts.push(`<button type="button" class="chip key" data-open-key="key" title="${esc(t("keyAndCapo", "Key & capo"))}">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${s.transpose ? ` <small>${esc(signed(s.transpose))}</small>` : ""}</button>`);
-  parts.push(`<button type="button" class="chip${s.capo ? "" : " muted"}" data-open-key="capo" title="${esc(t("capo", "Capo"))}">${s.capo ? esc(t("capoN", "Capo {n}", { n: s.capo })) : `+ ${esc(t("capo", "Capo"))}`}</button>`);
+  parts.push(`<button type="button" class="chip key" data-open-key="key" title="${esc(t("keyAndCapo", "Key & capo"))}">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${tr ? ` <small>${esc(signed(tr))}</small>` : ""}</button>`);
+  parts.push(`<button type="button" class="chip${capo ? "" : " muted"}" data-open-key="capo" title="${esc(t("capo", "Capo"))}">${capo ? esc(t("capoN", "Capo {n}", { n: capo })) : `+ ${esc(t("capo", "Capo"))}`}</button>`);
   if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);
   if (s.mood) parts.push(`<span class="chip static">${esc(s.mood)}</span>`);
   if (s.creator) parts.push(`<span class="chip static muted">arr. ${esc(s.creator)}</span>`);
@@ -554,7 +557,7 @@ function toWritten(chord) {
   const s = store.active();
   const c = parseChord(chord);
   if (!s || !c) return chord;
-  const steps = (s.transpose || 0) - (s.capo || 0);
+  const steps = effectiveTranspose(s) - effectiveCapo(s);
   if (!steps) return chord;
   const written = writtenKey(s);
   return transposeChord(c, -steps, prefersFlats(written, /** @type {any} */ (store.settings.enharmonicPref)));
@@ -580,9 +583,10 @@ function updateSetlistBar() {
   if (syncBtn) syncBtn.hidden = !isLive && !isSource;
   const strip = $("setlistStrip");
   if (strip) {
+    const slots = cur.set.items.filter((it) => cur.songs.some((x) => x.id === it.songId));
     const html = cur.songs.length > 1 ? cur.songs.map((song, i) => {
       const on = i === cur.index;
-      return `<button type="button" class="setlist-pill${on ? " active" : ""}" data-set-idx="${i}"${on ? ' aria-current="true"' : ""}><b>${i + 1}.</b><span>${esc(song.title)}</span><small>${esc(pretty(keyShort(soundingKey(song))))}</small></button>`;
+      return `<button type="button" class="setlist-pill${on ? " active" : ""}" data-set-idx="${i}"${on ? ' aria-current="true"' : ""}><b>${i + 1}.</b><span>${esc(song.title)}</span><small>${esc(pretty(keyShort(soundingKey(song, slots[i] || null))))}</small></button>`;
     }).join("") : "";
     if (strip.dataset.html !== html) { strip.innerHTML = html; strip.dataset.html = html; }
     strip.hidden = cur.songs.length <= 1;

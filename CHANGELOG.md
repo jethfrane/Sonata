@@ -2,6 +2,18 @@
 
 All notable changes to **Sonata** are documented here, following [Semantic Versioning](https://semver.org/).
 
+## [7.4.0] - 2026-11-23
+
+### Added
+- **Per-Setlist Key & Capo Overrides**: Each slot inside a setlist (`SetlistItem`) supports optional `key` and `capo` overrides in `Edit setlist` and `Key & capo` without mutating the base song's default key/capo, applied consistently across Chart, Stage, setlist pills, song switcher, live setlist sync, and PDF/PNG/TXT/ChordPro exports.
+- **Blocked-Site Fallback (`Paste chart text → Auto-Format`)**: When `/api/import` cannot read a protected site (`blocked`, etc.), `openLinksImport` provides a 1-tap `Paste chart text → Auto-Format` button and `Open page ↗` helper that auto-formats clipboard/pasted chords while keeping the source link intact.
+- **ChordPro (`.cho`) Export**: Added `docChordPro` and `exportCho` alongside PDF, PNG, TXT, and Print for single songs and full setlists.
+- **Complete Filipino i18n Parity**: Added missing Filipino translations in `js/ui/i18n-fil.js` and automated test parity verification across `index.html` and `js/`.
+
+### Changed & Cleaned
+- Split monolithic `js/ui/sheets.js` into focused lazy-loaded modules (`sheets.js`, `sheets-share.js`, `sheets-setlist.js`, `sheets-settings.js`, `sheets-import.js`).
+- Archived legacy `v3.x`–`v6.x` docs into `docs/archive/`, aligned version metadata to `7.4.0`, and removed unused legacy root clutter.
+
 ## [7.3.0] - 2026-11-23
 
 ### Added

@@ -3,7 +3,7 @@
 import { $, esc, icon, download, slug, openSheet, toast } from "./dom.js";
 import { t } from "./i18n.js";
 import { openShare } from "./sheets-lazy.js";
-import { store, soundingKey, shapeKey, renderOptions } from "./ctx.js";
+import { store, soundingKey, shapeKey, renderOptions, effectiveCapo } from "./ctx.js";
 import { keyShort, pretty } from "../core/music.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { packSong, packSet, qrUrl } from "../core/share.js";
@@ -14,17 +14,21 @@ import { liveSetUrl } from "./liveset.js";
 /** Songs to export: the given setlist, the playing setlist, or the open song. @param {string} [setId] */
 export function exportDocs(setId) {
   const set = setId ? store.setlists.find((x) => x.id === setId) : null;
-  const cur = set ? { songs: store.setlistSongs(set) } : store.currentSetlist();
-  const songs = cur ? cur.songs : [store.active()].filter(Boolean);
+  const cur = set ? { set, songs: store.setlistSongs(set) } : store.currentSetlist();
+  /** @type {{ song: import("../core/store.js").Song, item: import("../core/store.js").SetlistItem | null }[]} */
+  const entries = cur
+    ? store.setlistSlots(cur.set).map(({ song, item }) => ({ song, item }))
+    : [store.active()].filter(Boolean).map((song) => ({ song: /** @type {import("../core/store.js").Song} */ (song), item: null }));
   const mode = /** @type {any} */ (store.settings.viewMode);
-  return songs.map((s) => {
-    const song = /** @type {import("../core/store.js").Song} */ (s);
-    const k = soundingKey(song);
-    const meta = [`Key ${pretty(keyShort(k))}`];
-    if (song.capo) meta.push(`Capo ${song.capo} (${pretty(keyShort(shapeKey(song)))} shapes)`);
+  return entries.map(({ song, item }) => {
+    const k = soundingKey(song, item);
+    const key = pretty(keyShort(k));
+    const capo = effectiveCapo(song, item);
+    const meta = [`Key ${key}`];
+    if (capo) meta.push(`Capo ${capo} (${pretty(keyShort(shapeKey(song, item)))} shapes)`);
     if (song.bpm) meta.push(`${song.bpm} BPM`);
     meta.push({ chords: "Chords", "chords-only": "Chords only", nashville: "Nashville numbers", roman: "Roman numerals", lyrics: "Lyrics" }[/** @type {"chords"} */ (mode)] || "Chords");
-    return { title: song.title, artist: song.artist, creator: song.creator, meta: meta.join("  ·  "), lines: buildLines(song.body, renderOptions(song, mode)) };
+    return { title: song.title, artist: song.artist, creator: song.creator, key, capo, bpm: song.bpm, meta: meta.join("  ·  "), lines: buildLines(song.body, renderOptions(song, mode, item)) };
   });
 }
 
@@ -135,6 +139,14 @@ export async function exportTxt(setId) {
   if (!docs.length) return;
   const { docText } = await import("../lib/export.js");
   download(`${slug(docs[0].title)}.txt`, new Blob([docs.map(docText).join("\n\n")], { type: "text/plain;charset=utf-8" }));
+}
+
+export async function exportCho(setId) {
+  const docs = exportDocs(setId);
+  if (!docs.length) return;
+  const { docChordPro } = await import("../lib/export.js");
+  const base = setId ? (store.setlists.find((x) => x.id === setId)?.title || docs[0].title) : docs[0].title;
+  download(`${slug(base)}.cho`, new Blob([docs.map(docChordPro).join("\n\n")], { type: "text/plain;charset=utf-8" }));
 }
 
 /** @param {ExportOptions} o @param {string} [setId] */

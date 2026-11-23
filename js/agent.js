@@ -95,7 +95,7 @@ export function initAgent() {
   }
 
   agentApi = {
-    version: "7.3.0",
+    version: "7.4.0",
     webMcp,
     tools: () => ALL_TOOL_DEFS,
     call: callTool,

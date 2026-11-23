@@ -1,7 +1,7 @@
 // @ts-check
 import { $, esc, setIcon, paintIcons, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick } from "./ctx.js";
+import { store, app, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick, effectiveCapo } from "./ctx.js";
 import { metronome } from "./sound.js";
 import { buildLines, linesToHtml } from "../core/chart.js";
 import { keyShort, pretty } from "../core/music.js";
@@ -217,7 +217,8 @@ function renderStage() {
   if (!s) return;
   $("stageTitle").textContent = s.title;
   const k = soundingKey(s);
-  const meta = [s.artist, s.capo ? t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) }) : ""].filter(Boolean).join(" · ");
+  const capo = effectiveCapo(s);
+  const meta = [s.artist, capo ? t("capoShapes", "Capo {n} · {key} shapes", { n: capo, key: pretty(keyShort(shapeKey(s))) }) : ""].filter(Boolean).join(" · ");
   $("stageMeta").textContent = meta;
   $("stageKey").textContent = pretty(keyShort(k));
   $("stageBpm").textContent = String(metronome.bpm);

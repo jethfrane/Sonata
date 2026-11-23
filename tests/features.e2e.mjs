@@ -815,6 +815,97 @@ console.log("v7.3.0 Auto-Format, About cleanup, Mood/Tone, Tools Hub mobile ergo
   await p.close();
 }
 
+console.log("\nv7.4.0 upgrades");
+{
+  const fs = await import("node:fs");
+  // 1. Per-setlist key & capo overrides via Setlist Editor and Key Sheet without mutating base song
+  p = await open("/songs");
+  await p.evaluate(() => {
+    const s = window.__sonata.store;
+    const g = s.createSong({ title: "Grace Base G", manualKey: "G:major", capo: 0, body: "## Verse 1\nG   D/F#   Em   C\nAmazing grace" });
+    const d = s.createSong({ title: "Corner Base D", manualKey: "D:major", capo: 0, body: "D  G  A\nChrist alone" });
+    s.saveSetlist({ title: "Sunday Set Overrides", items: [{ songId: g.id }, { songId: d.id }] });
+  });
+  await p.click('[data-filter="setlists"]'); await p.waitForTimeout(200);
+  await p.click('#libraryList .row:first-child [data-act="set-more"]'); await p.waitForTimeout(200);
+  await p.click('#sheet [data-m="edit"]'); await p.waitForTimeout(250);
+  await p.selectOption('#slItems [data-slot-key="0"]', "A:major");
+  await p.selectOption('#slItems [data-slot-capo="0"]', "2");
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(250);
+  await p.click('#libraryList .row:first-child [data-act="set-open"]'); await p.waitForTimeout(300);
+  const pillKey = await p.textContent("#setlistStrip .setlist-pill.active small");
+  const chipText = await p.textContent(".meta-chips");
+  ok(pillKey?.trim() === "A" && chipText?.includes("Capo 2"), "setlist slot override shows Key A & Capo 2 in setlist strip and chart chips");
+
+  // Open Key sheet inside active setlist: shows scope banner & edits only the slot
+  await p.click('[data-open-key="key"]'); await p.waitForTimeout(200);
+  ok((await p.textContent("#ksScope"))?.includes("Sunday Set Overrides"), "Key sheet shows setlist-only scope banner");
+  await p.selectOption("#ksKey", "Bb:major"); await p.waitForTimeout(120);
+  await p.selectOption("#ksCapo", "3"); await p.waitForTimeout(120);
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(200);
+  const afterSlotState = await p.evaluate(() => {
+    const s = window.__sonata.store;
+    const base = s.songs.find((x) => x.title === "Grace Base G");
+    const slot = s.activeSetlistEntry()?.item;
+    return { baseKey: base?.manualKey, baseTr: base?.transpose, baseCapo: base?.capo, slotKey: slot?.key, slotCapo: slot?.capo };
+  });
+  ok(
+    afterSlotState.baseKey === "G:major" && afterSlotState.baseTr === 0 && afterSlotState.baseCapo === 0
+      && afterSlotState.slotKey === "Bb:major" && afterSlotState.slotCapo === 3,
+    "setlist Key & Capo overrides update active setlist slot while leaving base song untouched"
+  );
+
+  // Share & export ChordPro (.cho) honors active setlist slot key/capo
+  await p.click("#shareSongBtn"); await p.waitForTimeout(350);
+  const expCount = await p.locator("#sheet [data-export]").count();
+  const [choDl] = await Promise.all([
+    p.waitForEvent("download", { timeout: 5000 }),
+    p.click('#sheet [data-export="cho"]')
+  ]);
+  const choText = fs.readFileSync(await choDl.path(), "utf8");
+  ok(
+    expCount === 5 && /\.cho$/i.test(choDl.suggestedFilename())
+      && choText.includes("{title: Grace Base G}")
+      && choText.includes("{key: Bb}") && choText.includes("{capo: 3}")
+      && choText.includes("{comment: Verse 1}"),
+    "Share sheet has 5 export buttons and ChordPro (.cho) downloads valid ChordPro with slot key/capo"
+  );
+  await p.keyboard.press("Escape"); await p.waitForTimeout(200);
+
+  // Test Reset slot override button in Key sheet
+  await p.click('[data-open-key="key"]'); await p.waitForTimeout(200);
+  await p.click("#ksReset"); await p.waitForTimeout(150);
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(150);
+  const resetSlot = await p.evaluate(() => window.__sonata.store.activeSetlistEntry()?.item);
+  ok(!resetSlot?.key && resetSlot?.capo === undefined, "Use song default clears setlist slot key/capo override");
+  await p.close();
+
+  // 2. Blocked-site graceful fallback: Paste chart text -> Auto-Format + Open page link
+  p = await open("/songs", {
+    route: (page) => page.route("**/api/import*", (route) => route.fulfill({
+      status: 502,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "blocked" })
+    }))
+  });
+  await p.click("#addLinksBtn"); await p.waitForTimeout(200);
+  await p.fill("#lkText", "https://tabs.ultimate-guitar.com/tab/blocked-example"); await p.waitForTimeout(700);
+  const hasFallback = await p.isVisible("#lkPasteFormatBtn");
+  const openHref = await p.getAttribute("#lkOpenSourceLink", "href");
+  ok(hasFallback && openHref === "https://tabs.ultimate-guitar.com/tab/blocked-example", "blocked import renders 1-tap Paste chart text -> Auto-Format and Open page link");
+  await p.evaluate(() => navigator.clipboard.writeText("Verse 1:\nG        D/F#m\nAmazing grace how sweet the sound\n\n[Chorus]\nEm  C  G  D\nMy chains are gone"));
+  await p.click("#lkPasteFormatBtn"); await p.waitForTimeout(350);
+  const prevText = await p.textContent(".import-preview");
+  ok(prevText?.includes("## Verse 1") && !prevText.includes("D/F#m"), "1-tap Paste chart text -> Auto-Format pastes clipboard and cleans sections/chords");
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(250);
+  const savedSong = await p.evaluate(() => window.__sonata.store.active());
+  ok(
+    savedSong?.body.includes("## Verse 1") && savedSong?.links?.some((l) => l.url === "https://tabs.ultimate-guitar.com/tab/blocked-example"),
+    "saving formatted blocked fallback preserves cleaned body and original reference URL"
+  );
+  await p.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);

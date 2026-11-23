@@ -1,5 +1,16 @@
 [
   {
+    "version": "7.4.0",
+    "date": "2026-11-23",
+    "whatsNew": "Per-setlist Key & Capo overrides that leave your base song untouched, a 1-tap Paste -> Auto-Format recovery flow when chord sites block scraping, ChordPro (.cho) exports, complete Filipino translations, and modular dialog architecture.",
+    "changes": [
+      "Per-setlist Key & Capo overrides: override a song's Key or Capo per slot inside Edit setlist or directly from Key & capo while playing a setlist—applied across Chart, Stage, and PDF/PNG/TXT/ChordPro exports without mutating the base song.",
+      "Graceful blocked-site fallback: when a chord site blocks automatic fetching, Import offers a 1-tap \"Paste chart text -> Auto-Format\" button (plus Open page link) that reads clipboard text, runs Auto-Format cleanly, and preserves the source link.",
+      "ChordPro (.cho) export: export single songs or whole setlists as .cho files alongside PDF, PNG, TXT, and Print.",
+      "Complete Filipino i18n: translated missing UI labels across Chart, Setlists, Tools Hub, Song Bank, AI Agents, and v7.3/v7.4 features with automated key-parity verification."
+    ]
+  },
+  {
     "version": "7.3.0",
     "date": "2026-11-23",
     "whatsNew": "One-tap Auto-Format for pasted chord charts, tighter chart spacing to see more music at once, broader chord-site imports, optional Mood/Tone tags, live Google Drive setlist update alerts, and richer AI Agent / MCP tools.",
