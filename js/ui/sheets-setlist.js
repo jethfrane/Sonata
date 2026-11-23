@@ -3,17 +3,28 @@
 import { esc, icon, toast, openSheet, closeSheet, paintIcons } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, effectiveCapo, adoptShared } from "./ctx.js";
+import { normalizeTags } from "../core/store.js";
 import { keyShort, parseKey, pretty, detectKey } from "../core/music.js";
 import { unpackSong } from "../core/share.js";
 import { keyOptions, capoOptions } from "./sheets-details.js";
 
-/** Create or edit a setlist: title, notes, ordered songs with optional per-slot key & capo overrides. @param {string} [id] @param {string[]} [songIds] songs a new setlist starts with */
+const PRESET_SET_TAGS = [
+  ["Church", "tagChurch"],
+  ["Worship", "tagWorship"],
+  ["Gig", "tagGig"],
+  ["Performance", "tagPerformance"],
+  ["Rehearsal", "tagRehearsal"],
+  ["Acoustic", "tagAcoustic"]
+];
+
+/** Create or edit a setlist: title, optional tags, notes, ordered songs with optional per-slot key & capo overrides. @param {string} [id] @param {string[]} [songIds] songs a new setlist starts with */
 export function openSetlistEditor(id, songIds = []) {
   const existing = id ? store.setlists.find((s) => s.id === id) : null;
   /** @type {import("../core/store.js").SetlistItem[]} */
   let items = existing
     ? existing.items.filter((i) => store.song(i.songId)).map((i) => ({ ...i }))
     : songIds.filter((x) => store.song(x)).map((songId) => ({ songId }));
+  let tags = existing?.tags ? existing.tags.slice() : [];
   let q = "";
   const chosen = () => items.length
     ? items.map((it, i) => {
@@ -24,18 +35,31 @@ export function openSetlistEditor(id, songIds = []) {
       const defCapoLbl = s?.capo ? t("slotCapoDefaultN", "Song: Capo {n}", { n: s.capo }) : t("slotCapoDefault", "Song capo");
       return `<li class="set-item" data-sid="${esc(it.songId)}" data-slot-idx="${i}"><span class="set-num">${i + 1}</span><span class="set-name">${esc(keyLabel)}</span>
         <span class="set-item-keys">
-          <select class="set-slot-select${it.key ? " overridden" : ""}" data-slot-key="${i}" aria-label="${esc(t("slotKeyLabel", "Key for {title}", { title: keyLabel }))}">${keyOptions(it.key || "auto", baseKey, defKeyLbl)}</select>
-          <select class="set-slot-select${it.capo !== undefined ? " overridden" : ""}" data-slot-capo="${i}" aria-label="${esc(t("slotCapoLabel", "Capo for {title}", { title: keyLabel }))}">${capoOptions(it.capo ?? null, defCapoLbl)}</select>
+          <select class="select set-slot-select${it.key ? " overridden" : ""}" data-slot-key="${i}" aria-label="${esc(t("slotKeyLabel", "Key for {title}", { title: keyLabel }))}">${keyOptions(it.key || "auto", baseKey, defKeyLbl)}</select>
+          <select class="select set-slot-select${it.capo !== undefined ? " overridden" : ""}" data-slot-capo="${i}" aria-label="${esc(t("slotCapoLabel", "Capo for {title}", { title: keyLabel }))}">${capoOptions(it.capo ?? null, defCapoLbl)}</select>
         </span>
         <button class="icon-btn small" type="button" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="${esc(t("moveUp", "Move up"))}">${icon("arrow-up")}</button>
         <button class="icon-btn small" type="button" data-move="1" ${i === items.length - 1 ? "disabled" : ""} aria-label="${esc(t("moveDown", "Move down"))}">${icon("arrow-down")}</button>
         <button class="icon-btn small" type="button" data-drop aria-label="${esc(t("remove", "Remove"))}">${icon("x")}</button></li>`;
     }).join("")
     : `<li class="muted set-empty">${esc(t("noSongsInSet", "No songs yet. Pick some below."))}</li>`;
+  const tagChips = () => {
+    const active = new Set(tags.map((x) => x.toLowerCase()));
+    const presets = PRESET_SET_TAGS.map(([name, key]) => {
+      const on = active.has(name.toLowerCase());
+      return `<button type="button" class="chip small${on ? " on" : ""}" data-set-tag="${esc(name)}" aria-pressed="${on}">${esc(t(key, name))}</button>`;
+    });
+    const custom = tags.filter((x) => !PRESET_SET_TAGS.some(([p]) => p.toLowerCase() === x.toLowerCase()))
+      .map((x) => `<button type="button" class="chip small on" data-set-tag="${esc(x)}" aria-pressed="true">${esc(x)} ×</button>`);
+    return [...presets, ...custom].join("");
+  };
   const pool = () => {
     const fold = (/** @type {string} */ x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const f = fold(q.trim());
-    return store.songs.filter((s) => !items.some((it) => it.songId === s.id) && (!f || fold(`${s.title} ${s.artist}`).includes(f)))
+    return store.songs
+      .filter((s) => !items.some((it) => it.songId === s.id) && (!f || fold(`${s.title} ${s.artist}`).includes(f)))
+      .slice()
+      .sort((a, b) => (Date.parse(b.updatedAt || b.createdAt) || 0) - (Date.parse(a.updatedAt || a.createdAt) || 0))
       .map((s) => `<button type="button" class="pick" data-add="${esc(s.id)}">${icon("plus")}<span class="pick-text"><span class="pick-title">${esc(s.title)}</span>${s.artist ? `<span class="muted">${esc(s.artist)}</span>` : ""}</span><span class="key-badge small">${esc(pretty(keyShort(soundingKey(s, null))))}</span></button>`).join("")
       || `<p class="muted set-empty">${esc(q.trim() ? t("noMatches", "No matches for \"{q}\"", { q }) : t("allSongsAdded", "Every song is in this setlist."))}</p>`;
   };
@@ -44,6 +68,10 @@ export function openSetlistEditor(id, songIds = []) {
     wide: true,
     body: `<div class="form">
       <label class="field"><span>${esc(t("setTitle", "Title"))}</span><input class="input" id="slTitle" value="${esc(existing?.title || "")}" placeholder="${esc(t("setTitlePh", "Friday gig, rehearsal, Sunday service…"))}" autocomplete="off"></label>
+      <div class="field"><span>${esc(t("setTags", "Tags (optional)"))}</span>
+        <div class="chip-row sl-tag-chips" id="slTagChips">${tagChips()}</div>
+        <input class="input" id="slTagsInput" value="" placeholder="${esc(t("setTagsPh", "Add custom tag (press Enter)"))}" autocomplete="off" maxlength="24">
+      </div>
       <label class="field"><span>${esc(t("setNotes", "Notes (order, cues, who sings)"))}</span><textarea class="input" id="slNotes" rows="2">${esc(existing?.description || "")}</textarea></label>
       <div class="field"><span id="slCount">${esc(t("songsInSetN", "Songs in this setlist ({n})", { n: items.length }))}</span><ol class="set-items" id="slItems">${chosen()}</ol></div>
       <div class="field"><span>${esc(t("addSongs", "Add songs"))}</span>
@@ -56,10 +84,13 @@ export function openSetlistEditor(id, songIds = []) {
         if (!items.length) { toast(t("setNeedsSongs", "Add at least one song."), "error"); return false; }
         const title = /** @type {HTMLInputElement} */ (b.querySelector("#slTitle")).value.trim() || "Setlist";
         const description = /** @type {HTMLTextAreaElement} */ (b.querySelector("#slNotes")).value;
+        const extra = /** @type {HTMLInputElement|null} */ (b.querySelector("#slTagsInput"))?.value || "";
+        const finalTags = normalizeTags([...tags, ...extra.split(",")]);
         store.saveSetlist({
           id: existing?.id,
           title,
           description,
+          tags: finalTags,
           items: items.map((it) => ({
             songId: it.songId,
             ...(it.key ? { key: it.key } : {}),
@@ -73,11 +104,32 @@ export function openSetlistEditor(id, songIds = []) {
   });
   const list = /** @type {HTMLElement} */ (body.querySelector("#slItems"));
   const poolEl = /** @type {HTMLElement} */ (body.querySelector("#slPool"));
+  const tagChipsEl = /** @type {HTMLElement} */ (body.querySelector("#slTagChips"));
+  const tagInput = /** @type {HTMLInputElement|null} */ (body.querySelector("#slTagsInput"));
+  const toggleTag = (/** @type {string} */ raw) => {
+    const clean = raw.trim();
+    if (!clean) return;
+    const idx = tags.findIndex((x) => x.toLowerCase() === clean.toLowerCase());
+    if (idx >= 0) tags.splice(idx, 1);
+    else tags = normalizeTags([...tags, clean]);
+    if (tagChipsEl) tagChipsEl.innerHTML = tagChips();
+  };
   const redraw = () => {
     list.innerHTML = chosen();
     poolEl.innerHTML = pool();
     /** @type {HTMLElement} */ (body.querySelector("#slCount")).textContent = t("songsInSetN", "Songs in this setlist ({n})", { n: items.length });
   };
+  tagInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      for (const part of tagInput.value.split(",")) {
+        const clean = part.trim();
+        if (clean && !tags.some((x) => x.toLowerCase() === clean.toLowerCase())) tags = normalizeTags([...tags, clean]);
+      }
+      tagInput.value = "";
+      if (tagChipsEl) tagChipsEl.innerHTML = tagChips();
+    }
+  });
   list.addEventListener("change", (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
     if (el.dataset.slotKey !== undefined) {
@@ -94,6 +146,8 @@ export function openSetlistEditor(id, songIds = []) {
   });
   body.addEventListener("click", (e) => {
     const el = /** @type {HTMLElement} */ (e.target);
+    const tagBtn = /** @type {HTMLElement|null} */ (el.closest("[data-set-tag]"));
+    if (tagBtn) { toggleTag(tagBtn.dataset.setTag || ""); return; }
     const add = /** @type {HTMLElement|null} */ (el.closest("[data-add]"));
     if (add) { items.push({ songId: add.dataset.add || "" }); redraw(); return; }
     const row = el.closest("[data-slot-idx]");
@@ -124,7 +178,7 @@ export function openImportSet(data, source = "") {
   };
   const save = (/** @type {boolean} */ present) => {
     const ids = songs.map((/** @type {any} */ sd) => adoptShared(unpackSong(sd)).song.id);
-    const set = store.saveSetlist({ title: data.t || "Setlist", description: data.d || "", links: Array.isArray(data.l) ? data.l : [], items: ids.map((/** @type {string} */ songId) => ({ songId })), ...(source ? { source } : {}) });
+    const set = store.saveSetlist({ title: data.t || "Setlist", description: data.d || "", links: Array.isArray(data.l) ? data.l : [], ...(Array.isArray(data.tg) ? { tags: data.tg } : {}), items: ids.map((/** @type {string} */ songId) => ({ songId })), ...(source ? { source } : {}) });
     store.playSetlist(set.id);
     app.drive?.schedule();
     if (present) app.openStage(); else app.show("editor");

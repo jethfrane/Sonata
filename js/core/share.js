@@ -7,7 +7,7 @@ import { slugify } from "../router.js";
  * @typedef {import("./store.js").Song} Song
  * @typedef {{ t: string, b: string, k?: string, c?: number, tr?: number, a?: string,
  *   cr?: string, d?: string, l?: { name: string, url: string }[], bpm?: number, g?: string, i?: string, m?: string }} SharedSong
- * @typedef {{ type: "set", t: string, d?: string, l?: { name: string, url: string }[],
+ * @typedef {{ type: "set", t: string, d?: string, l?: { name: string, url: string }[], tg?: string[],
  *   s: SharedSong[] }} SharedSet
  */
 
@@ -64,7 +64,7 @@ export function shareId(song) {
 }
 
 /**
- * @param {{ title?: string, description?: string, links?: any[] }} set
+ * @param {{ title?: string, description?: string, links?: any[], tags?: string[] }} set
  * @param {any[]} songs
  * @returns {SharedSet}
  */
@@ -73,6 +73,8 @@ export function packSet(set, songs) {
   const d = { type: "set", t: String(set.title || "").trim() || "Untitled Setlist", s: songs.map(packSong) };
   const desc = String(set.description || "").trim(); if (desc) d.d = desc;
   const links = cleanLinks(set.links); if (links.length) d.l = links;
+  const tags = Array.isArray(set.tags) ? set.tags.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 6) : [];
+  if (tags.length) d.tg = tags;
   return d;
 }
 
@@ -312,21 +314,22 @@ export async function setlistMessage(base, set, songs) {
 // ---- Live setlist: one file in the leader's Drive that the band's link always reads ----
 export const SET_TYPE = "sonata-set";
 
-/** The public file for a live setlist. @param {{ title?: string, description?: string, links?: any[] }} set @param {any[]} songs */
+/** The public file for a live setlist. @param {{ title?: string, description?: string, links?: any[], tags?: string[] }} set @param {any[]} songs */
 export function buildSetFile(set, songs) {
   const d = packSet(set, songs);
-  return { type: SET_TYPE, v: 1, t: d.t, d: d.d || "", l: d.l || [], s: d.s, updatedAt: new Date().toISOString() };
+  return { type: SET_TYPE, v: 1, t: d.t, d: d.d || "", l: d.l || [], ...(d.tg ? { tg: d.tg } : {}), s: d.s, updatedAt: new Date().toISOString() };
 }
 
 /**
  * Check a downloaded live setlist. Anything that is not one is refused, so the reader can't be
  * used to fetch other Drive files.
- * @param {any} d @returns {{ type: "set", t: string, d: string, l: { name: string, url: string }[], s: SharedSong[], updatedAt: string }|null}
+ * @param {any} d @returns {{ type: "set", t: string, d: string, l: { name: string, url: string }[], tg?: string[], s: SharedSong[], updatedAt: string }|null}
  */
 export function parseSetFile(d) {
   if (!d || typeof d !== "object" || Array.isArray(d) || d.type !== SET_TYPE || !Array.isArray(d.s)) return null;
   const s = d.s.filter((/** @type {any} */ x) => x && typeof x === "object" && typeof x.t === "string" && typeof x.b === "string").slice(0, 200)
     .map((/** @type {any} */ x) => packSong({ ...x, b: String(x.b).slice(0, 20000), t: String(x.t).slice(0, 160) }));
   if (!s.length) return null;
-  return { type: "set", t: String(d.t || "Setlist").slice(0, 120), d: String(d.d || "").slice(0, 2000), l: cleanLinks(d.l), s, updatedAt: String(d.updatedAt || "").slice(0, 40) };
+  const tg = Array.isArray(d.tg) ? d.tg.map((/** @type {any} */ x) => String(x || "").trim().slice(0, 24)).filter(Boolean).slice(0, 6) : [];
+  return { type: "set", t: String(d.t || "Setlist").slice(0, 120), d: String(d.d || "").slice(0, 2000), l: cleanLinks(d.l), ...(tg.length ? { tg } : {}), s, updatedAt: String(d.updatedAt || "").slice(0, 40) };
 }

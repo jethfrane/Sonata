@@ -57,6 +57,41 @@ export class Drive {
     /** Failed syncs in a row; sets the wait before the next try. */
     this.failures = 0;
     /** @type {ReturnType<typeof setTimeout>|undefined} */ this.retryTimer = undefined;
+    /** @type {Promise<boolean>|null} */ this.refreshPromise = null;
+    this.lastSilentFailAt = 0;
+  }
+
+  /** Read token & expiry from sessionStorage or localStorage so reloads/updates don't drop sessions. */
+  readToken() {
+    try {
+      const sTok = sessionStorage.getItem(TOKEN_KEY);
+      const sExp = Number(sessionStorage.getItem(EXPIRY_KEY) || 0);
+      if (sTok) return { token: sTok, exp: sExp };
+      const lTok = localStorage.getItem(TOKEN_KEY);
+      const lExp = Number(localStorage.getItem(EXPIRY_KEY) || 0);
+      if (lTok) {
+        sessionStorage.setItem(TOKEN_KEY, lTok);
+        if (lExp) sessionStorage.setItem(EXPIRY_KEY, String(lExp));
+        return { token: lTok, exp: lExp };
+      }
+    } catch { /* storage blocked */ }
+    return { token: null, exp: 0 };
+  }
+
+  /** @param {string} token @param {number|string} [expiresInSec] */
+  writeToken(token, expiresInSec = 3599) {
+    this.token = token;
+    const exp = String(Date.now() + (Number(expiresInSec) || 3599) * 1000);
+    for (const st of [sessionStorage, localStorage]) {
+      try { st.setItem(TOKEN_KEY, token); st.setItem(EXPIRY_KEY, exp); } catch { /* ignore */ }
+    }
+  }
+
+  clearToken() {
+    this.token = null;
+    for (const st of [sessionStorage, localStorage]) {
+      try { st.removeItem(TOKEN_KEY); st.removeItem(EXPIRY_KEY); } catch { /* ignore */ }
+    }
   }
 
   /** After a failed sync (Drive busy, rate limit, flaky network), try again: 20s, 40s, 80s… up to 10 min. */
@@ -68,28 +103,83 @@ export class Drive {
     return wait;
   }
 
+  /** Silently renew the Google access token in the background (no popup) when signed in before. @returns {Promise<boolean>} */
+  async silentRefresh() {
+    if (!this.profile?.email || !navigator.onLine) return false;
+    if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") return false;
+    if (Date.now() - this.lastSilentFailAt < 5 * 60_000) return false;
+    if (this.refreshPromise) return this.refreshPromise;
+    this.refreshPromise = (async () => {
+      try { await loadGis(); } catch { this.lastSilentFailAt = Date.now(); return false; }
+      const g = /** @type {any} */ (window).google;
+      if (!g?.accounts?.oauth2) { this.lastSilentFailAt = Date.now(); return false; }
+      return await new Promise((resolve) => {
+        let settled = false;
+        const finish = (/** @type {boolean} */ ok) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(guard);
+          if (!ok) this.lastSilentFailAt = Date.now();
+          else this.lastSilentFailAt = 0;
+          resolve(ok);
+        };
+        const guard = setTimeout(() => finish(false), 6000);
+        try {
+          const client = g.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            prompt: "none",
+            hint: this.profile.email || undefined,
+            callback: (/** @type {any} */ resp) => {
+              if (!resp || resp.error || !resp.access_token) { finish(false); return; }
+              this.writeToken(resp.access_token, resp.expires_in);
+              this.set("synced");
+              finish(true);
+            },
+            error_callback: () => finish(false)
+          });
+          client.requestAccessToken({ prompt: "none" });
+        } catch {
+          finish(false);
+        }
+      });
+    })().finally(() => { this.refreshPromise = null; });
+    return this.refreshPromise;
+  }
+
   init() {
-    // Earlier versions kept the access token in localStorage; it now lives only for this tab session.
-    try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXPIRY_KEY); } catch { /* ignore */ }
     try {
       this.profile = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}") || {};
       this.fileId = localStorage.getItem(FILE_KEY);
-      const token = sessionStorage.getItem(TOKEN_KEY);
-      const exp = Number(sessionStorage.getItem(EXPIRY_KEY) || 0);
+      const { token, exp } = this.readToken();
       if (token && exp > Date.now() + 30_000) {
         this.token = token;
         this.set("synced");
         this.sync();
       } else if (token || this.profile.email) {
-        this.token = null;
-        this.set("expired");
+        this.clearToken();
+        this.silentRefresh().then((ok) => {
+          if (ok) this.sync();
+          else this.set(navigator.onLine ? "expired" : "offline");
+        });
       }
     } catch { /* storage blocked */ }
     this.store.on("library-change", () => this.schedule());
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible" && this.token && Date.now() - this.lastSync > 60_000) this.sync();
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState !== "visible") return;
+      if (!this.token && this.profile.email && this.status === "expired") {
+        if (await this.silentRefresh()) this.sync();
+        return;
+      }
+      if (this.token) {
+        if (!this.tokenValid(5 * 60_000) && this.profile.email) await this.silentRefresh();
+        if (Date.now() - this.lastSync > 60_000) this.sync();
+      }
     });
-    window.addEventListener("online", () => { if (this.token && (this.status === "offline" || this.status === "error")) this.sync(); });
+    window.addEventListener("online", async () => {
+      if (!this.token && this.profile.email) await this.silentRefresh();
+      if (this.token && (this.status === "offline" || this.status === "error")) this.sync();
+    });
     window.addEventListener("offline", () => { if (this.token && this.status !== "expired") this.set("offline"); });
   }
 
@@ -125,11 +215,8 @@ export class Drive {
             resolve(false);
             return;
           }
-          this.token = resp.access_token;
-          try {
-            sessionStorage.setItem(TOKEN_KEY, resp.access_token);
-            sessionStorage.setItem(EXPIRY_KEY, String(Date.now() + (Number(resp.expires_in) || 3599) * 1000));
-          } catch { /* storage blocked */ }
+          this.writeToken(resp.access_token, resp.expires_in);
+          this.lastSilentFailAt = 0;
           await this.fetchProfile();
           resolve(await this.sync());
         },
@@ -157,33 +244,40 @@ export class Drive {
   signOut() {
     const g = /** @type {any} */ (window).google;
     if (this.token && g?.accounts?.oauth2) { try { g.accounts.oauth2.revoke(this.token, () => {}); } catch { /* ignore */ } }
-    this.token = null;
+    this.clearToken();
     this.profile = {};
     this.fileId = null;
+    this.lastSilentFailAt = 0;
     clearTimeout(this.retryTimer);
     this.failures = 0;
-    for (const k of [TOKEN_KEY, EXPIRY_KEY]) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch { /* ignore */ } }
-    for (const k of [PROFILE_KEY, FILE_KEY]) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
+    for (const k of [PROFILE_KEY, FILE_KEY, "sonata_reconnect_toast_at"]) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
     this.set("signed-out");
   }
 
   /** Debounced sync after edits. */
   schedule() {
-    if (!this.token) return;
+    if (!this.token && !this.profile.email) return;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.sync(), 4000);
   }
 
-  tokenValid() {
-    try { return Boolean(this.token) && Number(sessionStorage.getItem(EXPIRY_KEY) || 0) > Date.now() + 15_000; } catch { return Boolean(this.token); }
+  /** @param {number} [bufferMs] */
+  tokenValid(bufferMs = 15_000) {
+    try {
+      const exp = Number(sessionStorage.getItem(EXPIRY_KEY) || localStorage.getItem(EXPIRY_KEY) || 0);
+      return Boolean(this.token) && (!exp || exp > Date.now() + bufferMs);
+    } catch { return Boolean(this.token); }
   }
 
-  /** @param {string} url @param {RequestInit} [init] */
+  /** @param {string} url @param {RequestInit & { _retried?: boolean }} [init] */
   async api(url, init = {}) {
-    const r = await fetch(url, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${this.token}` } });
+    const { _retried, ...reqInit } = init;
+    const r = await fetch(url, { ...reqInit, headers: { ...(reqInit.headers || {}), Authorization: `Bearer ${this.token}` } });
     if (r.status === 401) {
-      this.token = null;
-      try { sessionStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+      this.clearToken();
+      if (!_retried && this.profile?.email && await this.silentRefresh()) {
+        return this.api(url, { ...reqInit, _retried: true });
+      }
       throw Object.assign(new Error("expired"), { expired: true });
     }
     if (!r.ok) throw new Error(`Drive ${r.status}`);
@@ -232,7 +326,9 @@ export class Drive {
    * @returns {Promise<{ ok: true, id: string } | { ok: false, reason: "signin"|"offline"|"error" }>}
    */
   async publishBank(file, fileId = "", name = BANK_NAME) {
-    if (!this.token || !this.tokenValid()) return { ok: false, reason: "signin" };
+    if (!this.token || !this.tokenValid()) {
+      if (!(await this.silentRefresh())) return { ok: false, reason: "signin" };
+    }
     if (!navigator.onLine) return { ok: false, reason: "offline" };
     try {
       let id = fileId;
@@ -281,8 +377,15 @@ export class Drive {
 
   /** Download, merge, upload. Returns true on success. */
   async sync() {
-    if (!this.token) return false;
-    if (!this.tokenValid()) { this.token = null; this.set("expired"); return false; }
+    if (!this.token || !this.tokenValid()) {
+      if (!(await this.silentRefresh())) {
+        if (this.token || this.profile?.email) {
+          this.clearToken();
+          this.set("expired");
+        }
+        return false;
+      }
+    }
     if (!navigator.onLine) { this.set("offline"); return false; }
     if (this.busy) { this.queued = true; return false; }
     this.busy = true;

@@ -230,9 +230,14 @@ function onDriveStatus(status) {
   btn.setAttribute("aria-label", `${t("backupTitle", "Backup & restore")}: ${text}`);
   dot.hidden = status === "signed-out" || status === "synced";
   dot.dataset.status = status;
-  // The Google session ends after an hour. Say so once, with a one-tap Reconnect (a tap is needed for the popup).
+  // Only notify about expired Google session gently (at most once every 12 hours) after silent refresh fails.
   if (status === "expired" && lastDriveStatus && !["expired", "signed-out"].includes(lastDriveStatus)) {
-    toast(t("reconnectText", "Your Google session expired. Reconnect to keep syncing."), "info", { ms: 12000, action: t("reconnect", "Reconnect"), onAction: () => { app.drive?.signIn(); } });
+    let lastToast = 0;
+    try { lastToast = Number(localStorage.getItem("sonata_reconnect_toast_at") || 0); } catch { /* ignore */ }
+    if (Date.now() - lastToast > 12 * 3600 * 1000) {
+      try { localStorage.setItem("sonata_reconnect_toast_at", String(Date.now())); } catch { /* ignore */ }
+      toast(t("reconnectText", "Your Google session expired. Reconnect to keep syncing."), "info", { ms: 9000, action: t("reconnect", "Reconnect"), onAction: () => { app.drive?.signIn(); } });
+    }
   }
   markUnprotected();
   lastDriveStatus = status;
@@ -489,11 +494,9 @@ async function boot() {
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); /** @type {any} */ (app).installPrompt = e; });
 
   onDriveStatus("signed-out");
-  // Earlier versions kept the Google access token in localStorage; make sure none is left behind.
-  try { localStorage.removeItem("sonata_google_token"); localStorage.removeItem("sonata_google_token_expiry"); } catch { /* ignore */ }
   // Drive loads now only for someone who has signed in before; everyone else gets it when they open Backup.
   let usesDrive = false;
-  try { usesDrive = Boolean(localStorage.getItem("sonata_user_profile") || localStorage.getItem("sonata_drive_file_id") || sessionStorage.getItem("sonata_google_token")); } catch { /* ignore */ }
+  try { usesDrive = Boolean(localStorage.getItem("sonata_user_profile") || localStorage.getItem("sonata_drive_file_id") || localStorage.getItem("sonata_google_token") || sessionStorage.getItem("sonata_google_token")); } catch { /* ignore */ }
   if (usesDrive) loadDrive();
 
   const opened = await handleShareLink();

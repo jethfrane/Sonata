@@ -84,7 +84,8 @@ const ICONS = {
   grow: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
   shrink: '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>',
   chevron: '<path d="m9 6 6 6-6 6"/>',
-  bank: '<path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V8"/>' 
+  bank: '<path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="16" r="3"/><path d="M21 16V8"/>',
+  pin: '<path d="M12 17v5M9 10.8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4.8a2 2 0 0 0 .6 1.4l1.4 1.4a1 1 0 0 1-.7 1.7H7.7a1 1 0 0 1-.7-1.7l1.4-1.4a2 2 0 0 0 .6-1.4z"/>'
 };
 
 /** @param {string} name @param {string} [cls] */
@@ -281,13 +282,14 @@ export const slug = (s) => (String(s || "song").toLowerCase().replace(/[^a-z0-9]
 export function relativeTime(iso, lang = "en") {
   const t = new Date(iso).getTime();
   if (!t) return "";
-  const diff = (Date.now() - t) / 1000;
+  const diff = Math.max(0, (Date.now() - t) / 1000);
   const rtf = new Intl.RelativeTimeFormat(lang === "fil" ? "fil" : "en", { numeric: "auto" });
   if (diff < 60) return rtf.format(0, "second");
   if (diff < 3600) return rtf.format(-Math.round(diff / 60), "minute");
   if (diff < 86400) return rtf.format(-Math.round(diff / 3600), "hour");
-  if (diff < 86400 * 7) return rtf.format(-Math.round(diff / 86400), "day");
-  return new Date(t).toLocaleDateString(lang === "fil" ? "fil-PH" : undefined, { month: "short", day: "numeric", year: diff > 86400 * 300 ? "numeric" : undefined });
+  if (diff < 86400 * 30) return rtf.format(-Math.round(diff / 86400), "day");
+  if (diff < 86400 * 365) return rtf.format(-Math.max(1, Math.round(diff / (86400 * 30))), "month");
+  return rtf.format(-Math.max(1, Math.round(diff / (86400 * 365))), "year");
 }
 
 /**

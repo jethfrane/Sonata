@@ -202,22 +202,24 @@ const stageAfter = await p.evaluate(() => ({ h: document.getElementById("stageSc
 ok(stageAfter.hidden && stageAfter.h === stageBefore && stageAfter.h >= 700, "stage chart uses the full height; bars float over it");
 await p.keyboard.press("Escape"); await p.waitForTimeout(300);
 ok(await p.evaluate(() => !document.getElementById("app").inert), "leaving the stage makes the page usable again");
-// Songs: sort hidden for setlists; empty favorites offers a way back
-ok(await p.evaluate(() => document.getElementById("librarySort").hidden), "sort menu hidden on the Setlists filter");
-await p.evaluate(() => { const s = window.__sonata.store; s.songs.forEach((x) => { x.isFavorite = false; }); s.changed("library"); });
+// Songs: sort visible for setlists (latest-to-oldest); empty favorites offers a way back
+ok(await p.evaluate(() => !document.getElementById("librarySort").hidden), "sort menu remains visible on the Setlists filter");
+await p.evaluate(() => { const s = window.__sonata.store; s.songs.forEach((x) => { x.isFavorite = false; }); s.setlists.forEach((x) => { x.isFavorite = false; }); s.changed("library"); });
 await p.click('[data-filter="favorites"]'); await p.waitForTimeout(200);
 await p.click('[data-act="all"]'); await p.waitForTimeout(200);
 ok(await p.evaluate(() => document.querySelector('[data-filter="all"]').classList.contains("active") && document.querySelectorAll(".row[data-id]").length > 0), "empty Favorites → Show all songs");
 await p.close();
 
-// Large library: first 200 rows, Show more adds the rest
+// Large library: paginated at 12 rows per page, Show all draws the rest
 p = await phone({ width: 390, height: 844 });
 await p.goto(BASE + "/");
 await p.evaluate(() => { localStorage.clear(); localStorage.setItem("sonata:v12:songs", JSON.stringify(Array.from({ length: 450 }, (_, i) => ({ id: "song-big-" + i, title: "Song " + i, body: "G C", updatedAt: new Date(Date.now() - i * 1e6).toISOString() })))); });
 await p.goto(BASE + "/songs"); await p.waitForTimeout(500);
-ok(await p.locator(".row[data-id]").count() === 200, "450 songs: 200 rows drawn at first");
+ok(await p.locator(".row[data-id]").count() === 12 && await p.locator('.pager-bar [data-page="2"]').count() >= 1, "450 songs: 12 rows drawn per page with pagination bar");
+await p.click('.pager-bar [data-page="2"]'); await p.waitForTimeout(150);
+ok(await p.evaluate(() => document.querySelector(".row[data-id]")?.dataset.id === "song-big-12"), "page 2 starts at the 13th newest song");
 await p.click('[data-act="more-rows"]'); await p.waitForTimeout(200);
-ok(await p.locator(".row[data-id]").count() === 450 && await p.locator('[data-act="more-rows"]').count() === 0, "Show more draws the rest");
+ok(await p.locator(".row[data-id]").count() === 450 && await p.locator('[data-act="more-rows"]').count() === 0, "Show all draws the rest");
 await p.fill("#librarySearch", "Song 44"); await p.waitForTimeout(400);
 ok(await p.locator(".row[data-id]").count() === 11, "search in a big library still finds matches (after a short pause)");
 await p.close();

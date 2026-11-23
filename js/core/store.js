@@ -20,13 +20,13 @@ export const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /**
  * @typedef {{ name: string, url: string }} Link
  * @typedef {{ id: string, title: string, artist: string, creator: string, description: string,
- *   links: Link[], body: string, manualKey: string, isFavorite: boolean, transpose: number,
+ *   links: Link[], body: string, manualKey: string, isFavorite: boolean, pinned?: boolean, transpose: number,
  *   capo: number, bpm: number|null, genre: string, mood?: string, inBank: boolean, createdAt: string, updatedAt: string,
  *   lastOpenedAt: string, readonly?: boolean, origin?: string, setlistKey?: string, setlistCapo?: number }} Song
  *   `origin`: the share id of the song this copy was saved from (see shareId in share.js).
  * @typedef {{ songId: string, key?: string, capo?: number }} SetlistItem
  * @typedef {{ id: string, title: string, description: string, links: Link[],
- *   items: SetlistItem[], date: string, updatedAt: string, liveId?: string, source?: string }} Setlist
+ *   items: SetlistItem[], date: string, updatedAt: string, isFavorite?: boolean, tags?: string[], liveId?: string, source?: string }} Setlist
  * @typedef {{ setlistId: string, index: number, key?: string, capo?: number }} SetlistRef
  * @typedef {{ kind: "song", id: string, trashedAt: string, updatedAt: string, item: Song, setlistRefs?: SetlistRef[] }} SongTrashEntry
  * @typedef {{ kind: "setlist", id: string, trashedAt: string, updatedAt: string, item: Setlist }} SetlistTrashEntry
@@ -107,10 +107,29 @@ export function normalizeSong(s) {
     updatedAt,
     lastOpenedAt: time(s.lastOpenedAt, updatedAt)
   };
+  if (s.pinned) song.pinned = true;
   if (s.readonly) song.readonly = true;
   const origin = str(s.origin).replace(/[^a-z0-9]/gi, "").slice(-12);
   if (origin) song.origin = origin;
   return song;
+}
+
+/** @param {unknown} raw @returns {string[]} */
+export function normalizeTags(raw) {
+  const list = Array.isArray(raw) ? raw : typeof raw === "string" ? raw.split(",") : [];
+  /** @type {string[]} */
+  const out = [];
+  const seen = new Set();
+  for (const item of list) {
+    const clean = str(item).trim().replace(/\s+/g, " ").slice(0, 24);
+    if (!clean) continue;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(clean);
+    if (out.length >= 6) break;
+  }
+  return out;
 }
 
 /** @param {any} i @returns {SetlistItem|null} */
@@ -146,6 +165,9 @@ export function normalizeSetlist(s) {
   // Live setlists: `liveId` is the Drive file this setlist is published to (the leader's side);
   // `source` is the Drive file this setlist follows (a band member's side).
   for (const k of /** @type {const} */ (["liveId", "source"])) { const v = str(s[k]); if (/^[\w-]{20,80}$/.test(v)) set[k] = v; }
+  if (s.isFavorite) set.isFavorite = true;
+  const tags = normalizeTags(s.tags);
+  if (tags.length) set.tags = tags;
   return set;
 }
 
@@ -321,9 +343,9 @@ export const libraryFingerprint = (d) => {
   /** @type {any[]} */
   const parts = [
     // "last opened" changes on every tap on a song; it alone is not worth an upload.
-    // New fields (genre, mood, song bank) left at their defaults compare equal to older files that lack them.
-    (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, mood: s.mood || undefined, inBank: s.inBank || undefined })),
-    d.setlists || [],
+    // New fields (genre, mood, song bank, pinned) left at their defaults compare equal to older files that lack them.
+    (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, mood: s.mood || undefined, inBank: s.inBank || undefined, pinned: s.pinned || undefined })),
+    (d.setlists || []).map((/** @type {any} */ sl) => ({ ...sl, isFavorite: sl.isFavorite || undefined, tags: sl.tags?.length ? sl.tags : undefined })),
     [...(d.deletedIds || [])].sort()
   ];
   if (d.trash && d.trash.length) {
@@ -571,6 +593,7 @@ export class Store {
   update(song, patch) {
     if (!song || song.readonly) return;
     Object.assign(song, patch, { updatedAt: now() });
+    if (patch.pinned === false) delete song.pinned;
     this.changed();
   }
 
@@ -645,7 +668,7 @@ export class Store {
 
   /** @param {Song} song */
   duplicate(song) {
-    return this.createSong({ ...song, title: `${song.title} (copy)`, isFavorite: false });
+    return this.createSong({ ...song, title: `${song.title} (copy)`, isFavorite: false, pinned: false });
   }
 
   /** @param {Partial<Setlist>} data */
@@ -654,6 +677,15 @@ export class Store {
     const existing = data.id ? this.setlists.find((s) => s.id === data.id) : null;
     if (existing) {
       Object.assign(existing, data, { updatedAt: t });
+      if (data.tags !== undefined) {
+        const clean = normalizeTags(data.tags);
+        if (clean.length) existing.tags = clean;
+        else delete existing.tags;
+      }
+      if (data.isFavorite !== undefined) {
+        if (data.isFavorite) existing.isFavorite = true;
+        else delete existing.isFavorite;
+      }
       this.changed();
       return existing;
     }

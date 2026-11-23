@@ -654,7 +654,37 @@ const FIL = {
   tryAgain: "Subukan ulit",
   uiText: "Teksto ng interface",
   updateNow: "I-update",
-  useSongChords: "Gamitin ang chords ng kanta"
+  useSongChords: "Gamitin ang chords ng kanta",
+  // v7.5.0
+  favoriteSetlists: "Mga paboritong setlist",
+  filterByTag: "I-filter ang setlists",
+  inNSetlists: "{n} setlist",
+  nextPage: "Susunod na pahina",
+  paginateRows: "Hatiin ({n}/pahina)",
+  pagination: "Mga pahina",
+  pin: "I-pin",
+  pinned: "Naka-pin",
+  prevPage: "Nakaraang pahina",
+  setTags: "Mga tag (opsyonal)",
+  setTagsPh: "Magdagdag ng tag (pindutin ang Enter)",
+  showAllRows: "Ipakita lahat ({n})",
+  showingAll: "Ipinapakita lahat ({n})",
+  showingRange: "{a}–{b} sa {n}",
+  sortOldest: "Pinakaluma",
+  statusEditing: "Bukas",
+  statusInBank: "Bank",
+  statusInSet: "Nasa setlist",
+  statusLiveBank: "Live",
+  statusShared: "Ibinahagi",
+  tagAcoustic: "Acoustic",
+  tagChurch: "Church",
+  tagGig: "Gig",
+  tagPerformance: "Performance",
+  tagRehearsal: "Rehearsal",
+  tagWorship: "Worship",
+  unfavorite: "Alisin sa Paborito",
+  unpin: "I-unpin",
+  updatedWhen: "Na-update {when}"
 };
 
 export default FIL;

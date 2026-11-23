@@ -2,7 +2,7 @@
 import { $, $$, esc, icon, toast, copyText, paintIcons, setIcon, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, effectiveCapo, effectiveTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
-import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName, autoFormatChart } from "../core/chart.js";
+import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport, openSongSwitcher } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
@@ -346,13 +346,14 @@ function updateHistoryButtons() {
 }
 
 /** Auto-format raw pasted text in the editor: clean sections, chords, metadata & long-line wrapping (with 1-click Undo). */
-function runAutoFormat() {
+async function runAutoFormat() {
   const s = store.active();
   const ta = body();
   if (!s || s.readonly || !ta.value.trim()) return;
   clearTimeout(historyTimer);
   const h = hist(s.id);
   pushHistory(s.id, ta.value);
+  const { autoFormatChart } = await import("../core/chart-format.js");
   const res = autoFormatChart(ta.value);
   /** @type {Partial<import("../core/store.js").Song>} */
   const patch = {};

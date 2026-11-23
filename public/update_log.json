@@ -1,5 +1,16 @@
 [
   {
+    "version": "7.5.0",
+    "date": "2026-11-24",
+    "whatsNew": "Resilient Google Drive sync with silent refresh, setlist tags & favorites, rich song status badges, clean pagination across every tab, Antigravity-style pinned sidebar items, and native desktop hover/right-click context menus.",
+    "changes": [
+      "Google Drive sync persistence & silent refresh: keeps your Drive session safely across reloads and app updates, silently refreshes expired access tokens in the background (`prompt: none`) before falling back to Reconnect, and limits reconnect prompts to at most once every 12 hours.",
+      "Setlist tags, favorites & sorting: keep the Sort dropdown visible across Setlists (default Latest to Oldest), add optional tags (Church, Worship, Gig, Performance, Rehearsal, Acoustic, or custom tags), favorite setlists (surfaced in Favorites too), and floating dropdown menus on per-slot Key/Capo selectors.",
+      "Rich row badges & pagination: All, Favorites, Setlists, and Song Bank show live status pills (Live, Shared, Setlist, Pinned), last updated relative time, and clean 12-item pagination controls with one-tap Show all.",
+      "Native app polish: Antigravity-style sidebar Recent list with Pinned songs, artist/status subtitles, and relative touch timestamps (hours, days, months, years), plus desktop hover quick-actions and native right-click context menus."
+    ]
+  },
+  {
     "version": "7.4.0",
     "date": "2026-11-23",
     "whatsNew": "Per-setlist Key & Capo overrides that leave your base song untouched, a 1-tap Paste -> Auto-Format recovery flow when chord sites block scraping, ChordPro (.cho) exports, complete Filipino translations, and modular dialog architecture.",

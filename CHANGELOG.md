@@ -2,6 +2,14 @@
 
 All notable changes to **Sonata** are documented here, following [Semantic Versioning](https://semver.org/).
 
+## [7.5.0] - 2026-11-24
+
+### Added & Improved
+- **Resilient Google Drive Sync**: Persists session tokens safely across reloads and service worker updates, attempts silent GIS background refresh (`prompt: "none"`) on expiry or `401` before showing Reconnect, and throttles reconnect toast notifications to at most once every 12 hours.
+- **Setlist Tags, Favorites & Sorting**: Keeps `#librarySort` active on the Setlists tab (`Latest` first by default, plus `Title`, `Artist`, `Key`, `Oldest`), adds optional preset/custom tags (`Church`, `Worship`, `Gig`, `Performance`, `Rehearsal`, `Acoustic`), supports Favoriting setlists (also displayed in the `Favorites` tab), and uses floating `.ui-select-menu` popovers on per-slot Key/Capo selectors.
+- **Rich Row Badges & Pagination**: Shows live/shared/setlist/pinned pills and `Updated ...` relative timestamps across `All`, `Favorites`, `Setlists`, and `Song Bank`, plus clean 12-item pagination bars with `Prev` / page numbers / `Next` / `Show all`.
+- **Native App Experience**: Antigravity-style sidebar `Recent` list with pinned songs, artist/status subtext, and full relative time (`7 hours ago`, `days`, `months`, `years`), desktop hover quick-actions (`Present`, `Pin`, `Share`), and lazy-loaded native right-click context menus across songs, setlists, and sidebar items.
+
 ## [7.4.0] - 2026-11-23
 
 ### Added

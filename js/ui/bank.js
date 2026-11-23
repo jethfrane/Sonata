@@ -55,7 +55,7 @@ const FONT_NAMES = /** @type {Record<string, string>} */ ({ modern: "Modern", cl
 
 /** Song Bank editor: the header live on top, then name and note, look, gigs, songs, sharing. */
 export function openBankManager() {
-  const all = store.songs.filter((s) => !s.readonly).slice().sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }));
+  const all = store.songs.filter((s) => !s.readonly).slice().sort((a, b) => (Date.parse(b.updatedAt || b.createdAt) || 0) - (Date.parse(a.updatedAt || a.createdAt) || 0));
   let filter = "";
   const card = () => {
     const p = store.bank;

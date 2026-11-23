@@ -5,7 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as M from "../js/core/music.js";
-import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, autoFormatChart, stripLyricsToChordsOnly, inlineSectionLabel } from "../js/core/chart.js";
+import { buildLines, linesToText, pairSegments, uniqueChords, stripLyricsToChordsOnly, inlineSectionLabel } from "../js/core/chart.js";
+import { analyzeRawChart, autoFormatChart } from "../js/core/chart-format.js";
 import { Store, normalizeSong, normalizeSetlist, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
@@ -1254,4 +1255,67 @@ test("v7.4.0 Filipino i18n-fil.js covers all HTML and JS UI translation keys", (
       assert.ok(FIL[k].includes(`{${v}}`), `FIL.${k} must keep placeholder {${v}}`);
     }
   }
+});
+
+test("v7.5.0 setlist tags, favorites, song pinning, and MCP round-trip", async () => {
+  const { Store, normalizeSetlist, normalizeSong, normalizeTags, libraryFingerprint, memoryStorage } = await import("../js/core/store.js");
+  const { buildSetFile, parseSetFile } = await import("../js/core/share.js");
+  const { executeLibraryTool } = await import("../js/core/mcp-tools.js");
+
+  assert.deepEqual(normalizeTags([" Church ", "church", "Gig", "", "Worship"]), ["Church", "Gig", "Worship"]);
+  const slNorm = normalizeSetlist({ id: "sl-1", name: "Sunday Service", songIds: ["a"], tags: ["Church", "church", "Worship"], isFavorite: true });
+  assert.deepEqual(slNorm.tags, ["Church", "Worship"]);
+  assert.equal(slNorm.isFavorite, true);
+
+  const storage = memoryStorage();
+  const store = new Store(storage).load();
+  const s1 = store.createSong({ title: "Oceans", artist: "Hillsong", key: "D", body: "D A Bm G" });
+  const baseFp = libraryFingerprint({
+    songs: [normalizeSong({ ...s1, pinned: false })],
+    setlists: [normalizeSetlist({ id: "sl-fp", title: "Test", items: [{ songId: s1.id }] })],
+    deleted: {},
+  });
+  const legacyFp = libraryFingerprint({
+    songs: [{ id: s1.id, title: s1.title, artist: s1.artist, key: s1.key, body: s1.body, updatedAt: s1.updatedAt }],
+    setlists: [{ id: "sl-fp", title: "Test", items: [{ songId: s1.id }], updatedAt: new Date(0).toISOString() }],
+    deleted: {},
+  });
+  assert.equal(
+    libraryFingerprint({ songs: [normalizeSong(s1)], setlists: [], deleted: {} }),
+    libraryFingerprint({ songs: [s1], setlists: [], deleted: {} }),
+    "unpinned default matches legacy fingerprint"
+  );
+  assert.notEqual(
+    libraryFingerprint({ songs: [{ ...s1, pinned: true }], setlists: [], deleted: {} }),
+    libraryFingerprint({ songs: [s1], setlists: [], deleted: {} }),
+    "pinning a song changes libraryFingerprint so sync propagates"
+  );
+  assert.ok(baseFp && legacyFp);
+
+  store.update(s1, { pinned: true });
+  assert.equal(store.song(s1.id).pinned, true);
+  const savedSet = store.saveSetlist({ title: "Youth Night", items: [{ songId: s1.id }], tags: ["Church", "Youth", "church"], isFavorite: true });
+  assert.deepEqual(savedSet.tags, ["Church", "Youth"]);
+  assert.equal(savedSet.isFavorite, true);
+  store.persist();
+
+  const reloaded = new Store(storage).load();
+  assert.equal(reloaded.song(s1.id).pinned, true, "pinned persists across Store reload");
+  const reloadedSet = reloaded.setlists.find((x) => x.id === savedSet.id);
+  assert.deepEqual(reloadedSet.tags, ["Church", "Youth"], "setlist tags persist");
+  assert.equal(reloadedSet.isFavorite, true, "setlist isFavorite persists");
+
+  const setJson = buildSetFile(savedSet, [s1]);
+  const parsedSet = parseSetFile(setJson);
+  assert.deepEqual(parsedSet.tg, ["Church", "Youth"], "setlist share file preserves tags");
+
+  const createdMcp = await executeLibraryTool("manage_setlists", {
+    action: "create",
+    title: "Cafe Acoustic",
+    songIds: [s1.id],
+    tags: ["Gig", "Acoustic"],
+    isFavorite: true,
+  }, { store });
+  assert.equal(createdMcp.setlist.isFavorite, true);
+  assert.deepEqual(createdMcp.setlist.tags, ["Gig", "Acoustic"]);
 });

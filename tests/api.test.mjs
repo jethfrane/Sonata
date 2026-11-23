@@ -460,7 +460,7 @@ test("mcp endpoint: GET/SSE/OPTIONS, initialize, public vs auth tools, SSRF refu
   const health = JSON.parse(getHealth.body);
   assert.equal(health.tools, 18);
   assert.equal(health.publicTools, 7);
-  assert.equal(health.version, "7.4.0");
+  assert.equal(health.version, "7.5.0");
 
   const getSse = await callApi(handler, { url: "/api/mcp", method: "GET", headers: { accept: "text/event-stream" } });
   assert.equal(getSse.status, 405);

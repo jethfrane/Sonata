@@ -155,8 +155,9 @@ function applySet(set, data) {
     return item;
   });
   const before = set.items.map((i) => i.songId).join(",");
-  if (before !== ids.join(",") || set.title !== data.t || set.description !== data.d) changed = true;
-  if (changed) store.saveSetlist({ id: set.id, title: data.t, description: data.d, links: data.l, items: nextItems });
+  const nextTags = Array.isArray(data.tg) ? data.tg : [];
+  if (before !== ids.join(",") || set.title !== data.t || set.description !== data.d || JSON.stringify(set.tags || []) !== JSON.stringify(nextTags)) changed = true;
+  if (changed) store.saveSetlist({ id: set.id, title: data.t, description: data.d, links: data.l, ...(data.tg ? { tags: data.tg } : {}), items: nextItems });
   return changed;
 }
 

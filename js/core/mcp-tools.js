@@ -6,7 +6,8 @@ import {
   prefersFlats, mod12, noteName, SCALES, CHORD_TYPES, keySignature, relativeKey,
   diatonicChords, chordsForKey
 } from "./music.js";
-import { analyzeRawChart, autoFormatChart, buildLines, linesToText, uniqueChords } from "./chart.js";
+import { buildLines, linesToText, uniqueChords } from "./chart.js";
+import { analyzeRawChart, autoFormatChart } from "./chart-format.js";
 import { describeChord, voicings, TUNINGS, bassMap, pianoVoicing } from "./chords.js";
 import { packSong, packSet, encodeShare, safeHref, MAX_LINK } from "./share.js";
 import { songSlug } from "../router.js";
@@ -373,6 +374,8 @@ export const LIBRARY_TOOL_DEFS = [
         id: { type: "string", description: "Setlist ID (required for update, add_songs, trash)." },
         title: { type: "string" },
         description: { type: "string" },
+        tags: { type: "array", items: { type: "string" }, description: "Optional tags such as Church, Gig, Performance, Rehearsal." },
+        isFavorite: { type: "boolean" },
         songIds: { type: "array", items: { type: "string" }, description: "Ordered song IDs for create/update/add_songs." }
       },
       required: ["action"]
@@ -1035,6 +1038,8 @@ export async function executeLibraryTool(name, args, ctx) {
           id: sl.id,
           title: sl.title,
           description: sl.description,
+          tags: sl.tags || [],
+          isFavorite: Boolean(sl.isFavorite),
           songCount: sl.items.length,
           songIds: sl.items.map((i) => i.songId),
           updatedAt: sl.updatedAt
@@ -1058,6 +1063,8 @@ export async function executeLibraryTool(name, args, ctx) {
       const setlist = store.saveSetlist({
         title: str(input.title).trim() || "Untitled Setlist",
         description: str(input.description),
+        ...(input.tags !== undefined ? { tags: input.tags } : {}),
+        ...(input.isFavorite !== undefined ? { isFavorite: Boolean(input.isFavorite) } : {}),
         items: cleanSongItems(input.songIds)
       });
       const res = { setlist };
@@ -1074,6 +1081,8 @@ export async function executeLibraryTool(name, args, ctx) {
       const patch = { id: existing.id };
       if (input.title !== undefined) patch.title = str(input.title).trim() || "Untitled Setlist";
       if (input.description !== undefined) patch.description = str(input.description);
+      if (input.tags !== undefined) patch.tags = input.tags;
+      if (input.isFavorite !== undefined) patch.isFavorite = Boolean(input.isFavorite);
       if (input.songIds !== undefined) patch.items = cleanSongItems(input.songIds);
       const setlist = store.saveSetlist(patch);
       const res = { setlist };

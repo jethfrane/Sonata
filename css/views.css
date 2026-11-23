@@ -32,10 +32,34 @@
 .row.active { background: var(--accent-soft); }
 .row.active .row-title { color: var(--accent-strong); }
 .row-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 4px; border: 0; background: none; text-align: left; border-radius: 10px; }
-.row-text { min-width: 0; display: grid; gap: 1px; }
-.row-title { font-weight: 600; font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-text { min-width: 0; display: grid; gap: 2px; }
+.row-title-line { display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap; }
+.row-title { font-weight: 600; font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.row-badges { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; min-width: 0; }
+.meta-pill { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 650; line-height: 1; white-space: nowrap; background: var(--surface-3); color: var(--text-2); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.meta-pill .icon { width: 11px; height: 11px; }
+.meta-pill.pill-live { background: color-mix(in srgb, var(--success) 14%, transparent); color: var(--success); border-color: color-mix(in srgb, var(--success) 26%, transparent); }
+.meta-pill.pill-shared { background: var(--accent-soft); color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 22%, transparent); }
+.meta-pill.pill-set, .meta-pill.pill-pin { background: var(--surface-2); color: var(--text-2); }
+.meta-pill.pill-tag { background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 18%, transparent); }
 .row-sub { color: var(--muted); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; background: var(--surface-3); color: var(--text-2); flex: none; }
+.row-hover-acts { display: none; align-items: center; gap: 2px; flex: none; }
+.row-hover-acts .icon-btn.on { color: var(--accent-strong); }
+@media (hover: hover) and (pointer: fine) {
+  .row:hover .row-hover-acts, .row:focus-within .row-hover-acts { display: flex; }
+}
+.set-filter-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); overflow-x: auto; scrollbar-width: none; }
+.set-filter-bar::-webkit-scrollbar { display: none; }
+.set-filter-bar .chip { flex: none; min-height: 28px; padding: 0 10px; font-size: var(--fs-xs); }
+.set-filter-bar .chip.on, .sl-tag-chips .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.fav-sets-head { padding: 8px 14px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid color-mix(in srgb, var(--line) 75%, transparent); }
+.pager-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.pager-info { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pager-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.pager-btn { min-width: 32px; min-height: 32px; padding: 0 8px; font-variant-numeric: tabular-nums; }
+.pager-btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pager-dots { padding: 0 3px; font-size: var(--fs-xs); color: var(--muted); }
 .empty { text-align: center; padding: 48px 20px; border: 1px dashed var(--line-strong); border-radius: var(--radius-lg); background: var(--surface); }
 .empty-art { display: inline-grid; place-items: center; width: 60px; height: 60px; border-radius: 18px; background: var(--accent-soft); color: var(--accent); margin-bottom: 14px; }
 .empty-art .icon { width: 28px; height: 28px; }

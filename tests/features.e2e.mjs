@@ -906,6 +906,234 @@ console.log("\nv7.4.0 upgrades");
   await p.close();
 }
 
+// ---------------------------------------------------------------------------
+// 11. v7.5.0 Drive persistence + silent refresh, setlist sort/tags/favs,
+//     rich status badges, pagination, Antigravity sidebar recent, and native context menus
+// ---------------------------------------------------------------------------
+{
+  const ctx = await b.newContext({ viewport: { width: 1280, height: 820 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push("v7.5.0: " + e.message));
+
+  await p.route(/accounts\.google\.com\/gsi\/client|apis\.google\.com/, (r) => r.fulfill({
+    status: 200,
+    contentType: "application/javascript",
+    body: "",
+  }));
+  await p.route(/googleapis\.com\/(drive|upload)/, (r) => r.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ id: "mock-drive-file", files: [] }),
+  }));
+
+  await p.goto(BASE + "/");
+  // Seed expired localStorage Drive token and verify silent GIS prompt: "none" refresh recovers without annoying toast
+  await p.evaluate(() => {
+    localStorage.setItem("sonata_google_token", "expired-tok");
+    localStorage.setItem("sonata_google_token_expiry", String(Date.now() - 60000));
+    localStorage.setItem("sonata_user_profile", JSON.stringify({ name: "Jethro", email: "jethro@example.com" }));
+    window.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient({ callback, prompt }) {
+            return {
+              requestAccessToken(opts) {
+                const effPrompt = opts?.prompt || prompt;
+                window.__gisCalls = (window.__gisCalls || []).concat([{ prompt: effPrompt }]);
+                if (effPrompt === "none") {
+                  callback({ access_token: "fresh-silent-tok", expires_in: 3600 });
+                }
+              },
+            };
+          },
+        },
+      },
+    };
+  });
+  await p.evaluate(async () => {
+    const drive = await window.__sonata.loadDrive();
+    drive.init();
+    await drive.silentRefresh();
+  });
+  await p.waitForTimeout(150);
+  const driveOk = await p.evaluate(() => ({
+    tok: localStorage.getItem("sonata_google_token"),
+    prompt: window.__gisCalls?.[0]?.prompt,
+    toasts: document.getElementById("toasts")?.textContent || "",
+  }));
+  ok(
+    driveOk.tok === "fresh-silent-tok" && driveOk.prompt === "none" && !driveOk.toasts.toLowerCase().includes("session expired"),
+    "Drive silentRefresh renews token with prompt:'none' and persists to localStorage without annoying toast"
+  );
+
+  // Seed 16 songs & tagged favorite setlists for sorting, badges, pagination, sidebar recent & context menu
+  await p.evaluate(() => {
+    const now = Date.now();
+    const songs = Array.from({ length: 16 }, (_, i) => ({
+      id: `v75-s-${i}`,
+      title: `V75 Song ${String(i).padStart(2, "0")}`,
+      artist: i === 0 ? "Elevation Worship" : "Jet Music",
+      key: i % 2 ? "G" : "C",
+      bpm: i === 0 ? 72 : 0,
+      capo: i === 0 ? 2 : 0,
+      genre: i === 0 ? "Worship" : "Acoustic",
+      mood: i === 0 ? "Reflective" : "",
+      body: "C G Am F\nLine",
+      pinned: i === 1,
+      isFavorite: i === 0 || i === 1,
+      inBank: i === 0 || i === 2,
+      origin: i === 0 ? "https://sonata.jethrofrane.xyz/s/demo" : "",
+      lastOpenedAt: new Date(now - i * 3600 * 1000 * 4).toISOString(),
+      updatedAt: new Date(now - i * 3600 * 1000 * 4).toISOString(),
+    }));
+    localStorage.setItem("sonata:v12:bank", JSON.stringify({ fileId: "bank-live-file-0123456789abcdef" }));
+    localStorage.setItem("sonata:v12:songs", JSON.stringify(songs));
+    localStorage.setItem("sonata:v12:setlists", JSON.stringify([
+      {
+        id: "v75-set-church",
+        title: "Sunday Morning Live",
+        items: [{ songId: "v75-s-0" }, { songId: "v75-s-1" }],
+        tags: ["Church", "Worship"],
+        isFavorite: true,
+        liveId: "live-set-file-0123456789abcdef",
+        updatedAt: new Date(now - 2 * 3600 * 1000).toISOString(),
+      },
+      {
+        id: "v75-set-gig",
+        title: "Coffeehouse Gig",
+        items: [{ songId: "v75-s-2" }],
+        tags: ["Gig"],
+        isFavorite: false,
+        updatedAt: new Date(now - 72 * 3600 * 1000).toISOString(),
+      },
+    ]));
+  });
+  await p.goto(BASE + "/songs");
+  await p.waitForTimeout(350);
+
+  // Latest-to-oldest order & Drive localStorage survived reload!
+  ok(
+    await p.evaluate(() => localStorage.getItem("sonata_google_token") === "fresh-silent-tok"),
+    "Drive token in localStorage survives full page reload"
+  );
+  const firstRowInfo = await p.evaluate(() => {
+    const first = document.querySelector(".row[data-id]");
+    const sub = first?.querySelector(".row-sub")?.textContent || "";
+    const pills = first?.querySelector(".row-badges")?.textContent || "";
+    return { id: first?.dataset.id, sub, pills, count: document.querySelectorAll(".row[data-id]").length };
+  });
+  ok(
+    firstRowInfo.id === "v75-s-0" &&
+      firstRowInfo.count === 12 &&
+      firstRowInfo.sub.includes("Updated") &&
+      firstRowInfo.pills.includes("Live") &&
+      firstRowInfo.pills.includes("Shared"),
+    "All tab defaults latest-to-oldest, paginates at 12 rows, and renders Updated + Live + Shared badges"
+  );
+
+  // Switch to Oldest sort
+  await p.selectOption("#librarySort", "oldest");
+  await p.waitForTimeout(150);
+  ok(
+    await p.evaluate(() => document.querySelector(".row[data-id]")?.dataset.id === "v75-s-15"),
+    "Oldest sort puts oldest song first"
+  );
+  await p.selectOption("#librarySort", "recent");
+  await p.waitForTimeout(150);
+
+  // Sidebar Recent shows Pinned section + artist/status subtext + relative hours/days
+  const sidebarOk = await p.evaluate(() => {
+    const recent = document.getElementById("recentList");
+    const txt = recent?.textContent || "";
+    const pinnedRow = recent?.querySelector('.recent-row .recent-item[data-recent="v75-s-1"]');
+    const liveRow = recent?.querySelector('.recent-row .recent-item[data-recent="v75-s-0"]');
+    return Boolean(
+      recent?.querySelector(".recent-group-label") &&
+        pinnedRow &&
+        liveRow &&
+        liveRow.textContent.includes("Elevation Worship") &&
+        liveRow.textContent.includes("Open") &&
+        txt.includes("Live") &&
+        /\d+\s*hours?\s*ago/i.test(txt)
+    );
+  });
+  ok(sidebarOk, "Sidebar Recent shows Pinned group, artist/status subtext, and relative timestamps");
+
+  // Favorites tab surfaces Favorite Setlists + Badges
+  await p.click('[data-filter="favorites"]');
+  await p.waitForTimeout(200);
+  ok(
+    await p.evaluate(() => Boolean(document.querySelector(".fav-sets-head")) && (document.getElementById("libraryList")?.textContent || "").includes("Sunday Morning Live")),
+    "Favorites tab shows favorited setlists"
+  );
+
+  // Setlists tab: sort dropdown visible + tag filter chips + favorite star + rich badges
+  await p.click('[data-filter="setlists"]');
+  await p.waitForTimeout(200);
+  const setTabOk = await p.evaluate(() => ({
+    sortHidden: document.getElementById("librarySort").hidden,
+    firstSet: document.querySelector(".set-row")?.dataset.id,
+    hasChurchChip: Boolean(document.querySelector('.set-filter-bar [data-set-tag-filter="Church"]')),
+    txt: document.getElementById("libraryList")?.textContent || "",
+  }));
+  ok(
+    !setTabOk.sortHidden &&
+      setTabOk.firstSet === "v75-set-church" &&
+      setTabOk.hasChurchChip &&
+      setTabOk.txt.includes("Live") &&
+      setTabOk.txt.includes("Church"),
+    "Setlists tab keeps sort dropdown visible, sorts latest-to-oldest, renders tag filters & Live/tag badges"
+  );
+
+  await p.click('.set-filter-bar [data-set-tag-filter="Gig"]');
+  await p.waitForTimeout(150);
+  ok(
+    await p.evaluate(() => {
+      const txt = document.getElementById("libraryList")?.textContent || "";
+      return txt.includes("Coffeehouse Gig") && !txt.includes("Sunday Morning Live");
+    }),
+    "Setlist tag filter filters to matching tag"
+  );
+
+  // Setlist editor: custom tag chip + custom styled .select.set-slot-select
+  await p.click("#newSetlistBtn");
+  await p.waitForTimeout(250);
+  await p.click('#slTagChips [data-set-tag="Performance"]');
+  await p.fill("#slTitle", "Festival Set");
+  await p.click('#slPool [data-add="v75-s-0"]');
+  await p.waitForTimeout(100);
+  ok(
+    await p.evaluate(() => document.querySelectorAll("#slItems select.select.set-slot-select").length >= 2),
+    "Setlist editor uses styled .select.set-slot-select dropdowns for per-slot key and capo"
+  );
+  await p.click("#sheet .sheet-foot button.primary");
+  await p.waitForTimeout(250);
+  ok(
+    await p.evaluate(() => {
+      const created = window.__sonata.store.setlists.find((x) => x.title === "Festival Set");
+      return Boolean(created && created.tags?.includes("Performance"));
+    }),
+    "Setlist sheet saves selected preset Performance tag"
+  );
+
+  // Back to All -> hover actions & right-click native context menu
+  await p.click('[data-filter="all"]');
+  await p.waitForTimeout(200);
+  await p.locator('.row[data-id="v75-s-0"]').dispatchEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 300, clientY: 260 });
+  await p.waitForTimeout(250);
+  const ctxOk = await p.evaluate(() => {
+    const m = document.querySelector(".ui-ctx-menu");
+    return Boolean(m && m.textContent.includes("Present") && m.textContent.includes("Pin"));
+  });
+  ok(ctxOk, "Right-click opens native .ui-ctx-menu with Present & Pin actions");
+  await p.keyboard.press("Escape");
+  await p.waitForTimeout(100);
+  ok(await p.locator(".ui-ctx-menu").count() === 0, "Escape closes .ui-ctx-menu");
+
+  await p.close();
+  await ctx.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);
