@@ -1,5 +1,18 @@
 [
   {
+    "version": "7.3.0",
+    "date": "2026-11-23",
+    "whatsNew": "One-tap Auto-Format for pasted chord charts, tighter chart spacing to see more music at once, broader chord-site imports, optional Mood/Tone tags, live Google Drive setlist update alerts, and richer AI Agent / MCP tools.",
+    "changes": [
+      "New Auto-Format button in the Chart Editor cleans raw copy-pastes from any chord site, standardizes section headers (## Verse, ## Chorus, ## Bridge), repairs chord typos (D/F#m → D/F#), strips voicing legends, collapses blank gaps, and wraps overly long lines without touching Undo history.",
+      "Cleaner, roomier layout: tightened Chart headers and padding, moved Undo/Redo beside Format, removed duplicate key labels and top logo gloss, removed heavy blur on mobile nav bars, and gave section badges neutral slate styling so blue stands out strictly for chords.",
+      "Optional Mood / Tone (Joyful, Solemn, Reflective, etc.) beside Genre in Song details—hidden unless set, searchable in Songs and via AI Agents.",
+      "Enhanced Google Drive live setlists check quietly on Chart/Stage focus (30s cooldown) and show an Update banner toast whenever the leader updates the shared setlist.",
+      "Tools Hub & mobile refinements: 2-column Tools Hub on tablets, 6-column Chord Finder roots on compact screens with a direct Chord Builder link, Key Finder pinned on top on mobile/tablet, and piano centered around middle C4 on phones.",
+      "AI Agents & MCP v7.3.0: 18 tools (added format_chord_chart, chords-only transpose_chart view, mood/genre search, and MCP annotations) plus /llms-full.txt."
+    ]
+  },
+  {
     "version": "7.2.0",
     "date": "2026-11-22",
     "whatsNew": "Much sharper chord and key detection across rhythm slashes, slash-bass typos and worship progressions starting on IV, 1-tap Key and Capo overrides everywhere, and smarter chord link import & copy actions.",

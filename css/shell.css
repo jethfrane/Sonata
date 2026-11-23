@@ -125,10 +125,9 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
     height: calc(var(--top-h) + env(safe-area-inset-top)); flex-direction: row; align-items: center; gap: 8px;
     padding: env(safe-area-inset-top) max(10px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
     border-right: 0; border-bottom: 1px solid var(--line);
-    background: color-mix(in srgb, var(--bg) 86%, transparent);
-    backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
+    background: var(--bg);
   }
-  html[data-theme="dark"] .sidebar { background: color-mix(in srgb, var(--bg) 86%, transparent); }
+  html[data-theme="dark"] .sidebar { background: var(--bg); }
   .brand { padding: 0; }
   .brand img { width: 28px; height: 28px; }
   .tabs, .side-recent { display: none; }
@@ -139,8 +138,7 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
     display: grid; grid-template-columns: repeat(3, 1fr);
     height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    background: color-mix(in srgb, var(--surface) 92%, transparent);
-    backdrop-filter: saturate(1.5) blur(14px); -webkit-backdrop-filter: saturate(1.5) blur(14px);
+    background: var(--surface);
     border-top: 1px solid var(--line);
   }
   .bn { min-width: 0; display: grid; justify-items: center; align-content: center; gap: 3px; border: 0; background: none; color: var(--muted); font-size: var(--fs-2xs); font-weight: 650; }
@@ -151,6 +149,10 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
   .main { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
   .page { padding: 20px var(--gutter) 32px; }
 }
+@media (min-width: 641px) and (max-width: 1023px) {
+  .tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 640px) {
   :root { --gutter: 14px; --fs-2xl: calc(23px * var(--ts)); --fs-3xl: calc(23px * var(--ts)); --fs-xl: calc(18px * var(--ts)); }
   .page { padding: 14px var(--gutter) 24px; }

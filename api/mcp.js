@@ -1,7 +1,7 @@
 // Streamable HTTP JSON-RPC 2.0 MCP server for Sonata.
-// Anonymous requests expose 6 public chord/music/import/link tools.
+// Anonymous requests expose 7 public chord/music/import/format/link tools.
 // Authenticated requests (Bearer snt_a.* from /api/oauth or Bearer ya29.* Google token)
-// unlock all 17 tools backed by the user's Google Drive sonata_library.json.
+// unlock all 18 tools backed by the user's Google Drive sonata_library.json.
 import {
   ALL_TOOL_DEFS,
   LIBRARY_TOOL_DEFS,
@@ -122,7 +122,7 @@ export function createMcpHandler(io = {}) {
       }
       return sendJson(res, 200, {
         name: "sonata-mcp",
-        version: "1.0.0",
+        version: "7.3.0",
         protocolVersion: PROTOCOL_VERSION,
         transport: "streamable-http",
         status: "ok",
@@ -250,7 +250,7 @@ export function createMcpHandler(io = {}) {
             resources: { subscribe: false, listChanged: false },
             prompts: { listChanged: false }
           },
-          serverInfo: { name: "sonata", version: "1.0.0" },
+          serverInfo: { name: "sonata", version: "7.3.0" },
           instructions: SONATA_FORMAT_GUIDE
         });
       }

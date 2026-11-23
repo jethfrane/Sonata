@@ -1,21 +1,22 @@
 # Connecting AI Agents & MCP to Sonata
 
-Sonata exposes **17 MCP tools** (plus the `sonata://format-guide` resource and `import_chords_from_link` prompt) across three transports so AI assistants can look up chords, transpose charts, extract chords from links, build share URLs, and manage your library & Trash safely.
+Sonata (`v7.3.0`) exposes **18 MCP tools** (tagged with MCP 2025-03-26 `annotations`, plus the `sonata://format-guide` resource and `import_chords_from_link` prompt) across three transports so AI assistants can format, analyze, extract, transpose, link, and manage your library & Trash safely. Machine-readable discovery lives at `/llms.txt` and `/llms-full.txt`.
 
 ---
 
-## 1. Available Tools (17 Total)
+## 1. Available Tools (18 Total)
 
-### Public Tools (6 — No Sign-In Required)
+### Public Tools (7 — No Sign-In Required)
 Available anonymously on the Remote MCP endpoint, inside WebMCP, and via the local CLI:
 
 | Tool | Purpose |
 |---|---|
 | `extract_chords_from_url` | Fetch a public HTTPS chord webpage and analyze key, capo, BPM, chords, and progression. |
 | `analyze_chord_chart` | Parse pasted/raw chord text (ChordPro, Ultimate Guitar, `[G]` inline, chord-over-lyric). |
-| `build_sonata_link` | Build a compressed `https://sonata.jethrofrane.xyz/?s=...` import/share link for a song or setlist. |
+| `format_chord_chart` | Auto-format raw pasted chord charts into canonical `## Section` Sonata markdown, repair chords (`D/F#m` -> `D/F#`), strip voicing legends, collapse stray blank gaps, and wrap long lines cleanly. |
+| `build_sonata_link` | Build a compressed `https://sonata.jethrofrane.xyz/?s=...` import/share link for a song or setlist (including optional `genre` and `mood`). |
 | `lookup_chord` | Get chord tones, interval formula, and guitar, ukulele, bass, and piano voicings. |
-| `transpose_chart` | Transpose a chart by semitones or between keys, or render in Nashville / Roman / lyrics mode. |
+| `transpose_chart` | Transpose a chart by semitones or between keys, or render in `chords-only`, `nashville`, `roman`, or `lyrics` mode. |
 | `get_key_info` | Inspect scale notes, key signature, relative key, diatonic chords, and chord families. |
 
 ### Library & Trash Tools (11 — OAuth / Local Library Required)
@@ -24,15 +25,15 @@ Require Google Drive OAuth on the Remote MCP endpoint (or `--local <path>` in CL
 | Tool | Purpose |
 |---|---|
 | `get_library_summary` | Return song, setlist, favorite, Song Bank, and Trash counts plus recent songs. |
-| `list_songs` | Search and filter songs with pagination (`query`, `favoritesOnly`, `inBankOnly`, `limit`, `offset`). |
-| `get_song` | Fetch the full song chart, links, and sounding key by `id` or `query`. |
-| `create_song` | Create and save a new song (optionally parsing `rawChart`). |
+| `list_songs` | Search and filter songs with pagination (`query`, `genre`, `mood`, `favoritesOnly`, `inBankOnly`, `limit`, `offset`). |
+| `get_song` | Fetch the full song chart, links, mood, and sounding key by `id` or `query`. |
+| `create_song` | Create and save a new song (optionally parsing `rawChart` and setting `genre` / `mood`). |
 | `import_song_from_url` | Import from a URL or cleaned `rawChart`, checking for duplicates before saving. |
-| `update_song` | Update metadata or chart body, including permanent transposition via `transposeBy`. |
+| `update_song` | Update metadata (`key`, `capo`, `genre`, `mood`, ...) or chart body, including permanent transposition via `transposeBy`. |
 | `trash_song` | Move songs to Trash (30-day soft delete; preserves setlist references). |
 | `list_trash` | List trashed songs and setlists with `trashedAt` and `expiresAt`. |
 | `restore_from_trash` | Restore trashed songs or setlists with original IDs and setlist placements intact. |
-| `empty_trash` | Permanently purge Trash items. Returns a safe preview unless `confirm: true` is explicitly passed. |
+| `empty_trash` | Permanently purge Trash items (`destructiveHint: true`). Returns a safe preview unless `confirm: true` is explicitly passed. |
 | `manage_setlists` | `list`, `create`, `update`, `add_songs` (deduped), or `trash` setlists. |
 
 ---
@@ -40,9 +41,9 @@ Require Google Drive OAuth on the Remote MCP endpoint (or `--local <path>` in CL
 ## 2. Browser WebMCP (`navigator.modelContext` + `window.sonataAgent`)
 
 When Sonata is open in a browser:
-- If the browser supports WebMCP (`navigator.modelContext.registerTool` or `provideContext`), Sonata registers all **17 tools** directly against your live in-memory library (`Store`) and refreshes the UI + toast notifications automatically on every mutation.
+- If the browser supports WebMCP (`navigator.modelContext.registerTool` or `provideContext`), Sonata registers all **18 tools** (with MCP `annotations`) directly against your live in-memory library (`Store`) and refreshes the UI + toast notifications automatically on every mutation.
 - Regardless of browser WebMCP support, Sonata exposes `window.sonataAgent`:
-  - `window.sonataAgent.tools()` — lists all 17 tool schemas
+  - `window.sonataAgent.tools()` — lists all 18 tool schemas
   - `window.sonataAgent.call(name, args)` — executes any public or library tool directly
   - `window.sonataAgent.guide` — Sonata chart formatting guide
 
@@ -57,22 +58,16 @@ When Sonata is open in a browser:
   - Authorization Server Metadata (RFC 8414): `https://sonata.jethrofrane.xyz/.well-known/oauth-authorization-server`
   - Dynamic Client Registration (RFC 7591): `https://sonata.jethrofrane.xyz/api/oauth/register`
 
-Calling any of the 6 public tools works immediately without auth. Calling a library tool without a Bearer token returns HTTP `401` with `WWW-Authenticate: Bearer resource_metadata="https://sonata.jethrofrane.xyz/.well-known/oauth-protected-resource"`, triggering standard OAuth 2.1 + Google sign-in (`drive.file` scope — Sonata can only access its own `sonata_library.json` file).
+Calling any of the 7 public tools works immediately without auth. Calling a library tool without a Bearer token returns HTTP `401` with `WWW-Authenticate: Bearer resource_metadata="https://sonata.jethrofrane.xyz/.well-known/oauth-protected-resource"`, triggering standard OAuth 2.1 + Google sign-in (`drive.file` scope — Sonata can only access its own `sonata_library.json` file).
 
 ### Client Setup Examples
 
-- **Claude Connectors / Claude Desktop (Remote Connector):**
-  1. Open **Settings → Connectors → Add custom connector**.
-  2. Enter `https://sonata.jethrofrane.xyz/api/mcp`.
-  3. Complete the Google sign-in prompt when accessing your library.
+- **Claude Connectors / Claude Desktop / Claude Code:**
+  1. Open **Settings → Connectors → Add custom connector** (or in Claude Code run `claude mcp add --transport http sonata https://sonata.jethrofrane.xyz/api/mcp`).
+  2. Enter `https://sonata.jethrofrane.xyz/api/mcp` and approve Google Drive sign-in when prompted.
 
-- **Claude Code CLI:**
-  ```bash
-  claude mcp add --transport http sonata https://sonata.jethrofrane.xyz/api/mcp
-  ```
-
-- **Gemini (Connected Apps / Gemini CLI):**
-  Add `https://sonata.jethrofrane.xyz/api/mcp` as an HTTP MCP server in Gemini CLI `settings.json`:
+- **Gemini / Gemini Tasks / Gemini CLI:**
+  Add `https://sonata.jethrofrane.xyz/api/mcp` as an HTTP MCP server (`settings.json` or Gemini Connected Apps / Tasks HTTP connector; public tools also work unauthenticated, or pass `/llms-full.txt` context):
   ```json
   {
     "mcpServers": {
@@ -82,6 +77,16 @@ Calling any of the 6 public tools works immediately without auth. Calling a libr
     }
   }
   ```
+
+- **OpenAI / ChatGPT Connectors & Codex CLI (`~/.codex/config.toml`):**
+  In ChatGPT **Settings → Connectors** add `https://sonata.jethrofrane.xyz/api/mcp`, or in Codex CLI add:
+  ```toml
+  [mcp_servers.sonata]
+  url = "https://sonata.jethrofrane.xyz/api/mcp"
+  ```
+
+- **Antigravity:**
+  Add `https://sonata.jethrofrane.xyz/api/mcp` as a remote HTTP MCP server, or use the local `sonata-controller` skill / stdio MCP server (`node scripts/sonata-cli.mjs mcp --local <path>`).
 
 - **Cursor (`~/.cursor/mcp.json` or `.cursor/mcp.json`):**
   ```json
@@ -94,15 +99,6 @@ Calling any of the 6 public tools works immediately without auth. Calling a libr
   }
   ```
 
-- **OpenAI Codex CLI (`~/.codex/config.toml`):**
-  ```toml
-  [mcp_servers.sonata]
-  url = "https://sonata.jethrofrane.xyz/api/mcp"
-  ```
-
-- **Antigravity:**
-  Add `https://sonata.jethrofrane.xyz/api/mcp` as a remote HTTP MCP server (or use the local `sonata-controller` skill / stdio MCP server below).
-
 ---
 
 ## 4. Local CLI, Stdio MCP & `sonata-controller` Skill
@@ -110,7 +106,7 @@ Calling any of the 6 public tools works immediately without auth. Calling a libr
 For local workflows or agents working with `sonata_library.json` via Google Drive CLI (`gdrive`):
 
 - **CLI executable:** `scripts/sonata-cli.mjs`
-  - `node scripts/sonata-cli.mjs tools` — dump all 17 tool schemas
+  - `node scripts/sonata-cli.mjs tools` — dump all 18 tool schemas
   - `node scripts/sonata-cli.mjs guide` — print `SONATA_FORMAT_GUIDE`
   - `node scripts/sonata-cli.mjs call lookup_chord --args '{"chord":"D/F#"}'`
   - `node scripts/sonata-cli.mjs call list_songs --local /path/to/sonata_library.json`

@@ -148,10 +148,6 @@
         </header>
 
         <div class="editor-toolbar">
-          <div class="tool-group">
-            <button class="icon-btn" id="undoBtn" type="button" aria-label="Undo" data-i18n-attr="aria-label:undo,title:undo"><span data-icon="undo"></span></button>
-            <button class="icon-btn" id="redoBtn" type="button" aria-label="Redo" data-i18n-attr="aria-label:redo,title:redo"><span data-icon="redo"></span></button>
-          </div>
           <div class="tool-group key-control" role="group" aria-label="Key" data-i18n-attr="aria-label:key">
             <button class="icon-btn" id="keyDownBtn" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown,title:transposeDown"><span data-icon="minus"></span></button>
             <button class="key-pill" id="keyPill" type="button" aria-haspopup="dialog" data-i18n-attr="title:keyAndCapo"><span class="key-pill-label" data-i18n="key">Key</span><strong id="keyPillValue">C</strong></button>
@@ -175,7 +171,11 @@
         <div class="editor-panes" id="editorPanes" data-pane="edit">
           <div class="pane pane-edit">
             <div class="pane-head edit-head">
-              <span class="preview-label" data-i18n="paneEdit">Edit</span>
+              <div class="edit-acts">
+                <button class="icon-btn small" id="undoBtn" type="button" aria-label="Undo" data-i18n-attr="aria-label:undo,title:undo"><span data-icon="undo"></span></button>
+                <button class="icon-btn small" id="redoBtn" type="button" aria-label="Redo" data-i18n-attr="aria-label:redo,title:redo"><span data-icon="redo"></span></button>
+                <button class="btn small ghost" id="autoFormatBtn" type="button" aria-label="Auto-format chart" title="Clean sections, chords & line wrapping" data-i18n-attr="title:autoFormatHint"><span data-icon="sparkles"></span><span data-i18n="autoFormat">Format</span></button>
+              </div>
               <span class="edit-stats" id="editStats" aria-live="off"></span>
             </div>
             <div class="quickstart" id="quickstart">

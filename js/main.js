@@ -174,6 +174,7 @@ function renderView(view, opts = {}) {
   if (view === "theory") loadTheory().then((m) => {
     if (!m || app.view !== "theory") return;
     m.renderTheory();
+    document.querySelector("#view-theory .theory-layout")?.classList.toggle("key-finder-first", Boolean(opts.focusKeyFinder));
     if (opts.focusKeyFinder) m.focusKeyFinder?.();
   });
   if (view === "play") loadPlay().then((m) => {

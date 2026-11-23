@@ -17,17 +17,18 @@ Made by Jethro Frane. App: https://sonata.jethrofrane.xyz
 - [Metronome](https://sonata.jethrofrane.xyz/play/metronome)
 - [Privacy & terms](https://sonata.jethrofrane.xyz/privacy): What stays on the device and what Drive backup can see.
 
-## AI Agents & MCP
+## AI Agents & MCP (v7.3.0)
+- **Full Machine-Readable Docs:** `https://sonata.jethrofrane.xyz/llms-full.txt`
 - **Remote MCP Server (Streamable HTTP JSON-RPC 2.0):** `https://sonata.jethrofrane.xyz/api/mcp`
-  - Anonymous callers receive 6 public music & chart tools (`extract_chords_from_url`, `analyze_chord_chart`, `build_sonata_link`, `lookup_chord`, `transpose_chart`, `get_key_info`).
-  - Authenticated callers (Google Drive OAuth 2.1 + PKCE) unlock all 17 tools, including full library read/write (`get_library_summary`, `list_songs`, `get_song`, `create_song`, `import_song_from_url`, `update_song`, `trash_song`, `list_trash`, `restore_from_trash`, `empty_trash`, `manage_setlists`) synced directly to `sonata_library.json` in the user's Google Drive.
+  - Anonymous callers receive **7 public music & chart tools** (`extract_chords_from_url`, `analyze_chord_chart`, `format_chord_chart`, `build_sonata_link`, `lookup_chord`, `transpose_chart` including `chords-only`, `get_key_info`), each tagged with MCP 2025-03-26 `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`).
+  - Authenticated callers (Google Drive OAuth 2.1 + PKCE) unlock all **18 tools**, including library read/write (`get_library_summary`, `list_songs` with `query`/`genre`/`mood` filters, `get_song`, `create_song`, `import_song_from_url`, `update_song`, `trash_song`, `list_trash`, `restore_from_trash`, `empty_trash`, `manage_setlists`) synced directly to `sonata_library.json` in the user's Google Drive.
 - **OAuth 2.1 Discovery & Endpoints:**
   - Protected Resource Metadata (RFC 9728): `https://sonata.jethrofrane.xyz/.well-known/oauth-protected-resource`
   - Authorization Server Metadata (RFC 8414): `https://sonata.jethrofrane.xyz/.well-known/oauth-authorization-server`
   - Dynamic Client Registration (RFC 7591): `https://sonata.jethrofrane.xyz/api/oauth/register`
   - Authorize / Token: `/api/oauth/authorize`, `/api/oauth/token`
 - **Browser WebMCP & JS Bridge:**
-  - When open in a WebMCP-enabled browser (`navigator.modelContext`), Sonata registers all 17 tools automatically.
+  - When open in a WebMCP-enabled browser (`navigator.modelContext`), Sonata registers all **18 tools** (with MCP `annotations`) automatically.
   - Browser bridge API: `window.sonataAgent` (`version`, `webMcp`, `tools()`, `call(name, args)`, `guide`).
 - **Trash Safety (30-day Soft Delete):**
   - Song and setlist deletions (`trash_song`, `manage_setlists` with `action: "trash"`) move items to Trash for 30 days and are fully reversible via `restore_from_trash`.

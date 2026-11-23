@@ -400,7 +400,7 @@ export function renderLibrary() {
   let songs = sortSongs(sort);
   if (filter === "favorites") songs = songs.filter((s) => s.isFavorite);
   if (filter === "bank") songs = songs.filter((s) => s.inBank);
-  if (q) songs = songs.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.body}`).includes(q));
+  if (q) songs = songs.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.genre} ${s.mood || ""} ${s.body}`).includes(q));
 
   if (!store.songs.length) {
     // First visit: three ways in, nothing else. Import comes first: most people already have their songs somewhere.
@@ -436,7 +436,7 @@ export function renderLibrary() {
     return `<div class="row${s.id === activeId ? " active" : ""}" data-id="${esc(s.id)}">
       <button type="button" class="row-main" data-act="open">
         <span class="key-badge" title="${esc(t("key", "Key"))}">${esc(k)}</span>
-        <span class="row-text"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${sub}${s.genre ? ` · ${esc(s.genre)}` : ""}</span></span>
+        <span class="row-text"><span class="row-title">${esc(s.title)}</span><span class="row-sub">${sub}${s.genre ? ` · ${esc(s.genre)}` : ""}${s.mood ? ` · ${esc(s.mood)}` : ""}</span></span>
       </button>
       <button type="button" class="icon-btn fav${s.isFavorite ? " on" : ""}" data-act="fav" aria-pressed="${s.isFavorite}" aria-label="${esc(t("favorite", "Favorite"))}">${icon(s.isFavorite ? "star-fill" : "star")}</button>
       <button type="button" class="icon-btn" data-act="more" aria-label="${esc(t("moreActions", "More actions"))}">${icon("more")}</button>
@@ -458,7 +458,7 @@ function renderPeek(shown) {
   host.dataset.id = s.id;
   document.querySelectorAll("#libraryList .row[data-id]").forEach((r) => r.classList.toggle("peeked", r.getAttribute("data-id") === s.id));
   const k = pretty(keyShort(soundingKey(s)));
-  const meta = [s.artist, s.genre, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean);
+  const meta = [s.artist, s.genre, s.mood, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean);
   host.innerHTML = `<header class="peek-head"><span class="key-badge">${esc(k)}</span><div class="peek-title"><h2>${esc(s.title)}</h2>${meta.length ? `<div class="peek-meta">${meta.map((m) => `<span class="chip static muted">${esc(m)}</span>`).join("")}</div>` : ""}</div></header>
     <div class="peek-actions"><button class="btn primary" type="button" id="peekEdit">${icon("edit")}${esc(t("editChart", "Edit chart"))}</button><button class="btn" type="button" id="peekPresent">${icon("present")}${esc(t("present", "Present"))}</button><button class="btn" type="button" id="peekShare">${icon("share")}${esc(t("share", "Share"))}</button></div>
     <div class="chart peek-chart">${s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s))) : `<p class="chart-empty">${esc(t("stageEmpty", "This song has no chart yet."))}</p>`}</div>`;

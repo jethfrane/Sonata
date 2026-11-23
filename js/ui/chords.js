@@ -122,6 +122,7 @@ export function initChords() {
     else if (b.dataset.shape) step(b.dataset.shape);
     else if (b.id === "chordCopy") copyText(current).then((ok) => ok && toast(t("copied", "Copied"), "success"));
     else if (b.hasAttribute("data-copy-img")) copyChordImage(current, $("chordResult"));
+    else if (b.dataset.openBuilder) app.show("play", { sub: b.dataset.openBuilder });
   });
   bassSel.addEventListener("change", () => { const d = describeChord(current); if (d) select(d.root + d.quality + (bassSel.value && NOTE_TO_PC[bassSel.value] !== d.rootPc ? "/" + bassSel.value : "")); });
   const search = /** @type {HTMLInputElement} */ ($("chordSearch"));
@@ -174,7 +175,7 @@ export function renderChords() {
   $("songChordsRow").hidden = !sc.length;
   $("songChordsList").innerHTML = sc.map((c) => `<button type="button" class="chip chord-chip${c === d.name ? " on" : ""}" data-pick="${esc(c)}">${esc(pretty(c))}</button>`).join("");
   $("chordResult").innerHTML = `<section class="card cr-card">${headHtml(current)}
-      <div class="cr-actions"><button type="button" class="btn primary" data-hear="piano">${icon("play")}${esc(t("playIt", "Play"))}</button><button type="button" class="btn" data-hear="guitar">${icon("guitar")}${esc(t("strum", "Strum"))}</button><button type="button" class="btn" data-copy-img>${icon("image")}${esc(t("copyImage", "Copy image"))}</button><button type="button" class="btn ghost" id="chordCopy">${icon("copy")}${esc(t("copyName", "Copy"))}</button></div>
+      <div class="cr-actions"><button type="button" class="btn primary" data-hear="piano">${icon("play")}${esc(t("playIt", "Play"))}</button><button type="button" class="btn" data-hear="guitar">${icon("guitar")}${esc(t("strum", "Strum"))}</button><button type="button" class="btn" data-copy-img>${icon("image")}${esc(t("copyImage", "Copy image"))}</button><button type="button" class="btn ghost" id="chordCopy">${icon("copy")}${esc(t("copyName", "Copy"))}</button><button type="button" class="btn ghost" data-open-builder="piano">${icon("piano")}${esc(t("openChordBuilder", "Custom chord? Chord Builder"))}</button></div>
       ${relatedHtml(current)}</section>${diagramsHtml(current)}`;
   paintIcons($("view-chords"));
 }

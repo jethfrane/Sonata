@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as M from "../js/core/music.js";
-import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, stripLyricsToChordsOnly, inlineSectionLabel } from "../js/core/chart.js";
+import { buildLines, linesToText, pairSegments, uniqueChords, analyzeRawChart, autoFormatChart, stripLyricsToChordsOnly, inlineSectionLabel } from "../js/core/chart.js";
 import { Store, normalizeSong, mergeLibraries, validateBackup, KEYS, libraryFingerprint, memoryStorage } from "../js/core/store.js";
 import { parsePath } from "../js/router.js";
 import { packSong, packSet, encodeShare, decodeShare, unpackSong, safeHref, MAX_LINK, qrUrl, decodeQr, parseLinks, setlistMessage } from "../js/core/share.js";
@@ -779,8 +779,17 @@ test("mergeLibraries with trash and backward-compatible libraryFingerprint", asy
 
 test("mcp-tools.js: public music tools, share round-trip, and library CRUD + Trash safety", async () => {
   const MT = await import("../js/core/mcp-tools.js");
-  assert.equal(MT.PUBLIC_TOOL_DEFS.length, 6);
-  assert.equal(MT.ALL_TOOL_DEFS.length, 17);
+  assert.equal(MT.PUBLIC_TOOL_DEFS.length, 7);
+  assert.equal(MT.ALL_TOOL_DEFS.length, 18);
+  for (const def of MT.ALL_TOOL_DEFS) {
+    assert.ok(def.annotations && typeof def.annotations.readOnlyHint === "boolean" && typeof def.annotations.destructiveHint === "boolean", `${def.name} has annotations`);
+  }
+
+  // format_chord_chart public tool
+  const fmtTool = await MT.executePublicTool("format_chord_chart", {
+    rawChart: "Verse 1:\nG  D/F#m\n\nAmazing grace"
+  });
+  assert.ok(fmtTool.body.includes("## Verse 1") && fmtTool.body.includes("D/F#") && !fmtTool.body.includes("D/F#m"));
 
   // lookup_chord
   const chord = await MT.executePublicTool("lookup_chord", { chord: "D/F#", instrument: "all" });
@@ -789,9 +798,11 @@ test("mcp-tools.js: public music tools, share round-trip, and library CRUD + Tra
   assert.deepEqual(chord.notes, ["D", "F#", "A"]);
   assert.ok(chord.guitar.length > 0 && chord.ukulele.length > 0 && chord.bass.length > 0 && chord.piano);
 
-  // transpose_chart (steps, fromKey->toKey, nashville, roman, lyrics)
+  // transpose_chart (steps, fromKey->toKey, chords-only, nashville, roman, lyrics)
   const trKeys = await MT.executePublicTool("transpose_chart", { body: "G  C  Em   D\nSing", fromKey: "G", toKey: "A" });
   assert.ok(trKeys.text.startsWith("A  D  F#m  E"));
+  const trChordsOnly = await MT.executePublicTool("transpose_chart", { body: "## Verse\nG   D/F#\nAmazing grace", fromKey: "G", viewMode: "chords-only" });
+  assert.ok(trChordsOnly.text.includes("D/F#") && !trChordsOnly.text.includes("Amazing grace"));
   const trNash = await MT.executePublicTool("transpose_chart", { body: "[G]Sing [C]praise [D]now", fromKey: "G", viewMode: "nashville" });
   assert.ok(trNash.text.includes("1") && trNash.text.includes("4") && trNash.text.includes("5"));
   const trRoman = await MT.executePublicTool("transpose_chart", { body: "G C Em D\nWords", fromKey: "G", viewMode: "roman" });
@@ -1045,4 +1056,70 @@ test("v7.2: chord detection (Bm///-, D/F#m, G-D, cues), key detection, concert+c
   // 6. Mobile Share snippets wrapping one chord-site URL
   assert.equal(loneLink("Here Again Chords by Elevation Worship\nhttps://tabs.ultimate-guitar.com/tab/elevation-worship/here-again-chords-2441717"), "https://tabs.ultimate-guitar.com/tab/elevation-worship/here-again-chords-2441717");
   assert.equal(loneLink("https://tabs.ultimate-guitar.com/tab/example\nTitle: Way Maker\nF  C  G  Am\nWay maker"), "");
+});
+
+test("v7.3: autoFormatChart, expanded import extraction, and mood compatibility", async () => {
+  const { extractChart, stripAsciiTabLines } = await import("../js/core/import.js");
+
+  // 1. autoFormatChart: extracts metadata, normalizes section headers, strips legends, repairs typos, collapses gaps, wraps cleanly, idempotent
+  const messy = [
+    "Title: Living Hope",
+    "Artist: Phil Wickham",
+    "Key: Eb",
+    "Capo 1",
+    "BPM: 72",
+    "Standard tuning E A D G B E",
+    "D: xx0232",
+    "Verse 1:",
+    "D                 D/F#m",
+    "",
+    "How great the chasm that lay between us and You are the one who stepped right down to save me now",
+    "[Chorus]",
+    "D        G          A       Bm",
+    "Hallelujah praise the One who set me free",
+    "(Bridge)",
+    "G///  -  D///  -  A///  -  Bm///"
+  ].join("\n");
+
+  const fmt = autoFormatChart(messy, { maxCols: 54 });
+  assert.equal(fmt.title, "Living Hope");
+  assert.equal(fmt.artist, "Phil Wickham");
+  assert.equal(fmt.capo, 1);
+  assert.equal(fmt.bpm, 72);
+  assert.ok(!fmt.body.includes("xx0232") && !fmt.body.includes("Standard tuning"), "strips voicing legend & tuning line");
+  assert.ok(fmt.body.includes("## Verse 1") && fmt.body.includes("## Chorus") && fmt.body.includes("## Bridge"), "normalizes section markers to ## Section");
+  assert.ok(!/D\/F#m/.test(fmt.body), "repairs slash-bass typo");
+  assert.ok(!fmt.body.includes("D/F#\n\nHow great"), "collapses accidental blank gap between chord line and lyrics");
+  const maxLineLen = Math.max(...fmt.body.split("\n").map((l) => l.length));
+  assert.ok(maxLineLen <= 60, `wraps overly long chord/lyric lines cleanly (max len ${maxLineLen})`);
+
+  // Idempotent on second run
+  const fmt2 = autoFormatChart(fmt.body, { maxCols: 54 });
+  assert.equal(fmt2.body, fmt.body, "autoFormatChart is idempotent on already-formatted charts");
+
+  // 2. Expanded import.js: Next.js __NEXT_DATA__ ChordPro JSON + HTML table spacing + voicing stripping
+  assert.ok(!stripAsciiTabLines("G: 320003\nD  G").includes("320003"), "stripAsciiTabLines strips chord voicing definitions");
+  const nextHtml = `<html><head><title>Goodness of God | WorshipTogether</title></head><body><script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+    props: { pageProps: { song: { title: "Goodness of God", artist: "Bethel Music", chordPro: "{title: Goodness of God}\n[Verse 1]\nG         C          G\nI love You Lord, oh Your mercy never fails me\nEm        D          C\nAll my days I've been held in Your hands" } } }
+  })}</script></body></html>`;
+  const nextChart = extractChart(nextHtml);
+  assert.ok(nextChart && nextChart.title === "Goodness of God" && nextChart.artist === "Bethel Music" && nextChart.text.includes("I love You Lord"), "extracts chart & metadata from Next.js __NEXT_DATA__");
+
+  const tableHtml = `<html><body><pre><table><tr><td>G</td><td>D/F#</td><td>Em7</td><td>C</td></tr><tr><td>Amazing</td><td>grace</td><td>how</td><td>sweet</td></tr><tr><td>G</td><td>D</td><td>G</td></tr><tr><td>that</td><td>saved</td><td>a wretch</td></tr></table></pre></body></html>`;
+  const tableChart = extractChart(tableHtml);
+  assert.ok(tableChart && /G\s+D\/F#\s+Em7\s+C/.test(tableChart.text), "preserves horizontal cell separation in HTML chord tables");
+
+  // 3. mood backward compatibility in libraryFingerprint and packSong/unpackSong
+  const baseLib = { songs: [{ id: "m1", title: "A", body: "G C", genre: "Worship", updatedAt: "2026-10-01T00:00:00.000Z" }], setlists: [], deletedIds: [], trash: [] };
+  const emptyMoodLib = { ...baseLib, songs: [{ ...baseLib.songs[0], mood: "" }] };
+  const setMoodLib = { ...baseLib, songs: [{ ...baseLib.songs[0], mood: "Joyful" }] };
+  assert.equal(libraryFingerprint(baseLib), libraryFingerprint(emptyMoodLib), "omitted mood and empty mood share identical fingerprint");
+  assert.notEqual(libraryFingerprint(baseLib), libraryFingerprint(setMoodLib), "non-empty mood participates in fingerprint");
+
+  const packedMood = packSong({ title: "Shout", body: "G C D", genre: "Worship", mood: "Joyful" });
+  assert.equal(packedMood.m, "Joyful");
+  const unpackedMood = unpackSong(packedMood);
+  assert.equal(unpackedMood.mood, "Joyful");
+  const unpackedOld = unpackSong({ t: "Classic", b: "G C" });
+  assert.equal(unpackedOld.mood, "");
 });

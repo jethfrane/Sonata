@@ -75,10 +75,11 @@
 .setlist-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .setlist-pill small { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
 .setlist-pill.active b, .setlist-pill.active small { color: var(--accent-ink); }
-.setlist-bar .icon-btn { color: var(--accent-strong); }
+.setlist-bar .icon-btn { color: var(--accent-strong); position: relative; }
+.setlist-bar .icon-btn.has-update::after { content: ""; position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 0 2px var(--accent-soft); }
 .drive-tag { color: var(--accent-strong); font-weight: 700; }
-.editor-head { margin-bottom: 12px; }
-.title-row { display: flex; align-items: center; gap: 12px; }
+.editor-head { margin-bottom: 8px; }
+.title-row { display: flex; align-items: center; gap: 10px; }
 .title-input { flex: 1; min-width: 0; padding: 2px 0; border: 0; background: transparent; font-size: var(--fs-3xl); font-weight: 750; letter-spacing: -.035em; color: var(--text); text-overflow: ellipsis; }
 .title-input:focus { outline: none; }
 .title-input::placeholder { color: var(--muted); opacity: .55; }
@@ -88,11 +89,10 @@
 .save-state[data-state="error"]::before { background: var(--danger); }
 .save-state[data-state="readonly"]::before { background: var(--warning); }
 .head-actions { display: flex; gap: 8px; flex: none; }
-.meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.meta-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
 .meta-chips { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
-.editor-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
+.editor-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
 .tool-group { display: flex; align-items: center; gap: 2px; }
-@media (min-width: 641px) { .editor-toolbar .tool-group:first-child { padding-right: 6px; border-right: 1px solid var(--line); } }
 .key-control { padding: 2px; border-radius: 12px; background: var(--surface-2); }
 .key-control .icon-btn { width: 36px; height: 36px; }
 .key-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 9px; background: var(--surface); box-shadow: var(--shadow-sm), 0 0 0 1px var(--line); }
@@ -114,10 +114,10 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .cp-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
 .cp-chips::-webkit-scrollbar { display: none; }
 .cp-chips .chip { flex: none; }
-.editor-panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 10px; height: calc(100dvh - 250px); min-height: 440px; }
+.editor-panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 6px; height: calc(100dvh - 196px); min-height: 440px; }
 .pane { position: relative; min-width: 0; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
 .chart-input {
-  flex: 1; width: 100%; min-height: 0; padding: 22px clamp(24px, 2.8vw, 40px); border: 0; resize: none;
+  flex: 1; width: 100%; min-height: 0; padding: 18px clamp(20px, 2.6vw, 36px); border: 0; resize: none;
   background: transparent; color: var(--text);
   font: 450 var(--chart-size)/var(--chart-line) var(--mono); tab-size: 2; white-space: pre; overflow: auto;
 }
@@ -128,11 +128,14 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .quickstart-chips { display: flex; gap: 6px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .quickstart-chips::-webkit-scrollbar { display: none; }
 .quickstart-chips .chip { flex: none; min-height: 30px; }
-.pane-head, .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 46px; padding: 8px 10px 8px 20px; border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
-.edit-head { padding-right: 18px; }
+.pane-head, .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 4px 10px 4px 16px; border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+.edit-head { padding: 4px 14px 4px 10px; }
+.edit-acts { display: flex; align-items: center; gap: 2px; }
+.edit-acts #autoFormatBtn { gap: 5px; font-weight: 650; }
+.edit-acts #autoFormatBtn[hidden] { display: none; }
 .edit-stats { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .preview-label { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#preview { flex: 1; overflow: auto; padding: 24px clamp(28px, 3.2vw, 48px) 44px; }
+#preview { flex: 1; overflow: auto; padding: 20px clamp(26px, 3vw, 44px) 40px; }
 .song-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
 .song-links .mini-label { margin: 0 6px 0 0; }
 .link-pill { display: inline-flex; align-items: center; gap: 3px; }
@@ -154,7 +157,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .chart .ln-empty { height: .7em; min-height: 0; }
 .chart .ln-header { font: 750 1.3em/1.25 var(--ui); margin: .4em 0 .3em; letter-spacing: -.02em; white-space: normal; }
 .chart .ln-section { margin: .9em 0 .25em; }
-.chart .ln-section span { display: inline-block; padding: .1em .6em; border-radius: 6px; background: var(--accent-soft); color: var(--accent-strong); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent); font: 700 .74em/1.6 var(--ui); text-transform: uppercase; letter-spacing: .07em; }
+.chart .ln-section span { display: inline-block; padding: .1em .6em; border-radius: 6px; background: var(--surface-2); color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line-strong); font: 700 .74em/1.6 var(--ui); text-transform: uppercase; letter-spacing: .07em; }
 .chart .ln-note { font: italic 500 .9em/1.5 var(--ui); color: var(--muted); border-left: 3px solid var(--line-strong); padding-left: .7em; margin: .2em 0; white-space: normal; }
 .chart .ln-divider { border: 0; border-top: 1px dashed var(--line-strong); margin: .8em 0; }
 .chart .ch { color: var(--chord); font-weight: 700; }
@@ -179,7 +182,7 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   /* The chart box grows with the text, so only the page scrolls. */
   .editor-panes, .pane { min-height: 0; height: auto; overflow: visible; }
   .pane-edit { min-height: 340px; }
-  .edit-head { display: none; }
+  .edit-head { padding: 4px 10px 4px 6px; }
   .chart-input { flex: none; overflow-x: auto; overflow-y: hidden; min-height: 320px; font-size: max(16px, min(var(--chart-size), 16px)); }
   .pane-edit:has(.quickstart:not([hidden])) .chart-input { min-height: 200px; }
   #preview { overflow: visible; }
@@ -227,14 +230,10 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .pane-switch { margin-left: auto; }
   .pane-switch button { padding: 0 10px; }
   .pane-switch button .icon { display: none; }
-  #view-editor[data-pane="preview"] .editor-toolbar .tool-group:first-child { display: none; }
   .view-mode { order: 5; width: 100%; display: flex; }
   .view-mode button { flex: 1 0 auto; padding: 0 6px; font-size: var(--fs-xs); }
-  .chart-input, #preview { padding: 18px 20px; }
+  .chart-input, #preview { padding: 16px 18px; }
   .welcome { padding: 20px 16px; }
-}
-@media (max-width: 380px) {
-  .tool-group:first-child .icon-btn { width: 30px; }
 }
 
 /* Sideways-scrolling chip rows fade at the trailing edge so it is clear there is more. The end padding lets the last chip scroll clear of the fade. */

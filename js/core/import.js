@@ -10,16 +10,19 @@ const CHORD_TOKEN_CASE = /^[A-G][#b♯♭]?(?:[Mm]aj|M|[Mm]in|m|-|[Dd]im|°|o|[A
 const MARK = /^(?:[|/\\\-–—.%:]+|\(?\s*(?:hold|stop|pause|break|build|let\s+ring|ring\s+out|mute|fade(?:\s+out)?|rit|nc|n\.c\.|repeat|rpt|fine|x?\s?\d+x?)\s*\)?)$/i;
 const SECTION = /^\[?\s*(?:intro|introd(?:u[cç][aã]o|ucción)?|verse|verso|estrofe|estrofa|stanza|pre[- ]?chorus|pr[eé][- ]?(?:refr[aã]o|coro)|chorus|refr[aã]o|coro|koro|bridge|ponte|puente|tulalay|interlude|interl[uú]dio|instrumental|solo|outro|final|tag|ending|refrain|hook|vamp|coda)\b[^\]]{0,24}\]?\s*:?$/i;
 
-/** Strip ASCII 6-string guitar/4-string uke tablature blocks (e|---3---|), beat-count grids (|1---2---3---4---|), and their single-chord header while keeping chords & lyrics intact. @param {string} text */
+/** Strip ASCII tabs, beat-count grids (|1---2---3---4---|), chord-voicing legends (G: 320003), tunings, and tab-site UI noise. @param {string} text */
 export function stripAsciiTabLines(text) {
   const isTab = (/** @type {string} */ l) => /^\s*[eBGDAEagACT]\d?\s*[|:][-0-9hpb/\\~xs^v()|]{4,}/i.test(l);
   const isBeatGrid = (/** @type {string} */ l) => /^\s*[|:\-0-9.&+\/\s]{6,}\s*$/.test(l) && /\d/.test(l) && !/[b-df-zA-Z]/.test(l) && (/[-]{2,}/.test(l) || /\|/.test(l));
+  const isVoicing = (/** @type {string} */ l) => /^\s*(?:[A-G][#b]?(?:m|maj|min|dim|aug|sus|add|\d)*(?:\/[A-G][#b]?)?(?:\s*[:=\-(]\s*|\s+)[xX0-9]{4,6}\)?(?:[,;\s]+|$))+$/i.test(l) && /[xX0-9]{4,6}/.test(l);
+  const isTuning = (/** @type {string} */ l) => /^\s*(?:standard\s+tuning|tuning\s*:|afina[cç][aã]o\s*:)\s*.*$/i.test(l) && l.length <= 60;
+  const isUiNoise = (/** @type {string} */ l) => /^\s*(?:transpose|autoscroll|print(?:\s+page)?|simplify(?:\s+chords)?|report\s+bad\s+tab|font\s+size|strumming(?:\s+pattern)?|difficulty\s*:.*|capo\s+toggle|share\s+tab|add\s+to\s+favorites?|official\s+tab|chord\s+diagrams?)\s*$/i.test(l);
   const lines = String(text || "").split("\n");
   /** @type {string[]} */
   const out = [];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
-    if (isTab(l) || isBeatGrid(l)) continue;
+    if (isTab(l) || isBeatGrid(l) || isVoicing(l) || isTuning(l) || isUiNoise(l)) continue;
     // Drop a lone chord name (like "G7" above a G7 tab box) when the very next line is an ASCII tab string
     if (isTab(lines[i + 1] || "") && chordsIn(l).count === 1 && l.trim().split(/\s+/).length === 1) continue;
     out.push(l);
@@ -68,7 +71,8 @@ export function htmlToText(html) {
     .replace(/<(script|style|noscript|svg|template|iframe|head|nav|footer|form|button|select)\b[\s\S]*?<\/\1\s*>/gi, "\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/span\s*>(?=\s*<span\b[^>]*?(?:\bjs-tab-row\b|display\s*:\s*block))/gi, "\n")
-    .replace(/<\/(p|div|li|tr|h[1-6]|pre|section|article|blockquote|td|th)\s*>/gi, "\n")
+    .replace(/<\/(?:td|th)\s*>/gi, "  ")
+    .replace(/<\/(p|div|li|tr|h[1-6]|pre|section|article|blockquote)\s*>/gi, "\n")
     // An opening block tag starts a new line only if one has not just been started (</div><div> is one break, not two).
     .replace(/<(p|div|li|tr|h[1-6]|pre|section|article|blockquote)\b[^>]*>/gi, "\u0001")
     .replace(/<([a-z]+)\b[^>]*data-(?:chord|name)=["']([A-G][^"']{0,10})["'][^>]*>\s*<\/\1>/gi, "$2")
@@ -90,7 +94,7 @@ const metaContent = (html, name) => {
 export function splitTitle(raw) {
   let s = String(raw || "").replace(/\s+/g, " ").trim();
   s = s.split(/\s+[|•·»]\s+|\s+@\s+/)[0];
-  s = s.replace(/\s+[–—-]\s+(?:cifra\s+club|ultimate[- ]guitar(?:\.com)?|chordie|e-?chords|azchords|guitaretab|lacuerda|worshiptogether)\s*$/i, "");
+  s = s.replace(/\s+[–—-]\s+(?:cifra\s+club|ultimate[- ]guitar(?:\.com)?|chordie|e-?chords|azchords|guitaretab|lacuerda|worshiptogether|praisecharts|essential\s*worship|chordify|ukutabs|tabs4acoustic|worshipchords)\s*$/i, "");
   s = s.replace(/\s*:\s*(?:acordes|letras(?:\s+y\s+acordes)?|chords|tabs?)\s*$/i, "");
   s = s.replace(/\s*[([]?\b(?:ver(?:sion)?\.?\s*#?\d+)\b[)\]]?/gi, "");
   s = s.replace(/\s+(?:for\s+guitar(?:\s+and\s+ukulele)?|for\s+ukulele)\b/gi, "");
@@ -165,6 +169,58 @@ export function chartWindow(text) {
   return out.slice(0, MAX_CHART);
 }
 
+/** Recursively extract embedded ChordPro / chart strings or chord timelines from __NEXT_DATA__ / JSON script blocks. @param {string} src */
+function extractEmbeddedJsonChart(src) {
+  const scripts = [...src.matchAll(/<script\b[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  for (const sc of scripts) {
+    try {
+      const root = JSON.parse(sc[1]);
+      /** @type {{ obj: any, d: number }[]} */
+      const stack = [{ obj: root, d: 0 }];
+      let title = "", artist = "", key = "", capo = 0, bpm = 0;
+      let rawText = "";
+      while (stack.length) {
+        const cur = stack.pop();
+        if (!cur || !cur.obj || typeof cur.obj !== "object" || cur.d > 10) continue;
+        const o = cur.obj;
+        if (!Array.isArray(o)) {
+          if (!title && typeof o.title === "string" && o.title.length < 120) title = o.title.trim();
+          if (!title && typeof o.songName === "string") title = o.songName.trim();
+          if (!artist && typeof (o.artistName || o.artist) === "string") artist = String(o.artistName || o.artist).trim();
+          if (!key && typeof (o.defaultKey || o.originalKey || o.key) === "string") key = String(o.defaultKey || o.originalKey || o.key).trim();
+          if (!capo && Number(o.capo) > 0 && Number(o.capo) <= 11) capo = Math.round(Number(o.capo));
+          if (!bpm && Number(o.tempo || o.bpm) >= 30 && Number(o.tempo || o.bpm) <= 300) bpm = Math.round(Number(o.tempo || o.bpm));
+          for (const k of ["chordpro", "chordPro", "chordsContent", "chordChart", "chords_text", "chartText"]) {
+            if (typeof o[k] === "string" && o[k].length > 30) { rawText = o[k]; break; }
+          }
+          if (rawText) break;
+          if (Array.isArray(o.chords) && o.chords.length >= 6 && o.chords.every((x) => x && typeof x.chord === "string")) {
+            const seq = o.chords.map((x) => String(x.chord).trim()).filter(isChordTok);
+            if (seq.length >= 6) {
+              const rows = [];
+              for (let i = 0; i < seq.length; i += 4) rows.push(seq.slice(i, i + 4).join("   "));
+              rawText = rows.join("\n");
+              break;
+            }
+          }
+          for (const v of Object.values(o)) if (v && typeof v === "object") stack.push({ obj: v, d: cur.d + 1 });
+        } else {
+          for (const v of o) if (v && typeof v === "object") stack.push({ obj: v, d: cur.d + 1 });
+        }
+      }
+      if (rawText) {
+        const meta = [];
+        if (key && /^[A-G][#b]?(?:m|min|minor|maj|major)?$/i.test(key)) meta.push(`Key: ${key}`);
+        if (capo) meta.push(`Capo ${capo}`);
+        if (bpm) meta.push(`Tempo: ${bpm}`);
+        const text = chartWindow([...meta, rawText].join("\n"));
+        if (text) return { title, artist, text };
+      }
+    } catch { /* ignore malformed JSON */ }
+  }
+  return null;
+}
+
 /**
  * Read a chart out of a fetched page.
  * @param {string} body the page (HTML or plain text)
@@ -189,7 +245,7 @@ export function extractChart(body, type = "text/html") {
       || src.match(/<a[^>]+href=["'][^"']*\/(?:artist|band|songwriter|songartist|writer)s?\/[^"']*["'][^>]*>([\s\S]*?)<\/a>/i)
       || ["", ""]
     )[1].replace(/<[^>]*>/g, "")).replace(/\s+/g, " ").trim();
-    if (metaArt && metaArt.length < 80 && !/^(?:worshiptogether|ultimate|chordie|cifra)/i.test(metaArt)) head.artist = metaArt;
+    if (metaArt && metaArt.length < 80 && !/^(?:worshiptogether|ultimate|chordie|cifra|chordify|praisecharts)/i.test(metaArt)) head.artist = metaArt;
   }
 
   // 1. Ultimate-Guitar .js-store JSON payload ([tab] + [ch]Chord[/ch] markup)
@@ -242,7 +298,17 @@ export function extractChart(body, type = "text/html") {
     if (wtText) return { ...head, text: wtText };
   }
 
-  // 3. A <pre> block is how most chord pages keep the spacing. Take the one with the most chords.
+  // 2b. Next.js / ChordPro JSON embedded payloads (WorshipChords, MultiTracks, EssentialWorship, PraiseCharts, Chordify)
+  const embedded = extractEmbeddedJsonChart(src);
+  if (embedded) {
+    return {
+      title: embedded.title || head.title,
+      artist: embedded.artist || head.artist,
+      text: embedded.text
+    };
+  }
+
+  // 3. A <pre> block (UG plain, CifraClub, LaCuerda, E-Chords, AZChords, Ukutabs). Take the one with the most chords.
   /** @type {{ text: string, n: number }|null} */
   let best = null;
   for (const m of src.matchAll(/<pre\b[^>]*>([\s\S]*?)<\/pre\s*>/gi)) {

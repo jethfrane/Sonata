@@ -1,0 +1,105 @@
+# Sonata — Full AI Agent & Developer Reference (v7.3.0)
+
+> **App:** https://sonata.jethrofrane.xyz  
+> **Remote MCP (Streamable HTTP JSON-RPC 2.0):** https://sonata.jethrofrane.xyz/api/mcp  
+> **Compact Index:** https://sonata.jethrofrane.xyz/llms.txt  
+
+Sonata is an offline-first, zero-database Progressive Web App (vanilla ES modules + JSDoc TypeScript checking + Vite/Workbox PWA) for musicians, singers, bands, and worship teams to write, auto-format, transpose, present on stage, and share chord charts. Songs reside locally (`sonata:v12:*` LocalStorage + IndexedDB snapshots) and sync optionally with the user's own Google Drive (`sonata_library.json`, `drive.file` app-scoped permission).
+
+---
+
+## 1. Sonata Architecture & Data Model
+
+### Core Modules (`js/core/`)
+- `js/core/music.js` — Pitch classes, 24 major/minor keys, key scoring (`detectKey`), enharmonic spelling, transposition (`transposeText`), chord parsing (`parseChord` supporting slash bass typos like `D/F#m`, glued hyphens `Bm///-`, cues `(hold)`, `add2`/`add4`/`sus`).
+- `js/core/chart.js` — Line classification (`chords`, `inline`, `section`, `note`, `divider`, `lyrics`), Concert-Key + Capo normalization (`resolveImportedKey`), `autoFormatChart(raw, opts)`, `analyzeRawChart(raw)`, `buildLines` (supporting `chords`, `chords-only`, `nashville`, `roman`, `lyrics`).
+- `js/core/import.js` — Safe public-HTTPS scraper & extractor (`extractChart`, `htmlToText`, `stripAsciiTabLines`) with support for Ultimate Guitar, WorshipTogether, PraiseCharts, Chordify, LaCuerda, AZChords, UkuTabs, EssentialWorship, MultiTracks, HTML `<td>`/`<th>` tables, and Next.js `__NEXT_DATA__` payloads.
+- `js/core/store.js` — Library state (`songs`, `setlists`, `trash`, `settings`), 30-day soft-delete Trash, deterministic `libraryFingerprint()` with backward compatibility (`genre`, `mood`, `bank`, `trash`).
+- `js/core/share.js` — Deflate + base64url `?s=` compact share encoder (`packSong`, `packSet`, `encodeShare`, `decodeShare`, max URL size caps, safe `http(s)` links).
+- `js/core/mcp-tools.js` — Isomorphic zero-DOM / zero-`node:*` schemas, `annotations`, and executors for all **18 MCP tools**.
+
+### Canonical Song Schema
+- `id`: string
+- `title`: string
+- `artist`: string
+- `creator`: string (arranger)
+- `body`: string (Markdown-like chord chart)
+- `manualKey`: `"auto"` or `"<Root>:<major|minor>"` (e.g. `"D:major"`, `"F#:minor"`)
+- `capo`: integer `0..11` (fret)
+- `transpose`: integer `-11..11` (non-destructive semitones)
+- `bpm`: integer `30..300` or `null`
+- `genre`: optional string (<= 40 chars)
+- `mood`: optional string (<= 30 chars, e.g. `Joyful`, `Solemn`, `Reflective`, `Anthemic`, `Intimate`, `Upbeat`)
+- `description`: optional notes
+- `links`: `{ name: string, url: string }[]`
+- `isFavorite`: boolean
+- `inBank`: boolean
+
+### Canonical Chart Syntax (`SONATA_FORMAT_GUIDE`)
+- `## Section` — Neutral section pill badge (`## Verse 1`, `## Chorus`, `## Pre-Chorus`, `## Bridge`, `## Intro`, `## Outro`, `## Tag`, `## Instrumental`, `## Interlude`).
+- Chords above lyrics (preserve column spacing) or inline bracketed `[G]Amazing [D/F#]grace`.
+- Rhythm slashes `G///`, `D/// -`, neutral tokens `|`, `/`, `%`, `N.C.`, `x2`.
+- Notes: `> Cue` or `// Cue` (hidden in `lyrics` and `chords-only` modes); `---` section divider.
+
+---
+
+## 2. MCP Tools Reference (18 Total · MCP 2025-03-26)
+
+Every tool exposes standard MCP `annotations`: `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`.
+
+### Public Tools (7 — Anonymous Access Allowed)
+1. **`extract_chords_from_url`** *(readOnly, idempotent, openWorld)*
+   - Input: `{ url: string }` (public HTTPS only; private/loopback/link-local hosts rejected).
+   - Output: `{ title, artist, manualKey, capo, bpm, links, body, chords, keyName, romanSummary, source }`.
+2. **`analyze_chord_chart`** *(readOnly, idempotent, closedWorld)*
+   - Input: `{ rawChart: string, sourceUrl?: string }`.
+   - Output: structured metadata + cleaned `body` + detected `keyName` + `chords`.
+3. **`format_chord_chart`** *(readOnly, idempotent, closedWorld)*
+   - Input: `{ rawChart: string, maxCols?: number (36..100, default 58), wrap?: boolean (default true), sourceUrl?: string }`.
+   - Output: normalized Markdown chart (`## Section`, repaired chords, collapsed chord/lyric gaps, stripped voicing/tab legends, balanced wrapped pairs), metadata, and `changes` summary.
+4. **`build_sonata_link`** *(readOnly, idempotent, closedWorld)*
+   - Input: Single song fields (`title`, `body`, `artist`, `creator`, `key`, `capo`, `transpose`, `bpm`, `genre`, `mood`, `description`, `links`) OR `{ title, description, links, songs: [...] }` for a setlist link.
+   - Output: `{ url: "https://sonata.jethrofrane.xyz/?s=...", type: "song"|"setlist", title }`.
+5. **`lookup_chord`** *(readOnly, idempotent, closedWorld)*
+   - Input: `{ chord: string, instrument?: "all"|"guitar"|"ukulele"|"bass"|"piano" }`.
+   - Output: `{ name, root, quality, label, slashBass, notes, bassNote, formula, intervals, pcs, guitar?, ukulele?, bass?, piano? }`.
+6. **`transpose_chart`** *(readOnly, idempotent, closedWorld)*
+   - Input: `{ body: string, steps?: number (-11..11), fromKey?: string, toKey?: string, viewMode?: "chords"|"chords-only"|"nashville"|"roman"|"lyrics", enharmonic?: "auto"|"sharp"|"flat" }`.
+   - Output: `{ text, fromKey, toKey, steps, viewMode, chords }`.
+7. **`get_key_info`** *(readOnly, idempotent, closedWorld)*
+   - Input: `{ key: string }`.
+   - Output: scale notes, signature, relative major/minor key, diatonic chords, chord families.
+
+### Authenticated Library Tools (11 — Google Drive OAuth 2.1 or Local Store)
+8. **`get_library_summary`** *(readOnly, idempotent)* — Counts (`songs`, `setlists`, `favorites`, `inBank`, `trash`) and 10 recent songs.
+9. **`list_songs`** *(readOnly, idempotent)* — Filter by `query`, `genre`, `mood`, `favoritesOnly`, `inBankOnly`, `limit`, `offset`. Returns `{ id, title, artist, key, bpm, capo, genre, mood, isFavorite, inBank, updatedAt }`.
+10. **`get_song`** *(readOnly, idempotent)* — Full song record by exact `id` or `query`, plus computed `soundingKey` and `soundingKeyShort`.
+11. **`create_song`** *(mutating)* — Accepts `title`, `artist`, `creator`, `body` or `rawChart`, `key`, `capo`, `transpose`, `bpm`, `genre`, `mood`, `description`, `links`, `isFavorite`, `inBank`.
+12. **`import_song_from_url`** *(mutating, openWorld)* — Fetches `url` (or parses `rawChart`), deduplicates against existing titles/URLs unless `allowDuplicate: true`.
+13. **`update_song`** *(mutating, idempotent)* — Updates metadata (`title`, `key`, `capo`, `bpm`, `genre`, `mood`, ...) or `body`, plus permanent `transposeBy`.
+14. **`trash_song`** *(mutating, idempotent)* — Soft-deletes `ids[]` to 30-day Trash preserving setlist placements.
+15. **`list_trash`** *(readOnly, idempotent)* — Lists trashed songs/setlists with `trashedAt` and `expiresAt`.
+16. **`restore_from_trash`** *(mutating, idempotent)* — Restores trashed `ids[]` cleanly back to active songs/setlists.
+17. **`empty_trash`** *(mutating, destructiveHint: true, idempotent)* — Returns dry-run preview unless `confirm: true` is passed after user confirmation.
+18. **`manage_setlists`** *(mutating)* — Actions: `list`, `create`, `update`, `add_songs` (deduped), `trash` (30-day soft delete).
+
+### Prompts & Resources
+- Resource: `sonata://format-guide` (`text/markdown`)
+- Prompt: `import_chords_from_link` (`url`)
+
+---
+
+## 3. Authentication & Client Connection Quickstarts
+
+### Remote MCP (OAuth 2.1 + PKCE S256)
+- Endpoint: `https://sonata.jethrofrane.xyz/api/mcp`
+- Protected Resource Metadata (RFC 9728): `https://sonata.jethrofrane.xyz/.well-known/oauth-protected-resource`
+- Authorization Server Metadata (RFC 8414): `https://sonata.jethrofrane.xyz/.well-known/oauth-authorization-server`
+- DCR (RFC 7591): `https://sonata.jethrofrane.xyz/api/oauth/register`
+
+### Platform Quickstarts
+- **Gemini / Gemini Tasks (`settings.json`):** `{ "mcpServers": { "sonata": { "httpUrl": "https://sonata.jethrofrane.xyz/api/mcp" } } }`
+- **Antigravity:** Connect `https://sonata.jethrofrane.xyz/api/mcp` via HTTP MCP, or run `node scripts/sonata-cli.mjs mcp --local /path/to/sonata_library.json`.
+- **Claude Desktop / Claude Connectors / Claude Code:** Add custom remote connector `https://sonata.jethrofrane.xyz/api/mcp`, or run `claude mcp add --transport http sonata https://sonata.jethrofrane.xyz/api/mcp`.
+- **OpenAI / ChatGPT Connectors & Codex CLI (`~/.codex/config.toml`):** `[mcp_servers.sonata]` -> `url = "https://sonata.jethrofrane.xyz/api/mcp"`, or add `https://sonata.jethrofrane.xyz/api/mcp` as an MCP connector app.
+- **Browser WebMCP (`navigator.modelContext`):** Open https://sonata.jethrofrane.xyz in Chromium/WebMCP-enabled agent browsers or call `window.sonataAgent.call(name, args)`.

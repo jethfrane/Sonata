@@ -96,8 +96,6 @@ button.qr-box:focus-visible { outline: 3px solid var(--accent); outline-offset: 
 .about-points { margin: 16px 0; padding-left: 20px; display: grid; gap: 6px; color: var(--text-2); }
 .about-links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 16px; font-weight: 600; }
 .about-links a { color: var(--accent); text-underline-offset: 3px; min-height: 28px; display: inline-flex; align-items: center; }
-.verse { padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 10px 10px 0; font-style: italic; color: var(--text-2); }
-.verse span { display: block; margin-top: 4px; font-style: normal; font-weight: 650; font-size: 13px; color: var(--muted); }
 .changelog details { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
 .changelog summary { display: flex; justify-content: space-between; gap: 10px; padding: 12px 14px; cursor: pointer; list-style: none; background: var(--surface-2); }
 .changelog summary::-webkit-details-marker { display: none; }
@@ -190,7 +188,8 @@ html[data-theme="dark"] .toast-action { color: var(--accent-strong); }
 .stage-dock:has(.stage-step:not([hidden])) { justify-content: space-between; }
 .stage-count { margin-right: 8px; font-variant-numeric: tabular-nums; }
 .stage-chart { --chart-size: min(var(--stage-font), var(--stage-fit, 999px)); --chart-line: 1.4; max-width: 1400px; margin: 0 auto; padding-inline: clamp(6px, 1.4vw, 24px); }
-.stage-chart .ln-section span { background: var(--accent-soft); }
+.stage-chart .ln-section span { background: rgba(255, 255, 255, .1); color: #e2e4ec; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+.stage[data-theme="light"] .stage-chart .ln-section span { background: #eceae3; color: #3a3840; box-shadow: inset 0 0 0 1px #d4d0c6; }
 .stage-range { width: min(260px, 40vw); }
 .stage-divider { width: 1px; height: 28px; background: rgba(255,255,255,.16); }
 .stage-bpm { font: 700 15px var(--mono); min-width: 32px; }

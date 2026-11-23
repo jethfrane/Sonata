@@ -162,11 +162,15 @@ export function openDetails() {
         <label class="field"><span>${esc(t("capo", "Capo"))}</span><select class="select" id="dCapo">${capoOptions(s.capo)}</select></label>
       </div>
       <div class="field-row">
-        <label class="field"><span>${esc(t("bpm", "Tempo (BPM)"))}</span><input class="input" id="dBpm" type="number" min="30" max="300" inputmode="numeric" value="${s.bpm ?? ""}"></label>
         <label class="field"><span>${esc(t("genre", "Genre"))}</span><input class="input" id="dGenre" value="${esc(s.genre)}" maxlength="40" list="dGenres" autocomplete="off" placeholder="OPM, Worship, Pop…">
           <datalist id="dGenres">${[...new Set(store.songs.map((x) => x.genre).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join("")}</datalist></label>
+        <label class="field"><span>${esc(t("mood", "Mood / tone"))}</span><input class="input" id="dMood" value="${esc(s.mood || "")}" maxlength="30" list="dMoods" autocomplete="off" placeholder="Joyful, Solemn, Reflective…">
+          <datalist id="dMoods">${[...new Set(["Joyful", "Solemn", "Reflective", "Anthemic", "Intimate", "Upbeat", ...store.songs.map((x) => x.mood || "").filter(Boolean)])].map((m) => `<option value="${esc(m)}">`).join("")}</datalist></label>
       </div>
-      <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my Song Bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
+      <div class="field-row">
+        <label class="field"><span>${esc(t("bpm", "Tempo (BPM)"))}</span><input class="input" id="dBpm" type="number" min="30" max="300" inputmode="numeric" value="${s.bpm ?? ""}"></label>
+        <label class="switch-row d-bank"><span>${esc(t("inMyBank", "In my Song Bank"))}</span><input type="checkbox" class="toggle" id="dInBank"${s.inBank ? " checked" : ""}></label>
+      </div>
       <label class="field"><span>${esc(t("notes", "Notes"))}</span><textarea class="input" id="dNotes" rows="3">${esc(s.description)}</textarea></label>
       <div class="field"><span>${esc(t("links", "Links"))}</span><div id="dLinks">${linkRows(links)}</div>
         <button class="btn small ghost" type="button" id="dAddLink">${icon("plus")}${esc(t("addLink", "Add link"))}</button></div>
@@ -188,6 +192,7 @@ export function openDetails() {
           bpm: bpm >= 30 && bpm <= 300 ? Math.round(bpm) : null,
           description: v("dNotes"),
           genre: v("dGenre").trim().slice(0, 40),
+          mood: v("dMood").trim().slice(0, 30),
           inBank: /** @type {HTMLInputElement} */ (b.querySelector("#dInBank")).checked,
           links: links.filter((l) => l.name.trim() || l.url.trim()).map((l) => ({ name: l.name.trim(), url: l.url.trim() }))
         };
@@ -790,7 +795,6 @@ export async function openAbout() {
         <li>No ads. Anonymous page-view counts only (Vercel Web Analytics, no cookies).</li>
       </ul>
       <p class="about-links"><a href="/privacy" target="_blank" rel="noopener">${esc(t("privacyTerms", "Privacy & terms"))}</a><a href="https://jethrofrane.xyz" target="_blank" rel="noopener">${esc(t("contact", "Contact"))}</a></p>
-      <p class="verse">“So whether you eat or drink or whatever you do, do it all for the glory of God.” <span>1 Corinthians 10:31</span></p>
       <h3 class="group-title">${esc(t("whatsNew", "What's new"))}</h3>
       <div class="changelog" id="changelog"><p class="muted">…</p></div>
     </div>`

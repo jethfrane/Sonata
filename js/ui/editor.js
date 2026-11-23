@@ -2,7 +2,7 @@
 import { $, $$, esc, icon, toast, copyText, paintIcons, setIcon, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
-import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName } from "../core/chart.js";
+import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName, autoFormatChart } from "../core/chart.js";
 import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport, openSongSwitcher } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
@@ -141,6 +141,7 @@ export function initEditor() {
     store.update(s, { body: body().value });
     autosize();
     followCaret();
+    updateHistoryButtons();
     queueRender(true);
   });
   let sizeQueued = false;
@@ -161,6 +162,7 @@ export function initEditor() {
   });
   $("undoBtn").addEventListener("click", undo);
   $("redoBtn").addEventListener("click", redo);
+  $("autoFormatBtn")?.addEventListener("click", runAutoFormat);
   $("keyDownBtn").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), -1); });
   $("keyUpBtn").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), 1); });
   $("keyPill").addEventListener("click", () => openKeySheet());
@@ -334,8 +336,48 @@ const redo = () => step("redo");
 function updateHistoryButtons() {
   const s = store.active();
   const h = s ? history.get(s.id) : null;
-  /** @type {HTMLButtonElement} */ ($("undoBtn")).disabled = !h || !h.undo.length;
-  /** @type {HTMLButtonElement} */ ($("redoBtn")).disabled = !h || !h.redo.length;
+  /** @type {HTMLButtonElement} */ ($("undoBtn")).disabled = !h || !h.undo.length || Boolean(s?.readonly);
+  /** @type {HTMLButtonElement} */ ($("redoBtn")).disabled = !h || !h.redo.length || Boolean(s?.readonly);
+  const af = /** @type {HTMLButtonElement|null} */ (document.getElementById("autoFormatBtn"));
+  if (af) {
+    af.hidden = Boolean(s?.readonly);
+    af.disabled = !s || Boolean(s.readonly) || !s.body.trim();
+  }
+}
+
+/** Auto-format raw pasted text in the editor: clean sections, chords, metadata & long-line wrapping (with 1-click Undo). */
+function runAutoFormat() {
+  const s = store.active();
+  const ta = body();
+  if (!s || s.readonly || !ta.value.trim()) return;
+  clearTimeout(historyTimer);
+  const h = hist(s.id);
+  pushHistory(s.id, ta.value);
+  const res = autoFormatChart(ta.value);
+  /** @type {Partial<import("../core/store.js").Song>} */
+  const patch = {};
+  let appliedMeta = false;
+  if ((!s.title || s.title === "Untitled") && res.title) { patch.title = res.title; title().value = res.title; appliedMeta = true; }
+  if (!s.artist && res.artist) { patch.artist = res.artist; appliedMeta = true; }
+  if (s.manualKey === "auto" && res.manualKey && res.manualKey !== "auto") { patch.manualKey = res.manualKey; appliedMeta = true; }
+  if (!s.capo && res.capo) { patch.capo = res.capo; appliedMeta = true; }
+  if (!s.bpm && res.bpm) { patch.bpm = res.bpm; appliedMeta = true; }
+  if (res.links.length && !s.links.length) { patch.links = res.links; appliedMeta = true; }
+  if (!res.changed && !appliedMeta) {
+    updateHistoryButtons();
+    toast(t("alreadyFormatted", "Already cleanly formatted"), "info");
+    return;
+  }
+  patch.body = res.body;
+  ta.value = res.body;
+  h.redo = [];
+  pushHistory(s.id, res.body);
+  store.update(s, patch);
+  autosize();
+  updateHistoryButtons();
+  refreshEditor();
+  const note = res.changes.length ? ` (${res.changes.join(", ")})` : "";
+  toast(t("chartFormatted", "Chart formatted{n}", { n: note }), "success", { ms: 3200 });
 }
 
 /** @param {"saving"|"saved"|"error"|"readonly"} state */
@@ -432,9 +474,9 @@ export function renderPreview() {
     lyrics: t("lyricsMode", "Lyrics only")
   };
   let label = `${labels[/** @type {"chords"} */ (mode)] || ""}`;
-  if (mode === "chords" || mode === "chords-only") label += ` · ${t("keyOf", "Key of {key}", { key: pretty(keyShort(k)) })}`;
   if ((mode === "chords" || mode === "chords-only") && s.capo) label += ` · ${t("capoShapes", "Capo {n} · {key} shapes", { n: s.capo, key: pretty(keyShort(shapeKey(s))) })}`;
-  if (mode === "nashville" || mode === "roman") label += ` · ${pretty(keyShort(writtenKey(s)))}`;
+  else if (mode === "nashville" || mode === "roman") label += ` · ${pretty(keyShort(writtenKey(s)))}`;
+  else if (mode === "chords-only") label += ` · ${t("keyOf", "Key of {key}", { key: pretty(keyShort(k)) })}`;
   $("previewLabel").textContent = label;
 }
 
@@ -453,6 +495,7 @@ function updateMeta() {
   parts.push(`<button type="button" class="chip key" data-open-key="key" title="${esc(t("keyAndCapo", "Key & capo"))}">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${s.transpose ? ` <small>${esc(signed(s.transpose))}</small>` : ""}</button>`);
   parts.push(`<button type="button" class="chip${s.capo ? "" : " muted"}" data-open-key="capo" title="${esc(t("capo", "Capo"))}">${s.capo ? esc(t("capoN", "Capo {n}", { n: s.capo })) : `+ ${esc(t("capo", "Capo"))}`}</button>`);
   if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);
+  if (s.mood) parts.push(`<span class="chip static">${esc(s.mood)}</span>`);
   if (s.creator) parts.push(`<span class="chip static muted">arr. ${esc(s.creator)}</span>`);
   const chipsHtml = parts.join("");
   setHtml(chips, chipsHtml);

@@ -124,7 +124,7 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
 .bank-key { justify-content: center; margin: 8px 0 12px; }
 .bank-chart { padding: 4px 2px; }
 
-@media (max-width: 1023px) {
+@media (max-width: 1099px) {
   .cf-roots { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
@@ -138,8 +138,10 @@ html[data-theme="dark"] .pk-w:not(.on):not(.bass) { fill: #e8e8ec; }
   .page-actions #addLinksBtn span:last-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .page-actions #addLinksBtn { flex: none; width: 44px; padding: 0; }
 }
-@media (max-width: 355px) {
+@media (max-width: 380px) {
   .cf-roots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 355px) {
   .dg-grid { grid-template-columns: 1fr; }
 }
 

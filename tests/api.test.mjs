@@ -450,8 +450,9 @@ test("mcp endpoint: GET/SSE/OPTIONS, initialize, public vs auth tools, SSRF refu
   const getHealth = await callApi(handler, { url: "/api/mcp", method: "GET" });
   assert.equal(getHealth.status, 200);
   const health = JSON.parse(getHealth.body);
-  assert.equal(health.tools, 17);
-  assert.equal(health.publicTools, 6);
+  assert.equal(health.tools, 18);
+  assert.equal(health.publicTools, 7);
+  assert.equal(health.version, "7.3.0");
 
   const getSse = await callApi(handler, { url: "/api/mcp", method: "GET", headers: { accept: "text/event-stream" } });
   assert.equal(getSse.status, 405);
@@ -470,20 +471,32 @@ test("mcp endpoint: GET/SSE/OPTIONS, initialize, public vs auth tools, SSRF refu
   assert.equal(initRes.status, 200);
   assert.equal(JSON.parse(initRes.body).result.protocolVersion, "2025-03-26");
 
-  // Unauthenticated tools/list -> 6 public tools
+  // Unauthenticated tools/list -> 7 public tools, each with MCP annotations
   const anonList = await rpc("tools/list");
   assert.equal(anonList.status, 200);
-  assert.equal(JSON.parse(anonList.body).result.tools.length, 6);
+  const anonTools = JSON.parse(anonList.body).result.tools;
+  assert.equal(anonTools.length, 7);
+  assert.ok(anonTools.every((t) => typeof t.annotations?.readOnlyHint === "boolean"), "all public tools include annotations");
 
-  // Public tools: lookup_chord, transpose_chart, build_sonata_link, extract_chords_from_url + SSRF refusal
+  // Public tools: lookup_chord, format_chord_chart, transpose_chart (incl. chords-only), build_sonata_link, extract_chords_from_url + SSRF refusal
   const lookup = JSON.parse((await rpc("tools/call", { name: "lookup_chord", arguments: { chord: "Am7", instrument: "guitar" } })).body);
   assert.ok(!lookup.result.isError);
   const lookupData = JSON.parse(lookup.result.content[0].text);
   assert.deepEqual(lookupData.notes, ["A", "C", "E", "G"]);
   assert.ok(lookupData.guitar.length > 0);
 
+  const formatted = JSON.parse((await rpc("tools/call", { name: "format_chord_chart", arguments: { rawChart: "Verse 1:\nG  D/F#m\n\nAmazing grace" } })).body);
+  assert.ok(!formatted.result.isError);
+  const fmtData = JSON.parse(formatted.result.content[0].text);
+  assert.ok(fmtData.body.includes("## Verse 1") && fmtData.body.includes("D/F#") && !fmtData.body.includes("D/F#m"));
+
   const transposed = JSON.parse((await rpc("tools/call", { name: "transpose_chart", arguments: { body: "G C D", fromKey: "G", toKey: "A" } })).body);
   assert.equal(JSON.parse(transposed.result.content[0].text).text, "A D E");
+
+  const chordsOnly = JSON.parse((await rpc("tools/call", { name: "transpose_chart", arguments: { body: "## Verse\nG C D\nAmazing grace", fromKey: "G", viewMode: "chords-only" } })).body);
+  assert.ok(!chordsOnly.result.isError);
+  const coText = JSON.parse(chordsOnly.result.content[0].text).text;
+  assert.ok(coText.includes("G C D") && !coText.includes("Amazing grace"));
 
   const linkRes = JSON.parse((await rpc("tools/call", { name: "build_sonata_link", arguments: { title: "MCP Link", body: "G C" } })).body);
   const builtUrl = new URL(JSON.parse(linkRes.result.content[0].text).url);
@@ -529,7 +542,7 @@ test("mcp endpoint: GET/SSE/OPTIONS, initialize, public vs auth tools, SSRF refu
 
   const authList = await rpc("tools/list", {}, { authorization: `Bearer ${accessTok}` });
   assert.equal(authList.status, 200);
-  assert.equal(JSON.parse(authList.body).result.tools.length, 17);
+  assert.equal(JSON.parse(authList.body).result.tools.length, 18);
 
   // Authenticated read-only list_songs skips Drive upload
   const uploadsBefore = drive.uploads.length;
@@ -537,15 +550,25 @@ test("mcp endpoint: GET/SSE/OPTIONS, initialize, public vs auth tools, SSRF refu
   assert.equal(JSON.parse(listRes.result.content[0].text).total, 1);
   assert.equal(drive.uploads.length, uploadsBefore, "read-only tool skips upload");
 
-  // Authenticated create_song -> merges & uploads to mocked Drive
+  // Authenticated create_song with genre & mood -> merges & uploads to mocked Drive
   const createRes = JSON.parse((await rpc("tools/call", {
     name: "create_song",
-    arguments: { title: "MCP Created", body: "C F G\nPraise", key: "C:major" }
+    arguments: { title: "MCP Created", body: "C F G\nPraise", key: "C:major", genre: "Worship", mood: "Joyful" }
   }, { authorization: `Bearer ${accessTok}` })).body);
   assert.ok(!createRes.result.isError);
-  const createdId = JSON.parse(createRes.result.content[0].text).song.id;
+  const createdSong = JSON.parse(createRes.result.content[0].text).song;
+  const createdId = createdSong.id;
+  assert.equal(createdSong.mood, "Joyful");
   assert.equal(drive.uploads.length, uploadsBefore + 1);
-  assert.ok(drive.content.songs.some((s) => s.id === createdId && s.title === "MCP Created"));
+  assert.ok(drive.content.songs.some((s) => s.id === createdId && s.title === "MCP Created" && s.mood === "Joyful"));
+
+  // Filter list_songs by mood & genre and update_song mood
+  const moodList = JSON.parse((await rpc("tools/call", { name: "list_songs", arguments: { mood: "joyful", genre: "worship" } }, { authorization: `Bearer ${accessTok}` })).body);
+  assert.equal(JSON.parse(moodList.result.content[0].text).total, 1);
+  const missMood = JSON.parse((await rpc("tools/call", { name: "list_songs", arguments: { mood: "solemn" } }, { authorization: `Bearer ${accessTok}` })).body);
+  assert.equal(JSON.parse(missMood.result.content[0].text).total, 0);
+  const updMood = JSON.parse((await rpc("tools/call", { name: "update_song", arguments: { id: createdId, mood: "Reflective" } }, { authorization: `Bearer ${accessTok}` })).body);
+  assert.equal(JSON.parse(updMood.result.content[0].text).song.mood, "Reflective");
 
   // Authenticated trash_song -> moves song to trash in Drive (NOT deletedIds)
   const trashRes = JSON.parse((await rpc("tools/call", {

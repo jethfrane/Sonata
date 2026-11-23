@@ -142,7 +142,7 @@ export function adoptShared(u) {
   const { song } = found;
   if (found.own || found.same) return { song, status: "same" };
   const before = soundingKey(song).tonic;
-  store.update(song, { title: u.title, body: u.body, manualKey: u.manualKey, artist: u.artist, creator: u.creator, description: u.description, links: u.links, bpm: u.bpm, genre: u.genre || song.genre });
+  store.update(song, { title: u.title, body: u.body, manualKey: u.manualKey, artist: u.artist, creator: u.creator, description: u.description, links: u.links, bpm: u.bpm, genre: u.genre || song.genre, mood: u.mood || song.mood });
   const shift = mod12(before - soundingKey(song).tonic);
   if (shift) store.update(song, { transpose: mod12(song.transpose + shift + 5) - 5 });
   return { song, status: "updated" };

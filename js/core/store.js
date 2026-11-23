@@ -21,7 +21,7 @@ export const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
  * @typedef {{ name: string, url: string }} Link
  * @typedef {{ id: string, title: string, artist: string, creator: string, description: string,
  *   links: Link[], body: string, manualKey: string, isFavorite: boolean, transpose: number,
- *   capo: number, bpm: number|null, genre: string, inBank: boolean, createdAt: string, updatedAt: string,
+ *   capo: number, bpm: number|null, genre: string, mood?: string, inBank: boolean, createdAt: string, updatedAt: string,
  *   lastOpenedAt: string, readonly?: boolean, origin?: string }} Song
  *   `origin`: the share id of the song this copy was saved from (see shareId in share.js).
  * @typedef {{ id: string, title: string, description: string, links: Link[],
@@ -100,6 +100,7 @@ export function normalizeSong(s) {
     capo: int(s.capo, 0, 11, 0),
     bpm: Number.isFinite(bpm) && bpm >= 30 && bpm <= 300 ? Math.round(bpm) : null,
     genre: str(s.genre).trim().slice(0, 40),
+    mood: str(s.mood).trim().slice(0, 30),
     inBank: Boolean(s.inBank),
     createdAt: time(s.createdAt, t),
     updatedAt,
@@ -294,8 +295,8 @@ export const libraryFingerprint = (d) => {
   /** @type {any[]} */
   const parts = [
     // "last opened" changes on every tap on a song; it alone is not worth an upload.
-    // New fields (genre, song bank) left at their defaults compare equal to older files that lack them.
-    (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, inBank: s.inBank || undefined })),
+    // New fields (genre, mood, song bank) left at their defaults compare equal to older files that lack them.
+    (d.songs || []).map((/** @type {any} */ s) => ({ ...s, lastOpenedAt: undefined, genre: s.genre || undefined, mood: s.mood || undefined, inBank: s.inBank || undefined })),
     d.setlists || [],
     [...(d.deletedIds || [])].sort()
   ];

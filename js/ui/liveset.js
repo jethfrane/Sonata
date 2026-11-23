@@ -3,9 +3,9 @@
 // file in their own Google Drive (shared "anyone with the link can view"); the band's link
 // (/set/<file id>/<name>) always reads the latest version of that file. A band member's copy
 // is brought up to date, never duplicated, and their own key and capo are kept.
-import { toast } from "./dom.js";
+import { $, toast } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, adoptShared } from "./ctx.js";
+import { store, app, adoptShared, findCopy } from "./ctx.js";
 import { buildSetFile, parseSetFile, unpackSong } from "../core/share.js";
 import { bankSlug, validBankId } from "../core/bank.js";
 import { openImportSet } from "./sheets-lazy.js";
@@ -17,6 +17,38 @@ export const liveSetUrl = (id, title = "") => `${location.origin}/set/${id}${ban
 const published = new Map();
 /** @param {import("../core/store.js").Setlist} set */
 const fileText = (set) => { const f = buildSetFile(set, store.setlistSongs(set)); return JSON.stringify({ ...f, updatedAt: "" }); };
+
+/** Last time each followed source was checked during this session. @type {Map<string, number>} */
+const checkedAt = new Map();
+/** Digest of remote content last notified, so we don't spam identical update toasts. @type {Map<string, string>} */
+const notifiedDigest = new Map();
+
+/** Compare remote setlist payload against current local copy without mutating anything.
+ * @param {import("../core/store.js").Setlist} set
+ * @param {NonNullable<ReturnType<typeof parseSetFile>>} data
+ */
+export function hasRemoteSetChanges(set, data) {
+  if (set.title !== data.t || (set.description || "") !== (data.d || "")) return true;
+  if (set.items.length !== data.s.length) return true;
+  const localSongs = store.setlistSongs(set);
+  if (localSongs.length !== data.s.length) return true;
+  for (let i = 0; i < data.s.length; i++) {
+    const u = unpackSong(data.s[i]);
+    const hit = findCopy(u);
+    if (!hit || hit.song.id !== localSongs[i]?.id || (!hit.own && !hit.same)) return true;
+  }
+  return false;
+}
+
+/** @param {string} setId @param {boolean} hasUpdate @param {string} [syncedIso] */
+function syncBadgeState(setId, hasUpdate, syncedIso) {
+  const cur = store.currentSetlist()?.set;
+  if (!cur || cur.id !== setId) return;
+  const btn = $("setSyncBtn");
+  if (btn) btn.classList.toggle("has-update", hasUpdate);
+  const badge = $("setlistSyncBadge");
+  if (badge && syncedIso) badge.title = t("lastSynced", "Last checked: {t}", { t: new Date(syncedIso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) });
+}
 
 /**
  * Publish a setlist (or update its file). @param {string} setId @param {{ quiet?: boolean }} [o]
@@ -79,6 +111,9 @@ export function watchLiveSets() {
   });
   // What is in Drive now counts as published, so opening the app does not upload again.
   for (const set of store.setlists) if (set.liveId && !published.has(set.id)) published.set(set.id, fileText(set));
+  const check = () => { if (!document.hidden) checkActiveLiveSet({ prompt: true }); };
+  document.addEventListener("visibilitychange", check);
+  window.addEventListener("focus", check);
 }
 
 const CACHE = (/** @type {string} */ id) => `sonata_set_${id}`;
@@ -143,18 +178,49 @@ export async function syncLiveSetNow(setId) {
       return false;
     }
     const changed = applySet(set, data);
+    syncBadgeState(set.id, false, new Date().toISOString());
     toast(changed ? t("liveUpdated", "“{t}” is up to date. Your keys and capos were kept.", { t: data.t }) : t("liveSame", "“{t}” is already up to date.", { t: data.t }), "success", { ms: 3500 });
     return true;
   }
   return false;
 }
 
-/** Check the setlists this device follows (at most every ten minutes each). */
+/** Check the active followed setlist cleanly (30s cooldown) and notify instead of overwriting mid-song. @param {{ prompt?: boolean, force?: boolean }} [o] */
+export async function checkActiveLiveSet(o = {}) {
+  if (!navigator.onLine) return false;
+  const set = store.currentSetlist()?.set;
+  if (!set?.source) return false;
+  const last = checkedAt.get(set.source) || 0;
+  if (!o.force && Date.now() - last < 30_000) return false;
+  checkedAt.set(set.source, Date.now());
+  const { data } = await fetchSet(set.source);
+  if (!data) return false;
+  const stamp = new Date().toISOString();
+  if (!hasRemoteSetChanges(set, data)) { syncBadgeState(set.id, false, stamp); return false; }
+  syncBadgeState(set.id, true, stamp);
+  if (!o.prompt) return true;
+  const digest = JSON.stringify({ t: data.t, d: data.d, s: data.s.length, u: data.updatedAt || "" });
+  if (notifiedDigest.get(set.id) === digest) return true;
+  notifiedDigest.set(set.id, digest);
+  toast(t("liveUpdateAvailable", "“{t}” has a newer version.", { t: data.t }), "info", {
+    ms: 8000,
+    action: t("updateNow", "Update"),
+    onAction: () => {
+      applySet(set, data);
+      syncBadgeState(set.id, false, new Date().toISOString());
+      toast(t("liveUpdated", "“{t}” is up to date. Your keys and capos were kept.", { t: data.t }), "success", { ms: 3500 });
+    }
+  });
+  return true;
+}
+
+/** Check the setlists this device follows (at most every 2 minutes each). */
 export async function refreshFollowed() {
   if (!navigator.onLine) return;
   for (const set of store.setlists.filter((s) => s.source)) {
     const key = `sonata_set_checked_${set.source}`;
-    try { if (Date.now() - Number(localStorage.getItem(key) || 0) < 10 * 60 * 1000) continue; localStorage.setItem(key, String(Date.now())); } catch { /* ignore */ }
+    try { if (Date.now() - Number(localStorage.getItem(key) || 0) < 2 * 60 * 1000) continue; localStorage.setItem(key, String(Date.now())); } catch { /* ignore */ }
+    checkedAt.set(/** @type {string} */ (set.source), Date.now());
     const { data } = await fetchSet(/** @type {string} */ (set.source));
     if (data && applySet(set, data)) toast(t("liveUpdatedBy", "“{t}” was updated by its owner.", { t: data.t }), "info", { ms: 5000 });
   }

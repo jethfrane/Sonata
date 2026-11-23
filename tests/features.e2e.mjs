@@ -725,6 +725,96 @@ console.log("v7.2.0 chord/key detection, Key & Capo overrides, copy & link impor
   await p.close();
 }
 
+console.log("v7.3.0 Auto-Format, About cleanup, Mood/Tone, Tools Hub mobile ergonomics, Live Setlist alert");
+{
+  // 1. Auto-Format + Undo & About without Bible verse & Mood in Song Details
+  p = await open("/editor", { viewport: { width: 1280, height: 860 }, songs: [{ id: "song-v73-1", title: "Messy Chart", body: "" }] });
+  const rawMessy = "D: xx0232\nVerse 1:\nG        D/F#m\n\nAmazing grace how sweet the sound that saved a wretch like me";
+  await p.fill("#songBody", rawMessy); await p.waitForTimeout(150);
+  await p.click("#autoFormatBtn"); await p.waitForTimeout(200);
+  const formattedBody = await p.inputValue("#songBody");
+  ok(formattedBody.includes("## Verse 1") && formattedBody.includes("D/F#") && !formattedBody.includes("D/F#m") && !formattedBody.includes("xx0232") && !formattedBody.includes("D/F#\n\nAmazing"), "#autoFormatBtn formats sections, repairs chords, strips legends, and collapses blank gaps");
+  await p.click("#undoBtn"); await p.waitForTimeout(150);
+  ok((await p.inputValue("#songBody")) === rawMessy, "#undoBtn restores original messy paste cleanly after Auto-Format");
+
+  // About sheet contains no Bible verse
+  await p.click("#settingsBtn"); await p.waitForTimeout(250);
+  await p.click("#aboutBtn"); await p.waitForTimeout(250);
+  const aboutText = await p.textContent("#sheetBody");
+  ok(!/glory of the lord|corinthians/i.test(aboutText || ""), "About sheet contains no religious verse");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(150);
+
+  // Mood/Tone in Song Details -> saved, shown in Songs row, searchable
+  await p.click("#detailsBtn"); await p.waitForTimeout(250);
+  await p.fill("#dMood", "Joyful");
+  await p.click("#sheetFoot .btn.primary"); await p.waitForTimeout(250);
+  await p.click('.tabs button[data-view="songs"]'); await p.waitForTimeout(250);
+  ok((await p.textContent('#libraryList .row[data-id="song-v73-1"]')).includes("Joyful"), "optional mood shows on song row when set");
+  await p.fill("#librarySearch", "joyful"); await p.waitForTimeout(200);
+  ok(await p.locator('#libraryList .row[data-id="song-v73-1"]').count() === 1, "Songs search matches optional mood field");
+  await p.close();
+
+  // 2. Tools Hub phone ergonomics (Chord Finder 6-col roots + Chord Builder link; Key Finder mobile first order)
+  p = await open("/chords/G", { viewport: { width: 390, height: 844 }, touch: true });
+  const rootCols = await p.evaluate(() => getComputedStyle(document.getElementById("chordRoots")).gridTemplateColumns.split(" ").filter(Boolean).length);
+  ok(rootCols === 6, `Chord Finder uses 6-column root buttons on phone (got ${rootCols})`);
+  await p.click('[data-open-builder="piano"]'); await p.waitForTimeout(450);
+  ok(new URL(p.url()).pathname === "/play/piano" && await p.isVisible('#piano'), "Custom chord? Chord Builder button jumps straight to Play Piano");
+  await p.goto(BASE + "/tools/key-finder"); await p.waitForTimeout(450);
+  const kfOrder = await p.evaluate(() => {
+    const layout = document.querySelector("#view-theory .theory-layout");
+    const kp = document.querySelector("#view-theory .key-panel")?.getBoundingClientRect();
+    const cp = document.querySelector("#view-theory .circle-wrap")?.getBoundingClientRect();
+    return { cls: layout?.classList.contains("key-finder-first"), kpY: kp?.y ?? 9999, cpY: cp?.y ?? 0 };
+  });
+  ok(kfOrder.cls && kfOrder.kpY < kfOrder.cpY, "Key Finder places .key-panel above Circle of Fifths on mobile viewports");
+  await p.close();
+
+  // 3. Drive live setlist update notification banner on Stage
+  const LSID = "1LiVeSeTCheck0123456789abcdefghij";
+  let remoteCalls = 0;
+  p = await open("/songs", {
+    route: (page) => page.route("**/api/set?**", (route) => {
+      remoteCalls++;
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          type: "sonata-set",
+          v: 1,
+          t: "Sunday Worship Live",
+          d: "",
+          l: [],
+          s: [
+            { t: "Here I Am to Worship", artist: "Tim Hughes", b: "G D/F# Em C\nLight of the world", i: "aaaa111122" },
+            { t: "Brand New Opening Song", b: "C G Am F\nNew song added by leader", i: "new9999888" }
+          ]
+        })
+      });
+    })
+  });
+  await p.evaluate((lsid) => {
+    const songs = JSON.parse(localStorage.getItem("sonata:v12:songs"));
+    songs[0].origin = "aaaa111122";
+    localStorage.setItem("sonata:v12:songs", JSON.stringify(songs));
+    localStorage.setItem("sonata:v12:setlists", JSON.stringify([{
+      id: "set-live-check",
+      title: "Sunday Worship Live",
+      source: lsid,
+      items: [{ songId: songs[0].id }]
+    }]));
+  }, LSID);
+  await p.reload(); await p.waitForTimeout(500);
+  await p.click('[data-filter="setlists"]'); await p.waitForTimeout(200);
+  await p.click('#libraryList .row[data-id="set-live-check"] [data-act="set-open"]'); await p.waitForTimeout(350);
+  await p.click("#presentBtn"); await p.waitForTimeout(800);
+  ok(remoteCalls >= 1 && (await p.textContent("#toasts")).includes("newer version"), "opening Stage on a followed Drive live setlist checks for updates and shows Update toast");
+  await p.click("#toasts .toast-action"); await p.waitForTimeout(500);
+  const afterSync = await p.evaluate(() => window.__sonata.store.setlists.find((x) => x.id === "set-live-check")?.items.length);
+  ok(afterSync === 2, "clicking Update in live setlist toast syncs new songs from Drive setlist");
+  await p.close();
+}
+
 console.log(`\n${pass} passed, ${fail} failed; page errors: ${errors.length ? errors.join(" | ") : "none"}`);
 await b.close();
 process.exit(fail || errors.length ? 1 : 0);

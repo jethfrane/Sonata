@@ -8,8 +8,8 @@
   a.chip { min-height: 44px; }
   button.chip, .segmented button, .key-btn { min-width: 44px; justify-content: center; }
   .title-input { min-height: 44px; }
-  .icon-btn, .icon-btn.small, .row .icon-btn, .editor-toolbar .icon-btn, .key-control .icon-btn,
-  .tool-group:first-child .icon-btn { width: 44px; height: 44px; }
+  .icon-btn, .icon-btn.small, .row .icon-btn, .editor-toolbar .icon-btn, .key-control .icon-btn { width: 44px; height: 44px; }
+  .edit-acts #autoFormatBtn { min-height: 44px; padding: 0 12px; }
   .details-btn { width: 44px; min-height: 44px; }
   .input, .select, .search input, .input.tiny, .share-link .input { min-height: 44px; }
   .segmented { padding: 2px; }
@@ -40,10 +40,6 @@
   .stage-group { gap: 4px; }
   .stage-key { min-width: 34px; }
   .stage-select { flex: 0 1 auto; min-width: 0; max-width: 138px; padding: 0 26px 0 9px; background-position: right 8px center; background-size: 13px; text-overflow: ellipsis; }
-}
-/* Narrowest phones: undo/redo give their room to the key and Edit/View controls. */
-@media (max-width: 380px) {
-  .editor-toolbar .tool-group:first-child #redoBtn { display: none; }
 }
 /* 320–355px phones: 12 keys in three rows of four keeps each key 44px wide. */
 @media (max-width: 355px) {

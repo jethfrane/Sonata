@@ -6,7 +6,7 @@ import { slugify } from "../router.js";
 /**
  * @typedef {import("./store.js").Song} Song
  * @typedef {{ t: string, b: string, k?: string, c?: number, tr?: number, a?: string,
- *   cr?: string, d?: string, l?: { name: string, url: string }[], bpm?: number, g?: string, i?: string }} SharedSong
+ *   cr?: string, d?: string, l?: { name: string, url: string }[], bpm?: number, g?: string, i?: string, m?: string }} SharedSong
  * @typedef {{ type: "set", t: string, d?: string, l?: { name: string, url: string }[],
  *   s: SharedSong[] }} SharedSet
  */
@@ -48,6 +48,7 @@ export function packSong(song) {
   const bpm = Number(song.bpm); if (bpm >= 30 && bpm <= 300) d.bpm = Math.round(bpm);
   const g = String(song.genre ?? song.g ?? "").trim(); if (g) d.g = g;
   const i = shareId(song); if (i) d.i = i;
+  const mood = String(song.mood ?? song.m ?? "").trim(); if (mood) d.m = mood;
   return d;
 }
 
@@ -89,6 +90,7 @@ export function unpackSong(d) {
     links: cleanLinks(d?.l),
     bpm: Number(d?.bpm) || null,
     genre: typeof d?.g === "string" ? d.g : "",
+    mood: typeof d?.m === "string" ? d.m : "",
     origin: typeof d?.i === "string" ? d.i.replace(/[^a-z0-9]/gi, "").slice(-12) : ""
   };
 }
@@ -101,9 +103,9 @@ const toBase64Url = (bytes) => {
 };
 
 // ---- v4: positional arrays (no field names) ----
-// Song: [4, title, body, key, capo, transpose, artist, arranger, notes, links, bpm, genre, id]
+// Song: [4, title, body, key, capo, transpose, artist, arranger, notes, links, bpm, genre, id, mood]
 // Set:  [5, title, notes, links, [song, song, …]]   (each song as above, without the leading 4)
-const SONG_FIELDS = ["t", "b", "k", "c", "tr", "a", "cr", "d", "l", "bpm", "g", "i"];
+const SONG_FIELDS = ["t", "b", "k", "c", "tr", "a", "cr", "d", "l", "bpm", "g", "i", "m"];
 
 /** @param {any} d */
 function songToArray(d) {

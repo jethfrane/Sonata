@@ -133,7 +133,7 @@ async function seedLibrary(p, songs, setlists = [], trash = []) {
   await ctx.close();
 }
 
-// 3. window.sonataAgent + WebMCP navigator.modelContext.registerTool (all 17 tools) + live UI updates
+// 3. window.sonataAgent + WebMCP navigator.modelContext.registerTool (all 18 tools) + live UI updates
 {
   const { ctx, p } = await makePage({
     init: () => {
@@ -154,9 +154,10 @@ async function seedLibrary(p, songs, setlists = [], trash = []) {
   const initInfo = await p.evaluate(() => ({
     webMcp: window.sonataAgent.webMcp,
     toolCount: window.sonataAgent.tools().length,
-    registeredNames: window.__registeredTools.map((t) => t.name)
+    registeredNames: window.__registeredTools.map((t) => t.name),
+    hasAnnotations: window.__registeredTools.every((t) => typeof t.annotations?.readOnlyHint === "boolean")
   }));
-  ok(initInfo.webMcp === true && initInfo.toolCount === 17 && initInfo.registeredNames.length === 17, "navigator.modelContext.registerTool registers all 17 WebMCP tools");
+  ok(initInfo.webMcp === true && initInfo.toolCount === 18 && initInfo.registeredNames.length === 18 && initInfo.hasAnnotations, "navigator.modelContext.registerTool registers all 18 WebMCP tools with annotations");
 
   // Execute tools via window.sonataAgent and verify live UI updates
   const created = await p.evaluate(() => window.sonataAgent.call("create_song", {

@@ -1,5 +1,5 @@
 // @ts-check
-// Lazy-loaded browser AI agent bridge & WebMCP registration (17 tools).
+// Lazy-loaded browser AI agent bridge & WebMCP registration (18 tools).
 import {
   ALL_TOOL_DEFS,
   PUBLIC_TOOL_NAMES,
@@ -64,7 +64,7 @@ async function callTool(name, args = {}) {
   return await executeLibraryTool(name, args, ctx);
 }
 
-/** Register all 17 Sonata tools with WebMCP and expose window.sonataAgent. */
+/** Register all 18 Sonata tools with WebMCP and expose window.sonataAgent. */
 export function initAgent() {
   if (agentApi) return agentApi;
 
@@ -75,6 +75,7 @@ export function initAgent() {
       name: def.name,
       description: def.description,
       inputSchema: def.inputSchema,
+      annotations: def.annotations,
       execute: async (/** @type {any} */ args) => {
         const result = await callTool(def.name, args);
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -94,7 +95,7 @@ export function initAgent() {
   }
 
   agentApi = {
-    version: "1.0.0",
+    version: "7.3.0",
     webMcp,
     tools: () => ALL_TOOL_DEFS,
     call: callTool,

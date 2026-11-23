@@ -6,7 +6,7 @@ import {
   prefersFlats, mod12, noteName, SCALES, CHORD_TYPES, keySignature, relativeKey,
   diatonicChords, chordsForKey
 } from "./music.js";
-import { analyzeRawChart, buildLines, linesToText, uniqueChords } from "./chart.js";
+import { analyzeRawChart, autoFormatChart, buildLines, linesToText, uniqueChords } from "./chart.js";
 import { describeChord, voicings, TUNINGS, bassMap, pianoVoicing } from "./chords.js";
 import { packSong, packSet, encodeShare, safeHref, MAX_LINK } from "./share.js";
 import { songSlug } from "../router.js";
@@ -28,7 +28,8 @@ const TRASH_TTL_MS = TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
  *   fetchUrl?: (url: string) => Promise<{ status?: number, error?: string, title?: string, artist?: string, text?: string, body?: string, source?: string }|null>,
  *   onMutate?: (info: { tool: string, result?: any }) => void|Promise<void>
  * }} ToolContext
- * @typedef {{ name: string, description: string, inputSchema: Record<string, any> }} ToolDef
+ * @typedef {{ readOnlyHint?: boolean, destructiveHint?: boolean, idempotentHint?: boolean, openWorldHint?: boolean }} ToolAnnotations
+ * @typedef {{ name: string, description: string, inputSchema: Record<string, any>, annotations?: ToolAnnotations }} ToolDef
  */
 
 export const SONATA_FORMAT_GUIDE = `# Sonata Chord Chart Format
@@ -37,11 +38,11 @@ Sonata charts are plain text / Markdown-inspired files designed for clean alignm
 
 ## Structure & Directives
 - \`# Title\` — Optional heading (rarely needed when song title is set in metadata).
-- \`## Section\` — Section pill badge (e.g. \`## Verse 1\`, \`## Chorus\`, \`## Bridge\`, \`## Intro\`).
-- \`> Note\` or \`// Note\` — Performance cue / arrangement note (hidden in Lyrics-only view).
+- \`## Section\` — Canonical section pill badge (e.g. \`## Verse 1\`, \`## Chorus\`, \`## Bridge\`, \`## Intro\`, \`## Outro\`). Use \`format_chord_chart\` to normalize messy pasted text and standard section headers automatically.
+- \`> Note\` or \`// Note\` — Performance cue / arrangement note (hidden in Lyrics-only and Chords-only views).
 - \`---\` — Visual divider between major parts.
 
-## Writing Chords
+## Writing Chords & View Modes
 1. **Chords above lyrics** (keep spaces so chords line up over syllables):
    \`\`\`
    ## Verse 1
@@ -55,12 +56,14 @@ Sonata charts are plain text / Markdown-inspired files designed for clean alignm
 3. **Instrumental / rhythm notation**:
    - \`C///\` — C held for 4 beats (rhythm slashes).
    - Neutral rhythm marks on chord lines: \`|\`, \`/\`, \`%\`, \`N.C.\`, \`x2\`, \`Intro:\`, \`Tag:\`.
+4. **View modes** (\`transpose_chart\`): \`chords\`, \`chords-only\` (progression + section pills with lyrics stripped), \`nashville\`, \`roman\`, or \`lyrics\`.
 
 ## Keys & Metadata
 - \`manualKey\`: \`"auto"\` (auto-detected from chords) or canonical \`"<Root>:<mode>"\` such as \`"G:major"\`, \`"E:minor"\`, \`"Bb:major"\`, \`"F#:minor"\`.
 - \`capo\`: integer \`0\`–\`11\` (fret number; shapes automatically reflect capo).
 - \`transpose\`: non-destructive playback shift \`-11\` to \`+11\` semitones.
 - \`bpm\`: integer \`30\`–\`300\` (or \`null\`).
+- \`genre\` & \`mood\`: optional tags (e.g. \`genre: "Worship"\`, \`mood: "Joyful"\` or \`"Solemn"\`).
 `;
 
 const LINK_SCHEMA = {
@@ -77,6 +80,7 @@ export const PUBLIC_TOOL_DEFS = [
   {
     name: "extract_chords_from_url",
     description: "Fetch a public chord webpage URL, extract its chord chart, and analyze key, capo, BPM, chords, and Roman progression.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     inputSchema: {
       type: "object",
       properties: {
@@ -88,6 +92,7 @@ export const PUBLIC_TOOL_DEFS = [
   {
     name: "analyze_chord_chart",
     description: "Parse raw pasted chord text (ChordPro, Ultimate Guitar, inline [G], or chord-over-lyric) into structured Sonata chart metadata, detected key, capo, BPM, and chords.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -98,8 +103,24 @@ export const PUBLIC_TOOL_DEFS = [
     }
   },
   {
+    name: "format_chord_chart",
+    description: "Auto-format raw pasted chord text into canonical Sonata markdown (## Section headings, cleaned chords such as D/F#m -> D/F#, collapsed chord/lyric gaps, stripped voicing legends, balanced wrapped lines) plus extracted metadata.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    inputSchema: {
+      type: "object",
+      properties: {
+        rawChart: { type: "string", description: "Raw chord chart text to format." },
+        maxCols: { type: "integer", minimum: 36, maximum: 100, description: "Max line width before wrapping chord/lyric pairs (default: 58)." },
+        wrap: { type: "boolean", description: "Wrap overly long chord/lyric lines cleanly (default: true)." },
+        sourceUrl: { type: "string", description: "Optional source reference URL to attach if missing." }
+      },
+      required: ["rawChart"]
+    }
+  },
+  {
     name: "build_sonata_link",
     description: "Build a compressed Sonata ?s= share/import URL for a single song or a full setlist.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -112,6 +133,7 @@ export const PUBLIC_TOOL_DEFS = [
         transpose: { type: "integer", minimum: -11, maximum: 11 },
         bpm: { type: "integer", minimum: 30, maximum: 300 },
         genre: { type: "string" },
+        mood: { type: "string", description: "Optional tone/mood tag (e.g. Joyful, Solemn, Reflective)." },
         description: { type: "string" },
         links: { type: "array", items: LINK_SCHEMA },
         songs: {
@@ -129,6 +151,7 @@ export const PUBLIC_TOOL_DEFS = [
               transpose: { type: "integer", minimum: -11, maximum: 11 },
               bpm: { type: "integer", minimum: 30, maximum: 300 },
               genre: { type: "string" },
+              mood: { type: "string" },
               description: { type: "string" },
               links: { type: "array", items: LINK_SCHEMA }
             },
@@ -142,6 +165,7 @@ export const PUBLIC_TOOL_DEFS = [
   {
     name: "lookup_chord",
     description: "Look up chord tones, interval formula, and playable voicings for guitar, ukulele, bass, and piano.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -157,7 +181,8 @@ export const PUBLIC_TOOL_DEFS = [
   },
   {
     name: "transpose_chart",
-    description: "Transpose a chord chart by semitone steps or between keys, and optionally render in Nashville numbers, Roman numerals, or lyrics-only mode.",
+    description: "Transpose a chord chart by semitone steps or between keys, and optionally render in chords-only, Nashville numbers, Roman numerals, or lyrics-only mode.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -165,7 +190,7 @@ export const PUBLIC_TOOL_DEFS = [
         steps: { type: "integer", minimum: -11, maximum: 11, description: "Semitone shift (-11 to +11)." },
         fromKey: { type: "string", description: "Source key (e.g. 'G', 'Am')." },
         toKey: { type: "string", description: "Target key (e.g. 'A', 'Bm')." },
-        viewMode: { type: "string", enum: ["chords", "nashville", "roman", "lyrics"], description: "Output view mode (default: 'chords')." },
+        viewMode: { type: "string", enum: ["chords", "chords-only", "nashville", "roman", "lyrics"], description: "Output view mode (default: 'chords')." },
         enharmonic: { type: "string", enum: ["auto", "sharp", "flat"], description: "Accidental spelling preference." }
       },
       required: ["body"]
@@ -174,6 +199,7 @@ export const PUBLIC_TOOL_DEFS = [
   {
     name: "get_key_info",
     description: "Get scale notes, key signature, relative major/minor key, diatonic chords, and common chord progressions/families for a musical key.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -189,15 +215,19 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "get_library_summary",
     description: "Return library counts (songs, setlists, favorites, inBank, trash) and recent song titles/ids.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: { type: "object", properties: {} }
   },
   {
     name: "list_songs",
-    description: "List compact song summaries from the user's Sonata library with optional search query and filters.",
+    description: "List compact song summaries from the user's Sonata library with optional search query, genre, and mood filters.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Filter by title, artist, creator, genre, or lyrics/chords." },
+        query: { type: "string", description: "Filter by title, artist, creator, genre, mood, or lyrics/chords." },
+        genre: { type: "string", description: "Filter by genre (case-insensitive substring match)." },
+        mood: { type: "string", description: "Filter by mood/tone (case-insensitive substring match)." },
         favoritesOnly: { type: "boolean" },
         inBankOnly: { type: "boolean" },
         limit: { type: "integer", minimum: 1, maximum: 200, description: "Max songs to return (default 50)." },
@@ -208,6 +238,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "get_song",
     description: "Get the full song object (including body, links, and soundingKey) by song id or search query.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -219,6 +250,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "create_song",
     description: "Create and save a new song in the user's library (optionally parsing rawChart), returning the saved song and Sonata URLs.",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -232,6 +264,7 @@ export const LIBRARY_TOOL_DEFS = [
         transpose: { type: "integer", minimum: -11, maximum: 11 },
         bpm: { type: "integer", minimum: 30, maximum: 300 },
         genre: { type: "string" },
+        mood: { type: "string", description: "Optional mood/tone (e.g. Joyful, Solemn, Reflective)." },
         description: { type: "string" },
         links: { type: "array", items: LINK_SCHEMA },
         isFavorite: { type: "boolean" },
@@ -242,6 +275,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "import_song_from_url",
     description: "Import a song from a public chord URL or pasted rawChart, check for duplicates unless allowDuplicate is true, and save to the library.",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     inputSchema: {
       type: "object",
       properties: {
@@ -253,6 +287,7 @@ export const LIBRARY_TOOL_DEFS = [
         capo: { type: "integer", minimum: 0, maximum: 11 },
         bpm: { type: "integer", minimum: 30, maximum: 300 },
         genre: { type: "string" },
+        mood: { type: "string", description: "Optional mood/tone (e.g. Joyful, Solemn, Reflective)." },
         description: { type: "string" },
         allowDuplicate: { type: "boolean", description: "Save even if a song with matching title or link already exists." }
       }
@@ -261,6 +296,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "update_song",
     description: "Update an existing song's metadata or chart body, with optional permanent chord transposition via transposeBy.",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -275,6 +311,7 @@ export const LIBRARY_TOOL_DEFS = [
         transposeBy: { type: "integer", minimum: -11, maximum: 11, description: "Permanently transpose all chords in body by N semitones." },
         bpm: { type: ["integer", "null"], minimum: 30, maximum: 300 },
         genre: { type: "string" },
+        mood: { type: "string", description: "Optional mood/tone (e.g. Joyful, Solemn, Reflective)." },
         description: { type: "string" },
         links: { type: "array", items: LINK_SCHEMA },
         isFavorite: { type: "boolean" },
@@ -286,6 +323,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "trash_song",
     description: "Move one or more songs to Trash (30-day soft delete; safe and reversible via restore_from_trash).",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -297,11 +335,13 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "list_trash",
     description: "List all trashed songs and setlists with trashedAt and 30-day expiresAt timestamps.",
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: { type: "object", properties: {} }
   },
   {
     name: "restore_from_trash",
     description: "Restore trashed songs or setlists back to the library, preserving IDs and restoring setlist memberships.",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -313,6 +353,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "empty_trash",
     description: "Permanently purge items from Trash. Always returns a safe preview unless confirm: true is explicitly passed.",
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -324,6 +365,7 @@ export const LIBRARY_TOOL_DEFS = [
   {
     name: "manage_setlists",
     description: "List, create, update, append songs to, or soft-delete (trash) setlists.",
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     inputSchema: {
       type: "object",
       properties: {
@@ -463,6 +505,19 @@ export async function executePublicTool(name, args, ctx = {}) {
     };
   }
 
+  if (name === "format_chord_chart") {
+    const rawChart = str(input.rawChart);
+    if (!rawChart.trim()) throw new Error("rawChart is required.");
+    const maxCols = input.maxCols !== undefined ? clampInt(input.maxCols, 36, 100) : 58;
+    const wrap = input.wrap !== false;
+    const sourceUrl = str(input.sourceUrl).trim();
+    const formatted = autoFormatChart(rawChart, { maxCols, wrap });
+    return {
+      ...formatted,
+      links: withSourceLink(formatted.links, sourceUrl)
+    };
+  }
+
   if (name === "build_sonata_link") {
     const origin = cleanOrigin(ctx?.origin || DEFAULT_ORIGIN);
     const isSet = Array.isArray(input.songs) && input.songs.length > 0;
@@ -477,6 +532,7 @@ export async function executePublicTool(name, args, ctx = {}) {
         transpose: s?.transpose ?? 0,
         bpm: s?.bpm ?? null,
         genre: str(s?.genre),
+        mood: str(s?.mood),
         description: str(s?.description),
         links: cleanLinksInput(s?.links)
       }));
@@ -508,6 +564,7 @@ export async function executePublicTool(name, args, ctx = {}) {
       transpose: input.transpose ?? 0,
       bpm: input.bpm ?? null,
       genre: str(input.genre),
+      mood: str(input.mood),
       description: str(input.description),
       links: cleanLinksInput(input.links)
     });
@@ -570,8 +627,8 @@ export async function executePublicTool(name, args, ctx = {}) {
   if (name === "transpose_chart") {
     const body = str(input.body);
     if (!body.trim()) throw new Error("body is required.");
-    const viewMode = /** @type {"chords"|"nashville"|"roman"|"lyrics"} */ (str(input.viewMode || "chords"));
-    if (!["chords", "nashville", "roman", "lyrics"].includes(viewMode)) {
+    const viewMode = /** @type {"chords"|"chords-only"|"nashville"|"roman"|"lyrics"} */ (str(input.viewMode || "chords"));
+    if (!["chords", "chords-only", "nashville", "roman", "lyrics"].includes(viewMode)) {
       throw new Error(`Invalid viewMode: "${viewMode}".`);
     }
     const enharmonic = /** @type {"auto"|"sharp"|"flat"} */ (str(input.enharmonic || "auto"));
@@ -707,9 +764,13 @@ export async function executeLibraryTool(name, args, ctx) {
     let items = store.songs.slice().sort((a, b) => (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0));
     if (input.favoritesOnly) items = items.filter((s) => s.isFavorite);
     if (input.inBankOnly) items = items.filter((s) => s.inBank);
+    const gf = fold(str(input.genre).trim());
+    if (gf) items = items.filter((s) => fold(s.genre).includes(gf));
+    const mf = fold(str(input.mood).trim());
+    if (mf) items = items.filter((s) => fold(s.mood).includes(mf));
     const q = fold(str(input.query).trim());
     if (q) {
-      items = items.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.genre} ${s.body}`).includes(q));
+      items = items.filter((s) => fold(`${s.title} ${s.artist} ${s.creator} ${s.genre} ${s.mood || ""} ${s.body}`).includes(q));
     }
     const total = items.length;
     const offset = Math.max(0, Math.round(Number(input.offset) || 0));
@@ -721,6 +782,8 @@ export async function executeLibraryTool(name, args, ctx) {
       key: keyShort(songSoundingKey(s)),
       bpm: s.bpm,
       capo: s.capo,
+      genre: s.genre || "",
+      mood: s.mood || "",
       isFavorite: s.isFavorite,
       inBank: s.inBank,
       updatedAt: s.updatedAt
@@ -770,6 +833,7 @@ export async function executeLibraryTool(name, args, ctx) {
     if (input.transpose !== undefined) data.transpose = clampInt(input.transpose, -11, 11);
     if (input.bpm !== undefined) data.bpm = input.bpm === null ? null : clampInt(input.bpm, 30, 300);
     if (input.genre !== undefined) data.genre = str(input.genre).trim().slice(0, 40);
+    if (input.mood !== undefined) data.mood = str(input.mood).trim().slice(0, 30);
     if (input.description !== undefined) data.description = str(input.description);
     if (input.links !== undefined) data.links = cleanLinksInput(input.links);
     if (input.isFavorite !== undefined) data.isFavorite = Boolean(input.isFavorite);
@@ -811,6 +875,7 @@ export async function executeLibraryTool(name, args, ctx) {
     const capo = input.capo !== undefined ? clampInt(input.capo, 0, 11) : (analyzed.capo || 0);
     const bpm = input.bpm !== undefined ? (input.bpm === null ? null : clampInt(input.bpm, 30, 300)) : (analyzed.bpm ?? null);
     const genre = input.genre !== undefined ? str(input.genre).trim().slice(0, 40) : "";
+    const mood = input.mood !== undefined ? str(input.mood).trim().slice(0, 30) : "";
     const description = input.description !== undefined ? str(input.description) : "";
     const links = analyzed.links || [];
 
@@ -837,6 +902,7 @@ export async function executeLibraryTool(name, args, ctx) {
       capo,
       bpm,
       genre,
+      mood,
       description,
       links,
       body: analyzed.body
@@ -864,6 +930,7 @@ export async function executeLibraryTool(name, args, ctx) {
     if (input.transpose !== undefined) patch.transpose = clampInt(input.transpose, -11, 11);
     if (input.bpm !== undefined) patch.bpm = input.bpm === null ? null : clampInt(input.bpm, 30, 300);
     if (input.genre !== undefined) patch.genre = str(input.genre).trim().slice(0, 40);
+    if (input.mood !== undefined) patch.mood = str(input.mood).trim().slice(0, 30);
     if (input.description !== undefined) patch.description = str(input.description);
     if (input.links !== undefined) patch.links = cleanLinksInput(input.links);
     if (input.isFavorite !== undefined) patch.isFavorite = Boolean(input.isFavorite);

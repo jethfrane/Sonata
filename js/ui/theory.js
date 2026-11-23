@@ -49,7 +49,7 @@ export function focusKeyFinder() {
   const box = document.getElementById("keyFinder");
   const input = /** @type {HTMLInputElement|null} */ (document.getElementById("keyFinderInput"));
   if (box) {
-    box.scrollIntoView({ behavior: "smooth", block: "center" });
+    requestAnimationFrame(() => box.scrollIntoView({ behavior: "smooth", block: "center" }));
     box.classList.remove("spotlight");
     void box.offsetWidth;
     box.classList.add("spotlight");

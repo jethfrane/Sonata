@@ -194,6 +194,7 @@ export function openStage() {
   syncFullscreen();
   lockScreen();
   scroller().focus({ preventScroll: true });
+  if (store.currentSetlist()?.set?.source) import("./liveset.js").then((m) => m.checkActiveLiveSet({ prompt: true })).catch(() => {});
   stageListener?.(true);
 }
 

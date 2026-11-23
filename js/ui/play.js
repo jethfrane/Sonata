@@ -52,6 +52,7 @@ const built = {
 let sustain = true;
 /** @type {string} */
 let inst = "piano";
+let pianoCentered = false;
 /** @type {string|null} key value like "G:major" or null to follow the song */
 let pickedKey = null;
 /** @type {keyof typeof TUNINGS} */
@@ -734,6 +735,16 @@ function renderPiano() {
   const host = $("piano");
   host.style.setProperty("--whites", String(wi));
   host.innerHTML = `<div class="pk-whites">${whites.join("")}</div><div class="pk-blacks">${blacks.join("")}</div>`;
+  if (!pianoCentered && app.view === "play" && inst === "piano") {
+    requestAnimationFrame(() => {
+      const scroller = host.closest(".piano-scroll");
+      if (!scroller || scroller.scrollWidth <= scroller.clientWidth + 8) return;
+      const c4 = /** @type {HTMLElement|null} */ (host.querySelector('.pk[data-midi="60"]'));
+      if (!c4) return;
+      scroller.scrollLeft = Math.max(0, c4.offsetLeft - scroller.clientWidth / 2 + c4.offsetWidth * 2);
+      pianoCentered = true;
+    });
+  }
 }
 
 function renderFretboard() {
