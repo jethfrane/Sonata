@@ -9,6 +9,8 @@
     "silent": true
   },
   "redirects": [
+    { "source": "/", "has": [{ "type": "host", "value": ".*\\.vercel\\.app" }], "destination": "https://sonata.jethrofrane.xyz/", "permanent": true },
+    { "source": "/", "has": [{ "type": "host", "value": ".*\\.github\\.io" }], "destination": "https://sonata.jethrofrane.xyz/", "permanent": true },
     { "source": "/:path*", "has": [{ "type": "host", "value": ".*\\.vercel\\.app" }], "destination": "https://sonata.jethrofrane.xyz/:path*", "permanent": true },
     { "source": "/:path*", "has": [{ "type": "host", "value": ".*\\.github\\.io" }], "destination": "https://sonata.jethrofrane.xyz/:path*", "permanent": true },
     { "source": "/manifest.json", "destination": "/manifest.webmanifest", "permanent": true },
