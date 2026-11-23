@@ -1,6 +1,10 @@
 // Runs before first paint (no module, no build): apply the saved theme so there is no flash.
 (function () {
   var root = document.documentElement;
+  if (/(?:^|\.)(?:vercel\.app|github\.io)$/i.test(location.hostname)) {
+    location.replace("https://sonata.jethrofrane.xyz" + location.pathname + location.search + location.hash);
+    return;
+  }
   try {
     var s = JSON.parse(localStorage.getItem("sonata:v12:settings") || "{}");
     var t = s.theme === "dark" || s.theme === "light" ? s.theme : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");

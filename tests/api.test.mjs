@@ -17,10 +17,10 @@ function fakeDrive(answer) {
 }
 const json = (o, type = "application/json") => new Response(JSON.stringify(o), { status: 200, headers: { "content-type": type } });
 
-async function call(handler, url) {
+async function call(handler, url, reqHeaders = {}) {
   let status = 0, body = "";
   const headers = {};
-  await handler({ url }, { setHeader: (k, v) => { headers[k.toLowerCase()] = v; }, status(s) { status = s; return this; }, send(b) { body = b; } });
+  await handler({ url, headers: reqHeaders }, { setHeader: (k, v) => { headers[k.toLowerCase()] = v; }, status(s) { status = s; return this; }, send(b) { body = b; } });
   return { status, body, headers };
 }
 
@@ -95,6 +95,14 @@ test("link previews: shared songs, QR links, setlists, chords and song banks", {
   // A crafted title can't inject markup into the page head.
   html = await page("/share/x", `&s=${await encodeShare(packSong({ title: '"><script>alert(1)</script>', body: "G" }))}`);
   assert.ok(!html.includes("<script>alert(1)"));
+
+  // Non-official *.vercel.app / *.github.io hosts redirect permanently to sonata.jethrofrane.xyz
+  const redirVercel = await call(handler, "/api/page?p=/songs", { host: "sonata-jethros-projects-17cac66f.vercel.app" });
+  assert.equal(redirVercel.status, 308);
+  assert.equal(redirVercel.headers.location, "https://sonata.jethrofrane.xyz/songs");
+  const redirGh = await call(handler, "/api/page?p=/chords/G", { "x-forwarded-host": "jethfrane.github.io" });
+  assert.equal(redirGh.status, 308);
+  assert.equal(redirGh.headers.location, "https://sonata.jethrofrane.xyz/chords/G");
 });
 
 test("import reader: fetches one public page, follows safe redirects only, returns chart text only", async () => {

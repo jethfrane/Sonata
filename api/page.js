@@ -147,10 +147,17 @@ async function readTemplate(req) {
 
 export default async function handler(req, res) {
   try {
-    if (!template) template = await readTemplate(req);
+    const rawHost = String(req.headers?.["x-forwarded-host"] || req.headers?.host || "").split(",")[0].trim().split(":")[0].toLowerCase();
     const url = new URL(req.url, ORIGIN);
     const route = "/" + (url.searchParams.get("p") || "").replace(/^\/+/, "");
     const query = { s: url.searchParams.get("s") || "" };
+    if (/(?:^|\.)(?:vercel\.app|github\.io)$/.test(rawHost)) {
+      const dest = ORIGIN + route + (query.s ? `?s=${encodeURIComponent(query.s)}` : "");
+      res.setHeader("Location", dest);
+      res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+      return res.status(308).send("");
+    }
+    if (!template) template = await readTemplate(req);
     const info = await describe(route, query);
     let html = template;
     if (!info) {
