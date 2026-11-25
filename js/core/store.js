@@ -179,7 +179,7 @@ export function normalizeSettings(raw) {
   if (!["s", "m", "l"].includes(s.uiText)) s.uiText = "m";
   if (!["auto", "sharp", "flat"].includes(s.enharmonicPref)) s.enharmonicPref = "auto";
   if (!["chords", "chords-only", "nashville", "roman", "lyrics"].includes(s.viewMode)) s.viewMode = "chords";
-  if (!["stage", "dark", "light"].includes(s.presTheme)) s.presTheme = "stage";
+  if (!["stage", "dark", "amber", "light"].includes(s.presTheme)) s.presTheme = "stage";
   s.metronomeBpm = int(s.metronomeBpm, 30, 300, 90);
   s.metronomeBeats = int(s.metronomeBeats, 1, 12, 4);
   s.metronomeVolume = Math.min(1, Math.max(0, Number(s.metronomeVolume) || 0));

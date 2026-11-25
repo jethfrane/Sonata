@@ -436,7 +436,7 @@ export async function renderPngPages(doc, o = {}) {
   const ink = accentInk(o.accent);
   const accent = `rgb(${ink.join(",")})`;
   const tint = `rgba(${ink.join(",")},.1)`;
-  const C = { text: "#0f172a", sub: "#334155", muted: "#64748b", line: "#e2e8f0", soft: "#f1f5f9" };
+  const C = { text: "#1c2027", sub: "#3a404c", muted: "#5a6170", line: "#e1e4ea", soft: "#eef0f4" };
   const W = land ? 1920 : 1080;
   const H = land ? 1080 : 1920;
   const pad = land ? 96 : 84, gap = land ? 54 : 44, scale = 2;
@@ -571,13 +571,15 @@ export async function renderPngPages(doc, o = {}) {
       if (r.kind === "gap") continue;
       if (r.kind === "divider") { ctx.fillStyle = C.line; ctx.fillRect(x, yTop + size * 0.6, colW, 1); continue; }
       if (r.kind === "section") {
-        // Small capitals in the accent, with a rule running to the edge of the column.
-        ctx.fillStyle = accent; ctx.font = `750 ${Math.round(size * 0.74)}px ${ui}`; spacing(ctx, "0.08em");
-        const label = fit(ctx, r.text, colW);
-        ctx.fillText(label, x, base);
+        // Rounded pill badge in the accent tint + subtle rule to the column edge.
+        ctx.font = `750 ${Math.round(size * 0.72)}px ${ui}`; spacing(ctx, "0.075em");
+        const label = fit(ctx, r.text, colW - 24);
         const lw = ctx.measureText(label).width;
+        const pw = Math.min(colW, Math.ceil(lw + 20)), ph = Math.round(size * 1.16);
+        ctx.fillStyle = tint; pill(ctx, x, base - ph + Math.round(size * 0.28), pw, ph, 8);
+        ctx.fillStyle = accent; ctx.fillText(label, x + 10, base);
         spacing(ctx, "0px");
-        if (lw + 16 < colW) { ctx.fillStyle = C.line; ctx.fillRect(x + lw + 14, base - size * 0.27, colW - lw - 14, 1); }
+        if (pw + 14 < colW) { ctx.fillStyle = C.line; ctx.fillRect(x + pw + 12, base - size * 0.26, colW - pw - 12, 1); }
         continue;
       }
       if (r.kind === "header") { ctx.fillStyle = C.text; ctx.font = `700 ${Math.round(size * 1.12)}px ${ui}`; ctx.fillText(fit(ctx, r.text, colW), x, base); continue; }
@@ -592,7 +594,7 @@ export async function renderPngPages(doc, o = {}) {
     }
 
     // ---- Footer
-    const credit = o.setLabel ? `${o.setLabel}  ·  sonata.jethrofrane.xyz` : "Made with Sonata  ·  sonata.jethrofrane.xyz";
+    const credit = o.setLabel ? `${o.setLabel}  ·  sonata.jethrofrane.xyz` : "Sonata  ·  sonata.jethrofrane.xyz";
     const pageNote = total > 1 ? `Page ${pi + 1} of ${total}` : "";
     ctx.fillStyle = C.line; ctx.fillRect(pad, H - foot + 10, W - pad * 2, 1);
     if (first && o.qr) {

@@ -32,6 +32,8 @@ const PAGES = {
   stage: ["Stage view", "Big text, auto-scroll and a metronome for the stage.", chart],
   chords: ["Chord finder", "Any chord on guitar, ukulele, bass and piano.", chordBox + keys.replace('width="420"', 'width="300"')],
   theory: ["Circle of fifths", "Keys, chords of the key, slash chords and more.", circle],
+  tools: ["Music tools", "Chord finder, circle of fifths, key finder, piano, fretboard, tuner & metronome.", circle],
+  "key-finder": ["Key finder", "Type or tap chords from a song to find its key & numerals.", circle],
   play: ["Play", "Piano, fretboard, tuner and metronome.", keys],
   piano: ["Piano", "Play scales and chords in any key.", keys],
   guitar: ["Guitar fretboard", "Chords and scales on guitar, bass and ukulele.", chordBox],
@@ -41,17 +43,17 @@ const PAGES = {
 };
 
 const css = `@font-face{font-family:I;src:url(${INTER});font-weight:100 900}@font-face{font-family:M;src:url(${MONO});font-weight:100 900}
-*{box-sizing:border-box;margin:0}body{width:1200px;height:630px;font-family:I;background:#f6f5f2;color:#1b1b1f;display:grid;grid-template-columns:1fr 470px;align-items:center;gap:36px;padding:70px 76px;position:relative}
+*{box-sizing:border-box;margin:0}body{width:1200px;height:630px;font-family:I;background:#f4f5f7;color:#1c2027;display:grid;grid-template-columns:1fr 470px;align-items:center;gap:36px;padding:70px 76px;position:relative}
 body:before{content:"";position:absolute;inset:0 0 auto 0;height:10px;background:#3b5bdb}
 .brand{display:flex;align-items:center;gap:16px;font-weight:800;font-size:34px;letter-spacing:-.03em;margin-bottom:46px}.brand img{width:62px;height:62px;border-radius:16px}
-h1{font-size:68px;line-height:1.02;letter-spacing:-.045em;font-weight:820}p{margin-top:22px;font-size:29px;line-height:1.35;color:#4b4a52;max-width:560px}
-.art{display:grid;place-items:center;gap:20px;background:#fff;border:2px solid #e5e2dc;border-radius:28px;min-height:400px;padding:30px}
-.chart{display:grid;gap:4px;font-family:M;font-size:24px}.chart b{color:#2f49b3}.sec{justify-self:start;font:800 15px I;letter-spacing:.08em;background:#edf0fe;color:#2c47b5;padding:5px 12px;border-radius:7px;margin-bottom:8px}
-.list{display:grid;gap:10px;width:100%}.li{display:flex;align-items:center;gap:14px;font-weight:650;font-size:21px;padding:10px 12px;border:2px solid #efede8;border-radius:14px}.li small{display:block;font-size:15px;color:#77757e;font-weight:500}.li span:nth-child(2){flex:1}
-.kb{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#edf0fe;color:#2c47b5;font:800 18px M}.li em{font-style:normal;font-size:15px;background:#3b5bdb;color:#fff;padding:6px 12px;border-radius:999px}
-.bpm{font:800 120px M;letter-spacing:-.04em;display:grid;justify-items:center}.bpm small{font:800 20px I;letter-spacing:.2em;color:#77757e}.dots{display:flex;gap:16px}.dots i{width:24px;height:24px;border-radius:50%;background:#e9e7e2}.dots i.on{background:#3b5bdb;transform:scale(1.3)}
-.qrbox{display:grid;grid-template-columns:repeat(9,12px);gap:0;position:absolute;right:96px;bottom:84px;padding:10px;background:#fff;border:2px solid #e5e2dc;border-radius:12px}.qrbox i{width:12px;height:12px}.qrbox i.d{background:#1b1b1f}
-.url{position:absolute;left:76px;bottom:46px;font-size:22px;font-weight:600;color:#8a8790}`;
+h1{font-size:68px;line-height:1.02;letter-spacing:-.045em;font-weight:820}p{margin-top:22px;font-size:29px;line-height:1.35;color:#5a6170;max-width:560px}
+.art{display:grid;place-items:center;gap:20px;background:#fff;border:2px solid #e1e4ea;border-radius:28px;min-height:400px;padding:30px;box-shadow:0 10px 28px rgba(17,24,39,.05)}
+.chart{display:grid;gap:4px;font-family:M;font-size:24px}.chart b{color:#2f49b3}.sec{justify-self:start;font:800 15px I;letter-spacing:.08em;background:#ebeffc;color:#2c47b5;padding:5px 12px;border-radius:7px;margin-bottom:8px}
+.list{display:grid;gap:10px;width:100%}.li{display:flex;align-items:center;gap:14px;font-weight:650;font-size:21px;padding:10px 12px;border:2px solid #eef0f4;border-radius:14px}.li small{display:block;font-size:15px;color:#5a6170;font-weight:500}.li span:nth-child(2){flex:1}
+.kb{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#ebeffc;color:#2c47b5;font:800 18px M}.li em{font-style:normal;font-size:15px;background:#3b5bdb;color:#fff;padding:6px 12px;border-radius:999px}
+.bpm{font:800 120px M;letter-spacing:-.04em;display:grid;justify-items:center}.bpm small{font:800 20px I;letter-spacing:.2em;color:#5a6170}.dots{display:flex;gap:16px}.dots i{width:24px;height:24px;border-radius:50%;background:#e6e9ee}.dots i.on{background:#3b5bdb;transform:scale(1.3)}
+.qrbox{display:grid;grid-template-columns:repeat(9,12px);gap:0;position:absolute;right:96px;bottom:84px;padding:10px;background:#fff;border:2px solid #e1e4ea;border-radius:12px}.qrbox i{width:12px;height:12px}.qrbox i.d{background:#1c2027}
+.url{position:absolute;left:76px;bottom:46px;font-size:22px;font-weight:600;color:#5a6170}`;
 
 const b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 1200, height: 630 } });

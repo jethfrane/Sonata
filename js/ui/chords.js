@@ -266,11 +266,11 @@ async function copyChordImage(name, rootEl) {
     .cb-string{stroke:#5a6170;stroke-width:1.3}.cb-fr{font:700 12px sans-serif;fill:#5a6170}
     .cb-mute{font:700 15px sans-serif;fill:#5a6170}.cb-open{fill:none;stroke:#3a404c;stroke-width:2}
     .cb-open.root{stroke:#3b5bdb;stroke-width:2.6}.cb-dot{fill:#3a404c}.cb-dot.root{fill:#3b5bdb}
-    .cb-dot.bass{fill:#b86308}.cb-dot.tone{fill:#e6e9ee;stroke:#cdd2db}.cb-barre{fill:#3a404c}
+    .cb-dot.bass{fill:#9e5105}.cb-dot.tone{fill:#e6e9ee;stroke:#cdd2db}.cb-barre{fill:#3a404c}
     .cb-note{font:700 11.5px monospace;fill:#3a404c}.cb-tune{font:600 10.5px sans-serif;fill:#5a6170}
     .cb-in{font:700 8.5px sans-serif;fill:#fff}.cb-dot.tone+.cb-in{fill:#1c2027}
     .pk-w{fill:#fff;stroke:#cdd2db}.pk-b{fill:#222228}.pk-w.on{fill:#9bb0f0}.pk-b.on{fill:#3b5bdb}
-    .pk-w.bass,.pk-b.bass{fill:#b86308}.pk-l{font:700 10px sans-serif;fill:#1b1b1f}.pk-l.bass,.pk-l.on-b{fill:#fff}
+    .pk-w.bass,.pk-b.bass{fill:#9e5105}.pk-l{font:700 10px sans-serif;fill:#1b1b1f}.pk-l.bass,.pk-l.on-b{fill:#fff}
   </style>`;
 
   for (let idx = 0; idx < cards.length; idx++) {

@@ -1,4 +1,5 @@
 // @ts-check
+import "../../css/stage.css";
 import { $, esc, setIcon, paintIcons, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, shapeKey, renderOptions, nudgeTranspose, tick, effectiveCapo } from "./ctx.js";
@@ -7,9 +8,15 @@ import { buildLines, linesToHtml } from "../core/chart.js";
 import { keyShort, pretty } from "../core/music.js";
 import { syncMetroButton, initMetronome } from "./metronome.js";
 import { stepSetlist } from "./editor.js";
-import { openSongSwitcher } from "./sheets-lazy.js";
+import { openSongSwitcher, openKeySheet } from "./sheets-lazy.js";
 
-const THEMES = ["stage", "dark", "light"];
+const THEMES = ["stage", "dark", "amber", "light"];
+const THEME_LBL = /** @type {Record<string, [string, string]>} */ ({
+  stage: ["stageOled", "OLED"],
+  dark: ["stageDim", "Dim"],
+  amber: ["stageAmber", "Amber"],
+  light: ["stageLight", "Light"]
+});
 let open = false;
 let scrolling = false;
 let raf = 0;
@@ -32,6 +39,7 @@ export function initStage() {
   $("stagePrev").addEventListener("click", () => stepSetlist(-1));
   $("stageNext").addEventListener("click", () => stepSetlist(1));
   $("stageKeyDown").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), -1); });
+  $("stageKey").addEventListener("click", () => openKeySheet());
   $("stageKeyUp").addEventListener("click", () => { tick(); nudgeTranspose(store.active(), 1); });
   $("stageFontDown").addEventListener("click", () => font(-4));
   $("stageFontUp").addEventListener("click", () => font(4));
@@ -43,6 +51,9 @@ export function initStage() {
     const i = (THEMES.indexOf(store.settings.presTheme) + 1) % THEMES.length;
     store.settings.presTheme = THEMES[i];
     stage().dataset.theme = THEMES[i];
+    const lbl = THEME_LBL[THEMES[i]] || THEME_LBL.stage;
+    const el = document.getElementById("stageThemeLbl");
+    if (el) el.textContent = t(lbl[0], lbl[1]);
     store.changed("settings");
   });
   // Tap the chart to show or hide the controls; scrolling by hand pauses auto-scroll.
@@ -218,9 +229,12 @@ function renderStage() {
   $("stageTitle").textContent = s.title;
   const k = soundingKey(s);
   const capo = effectiveCapo(s);
-  const meta = [s.artist, capo ? t("capoShapes", "Capo {n} · {key} shapes", { n: capo, key: pretty(keyShort(shapeKey(s))) }) : ""].filter(Boolean).join(" · ");
+  const meta = [s.artist, capo ? t("capoShapes", "Capo {n} · {key} shapes", { n: capo, key: pretty(keyShort(shapeKey(s))) }) : "", s.bpm ? `${s.bpm} BPM` : ""].filter(Boolean).join(" · ");
   $("stageMeta").textContent = meta;
   $("stageKey").textContent = pretty(keyShort(k));
+  const lbl = THEME_LBL[store.settings.presTheme] || THEME_LBL.stage;
+  const themeLbl = document.getElementById("stageThemeLbl");
+  if (themeLbl) themeLbl.textContent = t(lbl[0], lbl[1]);
   $("stageBpm").textContent = String(metronome.bpm);
   const cur = store.currentSetlist();
   const canStep = Boolean(cur) || (!s.readonly && store.songs.length > 1);

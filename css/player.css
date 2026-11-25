@@ -1,6 +1,6 @@
 /* The floating reference-video player (js/ui/player.js). Loaded with it, on the first video. */
 .mp {
-  position: fixed; z-index: 30;
+  position: fixed; z-index: var(--z-player, 45);
   right: max(16px, env(safe-area-inset-right)); bottom: calc(16px + var(--nav-h) + env(safe-area-inset-bottom));
   width: min(400px, calc(100vw - 16px));
   background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 16px;
@@ -40,8 +40,9 @@
 
 /* Phones: sit just above the bottom bar, edge to edge. */
 @media (max-width: 760px) {
-  .mp, .mp[data-mode="mini"] { left: 8px; right: 8px; width: auto; bottom: calc(8px + var(--nav-h) + env(safe-area-inset-bottom)); }
-  .mp[data-mode="mini"] .mp-video { width: 44%; max-width: 200px; }
+  .mp, .mp[data-mode="mini"] { left: 8px; right: 8px; width: auto; bottom: calc(6px + var(--nav-h) + env(safe-area-inset-bottom)); }
+  .mp[data-mode="mini"] .mp-video { width: 132px; max-width: 38%; }
+  .mp[data-mode="mini"] .mp-body { padding: 6px 6px 4px 10px; }
 }
 /* Short, wide screens (a phone on its side): keep the full player from covering the chart. */
 @media (max-height: 520px) { .mp:not([data-mode="mini"]) { width: min(340px, calc(100vw - 16px)); } }

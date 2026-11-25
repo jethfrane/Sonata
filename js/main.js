@@ -5,7 +5,9 @@ import "@fontsource-variable/jetbrains-mono";
 import { registerSW } from "virtual:pwa-register";
 import { $, paintIcons, setIcon, toast, esc, initSelectMenus } from "./ui/dom.js";
 import { t, setLang, applyI18n } from "./ui/i18n.js";
-import { store, app, storageBlocked, findCopy, profileName } from "./ui/ctx.js";
+import { store, app, storageBlocked, findCopy, profileName, soundingKey, effectiveCapo, renderOptions } from "./ui/ctx.js";
+import { keyShort, pretty } from "./core/music.js";
+import { uniqueChords } from "./core/chart.js";
 import { decodeShare, decodeQr, unpackSong } from "./core/share.js";
 import { normalizeProfile, parseBankFile } from "./core/bank.js";
 import { initEditor, refreshEditor } from "./ui/editor.js";
@@ -167,10 +169,37 @@ function show(view, opts = {}) {
   if (changed) window.scrollTo({ top: 0 });
 }
 
+function syncToolsCtx() {
+  const s = store.active();
+  const k = s && (s.body.trim() || s.manualKey !== "auto") ? pretty(keyShort(soundingKey(s))) : "";
+  const capo = s ? effectiveCapo(s) : 0;
+  const uc = s?.body.trim() ? uniqueChords(s.body, renderOptions(s)).length : 0;
+  const map = /** @type {Record<string, string>} */ ({
+    chords: uc ? t(uc === 1 ? "chordCount1" : "chordsCount", uc === 1 ? "1 chord" : "{n} chords", { n: uc }) : "",
+    theory: k ? `${t("key", "Key")} ${k}` : "",
+    "key-finder": uc ? t(uc === 1 ? "chordCount1" : "chordsCount", uc === 1 ? "1 chord" : "{n} chords", { n: uc }) : "",
+    "play:piano": k ? `${t("key", "Key")} ${k}` : "",
+    "play:guitar": capo ? t("capoN", "Capo {n}", { n: capo }) : (k ? `${t("key", "Key")} ${k}` : ""),
+    "play:metronome": s?.bpm ? `${s.bpm} BPM` : "",
+    "play:drums": s?.bpm ? `${s.bpm} BPM` : ""
+  });
+  document.querySelectorAll("[data-open-tool]").forEach((card) => {
+    const spec = /** @type {HTMLElement} */ (card).dataset.openTool || "";
+    const head = card.querySelector(".tool-card-title");
+    if (!head) return;
+    let pill = /** @type {HTMLElement|null} */ (head.querySelector(".tool-ctx-pill"));
+    const val = map[spec] || "";
+    if (!val) { pill?.remove(); return; }
+    if (!pill) { pill = document.createElement("span"); pill.className = "tool-ctx-pill"; head.append(pill); }
+    pill.textContent = val;
+  });
+}
+
 /** @param {View} view @param {{ focusKeyFinder?: boolean }} [opts] */
 function renderView(view, opts = {}) {
   if (view === "songs") renderLibrary();
   if (view === "editor") refreshEditor();
+  if (view === "tools") syncToolsCtx();
   if (view === "theory") loadTheory().then((m) => {
     if (!m || app.view !== "theory") return;
     m.renderTheory();

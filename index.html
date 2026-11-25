@@ -21,7 +21,7 @@
   <meta name="twitter:description" content="Write, transpose and present chord charts. Free, works offline, no account needed.">
   <meta name="twitter:image" content="https://sonata.jethrofrane.xyz/og/home.png">
   <!--meta:end-->
-  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://sonata.jethrofrane.xyz/#app","name":"Sonata","url":"https://sonata.jethrofrane.xyz/","description":"Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app.","applicationCategory":"MusicApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"image":"https://sonata.jethrofrane.xyz/og/home.png","author":{"@type":"Person","name":"Jethro Frane","url":"https://jethrofrane.xyz"}},{"@type":"WebSite","@id":"https://sonata.jethrofrane.xyz/#site","name":"Sonata","url":"https://sonata.jethrofrane.xyz/"}]}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebApplication","@id":"https://sonata.jethrofrane.xyz/#app","name":"Sonata","url":"https://sonata.jethrofrane.xyz/","description":"Write, transpose and present chord charts. Circle of fifths, piano, fretboard, tuner and metronome in one free app.","applicationCategory":"MusicApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"image":"https://sonata.jethrofrane.xyz/og/home.png"},{"@type":"WebSite","@id":"https://sonata.jethrofrane.xyz/#site","name":"Sonata","url":"https://sonata.jethrofrane.xyz/"}]}</script>
   <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#131519" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -134,7 +134,10 @@
         <header class="editor-head">
           <h1 class="sr-only" id="editorHeading">Chart</h1>
           <div class="title-row">
-            <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
+            <div class="title-wrap">
+              <input class="title-input" id="songTitle" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="Song title" aria-label="Song title" data-i18n-attr="placeholder:songTitle,aria-label:songTitle">
+              <span class="title-full" id="songTitleFull" aria-hidden="true"></span>
+            </div>
             <span class="save-state" id="saveState" aria-live="polite"></span>
             <div class="head-actions">
               <button class="btn" id="switchSongBtn" type="button" aria-haspopup="dialog" aria-label="Switch song" data-i18n-attr="aria-label:switchSong,title:switchSongShortcut"><span data-icon="list"></span><span data-i18n="switchSongShort">Switch</span></button>
@@ -151,7 +154,7 @@
         <div class="editor-toolbar">
           <div class="tool-group key-control" role="group" aria-label="Key" data-i18n-attr="aria-label:key">
             <button class="icon-btn" id="keyDownBtn" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown,title:transposeDown"><span data-icon="minus"></span></button>
-            <button class="key-pill" id="keyPill" type="button" aria-haspopup="dialog" data-i18n-attr="title:keyAndCapo"><span class="key-pill-label" data-i18n="key">Key</span><strong id="keyPillValue">C</strong></button>
+            <button class="key-pill" id="keyPill" type="button" aria-haspopup="dialog" data-i18n-attr="title:keyAndCapo"><span class="key-pill-label" data-i18n="key">Key</span><strong id="keyPillValue">C</strong><span class="key-pill-capo" id="keyPillCapo" hidden></span></button>
             <button class="icon-btn" id="keyUpBtn" type="button" aria-label="Transpose up" data-i18n-attr="aria-label:transposeUp,title:transposeUp"><span data-icon="plus"></span></button>
           </div>
           <div class="segmented view-mode" role="group" aria-label="Chart view" data-i18n-attr="aria-label:chartView">
@@ -505,7 +508,7 @@
       <div class="stage-tools">
         <div class="stage-group">
           <button class="stage-btn" id="stageKeyDown" type="button" aria-label="Transpose down" data-i18n-attr="aria-label:transposeDown"><span data-icon="minus"></span></button>
-          <span class="stage-key" id="stageKey">C</span>
+          <button class="stage-key" id="stageKey" type="button" aria-haspopup="dialog" data-i18n-attr="title:keyAndCapo">C</button>
           <button class="stage-btn" id="stageKeyUp" type="button" aria-label="Transpose up" data-i18n-attr="aria-label:transposeUp"><span data-icon="plus"></span></button>
         </div>
         <div class="stage-group">
@@ -535,7 +538,7 @@
       <span class="stage-bpm" id="stageBpm">90</span>
       <span class="stage-beat" id="stageBeat" aria-hidden="true"></span>
       <span class="stage-divider"></span>
-      <button class="stage-btn" id="stageThemeBtn" type="button" aria-label="Stage colors" data-i18n-attr="aria-label:stageColors"><span data-icon="contrast"></span></button>
+      <button class="stage-btn" id="stageThemeBtn" type="button" aria-label="Stage colors" data-i18n-attr="aria-label:stageColors"><span data-icon="contrast"></span><span class="stage-theme-lbl" id="stageThemeLbl"></span></button>
       <button class="stage-btn stage-step" id="stageNext" type="button" aria-label="Next song" data-i18n-attr="aria-label:nextSong" hidden><span data-icon="chevron-right"></span></button>
     </footer>
   </section>

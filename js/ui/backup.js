@@ -157,7 +157,7 @@ function aiMcpCard() {
     <div class="ai-status${hasWebMcp ? " ok" : ""}">
       <span class="ai-dot" aria-hidden="true"></span>
       <span>${esc(hasWebMcp ? t("aiWebMcpReady", "WebMCP active in this browser") : t("aiWebMcpBridge", "Browser bridge ready (window.sonataAgent)"))}</span>
-      <em class="ai-tools-pill">17 tools</em>
+      <em class="ai-tools-pill">18 tools</em>
     </div>
     <label class="field ai-field"><span>${esc(t("aiEndpoint", "Remote MCP endpoint"))}</span>
       <div class="ai-url-row">

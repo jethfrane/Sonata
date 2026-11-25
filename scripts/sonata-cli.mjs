@@ -15,7 +15,7 @@ import { Store, memoryStorage, mergeLibraries, libraryFingerprint } from "../js/
 import { importPage } from "../api/import.js";
 
 const ORIGIN = "https://sonata.jethrofrane.xyz";
-const SERVER_INFO = { name: "sonata-cli", version: "6.3.0" };
+const SERVER_INFO = { name: "sonata-cli", version: "7.6.0" };
 const MCP_PROTOCOL_VERSION = "2025-03-26";
 const ALL_TOOL_MAP = new Map(ALL_TOOL_DEFS.map((t) => [t.name, t]));
 

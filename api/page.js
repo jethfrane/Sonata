@@ -20,7 +20,8 @@ const PAGES = {
   play: ["Play", "Piano, fretboard, tuner and metronome for practice and rehearsal."],
   piano: ["Piano", "Play scales and chords in any key on a piano."],
   guitar: ["Guitar fretboard", "See and hear scales and chords on a guitar, bass or ukulele."],
-  tuner: ["Tuner", "Tune guitar, bass or ukulele with your phone microphone."]
+  tuner: ["Tuner", "Tune guitar, bass or ukulele with your phone microphone."],
+  drums: ["Drum beats & pads", "Practice grooves and playable drum pads for 4/4, 3/4 and 6/8."]
 };
 
 let template = "";
@@ -122,12 +123,12 @@ async function describe(route, query) {
   const personal = seg[0] === "song" || seg[0] === "s";
   let [a, b] = seg[0] === "song" ? [seg[2] || "editor", seg[3]] : [seg[0], seg[1]];
   if (a === "tools" && b === "key-finder") {
-    return { title: "Key finder", desc: "Type or tap chords from a song to find its major or minor key, relative key and chord numerals.", robots: personal, image: og("theory") };
+    return { title: "Key finder", desc: "Type or tap chords from a song to find its major or minor key, relative key and chord numerals.", robots: personal, image: og("key-finder") };
   }
   if (a === "tools") {
-    return { title: PAGES.tools[0], desc: PAGES.tools[1], robots: personal, image: og("play") };
+    return { title: PAGES.tools[0], desc: PAGES.tools[1], robots: personal, image: og("tools") };
   }
-  if (a === "play" && PAGES[b]) return { title: PAGES[b][0], desc: PAGES[b][1], robots: personal, image: og(b) };
+  if (a === "play" && PAGES[b]) return { title: PAGES[b][0], desc: PAGES[b][1], robots: personal, image: og(b === "drums" ? "play" : b) };
   if (PAGES[a === "stage" ? "editor" : a]) {
     const p = PAGES[a === "stage" ? "editor" : a];
     return { title: a === "stage" ? "Stage view" : p[0], desc: a === "stage" ? "A big, clear chart for the stage with auto-scroll and a metronome." : p[1], robots: personal, image: og(a === "stage" ? "stage" : a) };

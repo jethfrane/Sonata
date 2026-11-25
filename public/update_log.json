@@ -1,60 +1,49 @@
 [
   {
+    "version": "7.6.0",
+    "date": "2026-11-25",
+    "whatsNew": "Mobile-first high-density redesign showing far more music above the fold, new Amber low-light Stage preset, WCAG 2.1 AA contrast & design token calibration, streamlined mobile Share & export sheet, and user-focused visual assets.",
+    "changes": [
+      "Mobile-first Chart & Editor: slimmed the top/bottom bars, consolidated song metadata into a clean 2-line header (Artist · BPM + Capo + Details), kept a single sticky Key/Transpose stepper without duplicate chips, and tightened chart spacing so Verse 1, Chorus, and Bridge appear together on one screen.",
+      "High-density Songs library: streamlined phone rows into crisp 2-line entries (Key, Title, Pin, Artist, BPM, Capo, Star, Menu) with unclipped search and no bordered pill clutter, fitting up to 8 songs on a single phone screen.",
+      "2-column Bento Tools Hub: arranged all 8 harmony and practice tools in a compact 2-column mobile grid with live song context pills (chords, Key, Capo, BPM) and tucked Help cleanly into Settings.",
+      "Stage Amber low-light preset & compact header: added the #0c0a08 Amber stage theme alongside OLED Black, Dark, and Warm Paper, unlocked slim 34px mobile controls, and locked the stage title on one row beside Fullscreen and Exit.",
+      "Design system, Sharing & Asset polish: calibrated WCAG 2.1 AA light/dark contrast across all 5 accents, lazy-split Stage and Song Bank CSS to keep startup fast, compacted mobile Share/QR and 3-column Export controls with copy checkmarks, refined shared-song banners, added /play/drums link previews, unified user-focused branding, and consolidated release logs cleanly by day."
+    ]
+  },
+  {
     "version": "7.5.0",
     "date": "2026-11-24",
-    "whatsNew": "Resilient Google Drive sync with silent refresh, setlist tags & favorites, rich song status badges, clean pagination across every tab, Antigravity-style pinned sidebar items, and native desktop hover/right-click context menus.",
+    "whatsNew": "Resilient Google Drive sync with silent refresh, setlist tags & favorites, rich song status badges, clean pagination across every tab, sidebar pinned items, and native desktop hover/right-click context menus.",
     "changes": [
       "Google Drive sync persistence & silent refresh: keeps your Drive session safely across reloads and app updates, silently refreshes expired access tokens in the background (`prompt: none`) before falling back to Reconnect, and limits reconnect prompts to at most once every 12 hours.",
       "Setlist tags, favorites & sorting: keep the Sort dropdown visible across Setlists (default Latest to Oldest), add optional tags (Church, Worship, Gig, Performance, Rehearsal, Acoustic, or custom tags), favorite setlists (surfaced in Favorites too), and floating dropdown menus on per-slot Key/Capo selectors.",
-      "Rich row badges & pagination: All, Favorites, Setlists, and Song Bank show live status pills (Live, Shared, Setlist, Pinned), last updated relative time, and clean 12-item pagination controls with one-tap Show all.",
-      "Native app polish: Antigravity-style sidebar Recent list with Pinned songs, artist/status subtitles, and relative touch timestamps (hours, days, months, years), plus desktop hover quick-actions and native right-click context menus."
+      "Rich row badges & pagination: All, Favorites, Setlists, and Song Bank show live status pills, relative update times, and clean 12-item pagination controls with one-tap Show all.",
+      "Desktop polish: sidebar Recent list with Pinned songs, artist/status subtitles, and full relative timestamps, plus desktop hover quick-actions and native right-click context menus."
     ]
   },
   {
     "version": "7.4.0",
     "date": "2026-11-23",
-    "whatsNew": "Per-setlist Key & Capo overrides that leave your base song untouched, a 1-tap Paste -> Auto-Format recovery flow when chord sites block scraping, ChordPro (.cho) exports, complete Filipino translations, and modular dialog architecture.",
+    "whatsNew": "Per-setlist Key & Capo overrides that leave your base song untouched, one-tap Auto-Format and Paste-to-Format recovery, ChordPro (.cho) exports, optional Mood/Tone tags, live setlist update alerts, complete Filipino translations, and 18 AI/MCP tools.",
     "changes": [
-      "Per-setlist Key & Capo overrides: override a song's Key or Capo per slot inside Edit setlist or directly from Key & capo while playing a setlist—applied across Chart, Stage, and PDF/PNG/TXT/ChordPro exports without mutating the base song.",
-      "Graceful blocked-site fallback: when a chord site blocks automatic fetching, Import offers a 1-tap \"Paste chart text -> Auto-Format\" button (plus Open page link) that reads clipboard text, runs Auto-Format cleanly, and preserves the source link.",
-      "ChordPro (.cho) export: export single songs or whole setlists as .cho files alongside PDF, PNG, TXT, and Print.",
-      "Complete Filipino i18n: translated missing UI labels across Chart, Setlists, Tools Hub, Song Bank, AI Agents, and v7.3/v7.4 features with automated key-parity verification."
-    ]
-  },
-  {
-    "version": "7.3.0",
-    "date": "2026-11-23",
-    "whatsNew": "One-tap Auto-Format for pasted chord charts, tighter chart spacing to see more music at once, broader chord-site imports, optional Mood/Tone tags, live Google Drive setlist update alerts, and richer AI Agent / MCP tools.",
-    "changes": [
-      "New Auto-Format button in the Chart Editor cleans raw copy-pastes from any chord site, standardizes section headers (## Verse, ## Chorus, ## Bridge), repairs chord typos (D/F#m → D/F#), strips voicing legends, collapses blank gaps, and wraps overly long lines without touching Undo history.",
-      "Cleaner, roomier layout: tightened Chart headers and padding, moved Undo/Redo beside Format, removed duplicate key labels and top logo gloss, removed heavy blur on mobile nav bars, and gave section badges neutral slate styling so blue stands out strictly for chords.",
-      "Optional Mood / Tone (Joyful, Solemn, Reflective, etc.) beside Genre in Song details—hidden unless set, searchable in Songs and via AI Agents.",
-      "Enhanced Google Drive live setlists check quietly on Chart/Stage focus (30s cooldown) and show an Update banner toast whenever the leader updates the shared setlist.",
-      "Tools Hub & mobile refinements: 2-column Tools Hub on tablets, 6-column Chord Finder roots on compact screens with a direct Chord Builder link, Key Finder pinned on top on mobile/tablet, and piano centered around middle C4 on phones.",
-      "AI Agents & MCP v7.3.0: 18 tools (added format_chord_chart, chords-only transpose_chart view, mood/genre search, and MCP annotations) plus /llms-full.txt."
+      "Per-setlist Key & Capo overrides: override a song's Key or Capo per slot inside Edit setlist or Key & capo while playing a setlist—applied across Chart, Stage, and PDF/PNG/TXT/ChordPro exports without mutating the base song.",
+      "One-tap Auto-Format & blocked-site recovery: the Format button cleans raw chord pastes into ## Section headers, repairs chord typos (D/F#m → D/F#), strips voicing legends, collapses gaps, and wraps long lines; blocked imports offer a 1-tap Paste chart text -> Auto-Format fallback with source link preservation.",
+      "ChordPro (.cho) export & Mood/Tone tags: export single songs or setlists as standard .cho files alongside PDF, PNG, TXT, and Print; add optional searchable Mood/Tone tags beside Genre in Song details.",
+      "Broader chord extraction, live Drive setlist alerts & Filipino i18n parity: added Next.js __NEXT_DATA__ and HTML chord table parsing, 30s live setlist update notifications with 1-tap refresh, and full English/Filipino parity.",
+      "Tools Hub & AI/MCP v7.3+: 2-column tablet Tools Hub, Key Finder quick link and C4-centered piano on mobile, neutral slate section pills, modular lazy dialog sheets, and 18 annotated MCP tools with /llms-full.txt."
     ]
   },
   {
     "version": "7.2.0",
     "date": "2026-11-22",
-    "whatsNew": "Much sharper chord and key detection across rhythm slashes, slash-bass typos and worship progressions starting on IV, 1-tap Key and Capo overrides everywhere, and smarter chord link import & copy actions.",
+    "whatsNew": "Chords-only mode across Chart, Stage, Import & Exports, Cmd/Ctrl+K Quick Song Switcher, sharper chord & IV-opening key detection, 1-tap Key/Capo overrides, multi-song PNG setlist exports with QR links, and streamlined Google Drive live setlists.",
     "changes": [
-      "Chord detection fixes: chord lines with glued hyphens (Bm///-, G-D), slash chords with quality suffixes on the bass (D/F#m), section prefixes (Verse 1: G C), suspended/add2/add4 shapes (Gsus, D2, G(add9)), and parenthesized cues ((hold), (let ring)) are all detected cleanly.",
-      "Key detection & Capo fix: fixed scoring so songs starting on IV (like G in Key of D) or importing concert Key metadata with Capo shapes no longer misdetect or double-shift (e.g. Key E +2), and inaccurate scraped Key tags are automatically corrected.",
-      "1-tap Key & Capo overrides: tap the Key or Capo chip directly under any song title, use the Capo −/+ steppers in Key & capo, set Capo in Song details, or override both Key and Capo right inside the Import preview.",
-      "Improved link import & copy: mobile Share snippets wrapping a URL now auto-fetch in Import, imported links show their source name (Ultimate Guitar, WorshipTogether, etc.) with a 1-tap Copy button, and Copy chart is available right inside Share and Editor."
-    ]
-  },
-  {
-    "version": "7.1.1",
-    "date": "2026-11-22",
-    "whatsNew": "Chords-only view (including when importing from chord site links), a faster Quick Song Switcher across Chart, Setlists and Stage, cleaner side margins across preview, stage and PNG exports, multi-song setlist PNGs, and streamlined Google Drive live setlist sharing & sync.",
-    "changes": [
-      "Chords only mode: switch any chart in View, Stage, or Export (PDF/PNG/TXT/Print) to show only the chord progression and section labels with compact spacing and tap-to-hear chord popups.",
-      "Chords-only import toggle: when importing from a chord site link or ChordPro/text paste, toggle \"Chords only (without lyrics)\" to preview and save just the chord progression.",
-      "Faster song switching: press Cmd/Ctrl+K from anywhere or tap Switch / the setlist title / Stage title to search and jump to any song; use the scrollable pill strip above setlists or Prev/Next in Stage across all library songs.",
-      "Cleaner margins & PNG exports: added comfortable side margins in Preview, Stage, and 9:16 / 16:9 PNGs, subtle column divider rules, multi-song setlist PNG export with scannable live QR links, and balanced typography scale.",
-      "Optimized Google Drive live setlists: direct Google sign-in from Share, 4s auto-sync for published setlists, 1-tap Sync button & status badges in the setlist bar and library rows, plus rich link previews for /set/<id>."
+      "Chords-only mode & import toggle: switch any chart in View, Stage, Import, or Exports (PDF/PNG/TXT/Print) to display pure chord progressions with compact spacing and tap-to-hear popups.",
+      "Chord & key detection fixes: accurately parses glued hyphens (Bm///-, G-D), slash-bass typos (D/F#m), section prefixes (Verse 1: G C), suspended/add2/add4 chords, IV-opening progressions, and concert Key + Capo metadata without double-shifting.",
+      "1-tap Key & Capo overrides everywhere: tap Key or Capo directly under song titles, use Capo −/+ steppers in Key & capo, set Capo in Song details, or adjust both Key and Capo inside Import preview.",
+      "Quick Song Switcher & mobile Share import: press Cmd/Ctrl+K (or tap Switch / Stage title) to jump across songs, unwrap mobile Share text + URL snippets automatically, and copy imported source links in one tap.",
+      "Clean margins, multi-page 9:16/16:9 PNG setlist exports & Drive live setlists: balanced chart margins, scannable QR codes on setlist PNGs, direct Drive sign-in in Share, 4s auto-sync, and rich /set/<id> link previews."
     ]
   },
   {
@@ -62,130 +51,33 @@
     "date": "2026-11-20",
     "whatsNew": "A calmer 3-tab layout (Songs, Chart, Tools) with a dedicated Tools Hub, a rearranged Minor Circle of Fifths and interactive Key Finder, floating popover dropdowns, a 30-day Trash for deleted songs and setlists, and built-in AI Agents & MCP connectivity.",
     "changes": [
-      "Songs · Chart · Tools: the top and bottom navigation now focus on your three main places, while Chord Finder, Circle of Fifths, Key Finder, Piano, Fretboard, Tuner, Metronome and Drum Beats & Pads live together in the new Tools Hub (/tools) with a quick ← All tools pill.",
-      "Minor Circle of Fifths: switching to Minor rearranges the circle itself so Minor keys sit on the primary outer ring (Am at 12 o'clock) and Relative Major keys move to the inner ring, with minor key labels across the picker and center hub.",
-      "Upgraded Key Finder (/tools/key-finder): tap or type chords, pull the active song's chords in one tap, compare the top matching Major and Minor key candidates with match counts, and see your song's chords highlighted directly on the Circle of Fifths.",
-      "Floating popover menus: every dropdown across Songs, Chart, Stage, Tools and Settings now opens as an anchored floating menu with checkmarks, smart viewport flip, and full keyboard navigation (Arrow keys, Home/End, Enter, Escape) without shifting the page.",
-      "30-day Trash (synced with Google Drive): deleting a song or setlist moves it to Trash for 30 days with an immediate Undo toast. Restoring a song brings it back to your library and its original setlists; Delete forever and Empty trash ask for confirmation first.",
-      "AI Agents & MCP: Sonata now registers 17 music and library tools with WebMCP (navigator.modelContext and window.sonataAgent) and provides a Remote MCP endpoint (/api/mcp) with Google Drive OAuth 2.1 so AI assistants can extract chords, transpose charts, manage setlists and sync your library safely."
+      "Songs · Chart · Tools: top and bottom navigation focus on three main spaces, while Chord Finder, Circle of Fifths, Key Finder, Piano, Fretboard, Tuner, Metronome and Drum Beats & Pads live in Tools Hub (/tools) with a ← All tools pill.",
+      "Minor Circle of Fifths & Key Finder (/tools/key-finder): switching to Minor places Minor keys on the outer ring (Am at 12 o'clock); pull active song chords in one tap to compare Major and Minor candidates and highlight them directly on the Circle.",
+      "Floating popover menus & 30-day Trash: dropdowns open as anchored floating menus with keyboard navigation; deleted songs and setlists move to 30-day Drive-synced Trash with Undo restore.",
+      "AI Agents & MCP: registers WebMCP tools (navigator.modelContext and window.sonataAgent) and provides a Remote MCP endpoint (/api/mcp) with Google Drive OAuth 2.1 + PKCE."
     ]
   },
   {
     "version": "6.3.0",
     "date": "2026-11-17",
-    "whatsNew": "Charts that fit your screen: chords stay over their words on any phone or tablet, PNG images are 9:16 for phones, and the app fits every screen from the smallest phone to a big monitor.",
+    "whatsNew": "Calmer light and dark themes, auto-fitting charts that keep chords over words on any screen, 9:16 phone PNG exports, one-step Add to setlist, and hardware page-turner pedal support on stage.",
     "changes": [
-      "Chords never part from their words: on stage (any screen) and in View on a phone, the chart text is as large as fits the longest line, so a chord line no longer breaks in two. It never goes above the size you picked with A−/A+. Lyrics only can still wrap at full size.",
-      "Circle of fifths: a quick tap plays a short chord; press and hold to keep it sounding, and it rings out when you let go. The chords of the key under the circle work the same way.",
-      "PNG export is 9:16 (1080×1920, saved at double size for sharp text). It fills a phone screen when opened in a chat or posted as a story. The type is as large as the page allows, a short chart sits in the middle of the page, and a long chart continues on more pages of the same size. Landscape makes 16:9 images.",
-      "The image preview shows each page whole, side by side; swipe to see the next page. The PNG button shows the shape it will make (9:16 or 16:9).",
-      "Small phones (320 px wide): the stage controls stay on one row inside the screen, and the Play tabs (Piano, Guitar, Tuner, Metronome, Drums) show their icon over the full name.",
-      "Chart on a phone: the artist, key and tempo sit on one line under the title (a long artist name shortens), so the chart starts higher.",
-      "Long messages, like the backup reminder, have a close button, take less room on a small phone, and never appear over the stage or an open window.",
-      "A long artist name under the song title stays on one line instead of wrapping inside its label.",
-      "The floating video player's buttons are full touch size on phones and tablets; on a narrow phone the small player keeps play, size and close, and the 5-second skips are in the big player.",
-      "On a computer, the recent songs in the sidebar shorten with … instead of being cut off, and messages appear centred over the page instead of under the sidebar."
-    ]
-  },
-  {
-    "version": "6.2.0",
-    "date": "2026-11-17",
-    "whatsNew": "Calmer light and dark themes, easier on a phone and on stage: songs open ready to read, add a song to a setlist in one step, and a page-turner pedal turns the chart.",
-    "changes": [
-      "Easier on the eyes: dark mode is now a soft charcoal with off-white text instead of pure black and bright white, and light mode is a clean neutral grey and white. Messages in dark mode no longer flash white. The browser bar matches the theme.",
-      "New: Add to setlist. In Songs, tap ⋮ on a song and pick a setlist; the song goes to the end. With no setlists yet, a new one starts with that song in it. A setlist that already has the song is marked.",
-      "New: page-turner pedals and Page Down/Up on stage. Each press turns the chart one screen; at the end of a song the next press opens the next song in the setlist, and at the top Page Up goes back.",
-      "On a phone, a song with a chart now opens on View, ready to read. Tap Edit to change it. A new or empty song still opens on Edit.",
-      "Stage view on a phone: the full screen button sits beside Exit, so the controls take one row and the chart gets more room.",
-      "Songs on a phone: the sort menu shows its whole label.",
-      "Searching for songs to add to a setlist ignores accents, like the main search."
+      "Calmer themes & ready-to-read phones: warm grey-and-white light mode, soft charcoal dark mode, full-row click to open charts directly in View on phones, and single-line artist/key/tempo metadata.",
+      "Auto-fitting chord lines & hold-to-ring Circle: chart text sizes automatically so chord lines stay unbroken above lyrics on phones and stage; press and hold Circle wedges or key chords to sustain.",
+      "Add to setlist & Page-Turner Pedals: add any song to a setlist from its menu in Songs; use Page Down/Up or pedals on stage to turn screens and advance seamlessly through setlists.",
+      "9:16 / 16:9 PNG previews, dismissible toasts & 320px ergonomics: high-resolution multi-page PNG previews matched to screen orientation, closeable backup reminders, and clean single-row Stage controls on narrow phones."
     ]
   },
   {
     "version": "6.1.0",
     "date": "2026-11-13",
-    "whatsNew": "Ready for everyone: a floating video player that follows you around the app, a plain-language Privacy & terms page, clearer messages when something goes wrong, and a lighter start.",
+    "whatsNew": "Floating YouTube reference player, guided tour & contextual Help, Backup & restore with earlier library snapshots, full offline instrument sounds with smaller starter downloads, live Google Drive setlists, and Privacy & terms.",
     "changes": [
-      "New: a floating video player. A YouTube link on a song now plays in a small player that stays with you while you edit the chart, switch songs or open Chords, Theory and Play. Make it mini or bigger, go back or forward 5 seconds (in the mini player too), drag to any point, and slow it to 0.75× or 0.5× to work out a part.",
-      "QR codes are easier to scan: a long song's code is drawn larger, tapping the code fills the screen with it, and spare room in a code is used for stronger error correction.",
-      "New: Privacy & terms, in plain language, at sonata.jethrofrane.xyz/privacy and linked from About. It says what stays on your device, what Google Drive backup can and cannot see, and what you agree to when you share songs.",
-      "If Sonata can't load (no connection on a first visit, or a browser that is too old), it now says so instead of showing a blank page.",
-      "If something unexpected goes wrong while you work, one message offers to reload. Your songs are saved as you type, so nothing is lost.",
-      "Lighter start: the Filipino translation now downloads only when Filipino is chosen.",
-      "Search engines get a sitemap and are kept out of personal and shared pages."
-    ]
-  },
-  {
-    "version": "6.0.0",
-    "date": "2026-11-13",
-    "whatsNew": "A guided tour and Help, one Backup & restore screen with earlier versions, and a lighter, faster start.",
-    "changes": [
-      "New: a one-minute guided tour on your first visit, and a Help button (?) with tips for the screen you are on and short answers to common questions. Press ? on a keyboard. English and Filipino.",
-      "New: Backup & restore in one place (tap Back up). It says plainly whether your songs are safe, and holds Google Drive, a one-tap backup file and restore.",
-      "New: earlier versions. Sonata keeps a copy of your library on your device when you open it after changes (the last 15), and before every restore, so a mistake can be undone.",
-      "New: PNG export shows the image first. Copy it to paste straight into a chat, share it, or download it; nothing is saved to your device unless you ask.",
-      "Stage view no longer forces full screen on a computer. A Full screen button (or the F key) is there when you want it.",
-      "Backup files now carry a checksum, so a file that was cut off or changed is noticed before it is restored. Saving a backup on a phone opens the share sheet, so it can go straight to Files, Drive or a chat.",
-      "A gentle reminder to back up when you have songs on this device only, at most once a week.",
-      "Faster start: Play, Theory, Stage, the audio engine and Google Drive now load when you first open them. The first screen downloads about a third less script.",
-      "Sonata is for every musician: wording, the demo song (now Auld Lang Syne) and drum loop names no longer assume a church setting.",
-      "Safer: tighter browser security rules, a limit on how fast links can be imported, and stricter checks on backup files.",
-      "Fixed: an action in a dialog that had been opened more than once could run more than once.",
-      "Fixed: on phones the circle of fifths could make the page scroll sideways while it turned.",
-      "Fixed: typing near the bottom of a long chart on a phone, tablet or narrow window threw the page back up. The page now stays put and the line you are typing stays on screen."
-    ]
-  },
-  {
-    "version": "5.0.1",
-    "date": "2026-11-13",
-    "whatsNew": "Play opens with an even smaller download.",
-    "changes": [
-      "Play fetches starter sounds only for the instrument tab you are on. Chords fetches piano and guitar; ukulele and bass load when you first play them."
-    ]
-  },
-  {
-    "version": "5.0.0",
-    "date": "2026-11-13",
-    "whatsNew": "Instrument sounds now work offline, and the piano opens with a much smaller download.",
-    "changes": [
-      "Fixed: instrument sounds were not being saved on your device, so the piano, guitar, bass and ukulele samples did not work offline. They are now saved the first time you play them.",
-      "Settings → Keep instrument sounds on this device saves every sound at once (3.8 MB) for playing offline.",
-      "Opening Play or Chords fetches a small starter set of sounds instead of the whole bank. The rest loads once you play, and not at all on its own when your phone's data saver is on.",
-      "Sonata now checks its own size on every build so it stays fast as it grows."
-    ]
-  },
-  {
-    "version": "4.5.0",
-    "date": "2026-11-13",
-    "whatsNew": "Live setlist links: one link for the band that always shows the latest version.",
-    "changes": [
-      "Live link for a setlist (Share → Live link): the setlist is published as one file in your own Google Drive. Change the setlist or a chart and everyone who opens the link gets the change. No accounts for the band.",
-      "Band members keep their own key and capo when a chart is updated, even if the leader rewrote it in another key.",
-      "Opening a link to a newer version of a song you already saved now offers \"Update my copy\" instead of adding a second song.",
-      "Setlists you follow are checked for changes when you open Sonata."
-    ]
-  },
-  {
-    "version": "4.4.0",
-    "date": "2026-11-13",
-    "whatsNew": "A clearer start, and your songs are better protected on this device.",
-    "changes": [
-      "An empty library now offers three ways in: import a song, write one, or try the demo.",
-      "Once you have a song, Sonata asks the browser to keep its storage so your songs are not cleared to free space. Settings says whether they are protected or backed up.",
-      "The offer to install Sonata now appears after you have a song, not when you first arrive.",
-      "Chart editor on phones: a fade on the right edge shows when a long chord line continues off-screen."
-    ]
-  },
-  {
-    "version": "4.3.0",
-    "date": "2026-11-13",
-    "whatsNew": "A simpler Sonata: fewer buttons and menus, and a Song Bank that is just your song list.",
-    "changes": [
-      "Song Bank is now a public song list with your name, note, look and gigs. The Sonata Card image, photo, social links and payment codes are removed. Song Banks you already published still open.",
-      "Chord type menus show the six everyday types first; the rest are under More.",
-      "Piano and guitar toolbars are shorter. Drum beats live in the Drums tab; change key with the key menu or the [ and ] keys.",
-      "Drum pad keys Q W E R / A S D F now work on the Drums tab. Changing which key plays which pad is removed.",
-      "Sona the mascot and the TinyURL short-link button are removed. Nothing is sent to a link shortener any more."
+      "Floating YouTube player & bigger QR: YouTube song links play in a resizable mini/large overlay with 5-second skip and 0.75×/0.5× playback speed across screens; tapping any QR code zooms full-screen.",
+      "Guided tour, Help (?) & Backup & restore: interactive first-visit tour, contextual Help sheet (press ?), one-tap checksummed backup files, 15 automatic local restore snapshots, and persistent storage requests.",
+      "Live Google Drive setlist links: publish one Drive-hosted setlist link that stays up to date automatically while band members keep their personal key and capo, plus an Update my copy option for shared songs.",
+      "Offline instrument sounds & lighter startup: caches every piano, guitar, bass, and ukulele sample on first play or via Settings (3.8 MB), lazy-loads Play/Theory/Stage/Drive/Filipino translations, and removes legacy buddy/branding assumptions.",
+      "Privacy, reliability & Song Bank focus: plain-language Privacy & terms page (/privacy), single calm crash-recovery toast, faster automated bundle budget checks, and a focused Song Bank experience."
     ]
   },
   {
@@ -194,337 +86,131 @@
     "whatsNew": "Import: paste a link to a chord page and Sonata fills in the chart for you.",
     "changes": [
       "Import (was \"Add from links\"): paste a link to a chord page, the chords themselves, or Sonata links. Title, artist, key, capo, tempo and sections are filled in, with a preview before you add it.",
-      "Some large chord sites do not let apps read their pages. Sonata says so and you can paste the chords instead.",
-      "Open a .txt or ChordPro file from the Import sheet, or drop it in.",
-      "Installed app: share a page or text from your browser straight into Sonata.",
-      "Import preview now shows the detected key (it used to say \"undefined\")."
+      "Graceful paste fallback for protected chord sites and drag-and-drop support for .txt and ChordPro files.",
+      "Web Share Target support for installed PWAs and accurate detected key preview."
     ]
   },
   {
     "version": "4.1.0",
     "date": "2026-11-10",
-    "whatsNew": "Song Bank gets a Sonata Card, social links and payment QR codes; Songs shows the chart beside the list on bigger screens.",
+    "whatsNew": "Desktop & tablet side-by-side song peek, cleaner multi-page PNG & PDF exports, and dedicated Drums tab with its own tempo control.",
     "changes": [
-      "Sonata Card: your photo, name, note, song count, genres and links, shown live while you edit and on your public Song Bank. Download it as a 1080×1350 image with a QR code.",
-      "Social links with logos: Instagram, TikTok, Facebook, YouTube, Spotify, X, Threads, website and email. Requests go by Messenger, Instagram or email (WhatsApp, SMS and Telegram removed).",
-      "Support: add GCash, Maya or bank QR Ph codes from a screenshot. Sonata reads the code and shows it crisply; payments go straight to you and Sonata never handles money.",
-      "Song Bank links end with your name (…/bank/<id>/your-name).",
-      "Tablets in landscape and computers: tap a song to see its chart beside the list, with Edit, Present and Share. Double-click opens the editor.",
-      "Fresh screenshots, including Chords and Song Bank.",
-      "Chart images and PDFs have a cleaner look: bigger type, section names with a rule, key and tempo as tags, timing marks in a quieter colour, and a smaller QR code.",
-      "Long charts export as several pages of the same size instead of one very tall image. On a phone the pages save together from the share sheet.",
-      "A plain line such as \"Verse:\" or \"Chorus:\" prints as a section name in exports.",
-      "Chord colour in exports is always dark enough to read on white, also when the app is in dark mode.",
-      "Drums have their own tab in Play, with their own tempo control.",
-      "Keyboard shortcut hints are hidden on phones and tablets. The selected key on the Circle of Fifths is solid in dark mode. Chip rows fade at the edge to show they scroll."
+      "Side-by-side library peek on tablets in landscape and desktop: tap a song to preview its chart, key, tempo, Edit, Present, and Share controls alongside the list.",
+      "Cleaner multi-page chart exports: crisp section rules, high-contrast chords on white paper even in dark mode, key/tempo tags, quiet timing marks, and automatic pagination.",
+      "Drums tab with independent tempo, horizontal-scroll edge fades on chip rows, and dark-mode Circle selection polish."
     ]
   },
   {
     "version": "4.0.0",
     "date": "2026-11-09",
-    "whatsNew": "A new Chords tab, a Song Bank for requests, smaller QR codes that scan, and setlists you can send as song links.",
+    "whatsNew": "A new Chords tab, a Song Bank for requests, smaller QR codes that scan reliably, and setlists you can send as song links.",
     "changes": [
-      "Chords: look up any chord (slash chords too) with guitar, ukulele, bass and piano diagrams; tap a chord in a chart to see its shapes.",
-      "Theory and Play: slash chords, walking bass lines, secondary dominants, 7sus4, 11ths and 13ths, passing chords, and every chord in the song.",
-      "Song Bank: publish the songs you know or offer from your own Google Drive; people scan your QR, pick a song and key, and send a request.",
-      "QR codes now scan reliably (an error in the code builder was fixed) and are smaller; every page has its own link preview.",
-      "Setlists can be sent as one link per song; paste the message into Add from links to get the setlist back.",
-      "YouTube reference links play inside Sonata; PDFs are about half the size; PNGs use Sonata's own fonts.",
-      "Bigger tap targets, phone-landscape and stage layouts, and many fixes from a full audit."
+      "Chords: look up any chord (including slash chords) with guitar, ukulele, bass and piano diagrams; tap any chord in a chart to view its shapes.",
+      "Theory and Play expansions: slash chords, walking bass lines, secondary dominants, extended voicings, and all chords of the active song.",
+      "Song Bank, setlist song links, YouTube links, half-size PDFs, phone-landscape & stage responsive improvements, and reliably scannable compact QR codes."
     ]
   },
   {
     "version": "3.1.2",
     "date": "2026-11-05",
-    "whatsNew": "Safer saving and syncing: two tabs, two devices and unusual links can no longer cost you songs.",
+    "whatsNew": "Safer multi-tab saving & Drive conflict handling, bug-fix hardening across deletion/tuner/modals, keyboard-navigable instrument tabs, one-tap setlist printing, and faster first load.",
     "changes": [
-      "Two browser tabs can no longer overwrite each other's songs.",
-      "Drive sync merges again if another device writes during a sync, and keeps one library file if two were created.",
-      "The Google sign-in token is no longer stored on disk; you may tap Reconnect after closing the app.",
-      "A lone letter like \"a\" on a lyric line is no longer treated as a chord.",
-      "The metronome stops when you leave the stage view; unknown addresses are kept out of search results."
-    ]
-  },
-  {
-    "version": "3.1.1",
-    "date": "2026-11-05",
-    "whatsNew": "Bug-fix release from a full code audit: setlist delete works again, and Drive sync, the tuner and edge cases are safer.",
-    "changes": [
-      "Deleting a setlist now works (the confirmation used to close itself before you could tap Delete).",
-      "Undo after deleting a song, and restoring a backup, no longer lose songs on the next Google Drive sync.",
-      "Empty starter songs can no longer come back from Drive.",
-      "The tuner no longer leaves the microphone on if you tap Start twice.",
-      "The app opens even if the browser blocks storage, and tells you songs won't be kept.",
-      "Damaged links and unusual web addresses show a clear message instead of a blank or broken screen.",
-      "The Google Drive window no longer replaces other dialogs, Space works on stage buttons, and Drive skips uploads when nothing changed.",
-      "Link previews handle titles with special characters; personal song pages are no longer indexed by search engines."
-    ]
-  },
-  {
-    "version": "3.1.0",
-    "date": "2026-11-05",
-    "whatsNew": "Small polish: keyboard-friendly instrument tabs, faster first load, and one-tap setlist printing.",
-    "changes": [
-      "Play tabs now work with the arrow keys, Home and End.",
-      "Setlist menu has a Print button that prints every song in the set.",
-      "Dialogs (key, share, settings and more) load only when opened, so the app starts faster.",
-      "App icons are about 60% smaller."
+      "Multi-tab & Google Drive safety: prevents browser tabs from overwriting each other, re-merges concurrent Drive writes, keeps deleted songs from returning across sync, and removes persistent disk OAuth tokens.",
+      "Stability & security hardening: fixed setlist delete confirmation, tuner double-start microphone cleanup, fallback in-memory mode when browser storage is blocked, and non-indexed personal routes.",
+      "Usability & performance: Arrow/Home/End keyboard navigation across Play tabs, Print button in setlist menus, lazy-loaded dialogs, and 60% smaller app icons."
     ]
   },
   {
     "version": "3.0.0",
     "date": "2026-11-04",
-    "whatsNew": "A new, simpler Sonata: four tabs, a calmer design, and everything for a song in one place. Your songs, setlists and share links all still work.",
+    "whatsNew": "A new, simpler Sonata: a calmer paper/charcoal design, streamlined navigation, sharps/flats in Key & capo, tappable song links, and fast offline-first loading.",
     "changes": [
-      "New look: warm paper light mode, a quiet dark mode, and new fonts that are easier to read on stage.",
-      "Simpler navigation: Songs, Chart, Theory and Play. The old Tools tab is gone: key and capo live on the key button, Share holds link, QR and every export, and the Metronome moved into Play.",
-      "On a computer, a sidebar keeps your recent songs one click away.",
-      "First visit shows a short welcome instead of an empty song.",
-      "Key & capo can now set sharps or flats and write the new key into the chart.",
-      "Song links (like a YouTube reference) are now tappable on the chart. Only normal web links are shown.",
-      "Faster start: the app loads as one small file, fonts are stored on this site, and the QR and PDF tools load only when you use them.",
-      "Better offline support with a clear \"new version ready\" prompt, plus home-screen shortcuts for New song, Metronome, Tuner and Theory.",
-      "Safer: strict security rules for the site, and share links that are too big or broken are refused instead of freezing the app."
+      "Calmer light paper and soft dark themes with Inter and JetBrains Mono typography and clearer stage readability.",
+      "Streamlined navigation, welcome starter choices, sharp/flat key rewriting via Write into chart, and tappable http(s) song links.",
+      "Single-bundle fast start, self-hosted fonts, offline update reload prompt, home-screen shortcuts, and strict CSP/share-link safety guards."
     ]
   },
   {
     "version": "2.0.4",
     "date": "2026-10-22",
-    "whatsNew": "Slash chords like G/B now sound and show their bass note, and pressed notes are much easier to see.",
+    "whatsNew": "Full modular rebuild: light/dark/accent themes, unified navigation, Google Drive sync, per-song transpose & capo, interactive Circle of Fifths, sustaining instruments with slash chords & chord players, tuner, metronome, stage mode, PDF/PNG/QR exports, and offline PWA.",
     "changes": [
-      "Slash chords (G/B, D/F♯) play the bass note underneath on piano and guitar, and the bass is marked in orange on the keys and frets.",
-      "Each instrument shows the actual chord and its notes. Hold keys or frets and it names what you are playing.",
-      "Pressed and chord notes are darker, and a pressed note stays lit for a moment after you let go."
-    ]
-  },
-  {
-    "version": "2.0.3",
-    "date": "2026-10-22",
-    "whatsNew": "Taps no longer jump to the top, every page and song has its own link, and the piano and guitar each have a chord player.",
-    "changes": [
-      "Fixed: tapping anything used to scroll back to the top and re-render the page. It now stays where you are.",
-      "Links: /songs, /tools, /theory, /play/piano, /play/guitar, /play/tuner, /song/<name> and /song/<name>/stage. Back and forward work.",
-      "Piano and Guitar each have their own chord player with more chord types: triads, 7ths, sus, add9, 6ths, 9ths, power and borrowed chords for every key.",
-      "The chord bar in the editor follows the key you see and changes when you transpose.",
-      "Circle of fifths: Auto-rotate turns the circle so your key sits at the top.",
-      "Sound keeps working when you leave the app and come back.",
-      "Simpler chart start strip, a clearer type scale, and Settings → Interface text (Small, Medium, Large).",
-      "Sharper QR codes: the QR card and the PNG chart export now include a scannable QR. Share links have a readable name and better link previews."
-    ]
-  },
-  {
-    "version": "2.0.2",
-    "date": "2026-10-22",
-    "whatsNew": "Piano and guitar notes now ring out, and the app is smaller and tighter on phones.",
-    "changes": [
-      "Piano and fretboard notes sustain after release instead of cutting off.",
-      "More compact buttons, nav, cards and instruments on small screens."
-    ]
-  },
-  {
-    "version": "2.0.1",
-    "date": "2026-10-22",
-    "whatsNew": "Calmer colors, a much better phone layout, and a Lock key option on the circle of fifths.",
-    "changes": [
-      "Softer, less saturated colors in light and dark mode, including the Present button, the circle of fifths and the piano and fretboard highlights.",
-      "Phone editor: one compact toolbar row, the chart box grows with the song so only the page scrolls, view options show only in Preview, and the chord chips only while editing.",
-      "Circle of fifths: new Lock key button. While locked, tapping a wedge plays the chord but keeps the highlighted key; the key picker still changes it. The lock is remembered.",
-      "Phone fixes: shorter sort labels, compact Details button, stacked link fields, tighter key picker, fretboard and tuner string buttons that fit small screens.",
-      "Sona stays on the song list on phones so it never covers the editor or instruments.",
-      "Dark mode: the key family on the circle is easier to see."
-    ]
-  },
-  {
-    "version": "2.0.0",
-    "date": "2026-10-22",
-    "whatsNew": "A full rebuild: cleaner design, simpler Drive backup, better instruments, and Sona the music buddy. The AI assistant is gone.",
-    "changes": [
-      "New look: new logo and icon, Plus Jakarta Sans and JetBrains Mono fonts, light, dark and match-device themes, five accent colors.",
-      "One navigation per screen: tabs on top for desktop, a bottom tab bar on phones and tablets. The slide-out menu and duplicate buttons are gone.",
-      "Google Drive backup is now one Back up button. Sign in once and changes sync on their own; every sync merges first, so two devices never overwrite each other. Signing out now clears your name and photo.",
-      "Transpose and capo are saved per song and show right away in the Chords view. Capo shows the shapes you actually play.",
-      "Chords stay above the right word even when lines wrap on a phone. Inline [G]chords display above the lyrics too.",
-      "Editor: chord chips insert chords at the cursor, undo/redo per song, everything autosaves. The demo song no longer overwrites your song.",
-      "Circle of fifths redrawn: the key family is highlighted, Roman or Nashville numbers on each wedge, key signature, relative key, and the seven chords of the key to tap and hear.",
-      "Piano and fretboard: real chord and scale highlighting, correct sharps and flats for the key (F# in G, not Gb), proper fret inlays, Drop D tuning, press-and-slide playing.",
-      "Better sound: plucked-string guitar and bass (tuned to the cent), piano that stops when you let go.",
-      "Tuner rebuilt: accurate pitch detection with the microphone's echo cancellation turned off, needle gauge, Hz and cents, nearest-string hint, adjustable A4.",
-      "Metronome now keeps steady time on the audio clock, with 2/4 to 12/8, tap tempo and save-to-song.",
-      "Stage view: keeps the screen awake, auto-scroll pauses when you touch, arrow keys move through a setlist, three stage colors.",
-      "Setlists: reorder songs with up/down, play from the library, share a whole setlist.",
-      "Share links keep the song inside the link and no longer go through TinyURL unless you choose to shorten one. Old Sonata links still open.",
-      "PDF export keeps accented letters (ñ, é), shows key, capo and tempo, and prints a whole setlist.",
-      "Deleting a song can be undone, and deleted songs no longer come back after a Drive sync.",
-      "Works offline after the first visit (real service worker). About page now states plainly that Vercel counts anonymous page views.",
-      "Removed the Gemini AI co-writer and its server code.",
-      "Meet Sona, a blue pixel musician who wanders the bottom of the screen, bobs to the metronome and shares tips. Hide Sona in Settings.",
-      "Code rebuilt as small JavaScript modules, type-checked with TypeScript, with unit and browser tests. Your existing songs and settings load unchanged."
+      "Design & Navigation overhaul: cohesive light/dark/system themes, 5 accent colors, unified responsive navigation (desktop sidebar + mobile bars), compact phone editor with sticky toolbar, and interface text scaling.",
+      "Interactive Music Tools: redrawn Circle of Fifths with Auto-rotate and Lock key; Piano, Fretboard (Drop D, bass, ukulele), and Chord Players with real-time note sustain, orange bass notes on slash chords (G/B, D/F#), and chord naming.",
+      "Stage, Tuning & Sync: audio-clock metronome (2/4 to 12/8, tap tempo), precision mic tuner, screen-awake Stage mode with touch-pausing auto-scroll and 3 presets, setlist management, and seamless merging Google Drive sync.",
+      "Sharing & Foundation: self-contained share links, scannable QR cards, PDF exports with accented letters, 50-step transpose undo stack, and offline Workbox service worker."
     ]
   },
   {
     "version": "1.5.5",
     "date": "2026-10-16",
-    "whatsNew": "Stage Mode Responsive Overhaul, Touch Interaction Hardening, In-Stage Transposition & Setlist Controls, Theory Circle Robustness",
+    "whatsNew": "Stage Mode responsive overhaul with in-stage transposition & setlist navigation, Circle F#/Gb precision, Roman slash bass degrees, and WCAG AA accessibility hardening.",
     "changes": [
-      "Re-engineered Present / Stage Mode top bar and controls layout to eliminate header overlap on all mobile screen sizes (320px–430px) and landscape orientations.",
-      "Added active in-stage transposition steppers (♭ / ♯) with real-time key badge updates, allowing musicians to transpose without leaving full screen.",
-      "Added on-stage setlist navigation (‹ Prev / Next ›) with counter badge for fluid setlist progression during live performances.",
-      "Fixed mobile bottom dock layout collisions by defeating input[type='range'] specificity override, ensuring the auto-scroll speed slider stays compact and within viewports.",
-      "Added thumb-pause autoscroll protection and drag vs tap discrimination to prevent accidental mode toggles while scrolling on touch devices.",
-      "Fixed Circle of Fifths Roman numeral and Nashville number rendering by ensuring KeyDetector always provides a valid fallback tonic, eliminating '?' glyphs on empty charts.",
-      "Scoped the AI Co-Writer floating button to display exclusively on the Editor tab and auto-hide when the drawer opens, preventing touch interference with the Virtual Piano, Fretboard, and Tools."
-    ]
-  },
-  {
-    "version": "1.5.4",
-    "date": "2026-10-16",
-    "whatsNew": "Enharmonic Key Spelling, Circle of Fifths F# / Gb Precision, Stage Notation Switcher, Roman Slash Bass Degrees & Accessibility Hardening",
-    "changes": [
-      "Fixed Circle of Fifths sharp & enharmonic key family resolution so F# major accurately highlights F#, B, C#, and D#m (and Gb major highlights Gb, Cb, Db, Ebm).",
-      "Added full flat/sharp key support in Key Override alongside a persistent ♯ / ♭ Enharmonic Preference toggle in transposition controls.",
-      "Preserved active notation tab across Present / Stage Mode and added an on-stage notation switcher (Song, Transposed, Roman, Nashville, Lyrics).",
-      "Refined Roman Numeral slash chord bass notes to render as unambiguous scale-degree numerals (e.g. G/B -> I/3, D/F# -> V/7, G/F -> I/b7).",
-      "Normalized modal/drawer z-index layering, auto-collapsed the AI Co-Writer drawer when modals open, and added a 15s AbortController timeout with retry UI.",
-      "Hardened mobile split-editor switching, WCAG AA dark-mode contrast, Escape key dismissal, and ARIA roles/labels across tabs, piano keys, and Circle of Fifths wedges."
+      "Re-engineered Stage Mode top bar and bottom dock for 320px–430px phones and landscape viewports, adding in-stage transpose steppers (♭/♯), Prev/Next setlist controls, notation switcher, and touch thumb-pause.",
+      "Fixed F♯/G♭ Circle key family resolution, persistent ♯/♭ preference, and unambiguous Roman numeral slash bass degrees (I/3, V/7, I/♭7).",
+      "Normalized dialog z-index layering, mobile split-editor switching, dark-mode WCAG AA contrast, Escape dismissal, and ARIA labels across tabs and instruments."
     ]
   },
   {
     "version": "1.5.3",
     "date": "2026-09-21",
+    "whatsNew": "Google Drive sign-in origin & account safeguards, cleaner desktop Play & Circle spacing, quieter UI audio, and view isolation fixes.",
     "changes": [
-      "Google Drive Sync now detects local file previews and directs users to the published HTTPS Sonata site before attempting OAuth.",
-      "This prevents Google’s misleading Error 400 authorization screen when Sonata is opened directly from disk or inside an unsupported embedded browser."
-    ],
-    "whatsNew": "Drive Sync now starts only from a valid web origin."
-  },
-  {
-    "version": "1.5.2",
-    "date": "2026-09-21",
-    "changes": [
-      "Corrected the 1.5.1 desktop layout: Virtual Piano, full-width Fretboard, and Reference Tuner are now separate rows so the complete guitar neck stays usable.",
-      "Reduced the desktop Circle of Fifths to a contained reference size, while retaining its readable controls and mobile-safe layout.",
-      "Repaired Google Drive sign-in handling by removing duplicate OAuth click requests and showing Google account selection on a new connection.",
-      "Sidebar navigation now closes after a destination is chosen, leaving the selected workspace unobstructed.",
-      "Removed interface click sounds and added output limiting plus gentler Circle chord levels to prevent harsh or clipped playback."
-    ],
-    "whatsNew": "A corrective release focused on dependable Drive sign-in, responsive instrument space, quieter controls, and safe audio levels."
-  },
-  {
-    "version": "1.5.1",
-    "date": "2026-09-21",
-    "changes": [
-      "Standardized the desktop Play workspace: Virtual Piano and Fretboard now sit side by side, so both instruments are visible immediately instead of being buried in a long vertical stack.",
-      "Improved instrument card spacing, sizing, and horizontal scroll treatment while retaining piano, fretboard, tuner, key highlighting, and tuning controls.",
-      "Expanded the Circle of Fifths into a larger desktop reference layout with controls placed beside it for easier reading.",
-      "Restored desktop access to the full sidebar menu, including Settings, About Sonata, language, sync, presentation, and install actions.",
-      "Fixed view isolation so each Sonata workspace displays only its active page."
-    ],
-    "whatsNew": "A cleaner desktop workspace: larger theory reference, visible instruments, and complete navigation from every screen."
+      "Google Drive Sync validates web origins before starting OAuth and shows clean account selection without duplicate popups.",
+      "Separated desktop Virtual Piano, full-width Fretboard, and Reference Tuner rows, balanced Circle size, and isolated active views.",
+      "Removed UI click sounds and added output limiting for gentle, non-clipped chord playback."
+    ]
   },
   {
     "version": "1.5.0",
     "date": "2026-09-11",
+    "whatsNew": "Desktop full-height split IDE, interactive syntax quick-start chips, metadata chips, live save indicator, unsaved changes guard, and mobile responsive navigation.",
     "changes": [
-      "Responsive Layout: Tablet & mobile navigation collapse under 1024px into a slide-out drawer, with a dedicated mobile Google Sync status pill.",
-      "Desktop & Laptop Full Viewport IDE: Split editor and preview panes stretch to fill 100% of the viewport height with zero wasted space and independent internal scrolling.",
-      "Interactive Syntax Quick-Start: Clickable syntax chips in empty editor to quickly insert headers, chords, dividers, and rehearsal notes with instant preview.",
-      "Metadata Chips: Replaced plain text author/arranger/key bar with sleek, formatted metadata tag chips.",
-      "Live Status Indicator: Dynamic status badge with a live dot reflecting Saved (green), Autosaving (pulsing blue), and Editing (amber) states.",
-      "Chart Preview Polish: Fixed text wrapping in chart empty state, replaced plain emoji with modern SVG illustrations, and added thin custom desktop scrollbars.",
-      "Destructive Action Confirmations: Safe modal dialogs before deleting songs, loading demos, or clearing unsaved charts.",
-      "Unsaved Changes Guard: Browser beforeunload warning and in-app navigation dialog (Save & Leave, Discard, Cancel) preventing accidental loss of work.",
-      "Toast Notification System: Modern, non-blocking bottom-center toast alerts for save, cloud sync, export, transposition, and song deletion.",
-      "Stage Presentation Polish: Floating, high-visibility 'Exit Presentation' button with 3-second auto-fade, plus keyboard shortcut hints.",
-      "Mobile Transpose Stepper: Intuitive minus/plus stepper controls for mobile screens alongside the transpose slider.",
-      "Accessibility & Contrast (WCAG AA): High-contrast active tab styling in dark mode, visible keyboard focus rings, descriptive ARIA labels across all icon buttons, and 44px minimum touch targets on metronome controls.",
-      "Transpose Undo Stack: Integrated chord transposition into the 50-step undo/redo history stack.",
-      "Cross-Platform Shortcut Hints: Dynamically detects macOS (⌘S, ⌘Z) vs Windows/Linux (Ctrl+S, Ctrl+Z) for keyboard shortcuts, with a global Cmd/Ctrl+S save listener."
-    ],
-    "whatsNew": "Comprehensive UI/UX overhaul: desktop & laptop full-height split IDE, interactive syntax quick-start, metadata chips, live status badge, unsaved changes protection, destructive action modals, and mobile responsive navigation."
+      "Full-viewport desktop split editor + preview panes, syntax quick-start chips, metadata chips, and live Saved/Saving status dot.",
+      "Toast notification system, destructive action confirmations, unsaved changes protection, and 50-step transpose undo history.",
+      "Cross-platform Cmd/Ctrl+S keyboard shortcut hints, WCAG AA high-contrast focus rings, and floating Stage exit control."
+    ]
   },
   {
     "version": "1.4.1",
     "date": "2026-08-26",
+    "whatsNew": "Early AI Co-Writer prototype with BYOK settings, undoable actions, inline confirmations, and expanded About dialog.",
     "changes": [
-      "AI Action UI: Actions now securely execute UI commands with a new 'Undo' functionality.",
-      "Inline UI Confirmations: Safely clear your AI chat history without disruptive browser popups.",
-      "Smarter Gemini: The AI Co-Writer now perfectly understands all Sonata app features, settings, and navigation.",
-      "AI UX Polish: Modern Bot icon replaced the generic stars, and settings bugs were fixed."
-    ],
-    "whatsNew": "AI UI bugfixes, 'Undo' AI actions, and a smarter Co-Writer system prompt."
-  },
-  {
-    "version": "1.4.0",
-    "date": "2026-08-26",
-    "changes": [
-      "AI Co-Writer: Generate chords, format lyrics, and automate the UI directly via chat.",
-      "Bring Your Own Key (BYOK): Add your own free Google Gemini API key for unlimited AI access.",
-      "AI Settings UI: Easily manage your AI API key and fallback settings.",
-      "Enhanced About Sonata page with feature accordions and updated UI."
-    ],
-    "whatsNew": "AI Co-Writer with BYOK support and automated UI controls."
+      "Added initial Co-Writer panel with BYOK API settings, undoable automated actions, inline clear confirmations, and upgraded UI feedback."
+    ]
   },
   {
     "version": "1.3.1",
     "date": "2026-08-18",
+    "whatsNew": "Direct compact share links, embedded QR codes in PNG & PDF exports, mobile Edit/Preview switcher, user profile greeting, and persistent view state.",
     "changes": [
-      "Personalized profile greeting (Hi, [First Name]! e.g., Hi, Jethro!) with instant local caching.",
-      "Mobile & Tablet Editor view switcher: Edit, Preview, and Split mode toggling.",
-      "Full position and view persistence across page refreshes.",
-      "Direct ultra-shortened song/setlist sharing links without external URL shorteners.",
-      "Official embedded QR code generator for camera scanning in PNG & PDF exports.",
-      "Universal PWA app installation prompt across iOS, Android, and Desktop.",
-      "Enhanced responsive design for tablet, desktop, and mobile viewports."
-    ],
-    "whatsNew": "Instant view persistence on refresh, mobile Edit/Preview mode toggle, and personalized user profile greetings."
-  },
-  {
-    "version": "1.3.0",
-    "date": "2026-08-18",
-    "changes": [
-      "Ultra-shortened, direct song and setlist share links without external shorteners.",
-      "Embedded QR codes for fast camera scanning in PNG and PDF exports.",
-      "Google account profile greeting (Hi, [Name]) and persistent avatar display.",
-      "Precise timestamps with date and time on all song modifications.",
-      "Manual key override mode for Virtual Piano and Fretboard without automatic resets.",
-      "Seamless offline-first PWA caching and instant Google Drive auto-sync.",
-      "Enhanced responsive navigation across mobile, tablet, and desktop views."
-    ],
-    "whatsNew": "Direct links with embedded QR code exports, user profile greetings, precise timestamps, and full cross-device responsiveness."
+      "Direct ultra-shortened share links and scannable QR code generation inside PNG and PDF exports without third-party shorteners.",
+      "Mobile Edit/Preview/Split editor view switching, cross-refresh view persistence, and precise modification timestamps.",
+      "Personalized account greeting & cached avatar, manual key override for Piano/Fretboard, and universal PWA install support."
+    ]
   },
   {
     "version": "1.2.0",
     "date": "2026-08-17",
+    "whatsNew": "Cleaner responsive layout with offline Service Worker caching, optional Arranger auto-fill, and official Sonata navbar branding.",
     "changes": [
-      "Responsive sidebar drawer navigation for mobile and tablet screens.",
-      "Full offline Service Worker pre-caching for PWA installations.",
-      "Google account name auto-fill for the Arranger field.",
-      "Removed unnecessary toast notifications from instrument panels.",
-      "Optimized layout and whitespace for all screen sizes.",
-      "Official Sonata logo in the navbar."
-    ],
-    "whatsNew": "Cleaner responsive layout with a slide-out navigation menu and true offline compatibility."
+      "Full offline Service Worker precaching for installed PWAs, cleaner whitespace across viewports, and optional Google account Arranger auto-fill."
+    ]
   },
   {
     "version": "1.1.0",
     "date": "2026-08-15",
+    "whatsNew": "English & Filipino localization and interactive Capo transposing.",
     "changes": [
-      "Multi-language localization support (English & Filipino).",
-      "Manual key overrides and interactive Capo settings.",
-      "Guitar Capo support with transposed preview labels.",
-      "App versioning and internationalization."
-    ],
-    "whatsNew": "Localization and key transposing enhancements."
+      "Multi-language localization support (English & Filipino), manual key overrides, and Guitar Capo transposing with preview labels."
+    ]
   },
   {
     "version": "1.0.0",
     "date": "2026-08-10",
+    "whatsNew": "Initial release of Sonata.",
     "changes": [
-      "Initial release of Sonata.",
-      "Offline interactive chords editor, virtual piano, fretboard, and tuner.",
-      "Google Drive sync and zero-friction QR code sharing.",
-      "Circle of Fifths, Nashville Numbers, and Roman Numeral support."
-    ],
-    "whatsNew": "Initial release of the offline tool for musicians."
+      "Offline interactive chord chart editor, virtual piano, fretboard, chromatic tuner, Circle of Fifths, Nashville & Roman numerals, Google Drive sync, and QR sharing."
+    ]
   }
 ]

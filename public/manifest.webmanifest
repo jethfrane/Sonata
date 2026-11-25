@@ -52,8 +52,9 @@
       "url": "/songs?new=1",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/shortcut-new.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -62,8 +63,9 @@
       "url": "/play/metronome",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/shortcut-metro.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -72,8 +74,9 @@
       "url": "/play/tuner",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/shortcut-tuner.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -83,8 +86,9 @@
       "url": "/theory",
       "icons": [
         {
-          "src": "/icons/icon-192.png",
-          "sizes": "192x192"
+          "src": "/icons/shortcut-theory.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }

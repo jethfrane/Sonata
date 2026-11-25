@@ -1,5 +1,5 @@
 /* App shell. Desktop: a sidebar with navigation and recent songs.
-   Phone/tablet (< 1024px): a slim top bar and a bottom tab bar. */
+   Phone/tablet (< 1024px): a compact frosted top bar and a slim horizontal bottom tab bar. */
 
 .app { min-height: 100dvh; display: grid; grid-template-columns: var(--side-w) minmax(0, 1fr); }
 .main { min-width: 0; }
@@ -9,7 +9,7 @@
 .app[data-view="play"] #view-play { display: block; }
 
 .sidebar {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky; top: 0; z-index: var(--z-shell, 20);
   display: flex; flex-direction: column; gap: 18px;
   height: 100dvh; padding: 18px 14px 14px;
   border-right: 1px solid var(--line);
@@ -23,7 +23,7 @@ html[data-theme="dark"] .sidebar { background: color-mix(in srgb, var(--bg) 70%,
 .tabs { display: grid; gap: 2px; }
 .tab {
   position: relative; display: flex; align-items: center; gap: 12px;
-  min-height: 40px; padding: 0 10px; border: 0; border-radius: 10px;
+  min-height: 40px; padding: 0 10px; border: 0; border-radius: var(--radius-sm);
   background: transparent; color: var(--text-2); font-weight: 550; font-size: var(--fs-md); text-align: left;
   transition: background .16s var(--ease), color .16s var(--ease);
 }
@@ -39,12 +39,12 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
 .recent-list { display: grid; gap: 2px; overflow-y: auto; scrollbar-width: thin; align-content: start; }
 .recent-group-label { padding: 6px 10px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .recent-group-label:first-child { padding-top: 0; }
-.recent-row { position: relative; display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: 10px; transition: background .14s var(--ease); }
+.recent-row { position: relative; display: flex; align-items: center; gap: 2px; min-width: 0; border-radius: var(--radius-sm); transition: background .14s var(--ease); }
 .recent-row:hover { background: var(--surface-3); }
 .recent-row.active { background: var(--accent-soft); }
 .recent-item {
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px;
-  padding: 6px 8px; border: 0; border-radius: 10px;
+  padding: 6px 8px; border: 0; border-radius: var(--radius-sm);
   background: none; color: var(--text-2); text-align: left;
   transition: color .14s var(--ease);
 }
@@ -67,7 +67,7 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
 .side-foot { display: flex; align-items: center; gap: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
 .account-btn {
   position: relative; flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 9px;
-  min-height: 40px; padding: 0 10px 0 6px; border: 0; border-radius: 10px;
+  min-height: 40px; padding: 0 10px 0 6px; border: 0; border-radius: var(--radius-sm);
   background: transparent; font-weight: 600; font-size: var(--fs-sm); color: var(--text-2); text-align: left;
 }
 .account-btn:hover { background: var(--surface-3); }
@@ -77,7 +77,6 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
 .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .account-btn[data-status="synced"] .account-label { color: var(--success); }
 .account-btn[data-status="expired"] .account-label, .account-btn[data-status="error"] .account-label { color: var(--warning); }
-/* Songs only on this device: a small amber dot on the Back up button. */
 .account-btn[data-unprotected] .account-avatar { position: relative; overflow: visible; }
 .account-btn[data-unprotected] .account-avatar::after { content: ""; position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 0 2px var(--bg); }
 .sync-dot { position: absolute; left: 26px; top: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface-2); background: var(--muted); }
@@ -97,7 +96,7 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
 .tool-back { min-height: 34px; padding: 0 12px 0 8px; gap: 4px; border-radius: 999px; color: var(--muted); font-size: var(--fs-sm); font-weight: 600; }
 .tool-back:hover { color: var(--text); background: var(--surface-3); }
 .tool-back .icon { width: 16px; height: 16px; }
-.tools-hub { display: grid; gap: 28px; }
+.tools-hub { display: grid; gap: 24px; }
 .tools-group { display: grid; gap: 12px; }
 .tools-group-title { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
@@ -116,14 +115,13 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
 }
 .tool-card-ico .icon { width: 20px; height: 20px; }
 .tool-card-body { flex: 1; min-width: 0; display: grid; gap: 3px; }
-.tool-card-title { font-size: var(--fs-md); font-weight: 650; letter-spacing: -.01em; color: var(--text); line-height: 1.25; }
+.tool-card-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: var(--fs-md); font-weight: 650; letter-spacing: -.01em; color: var(--text); line-height: 1.25; }
+.tool-ctx-pill { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font: 700 11px/1.3 var(--mono); }
 .tool-card-desc { font-size: var(--fs-sm); color: var(--muted); line-height: 1.4; }
 .tool-card-go { flex: none; align-self: center; color: var(--muted); opacity: .65; transition: transform .16s var(--ease), opacity .16s var(--ease), color .16s var(--ease); }
 .tool-card-go .icon { width: 18px; height: 18px; }
 .tool-card:hover .tool-card-go { opacity: 1; color: var(--accent-strong); transform: translateX(2px); }
 
-/* Small laptops and tablets in landscape: a narrower sidebar leaves the chart room for two panes. */
-/* Desktop: Back up gets its own full-width row so its status is never cut short; Help, theme and Settings sit under it. */
 @media (min-width: 1024px) {
   .side-foot { flex-wrap: wrap; row-gap: 2px; }
   .account-btn { flex: 1 1 100%; }
@@ -132,55 +130,77 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
   :root { --side-w: 204px; --gutter: 20px; }
 }
 
-/* ---------- Phone & tablet shell ---------- */
+/* ---------- Mobile-first phone & tablet shell ---------- */
 @media (max-width: 1023px) {
-  :root { --top-h: 56px; --nav-h: 60px; --gutter: 18px; }
+  :root { --top-h: 48px; --nav-h: 54px; --gutter: 16px; }
   .app { display: block; }
   .sidebar {
-    height: calc(var(--top-h) + env(safe-area-inset-top)); flex-direction: row; align-items: center; gap: 8px;
-    padding: env(safe-area-inset-top) max(10px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
-    border-right: 0; border-bottom: 1px solid var(--line);
-    background: var(--bg);
+    height: calc(var(--top-h) + env(safe-area-inset-top)); flex-direction: row; align-items: center; gap: 6px;
+    padding: env(safe-area-inset-top) max(8px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+    border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+    backdrop-filter: saturate(180%) blur(18px); -webkit-backdrop-filter: saturate(180%) blur(18px);
   }
-  html[data-theme="dark"] .sidebar { background: var(--bg); }
-  .brand { padding: 0; }
-  .brand img { width: 28px; height: 28px; }
+  html[data-theme="dark"] .sidebar { background: color-mix(in srgb, var(--surface) 92%, var(--bg)); }
+  .brand { padding: 0; gap: 8px; }
+  .brand img { width: 26px; height: 26px; border-radius: 8px; }
   .tabs, .side-recent { display: none; }
-  .side-foot { margin-left: auto; padding: 0; border: 0; gap: 2px; }
+  .side-foot { margin-left: auto; padding: 0; border: 0; gap: 0; }
   .account-btn { flex: none; padding: 0 10px 0 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); min-height: 38px; }
   .sync-dot { left: 24px; border-color: var(--surface); }
   .bottom-nav {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    height: calc(var(--nav-h) + env(safe-area-inset-bottom)); padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    background: var(--surface);
-    border-top: 1px solid var(--line);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-nav, 25);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    padding: 4px max(8px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+    backdrop-filter: saturate(180%) blur(18px); -webkit-backdrop-filter: saturate(180%) blur(18px);
+    border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
   }
-  .bn { min-width: 0; display: grid; justify-items: center; align-content: center; gap: 3px; border: 0; background: none; color: var(--muted); font-size: var(--fs-2xs); font-weight: 650; }
-  .bn [data-icon] { display: grid; place-items: center; width: 52px; height: 28px; border-radius: 999px; transition: background .15s; }
-  .bn .icon { width: 21px; height: 21px; }
-  .bn.active { color: var(--accent-strong); }
-  .bn.active [data-icon] { background: var(--accent-soft); }
+  .bn {
+    min-width: 0; min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    border: 0; border-radius: 12px; background: none; color: var(--muted); font-size: var(--fs-xs); font-weight: 650;
+    transition: background .15s, color .15s;
+  }
+  .bn [data-icon] { display: grid; place-items: center; flex: none; }
+  .bn .icon { width: 19px; height: 19px; }
+  .bn.active { color: var(--accent-strong); background: var(--accent-soft); }
   .main { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
-  .page { padding: 20px var(--gutter) 32px; }
+  .page { padding: 16px var(--gutter) 28px; }
 }
 @media (min-width: 641px) and (max-width: 1023px) {
   .tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
-  :root { --gutter: 14px; --fs-2xl: calc(23px * var(--ts)); --fs-3xl: calc(23px * var(--ts)); --fs-xl: calc(18px * var(--ts)); }
-  .page { padding: 14px var(--gutter) 24px; }
-  .page-head { margin-bottom: 14px; }
-  .tools-hub { gap: 22px; }
-  .tools-grid { grid-template-columns: 1fr; gap: 10px; }
-  .tool-card { padding: 14px; gap: 12px; }
+  :root { --top-h: 42px; --nav-h: 46px; --gutter: 10px; --fs-2xl: calc(18px * var(--ts)); --fs-3xl: calc(18px * var(--ts)); --fs-xl: calc(16px * var(--ts)); }
+  .brand { gap: 6px; min-height: 36px; }
+  .brand img { width: 23px; height: 23px; border-radius: 7px; }
+  .wordmark { font-size: 15px; }
+  #helpBtn { display: none; }
+  .side-foot .icon-btn { width: 34px; height: 34px; }
+  .side-foot .icon { width: 17px; height: 17px; }
   .account-label { display: none; }
-  .account-btn { width: 38px; padding: 0; justify-content: center; }
-  .account-btn[data-unprotected] .account-avatar::after { top: 3px; right: 3px; width: 8px; height: 8px; }
-  .sync-dot { left: 22px; top: 4px; }
-  .wordmark { font-size: 17px; }
-}
-@media (max-width: 360px) {
-  #themeBtn { display: none; }
+  .account-btn { width: 34px; height: 34px; min-height: 34px; padding: 0; border: 0; background: transparent; justify-content: center; }
+  .account-avatar { width: 25px; height: 25px; }
+  .account-avatar .icon { width: 15px; height: 15px; }
+  .account-btn[data-unprotected] .account-avatar::after { top: 1px; right: 1px; width: 7px; height: 7px; }
+  .sync-dot { left: 20px; top: 4px; }
+  .bn { min-height: 36px; border-radius: 9px; font-size: 11.5px; gap: 5px; }
+  .bn .icon { width: 16px; height: 16px; }
+  .page { padding: 8px var(--gutter) 16px; }
+  .page-head { margin-bottom: 8px; gap: 6px; align-items: center; }
+  .page-head > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; width: 100%; }
+  .page-sub { margin-top: 0; font-size: var(--fs-xs); }
+  #view-tools .page-sub, .tool-card-desc, .tool-card-go { display: none; }
+  .tools-hub { gap: 12px; }
+  .tools-group { gap: 6px; }
+  .tools-group-title { font-size: 10.5px; }
+  .tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .tool-card { flex-direction: column; align-items: flex-start; gap: 7px; padding: 10px 11px; border-radius: 12px; }
+  .tool-card-ico { width: 30px; height: 30px; border-radius: 8px; }
+  .tool-card-ico .icon { width: 16px; height: 16px; }
+  .tool-card-body { width: 100%; gap: 2px; }
+  .tool-card-title { font-size: 12.5px; line-height: 1.25; gap: 4px; }
+  .tool-ctx-pill { font-size: 10px; padding: 1px 5px; }
 }

@@ -122,7 +122,7 @@ export function createMcpHandler(io = {}) {
       }
       return sendJson(res, 200, {
         name: "sonata-mcp",
-        version: "7.5.0",
+        version: "7.6.0",
         protocolVersion: PROTOCOL_VERSION,
         transport: "streamable-http",
         status: "ok",
@@ -250,7 +250,7 @@ export function createMcpHandler(io = {}) {
             resources: { subscribe: false, listChanged: false },
             prompts: { listChanged: false }
           },
-          serverInfo: { name: "sonata", version: "7.5.0" },
+          serverInfo: { name: "sonata", version: "7.6.0" },
           instructions: SONATA_FORMAT_GUIDE
         });
       }

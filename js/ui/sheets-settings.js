@@ -34,6 +34,7 @@ export function openSettings() {
       <div id="soundsRow"><button class="btn wide" type="button" id="soundsBtn">${icon("download")}${esc(t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)"))}</button></div>
       ${standalone ? "" : `<button class="btn wide" type="button" id="installBtn">${icon("download")}${esc(t("install", "Install Sonata"))}</button>`}
       <div class="btn-row">
+        <button class="btn ghost" type="button" id="openHelpBtn">${icon("help")}${esc(t("help", "Help"))}</button>
         <button class="btn ghost" type="button" id="aboutBtn">${icon("info")}${esc(t("aboutTitle", "About Sonata"))}</button>
         <button class="btn ghost" type="button" id="resetSettings">${esc(t("resetSettings", "Reset settings"))}</button>
       </div>
@@ -95,6 +96,7 @@ export function openSettings() {
     if (id === "openBackupBtn") openBackup();
     if (id === "openAiMcpBtn") openBackup("ai");
     if (id === "installBtn") showInstall();
+    if (id === "openHelpBtn") { closeSheet(); document.getElementById("helpBtn")?.click(); }
     if (id === "aboutBtn") openAbout();
     if (id === "resetSettings") {
       const lang = s.language;
@@ -120,7 +122,7 @@ export async function openAbout() {
     wide: true,
     body: `<div class="about">
       <div class="about-head"><img src="/icons/icon.svg" alt="" width="56" height="56"><div><h3>Sonata <span class="version">v${esc(/** @type {any} */ (app).version || "")}</span></h3>
-      <p class="muted">Chord charts and music tools for every musician: gigs, practice, lessons and church. Made by Jethro Frane.</p></div></div>
+      <p class="muted">Chord charts, setlists and music tools for gigs, practice, lessons and worship teams.</p></div></div>
       <ul class="about-points">
         <li>Free, no account needed. Songs are saved on your device.</li>
         <li>Works offline after the first visit. Install it for the stage.</li>
@@ -128,7 +130,7 @@ export async function openAbout() {
         <li>A Song Bank is shared only when you publish it: one file in your own Drive that anyone with its link can read. Sonata stores no copy.</li>
         <li>No ads. Anonymous page-view counts only (Vercel Web Analytics, no cookies).</li>
       </ul>
-      <p class="about-links"><a href="/privacy" target="_blank" rel="noopener">${esc(t("privacyTerms", "Privacy & terms"))}</a><a href="https://jethrofrane.xyz" target="_blank" rel="noopener">${esc(t("contact", "Contact"))}</a></p>
+      <p class="about-links"><a href="/privacy" target="_blank" rel="noopener">${esc(t("privacyTerms", "Privacy & terms"))}</a></p>
       <h3 class="group-title">${esc(t("whatsNew", "What's new"))}</h3>
       <div class="changelog" id="changelog"><p class="muted">…</p></div>
     </div>`

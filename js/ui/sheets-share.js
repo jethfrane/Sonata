@@ -39,34 +39,38 @@ async function qrPng(url, title) {
   const ui = "'Inter Variable', Inter, system-ui, sans-serif";
   await Promise.all([document.fonts?.load(`800 44px ${ui}`), document.fonts?.load(`600 30px ${ui}`)]).catch(() => {});
   await document.fonts?.ready;
-  g.fillStyle = "#eef2f8"; g.fillRect(0, 0, W, H);
-  // White card
+  g.fillStyle = "#f4f5f7"; g.fillRect(0, 0, W, H);
+  // White card with Sonata accent bar
   const cx = 70, cy = 70, cw = W - 140, ch = H - 140;
   g.fillStyle = "#ffffff"; g.beginPath(); g.roundRect(cx, cy, cw, ch, 40); g.fill();
+  g.strokeStyle = "#e1e4ea"; g.lineWidth = 2; g.stroke();
+  g.save(); g.beginPath(); g.roundRect(cx, cy, cw, ch, 40); g.clip();
+  g.fillStyle = "#3b5bdb"; g.fillRect(cx, cy, cw, 10);
+  g.restore();
   // Brand row
   try {
-    const logo = new Image(); logo.src = "/icons/icon-512.png"; await logo.decode();
-    g.drawImage(logo, cx + 56, cy + 52, 72, 72);
+    const logo = new Image(); logo.src = "/icons/icon.svg"; await logo.decode();
+    g.drawImage(logo, cx + 56, cy + 56, 72, 72);
   } catch { /* logo is optional */ }
-  g.fillStyle = "#0f172a"; g.textBaseline = "middle"; g.textAlign = "left"; g.font = `800 44px ${ui}`;
-  g.fillText("Sonata", cx + 148, cy + 88);
+  g.fillStyle = "#1c2027"; g.textBaseline = "middle"; g.textAlign = "left"; g.font = `800 44px ${ui}`;
+  g.fillText("Sonata", cx + 148, cy + 92);
   // QR: integer module size, 4-module quiet zone, black on white for the best scan rate.
   const quiet = 4, box = 700;
   const mod = Math.max(2, Math.floor(box / (qr.n + quiet * 2)));
   const side = mod * (qr.n + quiet * 2);
-  const qx = Math.round((W - side) / 2), qy = cy + 170;
+  const qx = Math.round((W - side) / 2), qy = cy + 174;
   g.fillStyle = "#fff"; g.fillRect(qx, qy, side, side);
-  g.fillStyle = "#0b1220";
+  g.fillStyle = "#131519";
   for (let r = 0; r < qr.n; r++) for (let col = 0; col < qr.n; col++) if (qr.dark(r, col)) g.fillRect(qx + (col + quiet) * mod, qy + (r + quiet) * mod, mod, mod);
-  g.strokeStyle = "#e2e8f0"; g.lineWidth = 2; g.strokeRect(qx - 1, qy - 1, side + 2, side + 2);
+  g.strokeStyle = "#e1e4ea"; g.lineWidth = 2; g.strokeRect(qx - 1, qy - 1, side + 2, side + 2);
   // Title + hint
-  g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#0f172a"; g.font = `800 52px ${ui}`;
+  g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = "#1c2027"; g.font = `800 52px ${ui}`;
   const lines = wrapLines(g, title, cw - 160, 2);
-  let ty = qy + side + 92;
+  let ty = qy + side + 90;
   for (const l of lines) { g.fillText(l, W / 2, ty); ty += 62; }
-  g.fillStyle = "#475569"; g.font = `600 30px ${ui}`;
-  g.fillText("Scan with your phone camera to open it in Sonata", W / 2, ty + 14);
-  g.fillStyle = "#94a3b8"; g.font = `600 26px ${ui}`;
+  g.fillStyle = "#5a6170"; g.font = `600 30px ${ui}`;
+  g.fillText("Scan with your phone camera to open in Sonata", W / 2, ty + 14);
+  g.fillStyle = "#5a6170"; g.font = `600 25px ${ui}`;
   g.fillText("sonata.jethrofrane.xyz", W / 2, cy + ch - 44);
   return new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("png"))), "image/png"));
 }
@@ -197,7 +201,12 @@ export async function openShare(setId) {
     }
     if (b.id === "shareCopyText" && song) {
       const txt = `${song.title}\n\n${linesToText(buildLines(song.body, renderOptions(song)))}`;
-      if (await copyText(txt)) toast(t("copied", "Copied"), "success");
+      if (await copyText(txt)) {
+        toast(t("copied", "Copied"), "success");
+        const prev = b.innerHTML;
+        b.innerHTML = `${icon("check")}${esc(t("copied", "Copied!"))}`;
+        setTimeout(() => { if (b.isConnected) b.innerHTML = prev; }, 1600);
+      }
     }
     if (b.id === "shareNative") { try { await navigator.share({ title: `${curTitle} · Sonata`, url: currentShareLink() }); } catch { /* cancelled */ } }
     if (b.id === "qrZoom" && svg) {
@@ -220,7 +229,14 @@ export async function openShare(setId) {
       if (b.id === "liveStart" && await copyText(liveSetUrl(updated?.liveId || "", updated?.title || curTitle))) toast(t("liveCopied", "Live link copied. Send it to the band."), "success", { ms: 4500 });
       else toast(t("livePublished", "The live link is up to date."), "success");
     });
-    if (curSet && b.id === "liveCopy") { if (await copyText(liveSetUrl(curSet.liveId || "", curSet.title))) toast(t("linkCopied", "Link copied"), "success"); }
+    if (curSet && b.id === "liveCopy") {
+      if (await copyText(liveSetUrl(curSet.liveId || "", curSet.title))) {
+        toast(t("linkCopied", "Link copied"), "success");
+        const prev = b.innerHTML;
+        b.innerHTML = `${icon("check")}${esc(t("copied", "Copied!"))}`;
+        setTimeout(() => { if (b.isConnected) b.innerHTML = prev; }, 1600);
+      }
+    }
     if (curSet && b.id === "liveStop") busy(b, async () => {
       if (await stopLiveSet(curSet.id)) { body.innerHTML = draw(); toast(t("liveStopped", "The live link is off. The setlist is private again."), "info"); }
       else toast(t("bankStopFailed", "Couldn't stop sharing. Check your connection and sign-in."), "error");

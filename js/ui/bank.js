@@ -3,6 +3,7 @@
 // and upcoming gigs, then publish one file to their own Google Drive. Visitor side
 // (/bank/<id>/<name>): a view-only page with search, gigs and a chart in any key.
 // No Sonata server stores anything.
+import "../../css/bank.css";
 import { $, esc, icon, openSheet, closeSheet, paintIcons, toast, copyText } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, soundingKey, tick } from "./ctx.js";

@@ -484,7 +484,7 @@ export function renderLibrary() {
 
   if (filter === "setlists") {
     if (!store.setlists.length) {
-      list.innerHTML = empty(t("emptySetlistsTitle", "No setlists yet"), t("emptySetlistsText", "Group songs for a gig, a rehearsal or a service, then play them in order on stage."), `<button class="btn primary" type="button" data-act="create-set">${icon("plus")}${esc(t("createSetlist", "Create a setlist"))}</button>`);
+      list.innerHTML = empty(t("emptySetlistsTitle", "No setlists yet"), t("emptySetlistsText", "Group songs for a gig, a rehearsal or a service, then play them in order on stage."), `<button class="btn primary" type="button" data-act="create-set">${icon("plus")}${esc(t("createSetlist", "Create a setlist"))}</button>`, "list");
       return;
     }
     const allTags = [...new Set(store.setlists.flatMap((s) => s.tags || []))];
@@ -502,7 +502,7 @@ export function renderLibrary() {
     if (q) sets = sets.filter((s) => fold(`${s.title} ${s.description} ${(s.tags || []).join(" ")} ${store.setlistSongs(s).map((x) => x.title).join(" ")}`).includes(q));
 
     if (!sets.length) {
-      list.innerHTML = tagBar + empty(t("noMatches", "No matches for \"{q}\"", { q: query || setTagFilter }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`);
+      list.innerHTML = tagBar + empty(t("noMatches", "No matches for \"{q}\"", { q: query || setTagFilter }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`, "search");
       return;
     }
     const pg = paginate(sets);
@@ -538,10 +538,10 @@ export function renderLibrary() {
 
   const bankCard = filter === "bank" ? `<div class="bank-card"><div><b>${esc(store.bank.fileId ? t("bankIsLive", "Your Song Bank is live") : t("songBank", "Song Bank"))}</b><p class="muted">${esc(store.bank.fileId ? t("bankLiveSub", "{n} songs · people scan your QR to browse", { n: store.songs.filter((x) => x.inBank).length }) : t("bankPitch", "List the songs you know or offer. People scan your QR, browse your songs, read charts in their key and support you."))}</p></div><button class="btn primary" type="button" data-act="bank">${icon(store.bank.fileId ? "share" : "bank")}${esc(store.bank.fileId ? t("manageShare", "Manage & share") : t("setUpBank", "Set up"))}</button></div>` : "";
   if (!songs.length && !favSetlists.length) {
-    if (filter === "bank") { list.innerHTML = bankCard + empty(t("songBank", "Song Bank"), t("bankNoSongs", "No songs in your Song Bank yet. Open Set up, or use a song's ⋮ menu → Add to Song Bank."), ""); paintIcons(list); return; }
+    if (filter === "bank") { list.innerHTML = bankCard + empty(t("songBank", "Song Bank"), t("bankNoSongs", "No songs in your Song Bank yet. Open Set up, or use a song's ⋮ menu → Add to Song Bank."), "", "bank"); paintIcons(list); return; }
     list.innerHTML = q
-      ? empty(t("noMatches", "No matches for \"{q}\"", { q: query }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`)
-      : empty(t("filterFavorites", "Favorites"), t("noFavorites", "No favorites yet. Tap the star on a song."), `<button class="btn" type="button" data-act="all">${esc(t("showAllSongs", "Show all songs"))}</button>`);
+      ? empty(t("noMatches", "No matches for \"{q}\"", { q: query }), "", `<button class="btn" type="button" data-act="clear">${esc(t("clearSearch", "Clear search"))}</button>`, "search")
+      : empty(t("filterFavorites", "Favorites"), t("noFavorites", "No favorites yet. Tap the star on a song."), `<button class="btn" type="button" data-act="all">${esc(t("showAllSongs", "Show all songs"))}</button>`, "star");
     return;
   }
 
@@ -570,24 +570,26 @@ export function renderLibrary() {
     const badges = [
       s.pinned ? `<span class="meta-pill pill-pin">${icon("pin")}${esc(t("pinned", "Pinned"))}</span>` : "",
       s.inBank ? `<span class="meta-pill pill-live">${esc(store.bank.fileId ? t("statusLiveBank", "Live") : t("statusInBank", "Bank"))}</span>` : "",
-      s.origin ? `<span class="meta-pill pill-shared">${esc(t("statusShared", "Shared"))}</span>` : "",
-      sets.length ? `<span class="meta-pill pill-set">${esc(sets.length === 1 ? sets[0] : t("inNSetlists", "{n} sets", { n: sets.length }))}</span>` : ""
+      s.origin ? `<span class="meta-pill pill-shared">${esc(t("statusShared", "Shared"))}</span>` : ""
+    ].filter(Boolean).join("");
+    const mCore = [s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean).map(esc).join(" · ");
+    const mMore = [s.genre, s.mood].filter(Boolean).map(esc).join(" · ");
+    const mSpecs = (mCore || mMore) ? `${mCore}${mMore ? `<span class="row-extra">${mCore ? " · " : ""}${mMore}</span>` : ""}` : "";
+    const specs = [
+      mSpecs ? `<span class="row-music-specs${mCore ? " has-core" : ""}">${mSpecs}</span>` : "",
+      sets.length ? `<span class="meta-pill pill-set">${esc(sets.length <= 2 ? sets.join(", ") : t("inNSetlists", "{n} sets", { n: sets.length }))}</span>` : ""
     ].filter(Boolean).join("");
     const updated = s.updatedAt ? t("updatedWhen", "Updated {when}", { when: relativeTime(s.updatedAt, lang) }) : "";
-    const sub = [
-      s.artist,
-      s.genre,
-      s.mood,
-      s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : "",
-      s.bpm ? `${s.bpm} BPM` : "",
-      updated
-    ].filter(Boolean).map(esc).join(" · ");
+    const sMain = esc(s.artist || "");
+    const sMore = [s.creator ? `arr. ${s.creator}` : "", updated].filter(Boolean).map(esc).join(" · ");
+    const sub = (sMain || sMore) ? `${sMain}${sMore ? `<span class="row-extra">${sMain ? " · " : ""}${sMore}</span>` : ""}` : "";
     return `<div class="row${s.id === activeId ? " active" : ""}" data-id="${esc(s.id)}">
       <button type="button" class="row-main" data-act="open">
         <span class="key-badge" title="${esc(t("key", "Key"))}">${esc(k)}</span>
         <span class="row-text">
           <span class="row-title-line"><span class="row-title">${esc(s.title)}</span>${badges ? `<span class="row-badges">${badges}</span>` : ""}</span>
-          <span class="row-sub">${sub}</span>
+          ${sub ? `<span class="row-sub${sMain ? " has-main" : ""}">${sub}</span>` : ""}
+          ${specs ? `<span class="row-specs">${specs}</span>` : ""}
         </span>
       </button>
       <div class="row-hover-acts">
@@ -613,8 +615,9 @@ function renderPeek(shown) {
   host.dataset.id = s.id;
   document.querySelectorAll("#libraryList .row[data-id]").forEach((r) => r.classList.toggle("peeked", r.getAttribute("data-id") === s.id));
   const k = pretty(keyShort(soundingKey(s)));
-  const meta = [s.artist, s.genre, s.mood, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean);
+  const meta = [s.artist, s.creator ? `arr. ${s.creator}` : "", s.genre, s.mood, s.bpm ? `${s.bpm} BPM` : "", s.capo ? t("capoN", "Capo {n}", { n: s.capo }) : ""].filter(Boolean);
   host.innerHTML = `<header class="peek-head"><span class="key-badge">${esc(k)}</span><div class="peek-title"><h2>${esc(s.title)}</h2>${meta.length ? `<div class="peek-meta">${meta.map((m) => `<span class="chip static muted">${esc(m)}</span>`).join("")}</div>` : ""}</div></header>
+    ${s.description?.trim() ? `<p class="card-hint">${esc(s.description.trim())}</p>` : ""}
     <div class="peek-actions"><button class="btn primary" type="button" id="peekEdit">${icon("edit")}${esc(t("editChart", "Edit chart"))}</button><button class="btn" type="button" id="peekPresent">${icon("present")}${esc(t("present", "Present"))}</button><button class="btn" type="button" id="peekShare">${icon("share")}${esc(t("share", "Share"))}</button></div>
     <div class="chart peek-chart">${s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s))) : `<p class="chart-empty">${esc(t("stageEmpty", "This song has no chart yet."))}</p>`}</div>`;
 }

@@ -28,9 +28,9 @@ Three clean tabs (**Songs · Chart · Tools**), plus a public Song Bank and buil
 - **Chart**: chords above the lyrics or inline (`[G]Amazing`), plus one-tap **Format** (`Auto-Format`) in the editor header to normalize raw pasted chord charts into clean `## Section` headers, strip voicing legends, fix slash-bass typos (`D/F#m` → `D/F#`), collapse stray blank gaps, and wrap overly long lines. Chords stay over the right word even when a line wraps on a phone. Chord chips insert at the cursor. Autosave, undo and redo per song.
   - **Key button**: transpose, song key override, capo override (shows the shapes you actually play), sharps or flats, and *Write into chart* to make the new key permanent.
   - **Views**: Chords, Chords only, Nashville numbers, Roman numerals, or lyrics only.
-  - **Present**: big stage text, auto-scroll that pauses when you touch, setlist navigation, page-turner pedals (Page Down/Up: one screen per press, then the next song), metronome, three stage colors, screen stays awake, optional full screen on a computer.
+  - **Present**: big stage text, auto-scroll that pauses when you touch, setlist navigation, page-turner pedals (Page Down/Up: one screen per press, then the next song), metronome, four stage colors (OLED black, charcoal, warm amber, light paper), screen stays awake, optional full screen on a computer.
   - **Live setlist link**: publish a setlist once from your own Google Drive; Sonata checks for updates automatically when opening Chart/Stage or refocusing the tab and shows a one-tap **Update** banner while each player keeps their own key and capo. No accounts or database.
-  - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG (9:16 portrait or 16:9 landscape, previewed first, with multi-song setlists and Copy image), TXT and print in the same sheet. Old Sonata links still open.
+  - **Share**: a link or QR code that carries the song itself, plus PDF (whole setlists too), PNG (9:16 portrait or 16:9 landscape, previewed first, with multi-song setlists and Copy image), TXT, ChordPro (`.cho`), and print in the same sheet. Old Sonata links still open.
 - **Tools** (`/tools`): a calm, dedicated Tools Hub grouping Harmony & Reference and Practice & Stage tools, each with a `← All tools` back pill:
   - **Chord Finder** (`/chords`): type or pick any chord (slash chords too: `Am7/G`, `D/F#`) and see it on guitar and ukulele (every playable shape, the chord-book one first), bass (where its notes are) and piano, with a direct jump to **Chord Builder**. Tap a chord in a chart for the same view. Links like `/chords/Am7` open straight to it.
   - **Circle of Fifths** (`/theory`): explore Major and Minor keys with the key family highlighted, Roman/Nashville numerals on each wedge, key signature, relative key, and the chords of the key to tap or press-and-hold to sustain. Switching to **Minor** rearranges the circle itself so Minor keys occupy the primary outer ring (`Am` at 12 o'clock) and Relative Major keys sit on the inner ring.
@@ -41,7 +41,7 @@ Instrument sounds are saved on the device the first time they are played (or all
 
 **AI Agents & MCP** (Settings → AI Agents & MCP, or Back up → AI Agents & MCP):
 - **Browser WebMCP & JS Bridge**: registers **18 tools** (with MCP `annotations`) via `navigator.modelContext` and exposes `window.sonataAgent` (`tools()`, `call(name, args)`, `guide`) for in-browser AI assistants.
-- **Remote MCP Server** (`https://sonata.jethrofrane.xyz/api/mcp`): Streamable HTTP JSON-RPC 2.0 server (`v7.3.0`) providing **7 public music & chart tools** anonymously (`extract_chords_from_url`, `analyze_chord_chart`, `format_chord_chart`, `build_sonata_link`, `lookup_chord`, `transpose_chart`, `get_key_info`) and all **18 tools** (including optional `mood` / `genre` filtering, library & setlist CRUD, and 30-day Trash safety) when authenticated via Google Drive OAuth 2.1 + PKCE (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`).
+- **Remote MCP Server** (`https://sonata.jethrofrane.xyz/api/mcp`): Streamable HTTP JSON-RPC 2.0 server (`v7.6.0`) providing **7 public music & chart tools** anonymously (`extract_chords_from_url`, `analyze_chord_chart`, `format_chord_chart`, `build_sonata_link`, `lookup_chord`, `transpose_chart`, `get_key_info`) and all **18 tools** (including optional `mood` / `genre` filtering, library & setlist CRUD, and 30-day Trash safety) when authenticated via Google Drive OAuth 2.1 + PKCE (`/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server`).
 - **Machine-Readable Docs & Local CLI/Stdio MCP**: `/llms.txt` and `/llms-full.txt` document all tools and chart syntax for Gemini / Gemini Tasks, Antigravity, Claude, and OpenAI / ChatGPT; `scripts/sonata-cli.mjs` runs `node scripts/sonata-cli.mjs tools|guide|call|mcp` locally. See [docs/mcp-connect.md](docs/mcp-connect.md) and [CHANGELOG.md](CHANGELOG.md).
 
 **Backup & restore** (the Back up button): one sheet that says whether your songs are safe. Google Drive backup to one file only Sonata can see (`sonata_library.json`), a one-tap backup file with a checksum (on a phone it opens the share sheet), restore from a file, and **earlier versions**: a copy of the library is kept on the device when the app opens after changes (the last 15) and before every restore.
@@ -80,7 +80,7 @@ A small, framework-free app: plain JavaScript modules typed with JSDoc (checked 
 
 ```
 index.html             every screen (Songs, Chart, Tools Hub + tool views), the stage and one dialog
-css/                   tokens, base controls, shell, views, lazy music tools, lazy backup/help, overlays
+css/                   tokens, base controls, shell, views, stage, bank, lazy music tools, overlays
 js/main.js             start-up, 3-tab routing, service worker; loads each tool screen on first use
 js/router.js           URL for every screen and song (/tools, /tools/key-finder, /song/<slug>/stage…)
 js/core/               music theory, chart layout, storage + 30-day Trash, share links, pitch detection,
@@ -99,7 +99,7 @@ scripts/sonata-cli.mjs local CLI and stdio JSON-RPC 2.0 MCP server for sonata_li
 public/                icons, manifest, release notes, screenshots, boot.js (theme before first paint)
 ```
 
-- **Fast start**: first-load JS is ~42.5 KB gzipped and first-load CSS is ~16.4 KB gzipped; hashed files are cached for a year, the page itself always revalidates.
+- **Fast start**: first-load JS stays within a 50 KB gzip budget (`stage.css`, `bank.css`, music tools, exports, and dialogs load on demand); hashed files are cached for a year while pages revalidate.
 - **Offline**: core app assets precache on first visit. New versions show a *Reload* prompt instead of swapping silently mid-song.
 - **Install**: web app manifest with home-screen shortcuts (New song, Metronome, Tuner, Theory) and install screenshots.
 
@@ -126,5 +126,3 @@ BASE=http://127.0.0.1:5391 node tests/screenshots.mjs       # refresh the screen
 Release notes live in `CHANGELOG.md` and `public/update_log.json` (shown inside the app under Settings → About). Bump `package.json` and `public/version.json` with each release. Pushes to `main` deploy to Vercel, and the only public address is https://sonata.jethrofrane.xyz (no GitHub Pages, no `*.vercel.app` alias).
 
 Data formats are stable: songs, setlists, 30-day trash and settings stay under the `sonata:v12:*` storage keys, and `?s=` share links keep the v1/v4 format, so older libraries and links keep working.
-
-Made by Jethro Frane.

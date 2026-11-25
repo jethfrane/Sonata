@@ -127,9 +127,11 @@ export function initEditor() {
     store.update(s, { title: title().value });
     updateMeta();
   });
+  title().addEventListener("focus", syncTitleFull);
   title().addEventListener("blur", () => {
     const s = store.active();
     if (s && !s.readonly && !s.title.trim()) { store.update(s, { title: "Untitled" }); title().value = "Untitled"; }
+    syncTitleFull();
   });
   body().addEventListener("input", () => {
     const s = store.active();
@@ -145,7 +147,7 @@ export function initEditor() {
     queueRender(true);
   });
   let sizeQueued = false;
-  window.addEventListener("resize", () => { if (!sizeQueued) { sizeQueued = true; requestAnimationFrame(() => { sizeQueued = false; autosize(); if (!previewHidden()) fitPreview(); }); } }, { passive: true });
+  window.addEventListener("resize", () => { if (!sizeQueued) { sizeQueued = true; requestAnimationFrame(() => { sizeQueued = false; autosize(); syncTitleFull(); if (!previewHidden()) fitPreview(); }); } }, { passive: true });
   body().addEventListener("keydown", (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
@@ -449,10 +451,11 @@ function queueRender(typing = false) {
   if (typing) setTimeout(go, 80); else go();
 }
 
-/** Phones: work out the size at which the widest line fits, so chords stay over their words. */
+/** Phones & split-pane tablets: work out the size at which the widest line fits, so chords stay over their words. */
 function fitPreview() {
   const out = $("preview");
-  const px = matchMedia("(max-width: 640px)").matches && store.settings.viewMode !== "lyrics" ? fitChart(out, 13) : 0;
+  const fit = matchMedia("(max-width: 640px), (min-width: 961px) and (max-width: 1279px)").matches;
+  const px = fit && store.settings.viewMode !== "lyrics" ? fitChart(out, 12) : 0;
   if (!px) { out.style.removeProperty("--chart-fit"); return; }
   out.style.setProperty("--chart-fit", `${px}px`);
 }
@@ -487,6 +490,15 @@ function updateQuickstart() {
   $("quickstart").hidden = Boolean(s && (s.body.trim() || s.readonly));
 }
 
+function syncTitleFull() {
+  const el = document.getElementById("songTitleFull");
+  if (!el) return;
+  const inp = title();
+  const v = inp.value.trim();
+  el.textContent = v;
+  el.classList.toggle("overflown", Boolean(v) && document.activeElement !== inp && inp.scrollWidth > inp.clientWidth + 4);
+}
+
 function updateMeta() {
   const s = store.active();
   const chips = $("metaChips");
@@ -494,15 +506,14 @@ function updateMeta() {
   const k = soundingKey(s);
   const tr = effectiveTranspose(s);
   const capo = effectiveCapo(s);
+  const by = [s.artist ? `<b>${esc(s.artist)}</b>` : "", s.bpm ? `${s.bpm} BPM` : ""].filter(Boolean).join(" · ");
+  const ex = [s.creator ? `arr. ${esc(s.creator)}` : "", s.genre, s.mood].filter(Boolean).map(esc).join(" · ");
   const parts = [];
-  if (s.artist) parts.push(`<span class="chip static" title="${esc(s.artist)}">${esc(s.artist)}</span>`);
+  if (by || ex) parts.push(`<span class="song-byline${by ? " has-main" : ""}">${by}${ex ? `<span class="meta-extra">${by ? " · " : ""}${ex}</span>` : ""}</span>`);
+  if (s.description?.trim()) parts.push(`<span class="song-cue">${esc(s.description.trim())}</span>`);
   parts.push(`<button type="button" class="chip key" data-open-key="key" title="${esc(t("keyAndCapo", "Key & capo"))}">${esc(t("key", "Key"))} ${esc(pretty(keyShort(k)))}${tr ? ` <small>${esc(signed(tr))}</small>` : ""}</button>`);
-  parts.push(`<button type="button" class="chip${capo ? "" : " muted"}" data-open-key="capo" title="${esc(t("capo", "Capo"))}">${capo ? esc(t("capoN", "Capo {n}", { n: capo })) : `+ ${esc(t("capo", "Capo"))}`}</button>`);
-  if (s.bpm) parts.push(`<span class="chip static">${s.bpm} BPM</span>`);
-  if (s.mood) parts.push(`<span class="chip static">${esc(s.mood)}</span>`);
-  if (s.creator) parts.push(`<span class="chip static muted">arr. ${esc(s.creator)}</span>`);
-  const chipsHtml = parts.join("");
-  setHtml(chips, chipsHtml);
+  parts.push(`<button type="button" class="chip${capo ? "" : " muted"}" data-open-key="capo" title="${esc(t("capo", "Capo"))}">${capo ? `${esc(t("capoN", "Capo {n}", { n: capo }))} · ${esc(pretty(keyShort(shapeKey(s))))}` : `+ ${esc(t("capo", "Capo"))}`}</button>`);
+  setHtml(chips, parts.join(""));
   const links = (s.links || []).map((l) => {
     const href = safeHref(l.url);
     const rawName = (l.name || "").trim();
@@ -523,7 +534,14 @@ function updateMeta() {
   paintLinkChips();
   $("editorHeading").textContent = s.title || t("untitled", "Untitled");
   $("keyPillValue").textContent = pretty(keyShort(k));
+  const kc = document.getElementById("keyPillCapo");
+  if (kc) {
+    const sub = [tr ? signed(tr) : "", capo ? `C${capo}` : ""].filter(Boolean).join("·");
+    kc.hidden = !sub;
+    kc.textContent = sub;
+  }
   $("keyPill").title = `${t("keyAndCapo", "Key & capo")}: ${pretty(k.name)}`;
+  requestAnimationFrame(syncTitleFull);
   const stats = $("editStats");
   if (stats) {
     if (!s.body.trim()) { stats.textContent = ""; }

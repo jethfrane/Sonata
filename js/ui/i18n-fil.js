@@ -684,7 +684,11 @@ const FIL = {
   tagWorship: "Worship",
   unfavorite: "Alisin sa Paborito",
   unpin: "I-unpin",
-  updatedWhen: "Na-update {when}"
+  updatedWhen: "Na-update {when}",
+  stageOled: "OLED",
+  stageDim: "Madilim",
+  stageAmber: "Amber",
+  stageLight: "Maliwanag"
 };
 
 export default FIL;
