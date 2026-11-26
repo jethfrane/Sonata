@@ -196,7 +196,6 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .quickstart-chips::-webkit-scrollbar { display: none; }
 .quickstart-chips .chip { flex: none; min-height: 30px; }
 .pane-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 3px 10px 3px 16px; border-bottom: 1px solid color-mix(in srgb, var(--line) 85%, transparent); background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
-.preview-label { display: none; }
 .preview-head { position: absolute; top: 8px; right: 8px; z-index: 2; display: flex; align-items: center; min-height: 0; padding: 0; border: 0; background: none; }
 #copyChartBtn { background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: 9px; }
 #copyChartBtn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--line-strong); }
@@ -215,7 +214,6 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
 .edit-pill-btn { border: 1px solid var(--line); background: var(--surface); color: var(--text-2); cursor: pointer; transition: border-color .14s, color .14s, background .14s; }
 .edit-pill-btn:hover { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
 .edit-stats { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.preview-label { font-size: var(--fs-xs); font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #preview { flex: 1; overflow: auto; padding: 18px clamp(20px, 2.8vw, 40px) 36px; font-size: min(var(--chart-size), var(--chart-fit, 100px)); }
 .song-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 .song-links .mini-label { margin: 0 6px 0 0; }
@@ -326,7 +324,6 @@ html[data-theme="dark"] .key-pill { background: var(--surface-3); box-shadow: no
   .view-mode { order: 5; width: 100%; display: flex; padding: 2px; border-radius: 9px; }
   .view-mode button { flex: 1 0 auto; min-height: 26px; min-width: 0; padding: 0 6px; font-size: 11px; border-radius: 7px; }
   .pane-preview { position: relative; border-radius: 14px; }
-  .preview-label { display: none; }
   .preview-head { position: absolute; top: 4px; right: 4px; z-index: 2; min-height: 0; padding: 0; border: 0; background: none; }
   #copyChartBtn { width: 28px; height: 28px; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(6px); border-radius: 8px; }
   #copyChartBtn .icon { width: 14px; height: 14px; }

@@ -116,7 +116,7 @@ export function openHelp() {
       <h3 class="group-title">${esc(l.how)}</h3>
       <div class="help-topics">${l.topics.map(([q, a]) => `<details class="help-topic"><summary>${esc(/** @type {string} */ (q))}${icon("chevron")}</summary><div>${/** @type {string[]} */ (a).map(part).join("")}</div></details>`).join("")}</div>
       <div class="btn-row">
-        <button class="btn ghost" type="button" id="helpBackup">${icon("cloud")}${esc(l.backup)}</button>
+        <button class="btn ghost" type="button" id="helpBackup">${icon("gdrive")}${esc(l.backup)}</button>
         <button class="btn ghost" type="button" id="helpAbout">${icon("info")}${esc(l.whatsNew)}</button>
       </div>
     </div>`

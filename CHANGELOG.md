@@ -2,7 +2,7 @@
 
 All notable changes to **Sonata** are documented here, following [Semantic Versioning](https://semver.org/).
 
-## [7.7.0] - 2026-11-26
+## [7.7.1] - 2026-11-26
 
 ### Added & Improved
 - **Live Transposed-Key Editing & Per-Mode Chart Customization**: `#songBody` now displays and edits chords in the exact active transposed/capo key (`js/ui/editor.js`, `js/core/store.js`, `js/ui/ctx.js`) while preserving `sonata:v12:*` and `?s=` compatibility; non-Chords views (`Chords only`, `Numbers`, `Roman`, `Lyrics`) support optional independent edits (`Edit separately`) with 1-tap `Reset`.

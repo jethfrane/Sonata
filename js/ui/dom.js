@@ -94,8 +94,7 @@ ICONS.chevron = ICONS["chevron-right"];
 
 /** @param {string} name @param {string} [cls] */
 export function icon(name, cls = "icon") {
-  const brand = name === "gdrive";
-  return `<svg class="${cls}${brand ? " icon-brand" : ""}" viewBox="0 0 24 24" fill="none"${brand ? "" : ' stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true" focusable="false">${ICONS[name] || ICONS.music}</svg>`;
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none"${name === "gdrive" ? "" : ' stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true" focusable="false">${ICONS[name] || ICONS.music}</svg>`;
 }
 
 /** Replace every [data-icon] placeholder with its SVG. @param {ParentNode} [root] */

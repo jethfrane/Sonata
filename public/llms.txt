@@ -17,7 +17,7 @@ App: https://sonata.jethrofrane.xyz
 - [Metronome](https://sonata.jethrofrane.xyz/play/metronome)
 - [Privacy & terms](https://sonata.jethrofrane.xyz/privacy): What stays on the device and what Drive backup can see.
 
-## AI Agents & MCP (v7.7.0)
+## AI Agents & MCP (v7.7.1)
 - **Full Machine-Readable Docs:** `https://sonata.jethrofrane.xyz/llms-full.txt`
 - **Remote MCP Server (Streamable HTTP JSON-RPC 2.0):** `https://sonata.jethrofrane.xyz/api/mcp`
   - Anonymous callers receive **7 public music & chart tools** (`extract_chords_from_url`, `analyze_chord_chart`, `format_chord_chart`, `build_sonata_link`, `lookup_chord`, `transpose_chart` including `chords-only`, `get_key_info`), each tagged with MCP 2025-03-26 `annotations` (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`).

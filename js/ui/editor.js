@@ -493,20 +493,6 @@ export function renderPreview() {
   // Replacing identical markup would restart the page's layout and drop a tapped chord's highlight.
   setHtml(out, html);
   fitPreview();
-  const k = soundingKey(s);
-  const labels = {
-    chords: t("chordsMode", "Chords"),
-    "chords-only": t("chordsOnlyMode", "Chords only"),
-    nashville: t("numbersMode", "Nashville numbers"),
-    roman: t("romanMode", "Roman numerals"),
-    lyrics: t("lyricsMode", "Lyrics only")
-  };
-  let label = `${labels[/** @type {"chords"} */ (mode)] || ""}`;
-  const capo = effectiveCapo(s);
-  if ((mode === "chords" || mode === "chords-only") && capo) label += ` · ${t("capoShapes", "Capo {n} · {key} shapes", { n: capo, key: pretty(keyShort(shapeKey(s))) })}`;
-  else if (mode === "nashville" || mode === "roman") label += ` · ${pretty(keyShort(writtenKey(s)))}`;
-  else if (mode === "chords-only") label += ` · ${t("keyOf", "Key of {key}", { key: pretty(keyShort(k)) })}`;
-  $("previewLabel").textContent = label;
 }
 
 function updateQuickstart() {
