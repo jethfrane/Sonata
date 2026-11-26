@@ -29,11 +29,13 @@ export function openSettings() {
       <label class="switch-row"><span>${esc(t("autoArranger", "Add my name as arranger"))}</span><input type="checkbox" class="toggle" data-set="autoFillArranger"${s.autoFillArranger ? " checked" : ""}></label>
       <h3 class="group-title">${esc(t("data", "Data & backup"))}</h3>
       <p class="card-hint" id="storageNote">${esc(t("storageLocal", "Your songs are saved on this device."))}</p>
-      <button class="btn wide" type="button" id="openBackupBtn">${icon("cloud")}${esc(t("backupTitle", "Backup & restore"))}</button>
-      <button class="btn wide" type="button" id="openAiMcpBtn">${icon("sparkles")}${esc(t("aiMcpTitle", "AI Agents & MCP"))}</button>
-      <div id="soundsRow"><button class="btn wide" type="button" id="soundsBtn">${icon("download")}${esc(t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)"))}</button></div>
-      ${standalone ? "" : `<button class="btn wide" type="button" id="installBtn">${icon("download")}${esc(t("install", "Install Sonata"))}</button>`}
-      <div class="btn-row">
+      <div class="settings-actions">
+        <button class="btn wide" type="button" id="openBackupBtn">${icon("gdrive")}${esc(t("backupTitle", "Backup & restore"))}</button>
+        <button class="btn wide" type="button" id="openAiMcpBtn">${icon("sparkles")}${esc(t("aiMcpTitle", "AI Agents & MCP"))}</button>
+        <div id="soundsRow"><button class="btn wide" type="button" id="soundsBtn">${icon("download")}${esc(t("soundsKeep", "Keep instrument sounds on this device (3.8 MB)"))}</button></div>
+        ${standalone ? "" : `<button class="btn wide" type="button" id="installBtn">${icon("download")}${esc(t("install", "Install Sonata"))}</button>`}
+      </div>
+      <div class="settings-foot">
         <button class="btn ghost" type="button" id="openHelpBtn">${icon("help")}${esc(t("help", "Help"))}</button>
         <button class="btn ghost" type="button" id="aboutBtn">${icon("info")}${esc(t("aboutTitle", "About Sonata"))}</button>
         <button class="btn ghost" type="button" id="resetSettings">${esc(t("resetSettings", "Reset settings"))}</button>

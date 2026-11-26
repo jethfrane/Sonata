@@ -688,7 +688,16 @@ const FIL = {
   stageOled: "OLED",
   stageDim: "Madilim",
   stageAmber: "Amber",
-  stageLight: "Maliwanag"
+  stageLight: "Maliwanag",
+  showPerPage: "{n} / pahina",
+  customView: "Custom",
+  resetView: "I-reset",
+  editSeparately: "I-edit nang hiwalay",
+  editingInKey: "Key {key}",
+  modeCustomReady: "Ini-edit nang hiwalay ang view na ito",
+  modeCustomReset: "Ibinalik sa sync sa Chords",
+  chordImagePreview: "Larawan ng chord",
+  downloadPng: "I-download ang PNG"
 };
 
 export default FIL;

@@ -325,65 +325,80 @@ function playSampleVoice(ac, kind, midi, sample, vel, t) {
   // Velocity-sensitive lowpass filter (soft touches sound warmer, harder hits open harmonics)
   const lp = ac.createBiquadFilter();
   lp.type = "lowpass";
-  const maxCut = kind === "bass" ? 1100 + vel * 3400 : kind === "piano" ? 7500 + vel * 12500 : 2500 + vel * 11000;
-  lp.frequency.setValueAtTime(Math.min(20000, maxCut), t);
+  const maxCut = kind === "bass" ? 950 + vel * 1450 : kind === "piano" ? 5200 + vel * 8800 : kind === "uke" ? 4200 + vel * 5800 : 3800 + vel * 6400;
+  lp.frequency.setValueAtTime(Math.min(18000, maxCut), t);
 
-  // Instrument body resonance & studio presence EQ
+  // Instrument body resonance & balanced studio EQ
   const body = ac.createBiquadFilter();
   /** @type {BiquadFilterNode|null} */
   let presence = null;
   /** @type {BiquadFilterNode|null} */
   let air = null;
   if (kind === "piano") {
-    // Tight low-end + bright studio grand presence (2.6 kHz) + sparkling air shelf (5.8 kHz)
-    body.type = "highpass"; body.frequency.value = 78; body.Q.value = 0.7;
+    body.type = "highpass"; body.frequency.value = 62; body.Q.value = 0.7;
     presence = ac.createBiquadFilter();
-    presence.type = "peaking"; presence.frequency.value = 2600; presence.Q.value = 0.85; presence.gain.value = 4.2;
+    presence.type = "peaking"; presence.frequency.value = 2400; presence.Q.value = 0.9; presence.gain.value = 1.8;
     air = ac.createBiquadFilter();
-    air.type = "highshelf"; air.frequency.value = 5800; air.gain.value = 5.2;
+    air.type = "highshelf"; air.frequency.value = 6200; air.gain.value = 1.6;
   } else if (kind === "guitar") {
-    body.type = "peaking"; body.frequency.value = 120; body.Q.value = 1.1; body.gain.value = 2.4;
+    body.type = "peaking"; body.frequency.value = 140; body.Q.value = 1.0; body.gain.value = 2.2;
+    presence = ac.createBiquadFilter();
+    presence.type = "peaking"; presence.frequency.value = 3000; presence.Q.value = 1.1; presence.gain.value = 1.4;
   } else if (kind === "uke") {
-    body.type = "peaking"; body.frequency.value = 340; body.Q.value = 1.2; body.gain.value = 2.2;
+    body.type = "peaking"; body.frequency.value = 360; body.Q.value = 1.1; body.gain.value = 2.0;
   } else {
-    body.type = "peaking"; body.frequency.value = 88; body.Q.value = 1.0; body.gain.value = 3.0;
+    body.type = "highpass"; body.frequency.value = 38; body.Q.value = 0.7;
+    presence = ac.createBiquadFilter();
+    presence.type = "peaking"; presence.frequency.value = 92; presence.Q.value = 1.0; presence.gain.value = 2.6;
+    air = ac.createBiquadFilter();
+    air.type = "peaking"; air.frequency.value = 720; air.Q.value = 1.2; air.gain.value = 2.2;
   }
 
   const out = ac.createGain();
-  const baseGain = kind === "piano" ? 0.88 : kind === "bass" ? 0.84 : kind === "uke" ? 0.72 : 0.76;
-  const peakGain = Math.max(0.05, baseGain * (0.38 + 0.62 * vel));
+  const baseGain = kind === "piano" ? 0.76 : kind === "bass" ? 0.80 : kind === "uke" ? 0.68 : 0.70;
+  const peakGain = Math.max(0.05, baseGain * (0.4 + 0.6 * vel));
+  const holdDur = kind === "bass" ? 0.42 : kind === "uke" ? 0.35 : kind === "guitar" ? 0.55 : 0.60;
+  const maxDur = kind === "bass" ? 1.35 : kind === "uke" ? 1.55 : kind === "guitar" ? 2.15 : 2.35;
   out.gain.setValueAtTime(0.0001, t);
-  out.gain.linearRampToValueAtTime(peakGain, t + 0.0025);
+  out.gain.linearRampToValueAtTime(peakGain, t + 0.004);
+  out.gain.setTargetAtTime(peakGain * 0.48, t + 0.015, holdDur * 0.9);
+  out.gain.setValueAtTime(peakGain * 0.44, t + holdDur);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + maxDur);
 
   if (presence && air) {
     src.connect(body).connect(presence).connect(air).connect(lp).connect(out);
-    // Crisp hammer-strike attack transient so piano notes have immediate studio definition
-    const f = midiToFreq(midi);
-    const click = ac.createBufferSource();
-    click.buffer = noiseBuffer(ac, 0.024);
-    const bp = ac.createBiquadFilter();
-    bp.type = "bandpass"; bp.frequency.value = Math.min(5600, Math.max(1400, f * 4.2)); bp.Q.value = 1.4;
-    const cg = ac.createGain();
-    cg.gain.setValueAtTime(0.085 * vel, t);
-    cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.02);
-    click.connect(bp).connect(cg).connect(out);
-    click.start(t);
+    if (kind === "piano") {
+      // Soft felt hammer-strike transient for natural piano definition
+      const f = midiToFreq(midi);
+      const click = ac.createBufferSource();
+      click.buffer = noiseBuffer(ac, 0.018);
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = Math.min(4800, Math.max(1200, f * 3.6)); bp.Q.value = 1.4;
+      const cg = ac.createGain();
+      cg.gain.setValueAtTime(0.032 * vel, t);
+      cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.016);
+      click.connect(bp).connect(cg).connect(out);
+      click.start(t);
+    }
+  } else if (presence) {
+    src.connect(body).connect(presence).connect(lp).connect(out);
   } else {
     src.connect(body).connect(lp).connect(out);
   }
   const pan = kind === "piano" ? (midi - 60) * 0.012 : kind === "bass" ? 0 : (midi - 58) * 0.008;
-  const rev = kind === "piano" ? 0.16 : kind === "bass" ? 0.06 : 0.18;
+  const rev = kind === "piano" ? 0.14 : kind === "bass" ? 0.04 : kind === "uke" ? 0.12 : 0.14;
   routeToStudioBus(ac, out, pan, rev);
 
   src.start(t, sample.entry.offset);
+  try { src.stop(t + maxDur + 0.06); } catch { /* already stopped */ }
   let stopped = false;
-  const defaultRel = kind === "piano" ? 0.55 : 0.65;
+  const defaultRel = kind === "bass" ? 0.25 : kind === "piano" ? 0.35 : 0.4;
   return {
     stop(release = defaultRel) {
       if (stopped || !ctx) return;
       stopped = true;
       const now = Math.max(t + 0.015, ctx.currentTime);
-      const rel = Math.max(0.08, Math.min(release, 2.4));
+      const rel = Math.max(0.06, Math.min(release, 1.4));
       out.gain.cancelScheduledValues(now);
       out.gain.setValueAtTime(Math.max(0.0001, out.gain.value), now);
       out.gain.exponentialRampToValueAtTime(0.0001, now + rel);
@@ -426,15 +441,15 @@ export function piano(midi, vel = 0.72, when = 0) {
 
   // Instant studio physical-modeling fallback
   const f = midiToFreq(midi);
-  const decay = Math.max(1.8, Math.min(7.5, 8.0 - (midi - 36) * 0.09));
+  const decay = Math.max(1.5, Math.min(2.5, 3.0 - (midi - 36) * 0.025));
   const out = ac.createGain();
   out.gain.setValueAtTime(0.0001, t);
-  out.gain.linearRampToValueAtTime(0.42 * vel, t + 0.004);
-  out.gain.exponentialRampToValueAtTime(0.18 * vel, t + 0.32);
+  out.gain.linearRampToValueAtTime(0.38 * vel, t + 0.004);
+  out.gain.exponentialRampToValueAtTime(0.16 * vel, t + 0.28);
   out.gain.exponentialRampToValueAtTime(0.0001, t + decay);
 
   const body = ac.createBiquadFilter();
-  body.type = "peaking"; body.frequency.value = 2600; body.Q.value = 0.85; body.gain.value = 3.6;
+  body.type = "peaking"; body.frequency.value = 2400; body.Q.value = 0.9; body.gain.value = 1.8;
   const lp = ac.createBiquadFilter();
   lp.type = "lowpass";
   lp.frequency.setValueAtTime(Math.min(18000, f * (9 + vel * 9)), t);
@@ -590,10 +605,15 @@ export function pluck(midi, kind = "guitar", vel = 0.8, when = 0) {
   tone.type = "lowpass";
   tone.frequency.value = kind === "bass" ? 2400 : kind === "uke" ? 7200 : 6800;
   const g = ac.createGain();
-  g.gain.setValueAtTime(0.56 * vel, t);
+  const maxDur = kind === "bass" ? 1.35 : kind === "uke" ? 1.55 : 2.15;
+  const peak = 0.54 * vel;
+  g.gain.setValueAtTime(peak, t);
+  g.gain.setValueAtTime(peak * 0.52, t + maxDur * 0.32);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + maxDur);
   src.connect(body).connect(topPlate).connect(tone).connect(g);
-  routeToStudioBus(ac, g, kind === "bass" ? 0 : (midi - 58) * 0.008, kind === "bass" ? 0.06 : 0.18);
+  routeToStudioBus(ac, g, kind === "bass" ? 0 : (midi - 58) * 0.008, kind === "bass" ? 0.04 : 0.14);
   src.start(t);
+  try { src.stop(t + maxDur + 0.06); } catch { /* not started */ }
   let stopped = false;
   return {
     stop(release = 0.8) {

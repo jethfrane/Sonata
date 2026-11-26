@@ -1,12 +1,11 @@
 // @ts-check
 import { $, $$, esc, icon, toast, copyText, paintIcons, setIcon, fitChart } from "./dom.js";
 import { t } from "./i18n.js";
-import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, nudgeTranspose, effectiveCapo, effectiveTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
+import { store, app, writtenKey, soundingKey, shapeKey, renderOptions, chartForMode, nudgeTranspose, effectiveCapo, effectiveTranspose, signed, tick, findCopy, adoptShared } from "./ctx.js";
 import { buildLines, linesToHtml, linesToText, uniqueChords, friendlyLinkName } from "../core/chart.js";
-import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, parseChord, transposeChord, prefersFlats } from "../core/music.js";
+import { keyShort, pretty, isChordLine, CHORD_TYPES, chordsForKey, mapChords, transposeChord, prefersFlats } from "../core/music.js";
 import { openKeySheet, openDetails, openShare, openChordSheet, openLinksImport, openSongSwitcher } from "./sheets-lazy.js";
 import { safeHref } from "../core/share.js";
-import { loneLink } from "../core/import.js";
 
 export const DEMO_SONG = {
   title: "Auld Lang Syne",
@@ -140,7 +139,7 @@ export function initEditor() {
     clearTimeout(historyTimer);
     historyTimer = setTimeout(() => pushHistory(s.id, body().value), 500);
     h.redo = [];
-    store.update(s, { body: body().value });
+    saveBodyText(s, body().value);
     autosize();
     followCaret();
     updateHistoryButtons();
@@ -157,10 +156,14 @@ export function initEditor() {
     const s = store.active();
     if (!s || s.readonly || body().value.trim()) return;
     const pasted = e.clipboardData?.getData("text/plain")?.trim() || "";
-    const url = loneLink(pasted);
-    if (!url) return;
+    if (!/https?:\/\//i.test(pasted) || /(\?s=|\/q\/|\/share\/)/i.test(pasted)) return;
+    if (!/^https?:\/\/\S+$/i.test(pasted) && pasted.split(/\r?\n/).filter((l) => l.trim()).length > 4) return;
     e.preventDefault();
-    openLinksImport(url);
+    import("../core/import.js").then(({ loneLink }) => {
+      const url = loneLink(pasted);
+      if (url) openLinksImport(url);
+      else insertAtCursor(pasted);
+    }).catch(() => insertAtCursor(pasted));
   });
   $("undoBtn").addEventListener("click", undo);
   $("redoBtn").addEventListener("click", redo);
@@ -183,7 +186,8 @@ export function initEditor() {
   $("copyChartBtn").addEventListener("click", async () => {
     const s = store.active();
     if (!s) return;
-    const text = `${s.title}\n\n${linesToText(buildLines(s.body, renderOptions(s)))}`;
+    const src = chartForMode(s);
+    const text = `${s.title}\n\n${linesToText(buildLines(src.text, src.opts))}`;
     if (await copyText(text)) {
       toast(t("copied", "Copied"), "success");
       const btn = $("copyChartBtn");
@@ -193,6 +197,25 @@ export function initEditor() {
         btn.classList.add("copied");
         setTimeout(() => { if (ic.isConnected) setIcon(ic, "copy"); btn.classList.remove("copied"); }, 1500);
       }
+    }
+  });
+  $("editModeBar")?.addEventListener("click", (e) => {
+    const btn = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-mode-act]"));
+    const s = store.active();
+    if (!btn || !s || s.readonly) return;
+    const mode = /** @type {"chords-only"|"nashville"|"roman"|"lyrics"} */ (store.settings.viewMode);
+    if (btn.dataset.modeAct === "fork") {
+      const rendered = linesToText(buildLines(s.body, renderOptions(s, mode)));
+      store.update(s, { modes: { ...(s.modes || {}), [mode]: rendered } });
+      syncBodyInput(true);
+      body().focus();
+      toast(t("modeCustomReady", "Editing this view separately"), "info");
+    } else if (btn.dataset.modeAct === "reset") {
+      const next = { ...(s.modes || {}) };
+      delete next[mode];
+      store.update(s, { modes: Object.keys(next).length ? next : undefined });
+      syncBodyInput(true);
+      toast(t("modeCustomReset", "Synced back to Chords"), "info");
     }
   });
   $("saveSharedBtn").addEventListener("click", () => {
@@ -230,7 +253,7 @@ export function initEditor() {
   try { barType = localStorage.getItem("sonata_bar_type") || "triad"; } catch { /* ignore */ }
   $("chordBar").addEventListener("click", (e) => {
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest("[data-chord]"));
-    if (b) insertChord(toWritten(b.dataset.chord || ""));
+    if (b) insertChord(b.dataset.chord || "");
   });
   $("chordBar").addEventListener("change", (e) => {
     const el = /** @type {HTMLSelectElement} */ (e.target);
@@ -326,7 +349,7 @@ function step(dir) {
   to.push(h.last);
   h.last = value;
   body().value = value;
-  store.update(s, { body: value });
+  saveBodyText(s, value);
   autosize();
   followCaret();
   updateHistoryButtons();
@@ -447,7 +470,7 @@ function setHtml(el, html) { if (shown.get(el) !== html) { el.innerHTML = html; 
 function queueRender(typing = false) {
   if (renderQueued) return;
   renderQueued = true;
-  const go = () => requestAnimationFrame(() => { renderQueued = false; if (!previewHidden()) renderPreview(); updateMeta(); updateQuickstart(); renderChordBar(); });
+  const go = () => requestAnimationFrame(() => { renderQueued = false; if (!typing) syncBodyInput(); if (!previewHidden()) renderPreview(); updateMeta(); updateQuickstart(); renderChordBar(); });
   if (typing) setTimeout(go, 80); else go();
 }
 
@@ -465,7 +488,8 @@ export function renderPreview() {
   const out = $("preview");
   if (!s) { setHtml(out, ""); return; }
   const mode = /** @type {any} */ (store.settings.viewMode);
-  const html = s.body.trim() ? linesToHtml(buildLines(s.body, renderOptions(s, mode))) : `<div class="chart-empty">${esc(t("preview", "Preview"))}</div>`;
+  const src = chartForMode(s, mode);
+  const html = src.text.trim() ? linesToHtml(buildLines(src.text, src.opts)) : `<div class="chart-empty">${esc(t("preview", "Preview"))}</div>`;
   // Replacing identical markup would restart the page's layout and drop a tapped chord's highlight.
   setHtml(out, html);
   fitPreview();
@@ -571,15 +595,65 @@ function renderChordBar() {
   if (bar.dataset.html !== html) { bar.innerHTML = html; bar.dataset.html = html; }
 }
 
-/** The chord as it must be typed into the chart (the chart is stored in its written key). @param {string} chord */
-function toWritten(chord) {
+/** Semitone shift between stored written key and displayed editing key (0 when editing a custom per-mode chart). @param {import("../core/store.js").Song} s */
+function editSteps(s) {
+  const mode = store.settings.viewMode;
+  if (mode !== "chords" && s.modes && typeof s.modes[/** @type {"lyrics"} */ (mode)] === "string") return 0;
+  return effectiveTranspose(s) - effectiveCapo(s);
+}
+
+/** Text shown in #songBody: custom per-mode text if customized, else main chart transposed into the exact active key. @param {import("../core/store.js").Song} s */
+function displayBodyText(s) {
+  const mode = store.settings.viewMode;
+  if (mode !== "chords" && s.modes && typeof s.modes[/** @type {"lyrics"} */ (mode)] === "string") return s.modes[/** @type {"lyrics"} */ (mode)] || "";
+  const steps = editSteps(s);
+  if (!steps) return s.body || "";
+  const flats = prefersFlats(shapeKey(s), /** @type {any} */ (store.settings.enharmonicPref));
+  return mapChords(s.body || "", (c) => transposeChord(c, steps, flats));
+}
+
+/** Persist #songBody edits back to either the active custom mode or the stored written key. @param {import("../core/store.js").Song} s @param {string} val */
+function saveBodyText(s, val) {
+  const mode = store.settings.viewMode;
+  if (mode !== "chords" && s.modes && typeof s.modes[/** @type {"lyrics"} */ (mode)] === "string") {
+    store.update(s, { modes: { ...s.modes, [mode]: val } });
+    return;
+  }
+  const steps = editSteps(s);
+  if (!steps) { store.update(s, { body: val }); return; }
+  const flats = prefersFlats(writtenKey(s), /** @type {any} */ (store.settings.enharmonicPref));
+  store.update(s, { body: mapChords(val, (c) => transposeChord(c, -steps, flats)) });
+}
+
+let lastEditKey = "";
+/** Keep #songBody synced when song, key, capo, or view mode changes. @param {boolean} [force] */
+function syncBodyInput(force = false) {
   const s = store.active();
-  const c = parseChord(chord);
-  if (!s || !c) return chord;
-  const steps = effectiveTranspose(s) - effectiveCapo(s);
-  if (!steps) return chord;
-  const written = writtenKey(s);
-  return transposeChord(c, -steps, prefersFlats(written, /** @type {any} */ (store.settings.enharmonicPref)));
+  if (!s) return;
+  const mode = store.settings.viewMode;
+  const isCustom = mode !== "chords" && Boolean(s.modes && typeof s.modes[/** @type {"lyrics"} */ (mode)] === "string");
+  const sig = `${s.id}|${mode}|${isCustom ? 1 : 0}|${editSteps(s)}|${store.settings.enharmonicPref}`;
+  const ta = body();
+  if (force || sig !== lastEditKey || document.activeElement !== ta) {
+    const next = displayBodyText(s);
+    if (ta.value !== next) ta.value = next;
+    lastEditKey = sig;
+  }
+  const bar = document.getElementById("editModeBar");
+  if (!bar) return;
+  if (s.readonly) { bar.hidden = true; return; }
+  if (mode !== "chords") {
+    bar.hidden = false;
+    bar.innerHTML = isCustom
+      ? `<span class="edit-pill">${esc(t("customView", "Custom"))}</span><button type="button" class="edit-pill-btn" data-mode-act="reset">${esc(t("resetView", "Reset"))}</button>`
+      : `<button type="button" class="edit-pill-btn" data-mode-act="fork">${esc(t("editSeparately", "Edit separately"))}</button>`;
+  } else if (editSteps(s) !== 0) {
+    bar.hidden = false;
+    bar.innerHTML = `<span class="edit-pill">${esc(t("editingInKey", "Key {key}", { key: pretty(keyShort(shapeKey(s))) }))}</span>`;
+  } else {
+    bar.hidden = true;
+    bar.innerHTML = "";
+  }
 }
 
 function updateSetlistBar() {
@@ -646,8 +720,9 @@ export function loadSong() {
   if (id !== loadedId) { loadedId = id; setPane(!ro && !s?.body.trim() ? "edit" : "preview"); }
   title().value = s ? (s.title === "Untitled" && !s.body ? "" : s.title) : "";
   title().readOnly = ro;
-  body().value = s?.body || "";
+  body().value = s ? displayBodyText(s) : "";
   body().readOnly = ro;
+  lastEditKey = "";
   $("sharedBanner").hidden = !ro;
   if (s) hist(s.id);
   setSaveState(ro ? "readonly" : "saved");
@@ -661,6 +736,7 @@ export function loadSong() {
 export function refreshEditor() {
   const mode = store.settings.viewMode;
   $$("button[data-mode]").forEach((b) => { const on = b.dataset.mode === mode; b.classList.toggle("active", on); b.setAttribute("aria-pressed", String(on)); });
+  syncBodyInput();
   updateMeta();
   updateQuickstart();
   renderChordBar();

@@ -18,6 +18,7 @@ const wide = matchMedia("(min-width: 900px)");
 let peekId = "";
 /** Items shown per page across all tabs; keeps pages short & fast. */
 const PAGE_SIZE = 12;
+const MAX_PAGE_SIZE = 50;
 let page = 1;
 let showAllRows = false;
 /** @type {ReturnType<typeof setTimeout>|undefined} */
@@ -338,19 +339,20 @@ function sortSetlists(sort, sets) {
 /** @template T @param {T[]} items */
 function paginate(items) {
   const total = items.length;
-  if (showAllRows || total <= PAGE_SIZE) {
-    return { slice: items, total, page: 1, totalPages: 1, start: total ? 1 : 0, end: total };
+  const per = showAllRows ? MAX_PAGE_SIZE : PAGE_SIZE;
+  if (total <= per) {
+    return { slice: items, total, page: 1, totalPages: 1, start: total ? 1 : 0, end: total, per };
   }
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / per));
   page = Math.max(1, Math.min(totalPages, page));
-  const offset = (page - 1) * PAGE_SIZE;
-  return { slice: items.slice(offset, offset + PAGE_SIZE), total, page, totalPages, start: offset + 1, end: Math.min(total, offset + PAGE_SIZE) };
+  const offset = (page - 1) * per;
+  return { slice: items.slice(offset, offset + per), total, page, totalPages, start: offset + 1, end: Math.min(total, offset + per), per };
 }
 
-/** @param {{ total: number, page: number, totalPages: number, start: number, end: number }} pg */
+/** @param {{ total: number, page: number, totalPages: number, start: number, end: number, per: number }} pg */
 function pagerHtml(pg) {
   if (pg.total <= PAGE_SIZE) return "";
-  if (showAllRows) {
+  if (showAllRows && pg.totalPages === 1) {
     return `<div class="pager-bar"><span class="pager-info">${esc(t("showingAll", "Showing all {n}", { n: pg.total }))}</span><button type="button" class="btn small ghost" data-act="paged-rows">${esc(t("paginateRows", "Paginate ({n}/page)", { n: PAGE_SIZE }))}</button></div>`;
   }
   const nums = [];
@@ -358,6 +360,9 @@ function pagerHtml(pg) {
     if (i === 1 || i === pg.totalPages || Math.abs(i - pg.page) <= 1) nums.push(i);
     else if (nums[nums.length - 1] !== "…") nums.push("…");
   }
+  const toggleBtn = showAllRows
+    ? `<button type="button" class="btn small ghost pager-all" data-act="paged-rows">${esc(t("paginateRows", "Paginate ({n}/page)", { n: PAGE_SIZE }))}</button>`
+    : `<button type="button" class="btn small ghost pager-all" data-act="more-rows">${esc(pg.total <= MAX_PAGE_SIZE ? t("showAllRows", "Show all ({n})", { n: pg.total }) : t("showPerPage", "{n} / page", { n: MAX_PAGE_SIZE }))}</button>`;
   return `<nav class="pager-bar" aria-label="${esc(t("pagination", "Pages"))}">
     <span class="pager-info">${esc(t("showingRange", "{a}–{b} of {n}", { a: pg.start, b: pg.end, n: pg.total }))}</span>
     <div class="pager-controls">
@@ -366,7 +371,7 @@ function pagerHtml(pg) {
         ? `<span class="pager-dots" aria-hidden="true">…</span>`
         : `<button type="button" class="btn small pager-btn${n === pg.page ? " active" : " ghost"}" data-page="${n}"${n === pg.page ? ' aria-current="page"' : ""}>${n}</button>`).join("")}
       <button type="button" class="btn small ghost pager-btn" data-page="${pg.page + 1}"${pg.page >= pg.totalPages ? " disabled" : ""} aria-label="${esc(t("nextPage", "Next page"))}">${icon("chevron-right")}</button>
-      <button type="button" class="btn small ghost pager-all" data-act="more-rows">${esc(t("showAllRows", "Show all ({n})", { n: pg.total }))}</button>
+      ${toggleBtn}
     </div>
   </nav>`;
 }

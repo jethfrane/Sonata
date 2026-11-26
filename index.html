@@ -60,7 +60,7 @@
 
       <div class="side-foot">
         <button class="account-btn" id="accountBtn" type="button" aria-haspopup="dialog">
-          <span class="account-avatar" id="accountAvatar" data-icon="cloud"></span>
+          <span class="account-avatar" id="accountAvatar" data-icon="gdrive"></span>
           <span class="account-label" id="accountLabel" data-i18n="backup">Back up</span>
           <span class="sync-dot" id="syncDot" hidden></span>
         </button>
@@ -180,7 +180,10 @@
                 <button class="icon-btn small" id="redoBtn" type="button" aria-label="Redo" data-i18n-attr="aria-label:redo,title:redo"><span data-icon="redo"></span></button>
                 <button class="btn small ghost" id="autoFormatBtn" type="button" aria-label="Auto-format chart" title="Clean sections, chords & line wrapping" data-i18n-attr="title:autoFormatHint"><span data-icon="sparkles"></span><span data-i18n="autoFormat">Format</span></button>
               </div>
-              <span class="edit-stats" id="editStats" aria-live="off"></span>
+              <div class="edit-right">
+                <span class="edit-mode-bar" id="editModeBar" hidden></span>
+                <span class="edit-stats" id="editStats" aria-live="off"></span>
+              </div>
             </div>
             <div class="quickstart" id="quickstart">
               <p class="quickstart-text" data-i18n="quickText2">Chords above the words, or [G] inside them. Tap to add:</p>
@@ -230,15 +233,7 @@
                   <span class="tool-card-ico" data-icon="circle"></span>
                   <span class="tool-card-body">
                     <strong class="tool-card-title" data-i18n="theoryTitle">Circle of Fifths</strong>
-                    <span class="tool-card-desc" data-i18n="toolTheoryDesc">Major &amp; minor keys, signatures, relative keys &amp; diatonic chords.</span>
-                  </span>
-                  <span class="tool-card-go" data-icon="chevron-right"></span>
-                </button>
-                <button type="button" class="tool-card" data-open-tool="key-finder">
-                  <span class="tool-card-ico" data-icon="key"></span>
-                  <span class="tool-card-body">
-                    <strong class="tool-card-title" data-i18n="toolKeyFinder">Key Finder</strong>
-                    <span class="tool-card-desc" data-i18n="toolKeyFinderDesc">Type or tap chords from a song to find its key &amp; numerals.</span>
+                    <span class="tool-card-desc" data-i18n="toolTheoryDesc">Keys, diatonic chords &amp; Key Finder from any progression.</span>
                   </span>
                   <span class="tool-card-go" data-icon="chevron-right"></span>
                 </button>

@@ -12,6 +12,7 @@
   .edit-acts #autoFormatBtn { min-height: 44px; padding: 0 12px; }
   .details-btn { width: 44px; min-height: 44px; }
   .input, .select, .search input, .input.tiny, .share-link .input { min-height: 44px; }
+  .select { height: 44px; }
   .segmented { padding: 2px; }
   .segmented button { min-height: 44px; }
   .swatch { width: 44px; height: 44px; }
@@ -29,7 +30,8 @@
   .key-picker { gap: 6px; }
 }
 @media (max-width: 640px) {
-  .btn, label.btn, .select, .input, .search input { min-height: 34px; }
+  .btn, label.btn, .select, .input, .search input { min-height: 36px; }
+  .select { height: 36px; padding: 6px 30px 6px 11px; font-size: 14px; }
   .btn.small { min-height: 30px; }
   .icon-btn, .icon-btn.small, .editor-toolbar .icon-btn, .key-control .icon-btn { width: 32px; height: 32px; }
   .row .icon-btn { width: 30px; height: 30px; }

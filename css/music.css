@@ -185,8 +185,8 @@ html[data-theme="dark"] .pk.white { background: linear-gradient(#ecebef, #d6d5db
 .tuner-actions { grid-area: actions; }
 .tuner > .mini-label { grid-area: label; }
 .tuner-strings { grid-area: strings; display: flex; gap: 8px; flex-wrap: wrap; }
-.string-btn { display: inline-flex; align-items: baseline; gap: 2px; min-width: 54px; min-height: 44px; justify-content: center; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-weight: 700; font-size: 16px; }
-.string-btn small { font-size: 11px; color: var(--muted); }
+.string-btn { display: inline-flex; align-items: center; gap: 2px; min-width: 54px; min-height: 40px; height: 40px; justify-content: center; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); font-weight: 700; font-size: 15px; line-height: 1; }
+.string-btn small { font-size: 11px; font-weight: 600; color: var(--muted); }
 .string-btn:hover { border-color: var(--accent); }
 .string-btn.target { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
 
@@ -244,10 +244,11 @@ html[data-theme="dark"] .pk.white { background: linear-gradient(#ecebef, #d6d5db
   .play-controls { width: 100%; }
   .play-controls .select { flex: 1; }
   #view-play[data-inst="tuner"] .play-controls, #view-play[data-inst="metronome"] .play-controls, #view-play[data-inst="drums"] .play-controls { display: none; }
-  /* Phone tab bar: icon over a short label, so all five fit without cutting a word. */
-  .segmented.full.inst-tabs button { flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; min-height: 52px; padding: 4px 2px; font-size: 11.5px; line-height: 1.1; }
+  /* Compact phone instrument switcher: crisp icon + label without excess height. */
+  .segmented.full.inst-tabs { padding: 3px; border-radius: 11px; }
+  .segmented.full.inst-tabs button { flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; min-height: 40px; padding: 4px 2px; font-size: 10.5px; line-height: 1.1; border-radius: 8px; }
   .inst-tabs button > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
-  .inst-tabs .icon { width: 18px; height: 18px; }
+  .inst-tabs .icon { width: 15px; height: 15px; }
   .instrument-card .card-head { flex-wrap: wrap; }
   .piano { min-width: 500px; height: 160px; }
   .pk.white { padding-bottom: 6px; font-size: 11px; }

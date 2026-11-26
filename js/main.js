@@ -244,7 +244,7 @@ function onDriveStatus(status) {
     avatar.removeAttribute("data-icon-painted");
     avatar.innerHTML = `<img src="${esc(p.picture)}" alt="" referrerpolicy="no-referrer">`;
   } else {
-    setIcon(avatar, status === "synced" ? "cloud-check" : "cloud");
+    setIcon(avatar, "gdrive");
   }
   const text = {
     "signed-out": t("backup", "Back up"),

@@ -83,14 +83,15 @@ html[data-accent="amber"] .stage[data-theme="light"] { --chord: #824b08; --accen
 .stage-theme-lbl { font-size: 12px; font-weight: 650; }
 
 .stage-select {
-  min-height: 44px; padding: 0 32px 0 12px; border-radius: 12px;
+  min-height: 44px; height: 44px; line-height: 1.25; padding: 8px 32px 8px 12px; border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, .14); color: inherit; font-weight: 650;
-  cursor: pointer; appearance: none; -webkit-appearance: none;
+  cursor: pointer; appearance: none; -webkit-appearance: none; -moz-appearance: none;
   background-color: rgba(255, 255, 255, .06);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c4c4cf' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
   background-repeat: no-repeat; background-position: right 10px center; background-size: 15px;
   transition: border-color .15s, background-color .15s, box-shadow .15s;
 }
+.stage-select::picker-icon { display: none; }
 .stage-select[data-open="1"] { border-color: var(--chord); box-shadow: 0 0 0 3px var(--accent-soft); }
 .stage[data-theme="light"] .stage-select {
   background-color: #fff; border-color: #d8d4cc;

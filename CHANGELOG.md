@@ -2,6 +2,15 @@
 
 All notable changes to **Sonata** are documented here, following [Semantic Versioning](https://semver.org/).
 
+## [7.7.0] - 2026-11-26
+
+### Added & Improved
+- **Live Transposed-Key Editing & Per-Mode Chart Customization**: `#songBody` now displays and edits chords in the exact active transposed/capo key (`js/ui/editor.js`, `js/core/store.js`, `js/ui/ctx.js`) while preserving `sonata:v12:*` and `?s=` compatibility; non-Chords views (`Chords only`, `Numbers`, `Roman`, `Lyrics`) support optional independent edits (`Edit separately`) with 1-tap `Reset`.
+- **Studio Audio Overhaul & Voice Choking**: Added natural per-instrument decay envelopes (`bass ~1.35s`, `uke ~1.55s`, `guitar ~2.15s`, `piano ~2.35s`), warmer balanced EQ, and clean voice choking on rapid chord taps (`js/audio.js`, `js/ui/chords.js`).
+- **Chord Diagram Image Preview Fix**: Fixed `copyChordImage()` SVG selection (`svg.chord-box, svg.piano-keys, svg.neck-map`) and added a viewable preview sheet with `Copy image`, `Share`, and `Download PNG`.
+- **Sitewide UI, Play, Tuner, Theory & Settings Polish**: Fixed dropdown vertical centering and native `::picker-icon` double arrows across the entire app, floated desktop song-row hover actions without shifting text, aligned Trash rows, capped expanded pagination at `50/page` with single-row mobile controls, removed mobile row BPM clutter, removed the redundant `.preview-head` bar, centered Tuner string buttons, compacted the Play instrument switcher, fixed mobile Circle of Fifths header stacking, removed the redundant `Key Finder` card from Tools Hub (preserving `/tools/key-finder`), and added clean spacing to Settings actions & footer.
+- **Revamped Icons & Official Google Drive Branding**: Upgraded `ICONS` (`1.85` stroke Lucide geometry) and added the official multi-color Google Drive icon across the top bar/sidebar, Settings, and Backup & restore.
+
 ## [7.6.0] - 2026-11-25
 
 ### Added & Overhauled

@@ -137,6 +137,20 @@ export function renderOptions(song, mode, item) {
   };
 }
 
+/** Source text & render options for a song in a view mode (honoring optional per-mode overrides). @param {Song} song @param {import("../core/chart.js").ViewMode} [mode] @param {SetlistItem|null} [item] */
+export function chartForMode(song, mode, item) {
+  const m = mode || /** @type {import("../core/chart.js").ViewMode} */ (store.settings.viewMode);
+  const custom = m !== "chords" && Boolean(song?.modes && typeof song.modes[m] === "string");
+  if (custom) {
+    return {
+      custom: true,
+      text: /** @type {string} */ (song.modes?.[m] ?? ""),
+      opts: { ...renderOptions(song, m === "lyrics" ? "lyrics" : "chords", item), transpose: 0, capo: 0 }
+    };
+  }
+  return { custom: false, text: song?.body || "", opts: renderOptions(song, m, item) };
+}
+
 /** Short label like "G" or "A (capo 2: G)". @param {Song|null} song @param {SetlistItem|null} [item] */
 export function keyLabel(song, item) {
   const s = soundingKey(song, item);

@@ -2,7 +2,7 @@
 // Chords: look up any chord (or tap one in a chart) and see it on guitar, ukulele,
 // bass and piano, with every shape Sonata can find. Tap to hear it.
 import "../../css/music.css";
-import { $, esc, icon, openSheet, paintIcons, toast, copyText, download, slug } from "./dom.js";
+import { $, esc, icon, openSheet, closeSheet, paintIcons, toast, copyText, download, slug } from "./dom.js";
 import { t } from "./i18n.js";
 import { store, app, tick, renderOptions } from "./ctx.js";
 import { pretty, noteName, NOTE_TO_PC } from "../core/music.js";
@@ -19,26 +19,40 @@ const shape = { guitar: 0, ukulele: 0 };
 /** @param {string} name */
 const flatsFor = (name) => /^[A-G]b|\/[A-G]b/.test(name) || /^(F|Bb|Eb|Ab|Db|Gb)(?![#])/.test(name) || /^(D|G|C|F)m/.test(name);
 
-/** Hear a chord. @param {string} name @param {"piano"|"guitar"|"ukulele"|"bass"} [voice] */
+/** @type {import("../audio.js").Voice[]} */
+let activeVoices = [];
+function stopActiveVoices() {
+  for (const v of activeVoices) v.stop(0.12);
+  activeVoices = [];
+}
+
+/** Hear a chord with balanced voicing and clean voice choking. @param {string} name @param {"piano"|"guitar"|"ukulele"|"bass"} [voice] */
 export function hear(name, voice = "piano") {
   const d = describeChord(name);
   if (!d) return;
   tick();
+  stopActiveVoices();
   if (voice === "piano") {
     const v = pianoVoicing(name);
     if (v) {
-      piano(v.bass, 0.72, 0);
-      v.notes.forEach((m, i) => piano(m, i === v.notes.length - 1 ? 0.68 : 0.56, (i + 1) * 0.014));
+      activeVoices.push(piano(v.bass, 0.64, 0));
+      v.notes.forEach((m, i) => activeVoices.push(piano(m, i === v.notes.length - 1 ? 0.60 : 0.52, (i + 1) * 0.016)));
     }
     return;
   }
-  if (voice === "bass") { const v = pianoVoicing(name); if (v) pluck(v.bass - 12, "bass", 0.9); return; }
+  if (voice === "bass") { const v = pianoVoicing(name); if (v) activeVoices.push(pluck(v.bass - 12, "bass", 0.78)); return; }
   const tun = voice === "ukulele" ? TUNINGS.ukulele.strings : TUNINGS.guitar.strings;
   const vs = voicings(name, tun);
   const v = vs[Math.min(shape[voice], vs.length - 1)];
-  if (!v) { playChord(d.pcs, "guitar", d.bassPc); return; }
-  // Strum low to high (ukulele: string order, its high G rings first).
-  v.frets.forEach((f, i) => { if (f >= 0) pluck(tun[i] + f, voice === "ukulele" ? "uke" : "guitar", i === 0 ? 0.85 : 0.76, i * 0.028); });
+  if (!v) { activeVoices.push(playChord(d.pcs, "guitar", d.bassPc)); return; }
+  // Natural acoustic strum low to high (ukulele: string order, its high G rings first).
+  let n = 0;
+  v.frets.forEach((f, i) => {
+    if (f < 0) return;
+    const vel = Math.max(0.56, 0.74 - n * 0.025);
+    activeVoices.push(pluck(tun[i] + f, voice === "ukulele" ? "uke" : "guitar", vel, n * 0.022));
+    n++;
+  });
 }
 
 /** Chord diagrams for one chord, as HTML. @param {string} name @param {{ compact?: boolean }} [o] */
@@ -294,7 +308,7 @@ async function copyChordImage(name, rootEl) {
     ctx.font = `700 20px ${ui}`;
     ctx.fillText(title, x + 22, y + 36);
 
-    const svgEl = card.querySelector("svg");
+    const svgEl = card.querySelector("svg.chord-box, svg.piano-keys, svg.neck-map");
     if (svgEl) {
       const vb = (svgEl.getAttribute("viewBox") || "0 0 200 200").split(/\s+/).map(Number);
       const sw = vb[2] || 200;
@@ -331,13 +345,37 @@ async function copyChordImage(name, rootEl) {
   ctx.fillText("Sonata  ·  sonata.jethrofrane.xyz", pad, H - 18);
 
   const blob = await new Promise((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error("png"))), "image/png"));
-  try {
-    if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+  const fileName = `${slug(d.name)}-chord.png`;
+  const url = URL.createObjectURL(blob);
+  const canShare = Boolean(navigator.canShare && (() => { try { return navigator.canShare({ files: [new File([blob], fileName, { type: "image/png" })] }); } catch { return false; } })());
+  const canCopy = typeof navigator.clipboard?.write === "function" && typeof ClipboardItem !== "undefined";
+  const sb = openSheet({
+    title: `${pretty(d.name)} · ${t("chordImagePreview", "Chord image")}`,
+    body: `
+    <div class="png-page" style="margin-bottom:12px"><img src="${url}" alt="${esc(pretty(d.name))}"></div>
+    <div class="btn-row">
+      ${canCopy ? `<button class="btn primary" type="button" id="cpChordImgCopy">${icon("copy")}${esc(t("copyImage", "Copy image"))}</button>` : ""}
+      ${canShare ? `<button class="btn${canCopy ? "" : " primary"}" type="button" id="cpChordImgShare">${icon("share")}${esc(t("share", "Share"))}</button>` : ""}
+      <button class="btn${canCopy || canShare ? "" : " primary"}" type="button" id="cpChordImgDl">${icon("download")}${esc(t("downloadPng", "Download PNG"))}</button>
+    </div>`,
+    wide: true,
+    onClose: () => URL.revokeObjectURL(url)
+  });
+  sb.querySelector("#cpChordImgCopy")?.addEventListener("click", async () => {
+    try {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       toast(t("imageCopied", "Image copied. Paste it anywhere."), "success", { ms: 3000 });
-      return;
+      closeSheet();
+    } catch {
+      download(fileName, blob);
+      toast(t("downloaded", "Downloaded"), "success");
     }
-  } catch { /* fall back to download */ }
-  download(`${slug(d.name)}-chord.png`, blob);
-  toast(t("downloaded", "Downloaded"), "success");
+  });
+  sb.querySelector("#cpChordImgShare")?.addEventListener("click", async () => {
+    try { await navigator.share({ title: `${pretty(d.name)} chord`, files: [new File([blob], fileName, { type: "image/png" })] }); } catch { /* cancelled */ }
+  });
+  sb.querySelector("#cpChordImgDl")?.addEventListener("click", () => {
+    download(fileName, blob);
+    toast(t("downloaded", "Downloaded"), "success");
+  });
 }

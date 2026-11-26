@@ -1,5 +1,17 @@
 [
   {
+    "version": "7.7.0",
+    "date": "2026-11-26",
+    "whatsNew": "Studio-grade chord audio & realistic decay, live transposed-key editing with optional per-mode chart customization, fixed Chord image preview, official Google Drive branding, revamped Lucide-style icons, and sitewide dropdown, Play, Tuner & Settings alignment polish.",
+    "changes": [
+      "Live transposed-key editing & per-mode customization: edit chords directly in the exact active transposed or capo key (automatically synced back to your song), and optionally click Edit separately on Chords only, Numbers, Roman, or Lyrics views with one-tap Reset.",
+      "Studio audio overhaul: natural per-instrument decay envelopes (punchy Bass, warm acoustic Guitar strum, crisp Ukulele, balanced Grand Piano) and smooth voice choking when switching chords so notes never ring too long or muddy together.",
+      "Chord image preview & Copy image fix: fixed diagram rendering so Guitar, Piano, Ukulele, and Bass charts render cleanly, and added a preview modal with Copy image, Share, and Download PNG actions.",
+      "Sitewide dropdown, Play, Tuner, Theory & Settings polish: fixed vertical centering and duplicate native arrows on every dropdown, centered Tuner reference-tone buttons, compacted the Play instrument switcher, stacked Circle of Fifths headers cleanly on mobile, added breathing room to Settings actions/footer, removed the redundant Key Finder card from Tools Hub (still built right into Circle of Fifths), and streamlined mobile Songs rows & pagination (capped at 50/page for large libraries).",
+      "Revamped icons & official Google Drive branding: upgraded icons across the app to crisp Lucide-style geometry, polished desktop floating hover actions and single-row Trash controls, removed the redundant Chords preview bar, and added the official multi-color Google Drive icon across the top bar, Settings, and Backup & restore."
+    ]
+  },
+  {
     "version": "7.6.0",
     "date": "2026-11-25",
     "whatsNew": "Mobile-first high-density redesign showing far more music above the fold, new Amber low-light Stage preset, WCAG 2.1 AA contrast & design token calibration, streamlined mobile Share & export sheet, and user-focused visual assets.",

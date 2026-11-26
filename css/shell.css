@@ -72,14 +72,15 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
 }
 .account-btn:hover { background: var(--surface-3); }
 .account-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.account-avatar { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); overflow: hidden; }
+.account-avatar { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); color: var(--accent-strong); overflow: hidden; }
 .account-avatar .icon { width: 17px; height: 17px; }
 .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .account-btn[data-status="synced"] .account-label { color: var(--success); }
 .account-btn[data-status="expired"] .account-label, .account-btn[data-status="error"] .account-label { color: var(--warning); }
 .account-btn[data-unprotected] .account-avatar { position: relative; overflow: visible; }
-.account-btn[data-unprotected] .account-avatar::after { content: ""; position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 0 2px var(--bg); }
+.account-btn[data-unprotected] .account-avatar::after { content: ""; position: absolute; top: -1px; right: -1px; width: 8px; height: 8px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 0 2px var(--surface); }
 .sync-dot { position: absolute; left: 26px; top: 6px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--surface-2); background: var(--muted); }
+.sync-dot[data-status="synced"] { background: var(--success); }
 .sync-dot[data-status="syncing"], .sync-dot[data-status="connecting"] { background: var(--accent); animation: pulse 1s infinite; }
 .sync-dot[data-status="expired"], .sync-dot[data-status="error"] { background: var(--warning); }
 @keyframes pulse { 50% { opacity: .35; } }
@@ -145,9 +146,10 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
   .brand { padding: 0; gap: 8px; }
   .brand img { width: 26px; height: 26px; border-radius: 8px; }
   .tabs, .side-recent { display: none; }
-  .side-foot { margin-left: auto; padding: 0; border: 0; gap: 0; }
-  .account-btn { flex: none; padding: 0 10px 0 5px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); min-height: 38px; }
-  .sync-dot { left: 24px; border-color: var(--surface); }
+  .side-foot { margin-left: auto; padding: 0; border: 0; gap: 2px; }
+  .account-btn { flex: none; padding: 3px 10px 3px 4px; gap: 7px; border: 1px solid color-mix(in srgb, var(--line) 85%, transparent); border-radius: 999px; background: var(--surface); min-height: 36px; height: 36px; }
+  .account-btn:hover { border-color: var(--line-strong); background: var(--surface-2); }
+  .sync-dot { left: 24px; top: 4px; border-color: var(--surface); }
   .bottom-nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-nav, 25);
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
@@ -182,16 +184,17 @@ html[data-theme="dark"] .tab.active { background: color-mix(in srgb, var(--accen
   .side-foot .icon { width: 17px; height: 17px; }
   .account-label { display: none; }
   .account-btn { width: 34px; height: 34px; min-height: 34px; padding: 0; border: 0; background: transparent; justify-content: center; }
-  .account-avatar { width: 25px; height: 25px; }
-  .account-avatar .icon { width: 15px; height: 15px; }
-  .account-btn[data-unprotected] .account-avatar::after { top: 1px; right: 1px; width: 7px; height: 7px; }
-  .sync-dot { left: 20px; top: 4px; }
+  .account-avatar { width: 26px; height: 26px; }
+  .account-avatar .icon { width: 16px; height: 16px; }
+  .account-btn[data-unprotected] .account-avatar::after { top: 0; right: 0; width: 7px; height: 7px; }
+  .sync-dot { left: 21px; top: 3px; }
   .bn { min-height: 36px; border-radius: 9px; font-size: 11.5px; gap: 5px; }
   .bn .icon { width: 16px; height: 16px; }
   .page { padding: 8px var(--gutter) 16px; }
-  .page-head { margin-bottom: 8px; gap: 6px; align-items: center; }
-  .page-head > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; width: 100%; }
-  .page-sub { margin-top: 0; font-size: var(--fs-xs); }
+  .page-head { margin-bottom: 10px; gap: 6px; align-items: flex-start; }
+  #view-songs .page-head > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; width: 100%; }
+  .page-sub { margin-top: 3px; font-size: var(--fs-xs); line-height: 1.4; }
+  #view-songs .page-sub { margin-top: 0; }
   #view-tools .page-sub, .tool-card-desc, .tool-card-go { display: none; }
   .tools-hub { gap: 12px; }
   .tools-group { gap: 6px; }

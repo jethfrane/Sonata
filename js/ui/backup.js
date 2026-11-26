@@ -111,7 +111,7 @@ async function status() {
 
 function driveCard() {
   const d = app.drive;
-  const head = `<h3>${icon("cloud")}<span>Google Drive</span><em class="bk-tag">${esc(t("bkAuto", "Automatic"))}</em></h3>`;
+  const head = `<h3>${icon("gdrive")}<span>Google Drive</span><em class="bk-tag">${esc(t("bkAuto", "Automatic"))}</em></h3>`;
   if (!d || d.status === "signed-out" || (!d.token && !d.profile.email)) {
     return `<section class="bk-card">${head}
       <p>${esc(t("accountIntro", "Keep your songs safe and the same on all your devices. Sonata only sees the one file it creates in your Drive (sonata_library.json)."))}</p>
@@ -188,7 +188,7 @@ export async function openBackup(section = "") {
     const st = await status();
     const fileAt = get(AT_KEY);
     return `<div class="backup">
-      <div class="bk-status ${st.kind}" role="status">${icon(st.kind === "ok" ? "cloud-check" : st.kind === "warn" ? "info" : "cloud")}<div><b>${esc(st.title)}</b><span>${esc(st.sub)}</span></div></div>
+      <div class="bk-status ${st.kind}" role="status">${icon(st.kind === "ok" && app.drive?.token ? "gdrive" : st.kind === "ok" ? "check" : st.kind === "warn" ? "info" : "gdrive")}<div><b>${esc(st.title)}</b><span>${esc(st.sub)}</span></div></div>
       ${driveCard()}
       <section class="bk-card">
         <h3>${icon("download")}<span>${esc(t("bkFile", "Backup file"))}</span><em class="bk-tag">${esc(t("bkOneTap", "One tap"))}</em></h3>

@@ -20,7 +20,7 @@ export const TRASH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 /**
  * @typedef {{ name: string, url: string }} Link
  * @typedef {{ id: string, title: string, artist: string, creator: string, description: string,
- *   links: Link[], body: string, manualKey: string, isFavorite: boolean, pinned?: boolean, transpose: number,
+ *   links: Link[], body: string, modes?: Partial<Record<"chords-only"|"nashville"|"roman"|"lyrics", string>>, manualKey: string, isFavorite: boolean, pinned?: boolean, transpose: number,
  *   capo: number, bpm: number|null, genre: string, mood?: string, inBank: boolean, createdAt: string, updatedAt: string,
  *   lastOpenedAt: string, readonly?: boolean, origin?: string, setlistKey?: string, setlistCapo?: number }} Song
  *   `origin`: the share id of the song this copy was saved from (see shareId in share.js).
@@ -109,6 +109,14 @@ export function normalizeSong(s) {
   };
   if (s.pinned) song.pinned = true;
   if (s.readonly) song.readonly = true;
+  if (s.modes && typeof s.modes === "object" && !Array.isArray(s.modes)) {
+    /** @type {Record<string, string>} */
+    const m = {};
+    for (const k of ["chords-only", "nashville", "roman", "lyrics"]) {
+      if (typeof s.modes[k] === "string") m[k] = s.modes[k];
+    }
+    if (Object.keys(m).length) song.modes = /** @type {any} */ (m);
+  }
   const origin = str(s.origin).replace(/[^a-z0-9]/gi, "").slice(-12);
   if (origin) song.origin = origin;
   return song;

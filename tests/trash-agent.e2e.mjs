@@ -283,12 +283,11 @@ async function seedLibrary(p, songs, setlists = [], trash = []) {
   // Tools Hub (/tools): open each tool and return with ← All tools
   await p.click('.tabs [data-view="tools"]');
   await p.waitForTimeout(200);
-  ok(new URL(p.url()).pathname === "/tools" && await p.locator("#view-tools [data-open-tool]").count() === 8, "Tools tab opens /tools with 8 curated tool cards");
+  ok(new URL(p.url()).pathname === "/tools" && await p.locator("#view-tools [data-open-tool]").count() === 7, "Tools tab opens /tools with 7 curated tool cards");
 
   for (const [card, expectedPath, backScope] of [
     ["chords", "/chords", "#view-chords"],
     ["theory", "/theory", "#view-theory"],
-    ["key-finder", "/tools/key-finder", "#view-theory"],
     ["play:piano", "/play/piano", "#view-play"],
     ["play:guitar", "/play/guitar", "#view-play"],
     ["play:tuner", "/play/tuner", "#view-play"],
@@ -304,8 +303,8 @@ async function seedLibrary(p, songs, setlists = [], trash = []) {
     ok(new URL(p.url()).pathname === "/tools" && await p.isVisible("#view-tools"), `← All tools in ${backScope} returns to /tools`);
   }
 
-  // Minor Circle of Fifths rearrangement + upgraded Key Finder
-  await p.click('#view-tools [data-open-tool="key-finder"]');
+  // Minor Circle of Fifths rearrangement + upgraded Key Finder (via /tools/key-finder route)
+  await p.goto(BASE + "/tools/key-finder", { waitUntil: "networkidle" });
   await p.waitForTimeout(300);
   await p.click('[data-key-mode="minor"]');
   await p.waitForTimeout(200);
